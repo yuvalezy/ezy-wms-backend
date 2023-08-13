@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{2624F7A0-0A12-4012-A42C-214A3B640B36}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Service</RootNamespace>
+    <AssemblyName>Service</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Test\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Test\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Interop.SAPbobsCOM">
+      <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
+    </Reference>
+    <Reference Include="LicenseConnect">
+      <HintPath>..\..\..\Dependencies\LicenseConnect.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Web">
+      <HintPath>..\..\..\..\..\..\Windows\Microsoft.NET\assembly\GAC_32\System.Web\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="API\LoadBalancingRouter.cs" />
+    <Compile Include="API\Models\PickValueCheckData.cs" />
+    <Compile Include="API\Models\Response.cs" />
+    <Compile Include="API\Print\PrintController.cs" />
+    <Compile Include="API\Print\Initializer.cs" />
+    <Compile Include="API\Print\PrintParameters.cs" />
+    <Compile Include="API\Print\PrintResponse.cs" />
+    <Compile Include="API\Print\PrintResponseLayout.cs" />
+    <Compile Include="API\RefreshTokenProvider.cs" />
+    <Compile Include="API\ServiceTracer.cs" />
+    <Compile Include="Controllers\BaseBackgroundController.cs" />
+    <Compile Include="Controllers\ServiceController.cs" />
+    <Compile Include="DataCommands.cs" />
+    <Compile Include="Controllers\HelloWorldController.cs" />
+    <Compile Include="Models\CustomServiceController.cs" />
+    <Compile Include="Models\InteractiveServiceController.cs" />
+    <Compile Include="Models\ServiceNode.cs" />
+    <Compile Include="API\ApplicationAuthProvider.cs" />
+    <Compile Include="API\Service.cs" />
+    <Compile Include="API\Startup.cs" />
+    <Compile Include="Models\ServiceNodes.cs" />
+    <Compile Include="Models\WindowsServiceController.cs" />
+    <Compile Include="ProjectInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ProjectInstaller.Designer.cs">
+      <DependentUpon>ProjectInstaller.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Queries\Queries.cs" />
+    <Compile Include="Service.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Service.Designer.cs">
+      <DependentUpon>Service.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Global.cs" />
+    <Compile Include="Views\IService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="ProjectInstaller.resx">
+      <DependentUpon>ProjectInstaller.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Queries\DatabaseSettings.sql" />
+    <EmbeddedResource Include="Service.resx">
+      <DependentUpon>Service.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Service.Shared\Service.Shared.csproj">
+      <Project>{69a3dda5-3f30-489c-94d0-152b04196317}</Project>
+      <Name>Service.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Queries\HANA\UpdateLastExecution.sql" />
+    <EmbeddedResource Include="Queries\SQL\UpdateLastExecution.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CrystalReports.Engine" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.FlashControlV71" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ClientDoc" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommLayer" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonControls" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonObjectModel" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Controllers" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CubeDefModel" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataDefModel" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataSetConversion" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ObjectFactory" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Prompting" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ReportDefModel" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.XmlSerialize" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportSource" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.Shared" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.Web" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.3501" />
+    <PackageReference Include="Microsoft.AspNet.Cors" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.3" />
+    <PackageReference Include="Microsoft.AspNet.Identity.Owin" Version="2.2.3" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Cors" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.2.7" />
+    <PackageReference Include="Microsoft.Owin" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Cors" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Host.SystemWeb" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Hosting" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Security" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Security.Cookies" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Owin" Version="1.0.0" />
+    <PackageReference Include="Owin.Security.RedisTokenProviders" Version="0.4.0" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

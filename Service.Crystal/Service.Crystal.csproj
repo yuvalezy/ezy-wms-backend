@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E0AB2BD6-29A5-4F5D-8971-2F27CDE659A2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>B1S.Framework.Crystal</RootNamespace>
+    <AssemblyName>Service.Crystal</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Test\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CrystalLayout.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CrystalReports.Engine" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.FlashControlV71" Version="13.0.3501" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ClientDoc" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommLayer" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonControls" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonObjectModel" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Controllers" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CubeDefModel" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataDefModel" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataSetConversion" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ObjectFactory" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Prompting" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ReportDefModel" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportAppServer.XmlSerialize" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.ReportSource" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.Shared" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.4001" />
+    <PackageReference Include="log4net" Version="2.0.13" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Service.Crystal.Shared\Service.Crystal.Shared.csproj">
+      <Project>{15ec9e97-e2cd-4767-a4c5-b0aa0da298c6}</Project>
+      <Name>Service.Crystal.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
