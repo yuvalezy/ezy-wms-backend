@@ -411,3 +411,8 @@ public enum ObjectTypes {
     oInventoryOpeningBalance           = 310000001,
     Unknown                            = -1
 }
+
+public enum Role {
+    GoodsReceipt = 1,
+    GoodsReceiptSupervisor = 2
+}

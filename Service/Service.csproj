@@ -99,6 +99,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="API\Authorizations\AuthorizationsController.cs" />
+    <Compile Include="API\Authorizations\LWApiController.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
     <Compile Include="API\Models\PickValueCheckData.cs" />
     <Compile Include="API\Models\Response.cs" />

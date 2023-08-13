@@ -44,6 +44,7 @@ public class ServiceController {
         try {
             Global.ConnectCompany();
             CompanySettings.Load();
+            Global.Load();
         }
         catch (Exception ex) {
             view.LogError($"Error loading database company settings \"{ConnectionController.Database}\": {ex.Message}");

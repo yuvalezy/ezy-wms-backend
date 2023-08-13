@@ -27,5 +27,8 @@ public class MetaData {
                         where not exists(select 1 from [@LW_YUVAL08_COMMON])
                         """;
         data.Execute(sqlStr);
+        
+        //create roles
+        // select "typeID", "name" from OHTY where "name" in ({Const.GoodsReceipt}', '{Const.GoodsReceiptSupervisor})
     }
 }

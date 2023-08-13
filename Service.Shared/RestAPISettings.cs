@@ -18,7 +18,6 @@ public class RestAPISettings {
     public   string            DefaultPrinter    { get; set; }
     public   List<string>      Printers          { get; } = new();
     public   List<Object>      Objects           { get; } = new();
-    public   List<AccessToken> AccessUsers      { get; } = new();
     internal string            FilePath          { get; set; }
     public   AccountInfo       AccountInfo       { get; set; }
 
@@ -34,8 +33,6 @@ public class RestAPISettings {
             printer = layout.DefaultPrinter;
         return printer;
     }
-
-    public bool ValidateAccess(string username, string password) => AccessUsers.Any(a => a.ID == username && a.Password == password);
 
     public static RestAPISettings Load(string path) {
         RestAPISettings settings;

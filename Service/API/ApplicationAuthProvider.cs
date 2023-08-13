@@ -1,11 +1,15 @@
+using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Http.Cors;
 using Microsoft.Owin.Security.OAuth;
+using Service.Shared;
+using Service.Shared.Utils;
 
-namespace Service.API; 
+namespace Service.API;
 
 [EnableCors("*", "*", "*")]
 public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
@@ -17,8 +21,9 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
         bool   valid;
         string userName = context.UserName;
         string password = context.Password;
+        int    empID    = -1;
         if (!string.IsNullOrWhiteSpace(context.UserName)) {
-            valid = Global.RestAPISettings.ValidateAccess(context.UserName, context.Password);
+            valid = ValidateAccess(context.UserName, out empID);
         }
         else {
             valid    = IsLocalIP(context.Request.RemoteIpAddress);
@@ -29,12 +34,33 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
         if (valid) {
             var identity = new ClaimsIdentity(context.Options.AuthenticationType);
             identity.AddClaim(new Claim("Username", userName));
-            identity.AddClaim(new Claim("Password", password));
+            identity.AddClaim(new Claim("EmployeeID", empID.ToString()));
             context.Validated(identity);
         }
         else {
             context.SetError("invalid_grant", "The user name or password is incorrect.");
         }
+    }
+
+    private bool ValidateAccess(string loginString, out int empID) {
+        empID = -1;
+        string sqlStr = $"select empID from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
+        empID = Global.DataObject.GetValue<int>(sqlStr);
+
+        if (empID > 0)
+            LoadAuthorization(empID);
+        return empID > 0;
+    }
+
+    private void LoadAuthorization(int empID) {
+        if (!Global.UserAuthorizations.ContainsKey(empID))
+            Global.UserAuthorizations.Add(empID, new List<Role>());
+        var authorizations = Global.UserAuthorizations[empID];
+        authorizations.Clear();
+
+        string sqlStr = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
+        var    dt     = Global.DataObject.GetDataTable(sqlStr);
+        authorizations.AddRange(from DataRow dr in dt.Rows select Global.RolesMap[(int)dr["roleID"]]);
     }
 
     private static bool IsLocalIP(string ipAddress) {

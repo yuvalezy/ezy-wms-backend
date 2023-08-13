@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
@@ -13,7 +15,7 @@ using Connection = Service.Shared.Company.ConnectionController;
 using Path = System.IO.Path;
 using Version = Service.Shared.Utils.Version;
 
-namespace Service; 
+namespace Service;
 
 public static class Global {
     #region Variables & Properties
@@ -30,15 +32,17 @@ public static class Global {
     public static BoDataServerTypes ServerType { get; internal set; }
 
     //Database Settings
-    public static string       DBServiceVersion { get; set; }
-    public static string       User             { get; set; }
-    public static string       Password         { get; set; }
-    public static bool         TestHelloWorld   { get; private set; }
-    public static bool         PrintThread      { get; private set; }
-    public static bool         Background       { get; set; }
-    public static bool         Interactive      { get; set; }
-    public static bool         LoadBalancing    { get; set; }
-    public static ServiceNodes Nodes            { get; set; }
+    public static string                      DBServiceVersion   { get; set; }
+    public static string                      User               { get; set; }
+    public static string                      Password           { get; set; }
+    public static bool                        TestHelloWorld     { get; private set; }
+    public static bool                        PrintThread        { get; private set; }
+    public static bool                        Background         { get; set; }
+    public static bool                        Interactive        { get; set; }
+    public static bool                        LoadBalancing      { get; set; }
+    public static ServiceNodes                Nodes              { get; set; }
+    public static Dictionary<int, Role>       RolesMap           { get; } = new();
+    public static Dictionary<int, List<Role>> UserAuthorizations { get; } = new();
 
     #endregion
 
@@ -135,7 +139,7 @@ public static class Global {
         Password                      = dr["Password"].ToString().DecryptString();
         TestHelloWorld                = dr["TestHelloWorld"].ToString() == "Y";
         CompanySettings.CrystalLegacy = Convert.ToBoolean(dr["CrystalLegacy"]);
-        
+
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
     }
@@ -145,14 +149,6 @@ public static class Global {
         string fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings", $"{Connection.Database}.json");
         RestAPISettings = RestAPISettings.Load(fileName);
         LoadBalancing   = RestAPISettings.Enabled && RestAPISettings.LoadBalancing;
-        RestAPISettings.AccessUsers.ForEach(token => {
-            try {
-                token.Password = token.Password.DecryptString();
-            }
-            catch (Exception ex) {
-                LogError($"Error decrypting print access token for {token.Name}: {ex.Message}");
-            }
-        });
     }
 
 
@@ -183,4 +179,25 @@ public static class Global {
     public static Tracer GetTracer(string id)      => !Debug ? null : new Tracer($"lw_service_{id}", 10, true);
 
     #endregion
+
+    public static void Load() {
+        LoadRoles();
+    }
+
+    private static void LoadRoles() {
+        LogInfo("Loading roles");
+        string sqlStr = $"""select "typeID", "name" from OHTY where "name" in ('{Const.GoodsReceipt}', '{Const.GoodsReceiptSupervisor}')""";
+        var    dt     = Data.GetDataTable(sqlStr);
+        foreach (DataRow dr in dt.Rows) {
+            int id = (int)dr["typeID"];
+            switch ((string)dr["name"]) {
+                case Const.GoodsReceipt:
+                    RolesMap.Add(id, Role.GoodsReceipt);
+                    break;
+                case Const.GoodsReceiptSupervisor:
+                    RolesMap.Add(id, Role.GoodsReceiptSupervisor);
+                    break;
+            }
+        }
+    }
 }
