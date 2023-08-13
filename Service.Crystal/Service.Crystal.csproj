@@ -7,7 +7,7 @@
     <ProjectGuid>{E0AB2BD6-29A5-4F5D-8971-2F27CDE659A2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>B1S.Framework.Crystal</RootNamespace>
+    <RootNamespace>Service.Crystal</RootNamespace>
     <AssemblyName>Service.Crystal</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -78,7 +78,7 @@
     <PackageReference Include="CrystalReports.ReportSource" Version="13.0.4001" />
     <PackageReference Include="CrystalReports.Shared" Version="13.0.4001" />
     <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.4001" />
-    <PackageReference Include="log4net" Version="2.0.13" />
+    <PackageReference Include="log4net" Version="2.0.15" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Service.Crystal.Shared\Service.Crystal.Shared.csproj">

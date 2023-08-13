@@ -1,1 +1,1 @@
-﻿update "@LW-YUVAL08-COMMON" set "U_ReTestLastExec" = TO_TIMESTAMP ('{0}', 'YYYYMMDD HH24:MI')
+﻿update "@LW_YUVAL08_COMMON" set "U_ReTestLastExec" = TO_TIMESTAMP ('{0}', 'YYYYMMDD HH24:MI')

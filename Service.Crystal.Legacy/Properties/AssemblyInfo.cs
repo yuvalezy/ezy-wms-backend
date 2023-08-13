@@ -4,10 +4,10 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("BE1S Framework Crystal")]
+[assembly: AssemblyTitle("Service Crystal")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Be one solutions")]
+[assembly: AssemblyCompany("yuval08")]
 [assembly: AssemblyProduct("Service.Crystal")]
 [assembly: AssemblyCopyright("Copyright ©  2018 - 2023")]
 [assembly: AssemblyTrademark("")]

@@ -106,7 +106,7 @@
     <Compile Include="Utils\VersionInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Portable.Licensing" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>

@@ -1,0 +1,1 @@
+﻿insert into "ServiceManager"("dbName", "Active") values(@dbName, @Active)

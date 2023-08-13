@@ -54,12 +54,12 @@
             this.rightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuAPISettings = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrintAPISettings = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuReTestProcess = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuHelloWorldProcess = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuServiceAccount = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuReloadSettings = new System.Windows.Forms.ToolStripMenuItem();
             this.lblServer = new System.Windows.Forms.Label();
             this.chkShowActiveOnly = new System.Windows.Forms.CheckBox();
-            this.mnuServiceAccount = new System.Windows.Forms.ToolStripMenuItem();
             this.notifyMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dg)).BeginInit();
             this.rightClickMenu.SuspendLayout();
@@ -69,57 +69,60 @@
             // 
             this.notifyIcon.ContextMenuStrip = this.notifyMenu;
             this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
-            this.notifyIcon.Text = "be one solutions Manufacturing Service Administrator";
+            this.notifyIcon.Text = "Light WMS Service Administrator";
             this.notifyIcon.Visible = true;
             this.notifyIcon.DoubleClick += new System.EventHandler(this.NotifyIconDoubleCLick);
             // 
             // notifyMenu
             // 
+            this.notifyMenu.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.notifyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuOpen,
             this.mnuAbout,
             this.toolStripMenuItem1,
             this.mnuExit});
             this.notifyMenu.Name = "notifyMenu";
-            this.notifyMenu.Size = new System.Drawing.Size(124, 76);
+            this.notifyMenu.Size = new System.Drawing.Size(160, 106);
             this.notifyMenu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.NotifyMenuItemClick);
             // 
             // mnuOpen
             // 
             this.mnuOpen.Name = "mnuOpen";
-            this.mnuOpen.Size = new System.Drawing.Size(123, 22);
+            this.mnuOpen.Size = new System.Drawing.Size(159, 32);
             this.mnuOpen.Text = "&Open";
             // 
             // mnuAbout
             // 
             this.mnuAbout.Name = "mnuAbout";
-            this.mnuAbout.Size = new System.Drawing.Size(123, 22);
+            this.mnuAbout.Size = new System.Drawing.Size(159, 32);
             this.mnuAbout.Text = "&About Us";
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(120, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(156, 6);
             // 
             // mnuExit
             // 
             this.mnuExit.Name = "mnuExit";
-            this.mnuExit.Size = new System.Drawing.Size(123, 22);
+            this.mnuExit.Size = new System.Drawing.Size(159, 32);
             this.mnuExit.Text = "&Exit";
             // 
             // txtServer
             // 
-            this.txtServer.Location = new System.Drawing.Point(86, 12);
+            this.txtServer.Location = new System.Drawing.Point(129, 18);
+            this.txtServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtServer.Name = "txtServer";
             this.txtServer.ReadOnly = true;
-            this.txtServer.Size = new System.Drawing.Size(376, 20);
+            this.txtServer.Size = new System.Drawing.Size(562, 26);
             this.txtServer.TabIndex = 2;
             // 
             // btnClose
             // 
-            this.btnClose.Location = new System.Drawing.Point(15, 321);
+            this.btnClose.Location = new System.Drawing.Point(22, 494);
+            this.btnClose.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(75, 23);
+            this.btnClose.Size = new System.Drawing.Size(112, 35);
             this.btnClose.TabIndex = 3;
             this.btnClose.Text = "Close";
             this.btnClose.UseVisualStyleBackColor = true;
@@ -145,10 +148,12 @@
             this.gridStartStop,
             this.gridRestart});
             this.dg.ContextMenuStrip = this.rightClickMenu;
-            this.dg.Location = new System.Drawing.Point(12, 38);
+            this.dg.Location = new System.Drawing.Point(18, 58);
+            this.dg.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.dg.Name = "dg";
             this.dg.RowHeadersVisible = false;
-            this.dg.Size = new System.Drawing.Size(960, 277);
+            this.dg.RowHeadersWidth = 62;
+            this.dg.Size = new System.Drawing.Size(1440, 426);
             this.dg.TabIndex = 4;
             this.dg.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dg_CellContentClick);
             this.dg.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dg_CellMouseDown);
@@ -161,6 +166,7 @@
             this.gridActive.DataPropertyName = "Active";
             this.gridActive.FalseValue = "N";
             this.gridActive.HeaderText = "Active";
+            this.gridActive.MinimumWidth = 8;
             this.gridActive.Name = "gridActive";
             this.gridActive.TrueValue = "Y";
             this.gridActive.Width = 50;
@@ -172,6 +178,7 @@
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.ControlLight;
             this.gridName.DefaultCellStyle = dataGridViewCellStyle1;
             this.gridName.HeaderText = "Database";
+            this.gridName.MinimumWidth = 8;
             this.gridName.Name = "gridName";
             this.gridName.ReadOnly = true;
             this.gridName.Width = 180;
@@ -183,6 +190,7 @@
             dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ControlLight;
             this.gridDesc.DefaultCellStyle = dataGridViewCellStyle2;
             this.gridDesc.HeaderText = "Company Name";
+            this.gridDesc.MinimumWidth = 8;
             this.gridDesc.Name = "gridDesc";
             this.gridDesc.ReadOnly = true;
             // 
@@ -194,6 +202,7 @@
             this.gridVersion.DefaultCellStyle = dataGridViewCellStyle3;
             this.gridVersion.FillWeight = 50F;
             this.gridVersion.HeaderText = "Version";
+            this.gridVersion.MinimumWidth = 8;
             this.gridVersion.Name = "gridVersion";
             this.gridVersion.ReadOnly = true;
             this.gridVersion.Width = 50;
@@ -205,6 +214,7 @@
             dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ControlLight;
             this.gridAccount.DefaultCellStyle = dataGridViewCellStyle4;
             this.gridAccount.HeaderText = "Account";
+            this.gridAccount.MinimumWidth = 8;
             this.gridAccount.Name = "gridAccount";
             this.gridAccount.ReadOnly = true;
             this.gridAccount.Width = 160;
@@ -216,6 +226,7 @@
             dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.ControlLight;
             this.gridStatus.DefaultCellStyle = dataGridViewCellStyle5;
             this.gridStatus.HeaderText = "Status";
+            this.gridStatus.MinimumWidth = 8;
             this.gridStatus.Name = "gridStatus";
             this.gridStatus.ReadOnly = true;
             this.gridStatus.Resizable = System.Windows.Forms.DataGridViewTriState.True;
@@ -226,6 +237,7 @@
             this.gridStartStop.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.gridStartStop.DataPropertyName = "StartStop";
             this.gridStartStop.HeaderText = "";
+            this.gridStartStop.MinimumWidth = 8;
             this.gridStartStop.Name = "gridStartStop";
             this.gridStartStop.Width = 60;
             // 
@@ -234,60 +246,71 @@
             this.gridRestart.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.gridRestart.DataPropertyName = "Restart";
             this.gridRestart.HeaderText = "";
+            this.gridRestart.MinimumWidth = 8;
             this.gridRestart.Name = "gridRestart";
             this.gridRestart.Width = 60;
             // 
             // rightClickMenu
             // 
+            this.rightClickMenu.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.rightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuAPISettings,
             this.mnuPrintAPISettings,
-            this.mnuReTestProcess,
+            this.mnuHelloWorldProcess,
             this.mnuServiceAccount,
             this.toolStripMenuItem2,
             this.mnuReloadSettings});
             this.rightClickMenu.Name = "rightClickMenu";
-            this.rightClickMenu.Size = new System.Drawing.Size(181, 142);
+            this.rightClickMenu.Size = new System.Drawing.Size(280, 203);
             this.rightClickMenu.Opening += new System.ComponentModel.CancelEventHandler(this.rightClickMenu_Opening);
             // 
             // mnuAPISettings
             // 
             this.mnuAPISettings.Name = "mnuAPISettings";
-            this.mnuAPISettings.Size = new System.Drawing.Size(180, 22);
+            this.mnuAPISettings.Size = new System.Drawing.Size(279, 32);
             this.mnuAPISettings.Text = "&Rest API Settings";
             this.mnuAPISettings.Click += new System.EventHandler(this.APISettingsClicked);
             // 
             // mnuPrintAPISettings
             // 
+            this.mnuPrintAPISettings.Enabled = false;
             this.mnuPrintAPISettings.Name = "mnuPrintAPISettings";
-            this.mnuPrintAPISettings.Size = new System.Drawing.Size(180, 22);
+            this.mnuPrintAPISettings.Size = new System.Drawing.Size(279, 32);
             this.mnuPrintAPISettings.Text = "Print API Settings";
             this.mnuPrintAPISettings.Click += new System.EventHandler(this.PrintAPISettings_Click);
             // 
-            // mnuReTestProcess
+            // mnuHelloWorldProcess
             // 
-            this.mnuReTestProcess.Name = "mnuReTestProcess";
-            this.mnuReTestProcess.Size = new System.Drawing.Size(180, 22);
-            this.mnuReTestProcess.Text = "Run &Re-Test Process";
+            this.mnuHelloWorldProcess.Name = "mnuHelloWorldProcess";
+            this.mnuHelloWorldProcess.Size = new System.Drawing.Size(279, 32);
+            this.mnuHelloWorldProcess.Text = "Run &Hello World Process";
+            // 
+            // mnuServiceAccount
+            // 
+            this.mnuServiceAccount.Name = "mnuServiceAccount";
+            this.mnuServiceAccount.Size = new System.Drawing.Size(279, 32);
+            this.mnuServiceAccount.Text = "Service Account";
+            this.mnuServiceAccount.Click += new System.EventHandler(this.ServiceAccountClicked);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(276, 6);
             // 
             // mnuReloadSettings
             // 
             this.mnuReloadSettings.Name = "mnuReloadSettings";
-            this.mnuReloadSettings.Size = new System.Drawing.Size(180, 22);
+            this.mnuReloadSettings.Size = new System.Drawing.Size(279, 32);
             this.mnuReloadSettings.Text = "Reload &Settings";
             this.mnuReloadSettings.Click += new System.EventHandler(this.ReloadSettingsClicked);
             // 
             // lblServer
             // 
             this.lblServer.AutoSize = true;
-            this.lblServer.Location = new System.Drawing.Point(12, 15);
+            this.lblServer.Location = new System.Drawing.Point(18, 23);
+            this.lblServer.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblServer.Name = "lblServer";
-            this.lblServer.Size = new System.Drawing.Size(38, 13);
+            this.lblServer.Size = new System.Drawing.Size(55, 20);
             this.lblServer.TabIndex = 1;
             this.lblServer.Text = "Server";
             // 
@@ -297,26 +320,20 @@
             this.chkShowActiveOnly.AutoSize = true;
             this.chkShowActiveOnly.Checked = true;
             this.chkShowActiveOnly.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkShowActiveOnly.Location = new System.Drawing.Point(865, 15);
+            this.chkShowActiveOnly.Location = new System.Drawing.Point(1306, 23);
+            this.chkShowActiveOnly.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.chkShowActiveOnly.Name = "chkShowActiveOnly";
-            this.chkShowActiveOnly.Size = new System.Drawing.Size(107, 17);
+            this.chkShowActiveOnly.Size = new System.Drawing.Size(152, 24);
             this.chkShowActiveOnly.TabIndex = 5;
             this.chkShowActiveOnly.Text = "Show active only";
             this.chkShowActiveOnly.UseVisualStyleBackColor = true;
             this.chkShowActiveOnly.CheckedChanged += new System.EventHandler(this.chkShowActiveOnly_CheckedChanged);
             // 
-            // mnuServiceAccount
-            // 
-            this.mnuServiceAccount.Name = "mnuServiceAccount";
-            this.mnuServiceAccount.Size = new System.Drawing.Size(180, 22);
-            this.mnuServiceAccount.Text = "Service Account";
-            this.mnuServiceAccount.Click += new System.EventHandler(this.ServiceAccountClicked);
-            // 
             // Main
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(984, 356);
+            this.ClientSize = new System.Drawing.Size(1476, 548);
             this.Controls.Add(this.chkShowActiveOnly);
             this.Controls.Add(this.dg);
             this.Controls.Add(this.btnClose);
@@ -325,10 +342,11 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.Name = "Main";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "be one Manufacturing Administration";
+            this.Text = "Light WMS Administration";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainFormClosing);
             this.Load += new System.EventHandler(this.FormLoad);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainKeyDown);
@@ -349,7 +367,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuOpen;
         private System.Windows.Forms.ToolStripMenuItem mnuAPISettings;
         private System.Windows.Forms.ToolStripMenuItem mnuReloadSettings;
-        private System.Windows.Forms.ToolStripMenuItem mnuReTestProcess;
+        private System.Windows.Forms.ToolStripMenuItem mnuHelloWorldProcess;
         private System.Windows.Forms.NotifyIcon notifyIcon;
         private System.Windows.Forms.ContextMenuStrip notifyMenu;
         private System.Windows.Forms.ContextMenuStrip rightClickMenu;

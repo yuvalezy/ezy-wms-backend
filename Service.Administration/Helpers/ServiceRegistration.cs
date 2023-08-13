@@ -123,7 +123,7 @@ public class ServiceRegistration {
 
     private void AddServiceCommand((int ID, int Port)? node, bool background, StringBuilder args, string serviceName) {
         args.Append($"create \"{serviceName}\"");
-        args.Append($" binpath=\"{appPath}\\LMService.exe ");
+        args.Append($" binpath=\"{appPath}\\Service.exe ");
         args.Append("db: ");
         args.Append(dbName);
         if (node.HasValue) {

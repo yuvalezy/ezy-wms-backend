@@ -112,6 +112,7 @@
     <Compile Include="Helpers\Encryption.cs" />
     <Compile Include="Helpers\ServerValidation.cs" />
     <Compile Include="Helpers\ServiceRegistration.cs" />
+    <Compile Include="MetaData.cs" />
     <Compile Include="PrintAPISettings.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -176,8 +177,15 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="Queries\ActivateDB.sql" />
-    <EmbeddedResource Include="Queries\UpdateDB.sql" />
+    <EmbeddedResource Include="Queries\HANA\ActivateDB.sql" />
+    <EmbeddedResource Include="Queries\HANA\CreateServiceManager.sql" />
+    <EmbeddedResource Include="Queries\HANA\IsDBUpdate.sql" />
+    <EmbeddedResource Include="Queries\HANA\UpdateDB.sql" />
+    <EmbeddedResource Include="Queries\SQL\ActivateDB.sql" />
+    <EmbeddedResource Include="Queries\SQL\CreateServiceManager.sql" />
+    <EmbeddedResource Include="Queries\SQL\ExistsDatabase.sql" />
+    <EmbeddedResource Include="Queries\SQL\IsDBUpdate.sql" />
+    <EmbeddedResource Include="Queries\SQL\UpdateDB.sql" />
     <None Include="app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -193,7 +201,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Queries\IsDBUpdate.sql" />
     <EmbeddedResource Include="Queries\SQL\Load.sql" />
   </ItemGroup>
   <ItemGroup>
@@ -218,8 +225,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.122" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="MetaData\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

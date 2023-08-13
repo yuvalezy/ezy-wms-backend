@@ -220,8 +220,8 @@ public partial class PrintAPISettings : Form {
             var @object = settings.Objects.FirstOrDefault(o => o.ID == CurrentObject);
             cmbObjectDefaultPrinter.SelectedItem = @object != null ? @object.DefaultPrinter : "";
             var dt = data.GetDataTable($@"select T0.""Code"" ID, T0.""U_Name"" ""Name"", T0.""U_Active"" ""Active""
-from ""@B1SPLM"" T0
-inner join ""B1SLMLayouts"" T1 on T1.ID = T0.""U_FileID""
+from ""@LWPLM"" T0
+inner join ""LWLayouts"" T1 on T1.ID = T0.""U_FileID""
 where T0.""U_Type"" = {QueryHelper.Var}Type 
 order by 2", new Parameters(new Parameter("Type", SqlDbType.Int, CurrentObject)));
             foreach (DataRow dataRow in dt.Rows) {

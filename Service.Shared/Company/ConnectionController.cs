@@ -164,7 +164,7 @@ public static class ConnectionController {
     /// will use the Server name as the license server.</param>
     /// <example>
     ///   <para></para>
-    ///   <code lang="C#"><![CDATA[ConnectionController.ConnectCompany("LAPTOP-K2UQK03D", BoDataServerTypes.dst_MSSQL2016, "sa", "be1s", "SBODemo_DE", "manager", "be1s", "LAPTOP-K2UQK03D");]]></code>
+    ///   <code lang="C#"><![CDATA[ConnectionController.ConnectCompany("LAPTOP-K2UQK03D", BoDataServerTypes.dst_MSSQL2016, "sa", "password", "SBODemo_DE", "manager", "password", "LAPTOP-K2UQK03D");]]></code>
     ///   <para></para>
     /// </example>
     public static void ConnectCompany(string server, BoDataServerTypes dbServerType, string dbUser, string dbPassword, string dbName, string sboUser, string sboPassword, string licenseServer = "") {

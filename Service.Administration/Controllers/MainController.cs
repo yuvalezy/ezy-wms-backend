@@ -30,7 +30,6 @@ public class MainController {
     private BoDataServerTypes serverType;
     private string            serverUser;
     private string            serverPassword;
-    private string            hostedPassword;
 
     private string licenseServer;
 
@@ -90,7 +89,6 @@ public class MainController {
         dt.Columns.Add("StartStop", Type.GetType("System.String"));
         dt.Columns.Add("Restart", Type.GetType("System.String"));
         Task.Run(() => LoadVersions(dt));
-        //todo load hosted version
         FilterData();
         var services = ServiceController.GetServices();
         foreach (DataRowView drv in dv) {
@@ -107,7 +105,7 @@ public class MainController {
         foreach (DataRow dr in dt.Rows) {
             string dbName = (string)dr["Name"];
             try {
-                string version = data.GetValue<string>($"select \"U_ServiceVersion\" from \"{dbName}\"{QueryHelper.OtherDB}\"@LW-YUVAL08-COMMON\"");
+                string version = data.GetValue<string>($"select \"U_Version\" from \"{dbName}\"{QueryHelper.OtherDB}\"@{Const.CommonDatabase}\"");
                 dr["Version"] = version;
             }
             catch {
@@ -181,8 +179,8 @@ public class MainController {
     private DataConnector DatabaseDataConnector {
         get {
             DataConnector dbData = serverType switch {
-                BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.Replace("LW-YUVAL08-COMMON", view.Database)),
-                _                            => new SQLDataConnector(ConnectionString.Replace("LW-YUVAL08-COMMON", view.Database))
+                BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.Replace(Const.CommonDatabase, view.Database)),
+                _                            => new SQLDataConnector(ConnectionString.Replace(Const.CommonDatabase, view.Database))
             };
             return dbData;
         }
@@ -281,7 +279,6 @@ public class MainController {
 
     public ServiceController LoadController(string dbName = null) => new($"{Const.ServiceName}|{dbName ?? view.Database}");
 
-
     private void UpdateServiceAccountInfo(DataRow dr) {
         string dbName = (string)dr["Name"];
         try {
@@ -334,7 +331,6 @@ public class MainController {
             dv.RowFilter = "Active = 'Y'";
         view.Source = dv;
     }
-
 
     public void RestartService() {
         StopService().Wait();
@@ -416,7 +412,7 @@ public class MainController {
     }
 
     private void Activate() {
-        if (Question($"Are you sure you want to active LM Server for database \"{view.Database}\"?") != DialogResult.Yes)
+        if (Question($"Are you sure you want to active LW Service for database \"{view.Database}\"?") != DialogResult.Yes)
             return;
         try {
             if (!ValidateDatabase())
@@ -440,7 +436,7 @@ public class MainController {
     }
 
     private void Deactivate() {
-        if (Question($"Are you sure you want to de-active LM Server for database \"{view.Database}\"?") != DialogResult.Yes)
+        if (Question($"Are you sure you want to de-active LW Service for database \"{view.Database}\"?") != DialogResult.Yes)
             return;
         var row = dv[view.CurrentRow].Row;
         try {
@@ -478,34 +474,40 @@ public class MainController {
     }
 
     private bool ValidateDatabase() {
+        DataConnector dbData;
         try {
-            if (data.GetValue<bool>(string.Format(Queries.ExistsCommon, view.Database))) {
-                var    v              = Assembly.GetExecutingAssembly().GetName().Version;
-                string currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
-                string sqlStr =
-                    $"""
-                     select "U_ServiceVersion" "ServiceVersion", "U_ServiceUser" "ServiceUser", "U_ServicePassword" "ServicePassword"
-                     from "\"{view.Database}\"{QueryHelper.OtherDB}""@LW-YUVAL08-COMMON"
-                     """;
-                var    dr         = data.GetDataTable(sqlStr).Rows[0];
-                string dbVersion  = (string)dr["ServiceVersion"];
-                string dbUser     = dr["ServiceUser"].ToString().DecryptString();
-                string dbPassword = dr["ServicePassword"].ToString().DecryptString();
-                if (Version.CheckVersion(dbVersion, currentVersion) != VersionCheck.Current) {
-                    Error($"Cannot activate service for database \"{view.Database}\".\nDatabase version is {dbVersion} and service version is {currentVersion}.");
-                    return false;
-                }
+            dbData = serverType switch {
+                BoDataServerTypes.dst_HANADB => new HANADataConnector(Service.Shared.Data.ConnectionString.HanaConnectionString(server, serverUser, serverPassword, view.Database)),
+                _                            => new SQLDataConnector(Service.Shared.Data.ConnectionString.SqlConnectionString(server, serverUser, serverPassword, view.Database))
+            };
+            var md = new MetaData(dbData);
+            md.Check();
+            var    v              = Assembly.GetExecutingAssembly().GetName().Version;
+            string currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
+            string sqlStr =
+                $@"select ""U_Version"" ""Version"", ""U_User"" ""User"", ""U_Password"" ""Password"" from ""@{Const.CommonDatabase}""";
+            var    dr         = dbData.GetDataTable(sqlStr).Rows[0];
+            string dbVersion  = (string)dr["Version"];
+            string dbUser     = dr["User"].ToString().DecryptString();
+            string dbPassword = dr["Password"].ToString().DecryptString();
+            if (Version.CheckVersion(dbVersion, currentVersion) != VersionCheck.Current) {
+                Error($"Cannot activate service for database \"{view.Database}\".\nDatabase version is {dbVersion} and service version is {currentVersion}.");
+                return false;
+            }
 
-                if (!ValidateDBUser(dbUser, dbPassword)) {
-                    Error(
-                        $"Cannot activate service for database \"{view.Database}\".\nDatabase service user or password is not valid\nOpen LM configuration, service tab and enter a valid SAP user and password.");
-                    return false;
-                }
+            if (!ValidateDBUser(dbUser, dbPassword)) {
+                Error(
+                    $"Cannot activate service for database \"{view.Database}\".\nDatabase service user or password is not valid\nUpdate database service password and try again.");
+                //todo popoup to ask new user
+                return false;
             }
         }
         catch (Exception ex) {
             Error($"Error checking LM version in database \"{view.Database}\":\n{ex.Message}");
             return false;
+        }
+        finally {
+            data?.Dispose();
         }
 
         return true;
@@ -545,5 +547,5 @@ public class MainController {
     }
 
     private string ConnectionString =>
-        Service.Shared.Data.ConnectionString.GetConnectionString(serverType, server, serverUser, serverPassword, "LW-YUVAL08-COMMON", applicationName: "Light WMS Service");
+        Service.Shared.Data.ConnectionString.GetConnectionString(serverType, server, serverUser, serverPassword, Const.CommonDatabase, applicationName: "Light WMS Service");
 }

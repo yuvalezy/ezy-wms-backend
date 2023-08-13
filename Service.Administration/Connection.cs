@@ -128,25 +128,36 @@ public partial class Connection : Form {
 
     private bool CheckCommon(BoDataServerTypes dbType) {
         DataConnector data = dbType switch {
-            BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.HanaConnectionString(txtServer.Text, ServerUser, ServerPassword, Const.CommonDatabase)),
-            _                            => new SQLDataConnector(ConnectionString.SqlConnectionString(txtServer.Text, ServerUser, ServerPassword, Const.CommonDatabase))
+            BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.HanaConnectionString(txtServer.Text, ServerUser, ServerPassword, "SBOCOMMON")),
+            _                            => new SQLDataConnector(ConnectionString.SqlConnectionString(txtServer.Text, ServerUser, ServerPassword, "SBO-Common"))
         };
-        ConnectionController.DatabaseType = dbType switch {
-            BoDataServerTypes.dst_HANADB => DatabaseType.HANA,
-            _                            => DatabaseType.SQL
-        };
+        try {
+            data.CheckConnection();
+        }
+        catch (Exception e) {
+            MessageBox.Show(e.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            data.Dispose();
+            Application.Exit();
+        }
+        try {
+            ConnectionController.DatabaseType = dbType == BoDataServerTypes.dst_HANADB ? DatabaseType.HANA : DatabaseType.SQL;
 
-        bool retVal = true;
-        if (!data.GetValue<bool>(Queries.ExistsServiceManager)) {
-            MessageBox.Show(
-                "Database LW-YUVAL08-COMMON was not found on the connected server.\nRun initial setup from within be one Manufacturing configuration and try again.",
-                Text, MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-            retVal = false;
+            if (!data.GetValue<bool>(string.Format(Queries.ExistsDatabase, Const.CommonDatabase)))
+                data.CreateCommonDatabase();
+
+            data.ChangeDatabase(Const.CommonDatabase);
+            var md = new MetaData(data);
+            md.CheckCommon();
+        }
+        catch (Exception e) {
+            MessageBox.Show(e.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+        finally {
+            data.Dispose();
         }
 
-        data.Dispose();
-        return retVal;
+        return true;
     }
 
     private void SaveRegistry(BoDataServerTypes dbType) {

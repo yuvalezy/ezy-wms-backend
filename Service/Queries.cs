@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Service.Queries;
+namespace Service;
 
 public class Queries {
     public static string DatabaseSettings => GetEmbeddedResource("Service.Queries.DatabaseSettings.sql");

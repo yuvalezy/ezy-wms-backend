@@ -127,7 +127,7 @@
     <Compile Include="ProjectInstaller.Designer.cs">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </Compile>
-    <Compile Include="Queries\Queries.cs" />
+    <Compile Include="Queries.cs" />
     <Compile Include="Service.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -181,23 +181,23 @@
     <PackageReference Include="CrystalReports.Shared" Version="13.0.3501" />
     <PackageReference Include="CrystalReports.Web" Version="13.0.3501" />
     <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.3501" />
-    <PackageReference Include="Microsoft.AspNet.Cors" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.3" />
-    <PackageReference Include="Microsoft.AspNet.Identity.Owin" Version="2.2.3" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Cors" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.2.7" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.2.7" />
-    <PackageReference Include="Microsoft.Owin" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Cors" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Host.SystemWeb" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Hosting" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Security" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Security.Cookies" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Microsoft.AspNet.Cors" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
+    <PackageReference Include="Microsoft.AspNet.Identity.Owin" Version="2.2.4" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Cors" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.2.9" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.2.9" />
+    <PackageReference Include="Microsoft.Owin" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Cors" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Host.SystemWeb" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Hosting" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Security" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Security.Cookies" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Owin" Version="1.0.0" />
     <PackageReference Include="Owin.Security.RedisTokenProviders" Version="0.4.0" />
   </ItemGroup>

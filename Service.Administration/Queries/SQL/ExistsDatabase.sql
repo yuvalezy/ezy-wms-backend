@@ -1,0 +1,1 @@
+﻿select 1 from sys.databases where name = '{0}'

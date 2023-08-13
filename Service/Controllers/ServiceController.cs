@@ -42,6 +42,16 @@ public class ServiceController {
         }
 
         try {
+            Global.ConnectCompany();
+            CompanySettings.Load();
+        }
+        catch (Exception ex) {
+            view.LogError($"Error loading database company settings \"{ConnectionController.Database}\": {ex.Message}");
+            return false;
+        }
+
+
+        try {
             Global.LoadRestAPISettings();
         }
         catch (Exception ex) {

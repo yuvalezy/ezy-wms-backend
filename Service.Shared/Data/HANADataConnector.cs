@@ -195,6 +195,15 @@ public class HANADataConnector : DataConnector {
         }
     }
 
+    public override void CreateCommonDatabase() {
+        throw new NotImplementedException();
+    }
+
+    public override void ChangeDatabase(string dbName) {
+        throw new NotImplementedException();
+    }
+
+
     private static void LoadParameters(Parameters parameters, HanaCommand cmdMain) {
         if (parameters == null || !parameters.Any()) 
             return;

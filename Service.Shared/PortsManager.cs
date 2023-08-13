@@ -20,7 +20,7 @@ public class PortsManager : List<PortData> {
             Add(new PortData { Port = port, Database = database });
     }
 
-    public int LastUsedPort => this.Select(p => p.Port).DefaultIfEmpty(8999).Max();
+    public int LastUsedPort => this.Select(p => p.Port).DefaultIfEmpty(7999).Max();
 }
 
 public class PortData {

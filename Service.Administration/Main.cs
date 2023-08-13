@@ -156,7 +156,7 @@ public partial class Main : Form, IMain {
             enabled = service.Status == ServiceControllerStatus.Running;
         }
 
-        mnuReTestProcess.Enabled    = enabled;
+        mnuHelloWorldProcess.Enabled    = enabled;
         mnuReloadSettings.Enabled   = enabled;
         mnuAPISettings.Enabled      = enabled;
         mnuServiceAccount.Enabled   = IsActive;

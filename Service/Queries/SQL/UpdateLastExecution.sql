@@ -1,1 +1,1 @@
-﻿update [@LW-YUVAL08-COMMON] set U_ReTestLastExec = '{0}'
+﻿update [@LW_YUVAL08_COMMON] set U_ReTestLastExec = '{0}'

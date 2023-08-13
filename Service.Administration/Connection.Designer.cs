@@ -215,7 +215,7 @@
             this.MaximizeBox = false;
             this.Name = "Connection";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "be one solutions Manufacturing Service Connection Settings";
+            this.Text = "Light WMS Service Connection Settings";
             this.Load += new System.EventHandler(this.frmConn_Load);
             this.grpServer.ResumeLayout(false);
             this.grpServer.PerformLayout();

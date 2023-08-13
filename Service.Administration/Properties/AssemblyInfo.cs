@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Light WMS Service Administration")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("be one solutions")]
-[assembly: AssemblyProduct("be one Manufacturing Administration")]
+[assembly: AssemblyCompany("yuval08")]
+[assembly: AssemblyProduct("Light WMS Administration")]
 [assembly: AssemblyCopyright("Copyright Â©  2018 - 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -30,6 +30,6 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.6.0.4")]
-[assembly: AssemblyVersion("1.6.0.4")]
-[assembly: AssemblyFileVersion("1.6.0.4")]
+// [assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

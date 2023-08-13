@@ -28,7 +28,6 @@ public static class Global {
 
     //Connection Settings
     public static BoDataServerTypes ServerType { get; internal set; }
-    public static string            SystemID   { get; private set; }
 
     //Database Settings
     public static string       DBServiceVersion { get; set; }
@@ -129,17 +128,14 @@ public static class Global {
     public static void LoadDatabaseSettings() {
         if (IsMain)
             Service.LogInfo("Loading database settings");
-        string sqlStr = Shared.Company.Queries.LoadCompanyDetails;
+        string sqlStr = Queries.DatabaseSettings;
         var    dr     = Data.GetDataTable(sqlStr).Rows[0];
         DBServiceVersion              = dr["Version"].ToString();
-        SystemID                      = dr["SystemID"].ToString();
         User                          = dr["User"].ToString().DecryptString();
         Password                      = dr["Password"].ToString().DecryptString();
-        TestHelloWorld                = dr["HellWorld"].ToString() == "Y";
+        TestHelloWorld                = dr["TestHelloWorld"].ToString() == "Y";
         CompanySettings.CrystalLegacy = Convert.ToBoolean(dr["CrystalLegacy"]);
         
-        throw new Exception("Load Database Settins");
-
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
     }

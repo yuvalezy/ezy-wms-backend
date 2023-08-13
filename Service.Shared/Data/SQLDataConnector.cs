@@ -34,7 +34,7 @@ public class SQLDataConnector : DataConnector {
 
     public override void BeginTransaction() {
         CheckConnection();
-        transaction = conn.BeginTransaction("Be1s");
+        transaction = conn.BeginTransaction("LW-yuval08");
     }
 
     public override void CommitTransaction() => transaction?.Commit();
@@ -58,12 +58,9 @@ public class SQLDataConnector : DataConnector {
         try {
             CheckConnection();
 
-            using var sqlDa = new SqlDataAdapter(sqlStr, conn) {
-                SelectCommand = {
-                    CommandType = commandType,
-                    Transaction = transaction
-                }
-            };
+            using var sqlDa = new SqlDataAdapter(sqlStr, conn);
+            sqlDa.SelectCommand.CommandType = commandType;
+            sqlDa.SelectCommand.Transaction = transaction;
             LoadParameters(parameters, sqlDa.SelectCommand);
             sqlDa.Fill(dt);
 
@@ -85,10 +82,9 @@ public class SQLDataConnector : DataConnector {
                 withTransaction = false;
             }
 
-            using var cmdMain = new SqlCommand(query, conn) {
-                Transaction = transaction,
-                CommandType = commandType
-            };
+            using var cmdMain = new SqlCommand(query, conn);
+            cmdMain.Transaction = transaction;
+            cmdMain.CommandType = commandType;
             LoadParameters(parameters, cmdMain);
             reader = cmdMain.ExecuteReader();
             while (reader.Read())
@@ -108,6 +104,8 @@ public class SQLDataConnector : DataConnector {
                     reader.Close();
                 reader.Dispose();
             }
+            if (!withTransaction)
+               DisposeTransaction();
         }
     }
 
@@ -121,10 +119,9 @@ public class SQLDataConnector : DataConnector {
                 withTransaction = false;
             }
 
-            using var cmdMain = new SqlCommand(sqlStr, conn) {
-                Transaction = transaction,
-                CommandType = commandType
-            };
+            using var cmdMain = new SqlCommand(sqlStr, conn);
+            cmdMain.Transaction = transaction;
+            cmdMain.CommandType = commandType;
             LoadParameters(parameters, cmdMain);
             dr = cmdMain.ExecuteReader();
             if (dr.Read())
@@ -140,6 +137,8 @@ public class SQLDataConnector : DataConnector {
         }
         finally {
             GetValuesClose(dr);
+            if (!withTransaction)
+               DisposeTransaction();
         }
     }
 
@@ -154,10 +153,9 @@ public class SQLDataConnector : DataConnector {
 
             if (scopeIdentity && commandType == CommandType.Text)
                 sqlStr += ";select SCOPE_IDENTITY()";
-            using var cmdMain = new SqlCommand(sqlStr, conn) {
-                Transaction = transaction,
-                CommandType = commandType
-            };
+            using var cmdMain = new SqlCommand(sqlStr, conn);
+            cmdMain.Transaction = transaction;
+            cmdMain.CommandType = commandType;
             if (scopeIdentity && commandType == CommandType.StoredProcedure)
                 cmdMain.Parameters.Add("@ReturnValue", SqlDbType.Int).Direction = ParameterDirection.ReturnValue;
             if (timeout.HasValue)
@@ -175,6 +173,10 @@ public class SQLDataConnector : DataConnector {
                 RollbackTransaction();
 
             throw new Exception($"Error executing query: \n{sqlStr}\n{ex.Message}");
+        }
+        finally {
+            if (!withTransaction)
+               DisposeTransaction();
         }
     }
 
@@ -194,6 +196,12 @@ public class SQLDataConnector : DataConnector {
         catch {
             ADO_Connection();
         }
+    }
+
+    public override void CreateCommonDatabase() => Execute($"CREATE DATABASE {Const.CommonDatabase}");
+    public override void ChangeDatabase(string dbName) {
+        if (conn is { State: ConnectionState.Open })
+            conn.ChangeDatabase(dbName);
     }
 
     private static void LoadParameters(Parameters parameters, SqlCommand cmdMain) {

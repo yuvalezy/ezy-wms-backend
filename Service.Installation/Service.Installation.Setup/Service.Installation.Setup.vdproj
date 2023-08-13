@@ -4671,7 +4671,7 @@
                 {
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_045650CB6F934B92A33BB4AB1EE2425B"
                     {
-                    "Name" = "8:be one solutions"
+                    "Name" = "8:yuval08"
                     "AlwaysCreate" = "11:FALSE"
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
@@ -4741,7 +4741,7 @@
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
         "ProductVersion" = "8:1.6.0"
-        "Manufacturer" = "8:be one solutions"
+        "Manufacturer" = "8:yuval08"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://beonesolutions.com/contact/"
         "Title" = "8:Light WMS Service v1.5"

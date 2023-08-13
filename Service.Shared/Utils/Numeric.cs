@@ -21,7 +21,7 @@ public static class Numeric {
     /// <param name="value">Decimal value</param>
     /// <example>
     ///   <code lang="C#"><![CDATA[decimal value = Convert.ToDecimal(199.95);
-    /// BE1SConnectionController.Application.Forms.Item("UDOSample").DataSources.DBDataSources.Item("@BE1SSAMPLE1").SetValue("Quantity", 0, Numeric.ToParseValue(value));]]></code>
+    /// ConnectionController.Application.Forms.Item("UDOSample").DataSources.DBDataSources.Item("@SAMPLE1").SetValue("Quantity", 0, Numeric.ToParseValue(value));]]></code>
     /// </example>
     public static string ToParseValue(this decimal value) {
         string parseValue = value.ToString(ConnectionController.ParseFormatInfo);
@@ -60,7 +60,7 @@ public static class Numeric {
     /// <example>
     ///   <para></para>
     ///   <code lang="C#"><![CDATA[double value = 199.95;
-    /// BE1SConnectionController.Application.Forms.Item("UDOSample").DataSources.DBDataSources.Item("@BE1SSAMPLE1").SetValue("Quantity", 0, Numeric.ToParseValue(value));]]></code>
+    /// ConnectionController.Application.Forms.Item("UDOSample").DataSources.DBDataSources.Item("@SAMPLE1").SetValue("Quantity", 0, Numeric.ToParseValue(value));]]></code>
     /// </example>
     public static string ToParseValue(this double value) {
         string parseValue = value.ToString(ConnectionController.ParseFormatInfo);

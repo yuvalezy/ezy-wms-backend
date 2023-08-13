@@ -17,10 +17,10 @@ namespace Service.Shared.Data;
 /// </summary>
 /// <example>
 ///   <para>In this example I'm executing the stored procedure
-/// BE1SLMUpdatePricesLog</para>
+/// UpdatePricesLog</para>
 ///   <code lang="C#"><![CDATA[
 /// try {
-///     Procedure proc = new Procedure("BE1SLMUpdatePricesLog", 
+///     Procedure proc = new Procedure("UpdatePricesLog", 
 ///        new Parameter("RUNID", SqlDbType.Int, runid), 
 ///        new Parameter("RUNID2", SqlDbType.Int, Runid2), 
 ///        new Parameter("ItemCode", itemcode), 

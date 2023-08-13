@@ -1,1 +1,0 @@
-﻿insert into "ServiceManager"("dbName", "Active") values({Var}dbName, {Var}Active)

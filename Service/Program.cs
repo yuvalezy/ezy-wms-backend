@@ -51,11 +51,11 @@ public static class Program {
         if (Global.IsMain) {
             Console.WriteLine();
             Console.WriteLine();
+            
             Console.WriteLine("Press any key to stop the services and end the process...");
-            Console.WriteLine("Press \"R\" to process Re-Test...");
-            Console.WriteLine("Press \"S\" to process Schedule Planning...");
-            Console.WriteLine("Press \"P\" to reload Print Settings...");
+            Console.WriteLine("Press \"R\" to process Hello World Test...");
             Console.WriteLine("Press \"L\" to reload Settings...");
+            Console.WriteLine("Press \"A\" to reload Rest API Settings...");
             Console.WriteLine();
             CheckProcess(servicesToRun, Console.ReadKey());
             Console.WriteLine();

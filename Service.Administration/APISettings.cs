@@ -103,17 +103,6 @@ public partial class APISettings : Form, IAPISettings {
             DialogResult = DialogResult.Cancel;
     }
 
-    private void TokensCellEdit(object sender, DataGridViewCellEventArgs e) {
-        if (!Loaded)
-            return;
-        var row = gridTokens.Rows[e.RowIndex];
-        if (row.Cells["colTokenID"].Value != DBNull.Value)
-            return;
-        row.Cells["colTokenID"].Value  = Guid.NewGuid();
-        row.Cells["colTokenKey"].Value = Guid.NewGuid();
-        lblTokenAlert.Visible          = true;
-    }
-
     private void LoadBalancingCheckedChanged(object sender, EventArgs e) => controller.LoadBalancingChanged();
 
     private void NodesValueChanged(object  sender, EventArgs e) => controller.AddRemoveNodes();
@@ -124,10 +113,12 @@ public partial class APISettings : Form, IAPISettings {
     public void DisplayLoadBalancing() {
         switch (EnableLoadBalancing) {
             case true when !tabControl.TabPages.Contains(tabLB):
-                tabControl.TabPages.Add(tabLB);
+                // tabControl.TabPages.Add(tabLB);
+                tabLB.Enabled = true;
                 break;
             case false when tabControl.TabPages.Contains(tabLB):
-                tabControl.TabPages.Remove(tabLB);
+                tabLB.Enabled = false;
+                // tabControl.TabPages.Remove(tabLB);
                 break;
         }
     }

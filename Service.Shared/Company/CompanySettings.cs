@@ -3,10 +3,6 @@ using Service.Shared.Utils;
 
 namespace Service.Shared.Company; 
 
-/// <summary>
-/// This class contains the company settings that are loaded from the SAP Business
-/// One database
-/// </summary>
 public static class CompanySettings {
     /// <summary>
     /// Gets or sets a value indicating whether the connected company has Multi Language support enabled
@@ -125,7 +121,7 @@ public static class CompanySettings {
     /// </remarks>
     /// <example>
     /// <para></para>
-    /// <code lang="C#"><![CDATA[ConnectionController.ConnectCompany("LAPTOP-K2UQK03D", BoDataServerTypes.dst_MSSQL2016, "sa", "be1s", "SBODemo_DE", "manager", "be1s", "LAPTOP-K2UQK03D");
+    /// <code lang="C#"><![CDATA[ConnectionController.ConnectCompany("LAPTOP-K2UQK03D", BoDataServerTypes.dst_MSSQL2016, "sa", "password", "SBODemo_DE", "manager", "password", "LAPTOP-K2UQK03D");
     /// CompanySettings.Load();]]></code>
     /// <para></para>
     /// </example>

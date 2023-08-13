@@ -114,7 +114,7 @@ public class PrintController : ApiController {
         return PrintResponse.Ok;
 
         PrintResponse ExecutePrint() {
-            var proc = new Procedure("B1SLMAddPrintLog",
+            var proc = new Procedure("LWAddPrintLog",
                 new Parameter("ObjType", SqlDbType.Int, (int)print.Type),
                 new Parameter("Entry", SqlDbType.Int, print.Entry),
                 new Parameter("Printer", SqlDbType.NVarChar, 254),
@@ -134,7 +134,7 @@ public class PrintController : ApiController {
                 layout.SetLayoutID(print.ID);
                 layout.Tracer = tracer.CreateObject("Crystal Layout Print");
                 layout.Print();
-                tracer.Write("Adding print log row in table @B1SLMPRINTLOG");
+                tracer.Write("Adding print log row in table @LWPRINTLOG");
                 proc["Printer"].Value = layout.PrinterName;
                 proc.Execute();
                 return PrintResponse.Ok;
@@ -166,7 +166,7 @@ public class PrintController : ApiController {
                 proc.Parameters.Add("ErrorType", SqlDbType.Char, 1, ((char)type).ToString());
                 proc.Parameters.Add("ErrorMessage", SqlDbType.NVarChar, 254, message);
                 proc["Status"].Value = "E";
-                tracer.Write("Adding print error log row in table @B1SLMPRINTLOG");
+                tracer.Write("Adding print error log row in table @LWPRINTLOG");
                 proc.Execute();
             }
         }
@@ -193,8 +193,8 @@ public class PrintController : ApiController {
         //     case PrintObjectType.ENGINEERING_BOM or PrintObjectType.DATASHEET or PrintObjectType.PLANT_MAINTENANCE_ASSET or PrintObjectType.PLANT_MAINTENANCE_REQUEST or PrintObjectType.QC_ORDER
         //         or PrintObjectType.SHOP_FLOOR_GOODS_RECEIPT or PrintObjectType.SHOP_FLOOR_GOODS_RETURN or PrintObjectType.SHOP_FLOOR_GOODS_ISSUE or PrintObjectType.CONTAINER_MASTER_DATA
         //         or PrintObjectType.CONTAINER_TRANSACTION_LOG: {
-        //         Trace("Execute B1SLMGetPrintLayoutObject procedure");
-        //         using var dt = data.GetDataTable("B1SLMGetPrintLayoutObject",
+        //         Trace("Execute LWGetPrintLayoutObject procedure");
+        //         using var dt = data.GetDataTable("LWGetPrintLayoutObject",
         //             new Parameters {
         //                 new Parameter("Type", SqlDbType.Int, (int)print.Type),
         //                 new Parameter("Entry", SqlDbType.Int, print.Entry)

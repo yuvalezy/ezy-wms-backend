@@ -31,8 +31,8 @@ public static class ConnectionString {
     /// <param name="dbName">Database Name</param>
     /// <param name="odbc">Defines if the connection string will be used for the OdbcConnection object</param>
     /// <example>
-    ///   <code lang="C#"><![CDATA[string connStr = GetConnectionString(DatabaseType.SQL, "localhost", "sa", "be1s", "SBODemoDE")]]></code>
-    ///   <para>Return value will be "Server=localhost;uid=sa;pwd=be1s;Initial Catalog=SBODemoDE"</para>
+    ///   <code lang="C#"><![CDATA[string connStr = GetConnectionString(DatabaseType.SQL, "localhost", "sa", "password", "SBODemoDE")]]></code>
+    ///   <para>Return value will be "Server=localhost;uid=sa;pwd=password;Initial Catalog=SBODemoDE"</para>
     /// </example>
     public static string GetConnectionString(DatabaseType type, string server, string user, string password, string dbName, bool odbc = false) =>
         type switch {
@@ -51,8 +51,8 @@ public static class ConnectionString {
     /// <param name="applicationName">Application Name</param>
     /// <param name="odbc">Defines if the connection string will be used for the OdbcConnection object</param>
     /// <example>
-    ///   <code lang="C#"><![CDATA[ string connStr = HanaConnectionString("ndb@localhost:30015", "sa", "be1s", "SBODemoDE")]]></code>
-    ///   <para>Return value will be "Server=localhost:30015;UID=SYSTEM;PWD=be1s;CS=SBODemoDE;DATABASENAME=NDB"</para>
+    ///   <code lang="C#"><![CDATA[ string connStr = HanaConnectionString("ndb@localhost:30015", "sa", "password", "SBODemoDE")]]></code>
+    ///   <para>Return value will be "Server=localhost:30015;UID=SYSTEM;PWD=password;CS=SBODemoDE;DATABASENAME=NDB"</para>
     /// </example>
     public static string HanaConnectionString(string server, string user, string password, string dbName = null, bool trustedConnection = false, string applicationName = null, bool odbc = false) {
         string tenantName = null;
@@ -89,8 +89,8 @@ public static class ConnectionString {
     /// <param name="trustedConnection">Use Trusted Connection</param>
     /// <param name="applicationName">Application Name</param>
     /// <example>
-    /// <code lang="C#"><![CDATA[ string connStr = SqlConnectionString("localhost", "sa", "be1s", "SBODemoDE")]]></code>
-    /// <para>Return value will be &quot;Server=localhost;uid=sa;pwd=be1s;Initial Catalog=SBODemoDE&quot;</para>
+    /// <code lang="C#"><![CDATA[ string connStr = SqlConnectionString("localhost", "sa", "password", "SBODemoDE")]]></code>
+    /// <para>Return value will be &quot;Server=localhost;uid=sa;pwd=password;Initial Catalog=SBODemoDE&quot;</para>
     /// </example>
     public static string SqlConnectionString(string server, string user, string password, string dbName = null, bool trustedConnection = false, string applicationName = null) {
         string connStr = $"Server={server};";
