@@ -99,11 +99,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="API\Authorizations\AuthorizationsController.cs" />
-    <Compile Include="API\Authorizations\LWApiController.cs" />
+    <Compile Include="API\General\GeneralController.cs" />
+    <Compile Include="API\General\LWApiController.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
     <Compile Include="API\Models\PickValueCheckData.cs" />
     <Compile Include="API\Models\Response.cs" />
+    <Compile Include="API\Models\UserInfo.cs" />
     <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\Initializer.cs" />
     <Compile Include="API\Print\PrintParameters.cs" />

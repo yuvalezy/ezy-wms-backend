@@ -10,12 +10,12 @@ namespace Service.API;
 public class Startup {
     // ReSharper disable once UnusedMember.Global
     public void Configuration(IAppBuilder app) {
+        app.UseCors(CorsOptions.AllowAll);
         var config = new HttpConfiguration();
         config.Routes.MapHttpRoute("DefaultApi", "api/{controller}");
         config.Routes.MapHttpRoute("DataApi", "api/{controller}/{action}");
         config.Formatters.XmlFormatter.UseXmlSerializer = true;
 
-        app.UseCors(CorsOptions.AllowAll);
         var options = new OAuthAuthorizationServerOptions {
             TokenEndpointPath         = new PathString("/token"),
             Provider                  = new ApplicationAuthProvider(),
