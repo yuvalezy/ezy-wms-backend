@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using System.Web.Http;
 
-namespace Service.API.Authorizations;
+namespace Service.API;
 
 public class LWApiController : ApiController {
     protected int EmployeeID {

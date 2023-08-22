@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Text;
 using Sap.Data.Hana;
 using ConnectionController = Service.Shared.Company.ConnectionController;
 
@@ -149,14 +150,15 @@ public abstract class DataConnector : IDisposable {
     public int Execute(string query, Parameter parameter, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null) =>
         Execute(query, new Parameters(parameter), commandType, scopeIdentity, timeout);
 
-    public abstract int  Execute(string          query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
-    public          void ExecuteReader(Procedure proc,  Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
-    public          void ExecuteReader(string    query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
+    public abstract int  Execute(string query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
+    public          void ExecuteReader(Procedure proc, Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
+    public          void ExecuteReader(string query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
+    public          void ExecuteReader(StringBuilder sb, Action<IDataReader> action) => ExecuteReader(sb.ToString(), null, CommandType.Text, action);
 
-    public             void      ExecuteReader(string      query, Parameters parameters,        Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
-    public abstract    void      ExecuteReader(string      query, Parameters parameters,        CommandType         commandType, Action<IDataReader> action);
-    public abstract    DataTable GetDataTable(string       query, Parameters parameters = null, CommandType         commandType = CommandType.Text);
-    protected abstract void      GetValuesExecution(string query, Parameters parameters,        CommandType         commandType, Action<IDataReader> readerAction);
+    public             void      ExecuteReader(string      query, Parameters parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
+    public abstract    void      ExecuteReader(string      query, Parameters parameters, CommandType commandType, Action<IDataReader> action);
+    public abstract    DataTable GetDataTable(string       query, Parameters parameters = null, CommandType commandType = CommandType.Text);
+    protected abstract void      GetValuesExecution(string query, Parameters parameters, CommandType commandType, Action<IDataReader> readerAction);
     public abstract    void      Dispose();
     public abstract    void      CheckConnection();
     public abstract    void      CreateCommonDatabase();

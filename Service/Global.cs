@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Service.Models;
@@ -199,5 +200,22 @@ public static class Global {
                     break;
             }
         }
+    }
+
+    public static bool ValidateAuthorization(int employeeID, params Role[] roles) {
+        if (!UserAuthorizations.ContainsKey(employeeID))
+            LoadAuthorization(employeeID);
+        return UserAuthorizations[employeeID].Intersect(roles).Any();
+    }
+
+    public static void LoadAuthorization(int empID) {
+        if (!UserAuthorizations.ContainsKey(empID))
+            UserAuthorizations.Add(empID, new List<Role>());
+        var authorizations = UserAuthorizations[empID];
+        authorizations.Clear();
+
+        string sqlStr = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
+        var    dt     = DataObject.GetDataTable(sqlStr);
+        authorizations.AddRange(from DataRow dr in dt.Rows select RolesMap[(int)dr["roleID"]]);
     }
 }

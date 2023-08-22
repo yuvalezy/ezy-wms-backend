@@ -100,13 +100,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API\General\GeneralController.cs" />
-    <Compile Include="API\General\LWApiController.cs" />
+    <Compile Include="API\General\GeneralData.cs" />
+    <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
+    <Compile Include="API\GoodsReceipt\GoodsReceiptData.cs" />
+    <Compile Include="API\GoodsReceipt\Models\FilterParameters.cs" />
+    <Compile Include="API\GoodsReceipt\Models\Document.cs" />
+    <Compile Include="API\GoodsReceipt\Models\CreateParameters.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
+    <Compile Include="API\Logging.cs" />
+    <Compile Include="API\LWApiController.cs" />
+    <Compile Include="API\Models\DocumentStatus.cs" />
     <Compile Include="API\Models\PickValueCheckData.cs" />
     <Compile Include="API\Models\Response.cs" />
     <Compile Include="API\Models\UserInfo.cs" />
-    <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\Initializer.cs" />
+    <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\PrintParameters.cs" />
     <Compile Include="API\Print\PrintResponse.cs" />
     <Compile Include="API\Print\PrintResponseLayout.cs" />
@@ -146,6 +154,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceipt.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
     <EmbeddedResource Include="ProjectInstaller.resx">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </EmbeddedResource>
@@ -203,6 +213,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Owin" Version="1.0.0" />
     <PackageReference Include="Owin.Security.RedisTokenProviders" Version="0.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="API\GoodsReceipt\Queries\HANA\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

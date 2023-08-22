@@ -48,20 +48,10 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
         empID = Global.DataObject.GetValue<int>(sqlStr);
 
         if (empID > 0)
-            LoadAuthorization(empID);
+            Global.LoadAuthorization(empID);
         return empID > 0;
     }
 
-    private void LoadAuthorization(int empID) {
-        if (!Global.UserAuthorizations.ContainsKey(empID))
-            Global.UserAuthorizations.Add(empID, new List<Role>());
-        var authorizations = Global.UserAuthorizations[empID];
-        authorizations.Clear();
-
-        string sqlStr = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
-        var    dt     = Global.DataObject.GetDataTable(sqlStr);
-        authorizations.AddRange(from DataRow dr in dt.Rows select Global.RolesMap[(int)dr["roleID"]]);
-    }
 
     private static bool IsLocalIP(string ipAddress) {
         try {

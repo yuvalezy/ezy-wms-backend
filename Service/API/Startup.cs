@@ -10,8 +10,10 @@ namespace Service.API;
 public class Startup {
     // ReSharper disable once UnusedMember.Global
     public void Configuration(IAppBuilder app) {
+        app.Use<LoggingMiddleware>();
         app.UseCors(CorsOptions.AllowAll);
         var config = new HttpConfiguration();
+        config.MapHttpAttributeRoutes();
         config.Routes.MapHttpRoute("DefaultApi", "api/{controller}");
         config.Routes.MapHttpRoute("DataApi", "api/{controller}/{action}");
         config.Formatters.XmlFormatter.UseXmlSerializer = true;
