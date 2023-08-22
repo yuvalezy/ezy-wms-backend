@@ -3,9 +3,10 @@ using System.Web.Http;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Security.OAuth;
+using Newtonsoft.Json.Converters;
 using Owin;
 
-namespace Service.API; 
+namespace Service.API;
 
 public class Startup {
     // ReSharper disable once UnusedMember.Global
@@ -17,6 +18,10 @@ public class Startup {
         config.Routes.MapHttpRoute("DefaultApi", "api/{controller}");
         config.Routes.MapHttpRoute("DataApi", "api/{controller}/{action}");
         config.Formatters.XmlFormatter.UseXmlSerializer = true;
+
+        var jsonFormatter = config.Formatters.JsonFormatter;
+        var item          = new StringEnumConverter();
+        jsonFormatter.SerializerSettings.Converters.Add(item);
 
         var options = new OAuthAuthorizationServerOptions {
             TokenEndpointPath         = new PathString("/token"),

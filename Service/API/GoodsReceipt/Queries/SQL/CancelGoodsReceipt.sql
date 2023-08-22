@@ -1,0 +1,1 @@
+﻿update [@LW_YUVAL08_GRPO] set "U_Status" = 'C' where "Code" = {0}

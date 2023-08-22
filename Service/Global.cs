@@ -183,6 +183,7 @@ public static class Global {
 
     public static void Load() {
         LoadRoles();
+        
     }
 
     private static void LoadRoles() {
