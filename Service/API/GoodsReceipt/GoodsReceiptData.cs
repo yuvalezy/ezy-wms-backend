@@ -44,12 +44,19 @@ public class GoodsReceiptData {
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
-        List<Document> docs = new();
-        var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        List<Document> docs  = new();
+        var            sb    = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        bool           where = false;
         if (parameters?.Statuses is { Length: > 0 }) {
-            sb.Append(" and DOCS.\"U_Status\" in ('");
+            sb.Append(" where DOCS.\"U_Status\" in ('");
             sb.Append(string.Join("','", parameters.Statuses.Select(v => (char)v)));
             sb.Append("')");
+            where = true;
+        }
+
+        if (parameters?.ID != null) {
+            sb.Append(!where ? " where " : " and ");
+            sb.Append($"DOCS.\"Code\" = {parameters.ID} ");
         }
 
         if (parameters?.OrderBy != null) {

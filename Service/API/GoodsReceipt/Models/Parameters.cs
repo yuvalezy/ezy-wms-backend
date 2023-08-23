@@ -9,6 +9,7 @@ public class CreateParameters {
 public class FilterParameters {
     public DocumentStatus[] Statuses { get; set; }
     public OrderBy?         OrderBy  { get; set; }
+    public int?             ID       { get; set; }
     public bool             Desc     { get; set; }
 }
 
