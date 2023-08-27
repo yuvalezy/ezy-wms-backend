@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -18,18 +19,12 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
     }
 
     public override async Task GrantResourceOwnerCredentials(OAuthGrantResourceOwnerCredentialsContext context) {
-        bool   valid;
+        bool   valid    = false, isValidBranch = false;
         string userName = context.UserName;
         string password = context.Password;
         int    empID    = -1;
-        if (!string.IsNullOrWhiteSpace(context.UserName)) {
-            valid = ValidateAccess(context.UserName, out empID);
-        }
-        else {
-            valid    = IsLocalIP(context.Request.RemoteIpAddress);
-            userName = "localhost";
-            password = "localhost";
-        }
+        if (!string.IsNullOrWhiteSpace(context.UserName))
+            valid = ValidateAccess(context.UserName, out empID, out isValidBranch);
 
         if (valid) {
             var identity = new ClaimsIdentity(context.Options.AuthenticationType);
@@ -38,14 +33,23 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
             context.Validated(identity);
         }
         else {
+            if (!isValidBranch) {
+                context.SetError("invalid_grant", "The user does not have a valid branch defined.");
+                return;
+            }
+
             context.SetError("invalid_grant", "The user name or password is incorrect.");
         }
     }
 
-    private bool ValidateAccess(string loginString, out int empID) {
+    private bool ValidateAccess(string loginString, out int empID, out bool isValidBranch) {
         empID = -1;
-        string sqlStr = $"select empID from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
-        empID = Global.DataObject.GetValue<int>(sqlStr);
+        string sqlStr = $"select empID, (select WhsCode from OWHS where WhsCode = OHEM.U_LW_Branch) Branch from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
+        (empID, string branch) = Global.DataObject.GetValue<int, string>(sqlStr);
+
+        isValidBranch = !string.IsNullOrWhiteSpace(branch);
+        if (!isValidBranch)
+            return false;
 
         if (empID > 0)
             Global.LoadAuthorization(empID);

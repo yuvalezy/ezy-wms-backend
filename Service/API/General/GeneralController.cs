@@ -8,15 +8,16 @@ namespace Service.API.General;
 
 [Authorize]
 public class GeneralController : LWApiController {
-    private readonly Data data = new Data();
+    private readonly Data data = new();
 
     [HttpGet]
     [ActionName("UserInfo")]
     public UserInfo GetUserInfo() {
-        string name = data.GeneralData.GetEmployeeName(EmployeeID);
+        (string name, string branch) = data.GeneralData.GetEmployeeData(EmployeeID);
         return new UserInfo {
             ID             = EmployeeID,
             Name           = name,
+            Branch         = branch,
             Authorizations = Global.UserAuthorizations[EmployeeID]
         };
     }

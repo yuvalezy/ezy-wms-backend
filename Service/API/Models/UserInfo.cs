@@ -11,6 +11,9 @@ public class UserInfo {
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public IEnumerable<Authorization> Authorizations { get; set; }
 
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+    public string Branch { get; set; }
+
     public UserInfo() {
     }
 
