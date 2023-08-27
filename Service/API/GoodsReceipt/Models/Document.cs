@@ -12,4 +12,5 @@ public class Document {
     public DateTime        StatusDate      { get; set; }
     public UserInfo        StatusEmployee  { get; set; }
     public BusinessPartner BusinessPartner { get; set; }
+    public string          WhsCode         { get; set; }
 }

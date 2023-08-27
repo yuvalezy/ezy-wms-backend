@@ -1,20 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared.Data;
 
 namespace Service.API.General;
 
 public class GeneralData {
-    public (string, string) GetEmployeeData(int employeeID) {
+    public EmployeeData GetEmployeeData(int employeeID) {
         string query = $"""
-                        select COALESCE("firstName", 'NO_NAME') {QueryHelper.Concat} ' ' {QueryHelper.Concat} COALESCE("lastName", 'NO_LAST_NAME') "Name",
-                        (select "WhsName" from OWHS where "WhsCode" = OHEM.U_LW_Branch) "BranchName"
-                        from OHEM where "empID" = @empID
+                        select COALESCE(T0."firstName", 'NO_NAME') {QueryHelper.Concat} ' ' {QueryHelper.Concat} COALESCE(T0."lastName", 'NO_LAST_NAME') "Name",
+                        T1."WhsCode", T1."WhsName"
+                        from OHEM T0
+                        left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
+                        where T0."empID" = @empID
                         """;
-        (string name, string branchName) = Global.DataObject.GetValue<string, string>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
-        return (name, branchName);
+        (string name, string whsCode, string whsName) = 
+            Global.DataObject.GetValue<string, string, string>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
+        return new EmployeeData(name, whsCode, whsName);
     }
 
     public IEnumerable<BusinessPartner> GetVendors() {
@@ -27,5 +31,28 @@ public class GeneralData {
     public bool ValidateVendor(string cardCode) {
         string query = """select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y'""";
         return Global.DataObject.GetValue<bool>(query, new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode));
+    }
+
+    public IEnumerable<Item> ScanItemBarCode(string scanCode) {
+        var list = new List<Item>();
+        string query =
+            """
+            SELECT T0."ItemCode", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+            FROM OBCD T0
+                     INNER JOIN OITM T1 ON T0."ItemCode" = T1."ItemCode"
+            left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
+            WHERE T0."BcdCode" = @ScanCode
+            """;
+        Global.DataObject.ExecuteReader(query,
+            new Parameter("@ScanCode", SqlDbType.NVarChar, 50) { Value = scanCode },
+            dr => {
+                var item = new Item((string)dr["ItemCode"]);
+                if (dr["Father"] != DBNull.Value)
+                    item.Father = (string)dr["Father"];
+                if (dr["BoxNumber"] != DBNull.Value)
+                    item.BoxNumber = (int)dr["BoxNumber"];
+                list.Add(item);
+            });
+        return list;
     }
 }

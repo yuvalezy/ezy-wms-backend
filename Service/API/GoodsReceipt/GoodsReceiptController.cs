@@ -30,6 +30,15 @@ public class GoodsReceiptController : LWApiController {
     }
 
     [HttpPost]
+    [ActionName("AddItem")]
+    public AddItemReturnValue AddItem([FromBody] AddItemParameter parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+            throw new UnauthorizedAccessException("You don't have access for adding item to document");
+        parameters.Validate();
+        return data.GoodsReceiptData.AddItem(parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+    }
+
+    [HttpPost]
     [ActionName("Cancel")]
     public bool CancelDocument([FromBody] IDParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
@@ -43,6 +52,7 @@ public class GoodsReceiptController : LWApiController {
     public IEnumerable<Document> GetDocuments([FromUri] FilterParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document");
+        parameters.WhsCode = data.GeneralData.GetEmployeeData(EmployeeID).WhsCode;
         return data.GoodsReceiptData.GetDocuments(parameters);
     }
 

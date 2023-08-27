@@ -7,6 +7,7 @@ using System.Text;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
+using Service.Shared.Data;
 using Service.Shared.Utils;
 
 namespace Service.API.GoodsReceipt;
@@ -16,38 +17,60 @@ public class GoodsReceiptData {
         var doc = GetDocument(id);
         if (doc.Status is not (DocumentStatus.Open or DocumentStatus.InProgress))
             throw new Exception("Cannot cancel document if the Status is not Open or In Progress");
-        string query = string.Format(GetQuery("CancelGoodsReceipt"), id, employeeID);
-        Global.DataObject.Execute(query);
+        Global.DataObject.Execute(GetQuery("CancelGoodsReceipt"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+        });
         return true;
     }
 
-    public int CreateDocument(string cardCode, string name, int employeeID) {
-        string query = string.Format(GetQuery("CreateGoodsReceipt"), name.ToQuery(), employeeID, cardCode.ToQuery());
-        return Global.DataObject.GetValue<int>(query);
+    public int CreateDocument(string cardCode, string name, int employeeID) =>
+        Global.DataObject.GetValue<int>(GetQuery("CreateGoodsReceipt"), new Parameters {
+            new Parameter("@Name", SqlDbType.NVarChar, 50, name),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode),
+        });
+
+    public AddItemReturnValue AddItem(int id, string itemCode, string barcode, int employeeID) {
+        int returnValue;
+        try {
+            Global.DataObject.BeginTransaction();
+            returnValue = Global.DataObject.GetValue<int>(GetQuery("AddItem"), new Parameters {
+                new Parameter("@ID", SqlDbType.Int, id),
+                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
+                new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
+                new Parameter("@empID", SqlDbType.Int, employeeID),
+            });
+            Global.DataObject.CommitTransaction();
+        }
+        catch {
+            Global.DataObject.RollbackTransaction();
+            throw;
+        }
+
+        return (AddItemReturnValue)returnValue;
     }
 
     public Document GetDocument(int id) {
         Document doc = null;
         var      sb  = new StringBuilder(GetQuery("GetGoodsReceipts"));
-        sb.Append($" where DOCS.\"Code\" = {id}");
-        Global.DataObject.ExecuteReader(sb, dr => doc = ReadDocument(dr));
+        sb.Append(" where DOCS.\"Code\" = @ID");
+        Global.DataObject.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => doc = ReadDocument(dr));
         return doc;
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
-        List<Document> docs  = new();
-        var            sb    = new StringBuilder(GetQuery("GetGoodsReceipts"));
-        bool           where = false;
+        List<Document> docs = new();
+        var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        sb.Append($" where DOCS.\"U_WhsCode\" = '{parameters.WhsCode.ToQuery()}' ");
         if (parameters?.Statuses is { Length: > 0 }) {
-            sb.Append(" where DOCS.\"U_Status\" in ('");
+            sb.Append(" and DOCS.\"U_Status\" in ('");
             sb.Append(string.Join("','", parameters.Statuses.Select(v => (char)v)));
             sb.Append("')");
-            where = true;
         }
 
         if (parameters?.ID != null) {
-            sb.Append(!where ? " where " : " and ");
-            sb.Append($"DOCS.\"Code\" = {parameters.ID} ");
+            sb.Append($" and DOCS.\"Code\" = {parameters.ID} ");
         }
 
         if (parameters?.OrderBy != null) {
@@ -83,7 +106,8 @@ public class GoodsReceiptData {
             Status          = (DocumentStatus)Convert.ToChar(dr["Status"]),
             StatusDate      = (DateTime)dr["StatusDate"],
             StatusEmployee  = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"]),
-            BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString())
+            BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString()),
+            WhsCode         = (string)dr["WhsCode"]
         };
         return doc;
     }

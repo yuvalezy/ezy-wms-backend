@@ -64,6 +64,14 @@ public abstract class DataConnector : IDisposable {
 
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(Procedure procedure) => GetValue<T1, T2, T3>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
 
+
+    public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
+        var returnValue = new Tuple<T1, T2, T3>(default, default, default);
+        GetValuesExecution(query, new Parameters{parameter}, commandType,
+            dr => returnValue =
+                new Tuple<T1, T2, T3>(ReadValue<T1>(dr[0]), ReadValue<T2>(dr[1]), ReadValue<T3>(dr[2])));
+        return returnValue;
+    }
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3>(default, default, default);
         GetValuesExecution(query, parameters, commandType,
@@ -163,17 +171,18 @@ public abstract class DataConnector : IDisposable {
     public int Execute(string query, Parameter parameter, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null) =>
         Execute(query, new Parameters(parameter), commandType, scopeIdentity, timeout);
 
-    public abstract int  Execute(string query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
-    public          void ExecuteReader(Procedure proc, Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
-    public          void ExecuteReader(string query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
-    public          void ExecuteReader(StringBuilder sb, Action<IDataReader> action) => ExecuteReader(sb.ToString(), null, CommandType.Text, action);
-
-    public             void      ExecuteReader(string      query, Parameters parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
-    public abstract    void      ExecuteReader(string      query, Parameters parameters, CommandType commandType, Action<IDataReader> action);
-    public abstract    DataTable GetDataTable(string       query, Parameters parameters = null, CommandType commandType = CommandType.Text);
-    protected abstract void      GetValuesExecution(string query, Parameters parameters, CommandType commandType, Action<IDataReader> readerAction);
-    public abstract    void      Dispose();
-    public abstract    void      CheckConnection();
-    public abstract    void      CreateCommonDatabase();
-    public abstract    void      ChangeDatabase(string dbName);
+    public abstract int Execute(string query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
+    public void ExecuteReader(Procedure proc, Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
+    public void ExecuteReader(string query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
+    public void ExecuteReader(StringBuilder sb, Action<IDataReader> action) => ExecuteReader(sb.ToString(), null, CommandType.Text, action);
+    public void ExecuteReader(string query, Parameter parameter, Action<IDataReader> action) => ExecuteReader(query, new Parameters { parameter }, CommandType.Text, action);
+    public void ExecuteReader(StringBuilder sb, Parameter parameter, Action<IDataReader> action) => ExecuteReader(sb.ToString(), new Parameters { parameter }, CommandType.Text, action);
+    public void ExecuteReader(string query, Parameters parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
+    public abstract void ExecuteReader(string query, Parameters parameters, CommandType commandType, Action<IDataReader> action);
+    public abstract DataTable GetDataTable(string query, Parameters parameters = null, CommandType commandType = CommandType.Text);
+    protected abstract void GetValuesExecution(string query, Parameters parameters, CommandType commandType, Action<IDataReader> readerAction);
+    public abstract void Dispose();
+    public abstract void CheckConnection();
+    public abstract void CreateCommonDatabase();
+    public abstract void ChangeDatabase(string dbName);
 }

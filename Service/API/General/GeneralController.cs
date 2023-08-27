@@ -13,11 +13,11 @@ public class GeneralController : LWApiController {
     [HttpGet]
     [ActionName("UserInfo")]
     public UserInfo GetUserInfo() {
-        (string name, string branch) = data.GeneralData.GetEmployeeData(EmployeeID);
+        var employeeData = data.GeneralData.GetEmployeeData(EmployeeID);
         return new UserInfo {
             ID             = EmployeeID,
-            Name           = name,
-            Branch         = branch,
+            Name           = employeeData.Name,
+            Branch         = employeeData.WhsName,
             Authorizations = Global.UserAuthorizations[EmployeeID]
         };
     }
@@ -28,5 +28,13 @@ public class GeneralController : LWApiController {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for vendors list");
         return data.GeneralData.GetVendors();
+    }
+
+    [HttpGet]
+    [ActionName("ItemByBarCode")]
+    public IEnumerable<Item> ScanItemBarCode([FromUri] string scanCode) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+            throw new UnauthorizedAccessException("You don't have access for Scan Item BarCode");
+        return data.GeneralData.ScanItemBarCode(scanCode);
     }
 }
