@@ -70,10 +70,7 @@ public class GoodsReceiptData {
                 sb.Append(" desc");
         }
 
-        Global.DataObject.ExecuteReader(sb, dr => {
-            while (dr.Read()) 
-                docs.Add(ReadDocument(dr));
-        });
+        Global.DataObject.ExecuteReader(sb, dr => docs.Add(ReadDocument(dr)));
         return docs;
     }
 
