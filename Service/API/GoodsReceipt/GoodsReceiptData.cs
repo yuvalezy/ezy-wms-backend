@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,15 +14,15 @@ namespace Service.API.GoodsReceipt;
 public class GoodsReceiptData {
     public bool CancelDocument(int id, int employeeID) {
         var doc = GetDocument(id);
-        if (doc.Status is not (DocumentStatus.Open or DocumentStatus.InProgress)) 
+        if (doc.Status is not (DocumentStatus.Open or DocumentStatus.InProgress))
             throw new Exception("Cannot cancel document if the Status is not Open or In Progress");
         string query = string.Format(GetQuery("CancelGoodsReceipt"), id, employeeID);
         Global.DataObject.Execute(query);
         return true;
     }
 
-    public int CreateDocument(string name, int employeeID) {
-        string query = string.Format(GetQuery("CreateGoodsReceipt"), name.ToQuery(), employeeID);
+    public int CreateDocument(string cardCode, string name, int employeeID) {
+        string query = string.Format(GetQuery("CreateGoodsReceipt"), name.ToQuery(), employeeID, cardCode.ToQuery());
         return Global.DataObject.GetValue<int>(query);
     }
 
@@ -29,17 +30,7 @@ public class GoodsReceiptData {
         Document doc = null;
         var      sb  = new StringBuilder(GetQuery("GetGoodsReceipts"));
         sb.Append($" where DOCS.\"Code\" = {id}");
-        Global.DataObject.ExecuteReader(sb, dr => {
-            doc = new Document {
-                ID             = (int)dr["ID"],
-                Name           = (string)dr["Name"],
-                Date           = (DateTime)dr["Date"],
-                Employee       = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
-                Status         = (DocumentStatus)Convert.ToChar(dr["Status"]),
-                StatusDate     = (DateTime)dr["StatusDate"],
-                StatusEmployee = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"])
-            };
-        });
+        Global.DataObject.ExecuteReader(sb, dr => doc = ReadDocument(dr));
         return doc;
     }
 
@@ -80,20 +71,24 @@ public class GoodsReceiptData {
         }
 
         Global.DataObject.ExecuteReader(sb, dr => {
-            while (dr.Read()) {
-                var doc = new Document {
-                    ID             = (int)dr["ID"],
-                    Name           = (string)dr["Name"],
-                    Date           = (DateTime)dr["Date"],
-                    Employee       = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
-                    Status         = (DocumentStatus)Convert.ToChar(dr["Status"]),
-                    StatusDate     = (DateTime)dr["StatusDate"],
-                    StatusEmployee = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"])
-                };
-                docs.Add(doc);
-            }
+            while (dr.Read()) 
+                docs.Add(ReadDocument(dr));
         });
         return docs;
+    }
+
+    private static Document ReadDocument(IDataReader dr) {
+        var doc = new Document {
+            ID              = (int)dr["ID"],
+            Name            = (string)dr["Name"],
+            Date            = (DateTime)dr["Date"],
+            Employee        = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
+            Status          = (DocumentStatus)Convert.ToChar(dr["Status"]),
+            StatusDate      = (DateTime)dr["StatusDate"],
+            StatusEmployee  = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"]),
+            BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString())
+        };
+        return doc;
     }
 
     private static string GetQuery(string id) {

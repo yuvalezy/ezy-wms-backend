@@ -412,7 +412,7 @@ public enum ObjectTypes {
     Unknown                            = -1
 }
 
-public enum Role {
+public enum Authorization {
     GoodsReceipt = 1,
     GoodsReceiptSupervisor = 2
 }

@@ -34,6 +34,12 @@ public abstract class DataConnector : IDisposable {
     public T GetValue<T>(Procedure procedure) =>
         GetValue<T>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
 
+    public T GetValue<T>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
+        var returnValue = default(T);
+        GetValuesExecution(query, new Parameters { parameter }, commandType, dr => returnValue = ReadValue<T>(dr[0]));
+        return returnValue;
+    }
+
     public T GetValue<T>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = default(T);
         GetValuesExecution(query, parameters, commandType, dr => returnValue = ReadValue<T>(dr[0]));

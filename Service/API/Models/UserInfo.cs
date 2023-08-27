@@ -9,13 +9,13 @@ public class UserInfo {
     public string Name { get; set; }
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-    public IEnumerable<Role> Roles { get; set; }
+    public IEnumerable<Authorization> Authorizations { get; set; }
 
     public UserInfo() {
-        
     }
+
     public UserInfo(int id, string name) {
-        ID        = id;
+        ID   = id;
         Name = name;
     }
 }

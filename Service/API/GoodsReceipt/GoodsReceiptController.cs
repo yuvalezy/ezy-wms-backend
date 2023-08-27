@@ -9,40 +9,48 @@ namespace Service.API.GoodsReceipt;
 
 [Authorize, RoutePrefix("api/GoodsReceipt")]
 public class GoodsReceiptController : LWApiController {
-    private readonly GoodsReceiptData data = new();
-    
+    private readonly Data data = new();
+
     [HttpPost]
     [ActionName("Create")]
-    public int CreateDocument([FromBody] CreateParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Role.GoodsReceiptSupervisor))
+    public Document CreateDocument([FromBody] CreateParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document creation");
-        
+
+        if (string.IsNullOrWhiteSpace(parameters.CardCode))
+            throw new ArgumentException("Card Code cannot be empty", nameof(parameters.CardCode));
+        if (!data.GeneralData.ValidateVendor(parameters.CardCode))
+            throw new ArgumentException($"Card Code {parameters.CardCode} is not aa valid vendor", nameof(parameters.CardCode));
+
         if (string.IsNullOrWhiteSpace(parameters.Name))
             throw new ArgumentException("Name cannot be empty", nameof(parameters.Name));
 
-        return data.CreateDocument(parameters.Name, EmployeeID);
+        int id = data.GoodsReceiptData.CreateDocument(parameters.CardCode, parameters.Name, EmployeeID);
+        return data.GoodsReceiptData.GetDocument(id);
     }
+
     [HttpPost]
     [ActionName("Cancel")]
     public bool CancelDocument([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Role.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
-        
-        return data.CancelDocument(parameters.ID, EmployeeID);
+
+        return data.GoodsReceiptData.CancelDocument(parameters.ID, EmployeeID);
     }
 
     [HttpGet]
     [ActionName("Documents")]
     public IEnumerable<Document> GetDocuments([FromUri] FilterParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Role.GoodsReceipt, Role.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document");
-        return data.GetDocuments(parameters);
+        return data.GoodsReceiptData.GetDocuments(parameters);
     }
+
     [HttpGet]
     [Route("Document/{id:int}")]
     public Document GetDocument(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Role.GoodsReceipt, Role.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document");
-        return data.GetDocument(id);
+        return data.GoodsReceiptData.GetDocument(id);
     }
 }

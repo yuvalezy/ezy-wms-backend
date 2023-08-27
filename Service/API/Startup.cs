@@ -22,6 +22,7 @@ public class Startup {
         var jsonFormatter = config.Formatters.JsonFormatter;
         var item          = new StringEnumConverter();
         jsonFormatter.SerializerSettings.Converters.Add(item);
+        jsonFormatter.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
 
         var options = new OAuthAuthorizationServerOptions {
             TokenEndpointPath         = new PathString("/token"),

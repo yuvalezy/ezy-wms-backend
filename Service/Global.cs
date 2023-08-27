@@ -42,8 +42,8 @@ public static class Global {
     public static bool                        Interactive        { get; set; }
     public static bool                        LoadBalancing      { get; set; }
     public static ServiceNodes                Nodes              { get; set; }
-    public static Dictionary<int, Role>       RolesMap           { get; } = new();
-    public static Dictionary<int, List<Role>> UserAuthorizations { get; } = new();
+    public static Dictionary<int, Authorization>       RolesMap           { get; } = new();
+    public static Dictionary<int, List<Authorization>> UserAuthorizations { get; } = new();
 
     #endregion
 
@@ -194,16 +194,16 @@ public static class Global {
             int id = (int)dr["typeID"];
             switch ((string)dr["name"]) {
                 case Const.GoodsReceipt:
-                    RolesMap.Add(id, Role.GoodsReceipt);
+                    RolesMap.Add(id, Authorization.GoodsReceipt);
                     break;
                 case Const.GoodsReceiptSupervisor:
-                    RolesMap.Add(id, Role.GoodsReceiptSupervisor);
+                    RolesMap.Add(id, Authorization.GoodsReceiptSupervisor);
                     break;
             }
         }
     }
 
-    public static bool ValidateAuthorization(int employeeID, params Role[] roles) {
+    public static bool ValidateAuthorization(int employeeID, params Authorization[] roles) {
         if (!UserAuthorizations.ContainsKey(employeeID))
             LoadAuthorization(employeeID);
         return UserAuthorizations[employeeID].Intersect(roles).Any();
@@ -211,7 +211,7 @@ public static class Global {
 
     public static void LoadAuthorization(int empID) {
         if (!UserAuthorizations.ContainsKey(empID))
-            UserAuthorizations.Add(empID, new List<Role>());
+            UserAuthorizations.Add(empID, new List<Authorization>());
         var authorizations = UserAuthorizations[empID];
         authorizations.Clear();
 

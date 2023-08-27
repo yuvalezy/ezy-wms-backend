@@ -3,7 +3,8 @@ using Service.API.Models;
 namespace Service.API.GoodsReceipt.Models;
 
 public class CreateParameters {
-    public string Name { get; set; }
+    public string CardCode { get; set; }
+    public string Name     { get; set; }
 }
 
 public class FilterParameters {
