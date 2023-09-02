@@ -14,17 +14,26 @@ public class AddItemParameter {
     public string ItemCode { get; set; }
     public string BarCode  { get; set; }
 
-    public void Validate() {
+    public bool Validate(Data data) {
         if (ID <= 0)
             throw new ArgumentException("ID is a required parameter");
-        //todo validate document is open / in process
         if (string.IsNullOrWhiteSpace(ItemCode))
             throw new ArgumentException("ItemCode is a required parameter");
-        //todo validate item exists
         if (string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException("BarCode is a required parameter");
-        //todo validate barcode exists
-            
+        int value = data.GoodsReceiptData.ValidateAddItem(ID, ItemCode, BarCode);
+        switch (value) {
+            case -1:
+                throw new ArgumentException($"Item Code {ItemCode} was not found in the database");
+            case -2:
+                throw new ArgumentException($"The BarCode {BarCode} does not match with Item {ItemCode} BarCode");
+            case -3:
+                throw new ArgumentException($"Transaction with ID {ID} does not exists in the system");
+            case -4:
+                return false;
+        }
+
+        return true;
     }
 }
 
@@ -43,7 +52,8 @@ public enum OrderBy {
 }
 
 public enum AddItemReturnValue {
+    ClosedDocument   = -1,
     StoreInWarehouse = 1,
-    Fulfillment = 2,
-    Showroom = 3
+    Fulfillment      = 2,
+    Showroom         = 3
 }

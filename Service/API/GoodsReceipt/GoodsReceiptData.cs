@@ -31,6 +31,13 @@ public class GoodsReceiptData {
             new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode),
         });
 
+    public int ValidateAddItem(int id, string itemCode, string barCode) =>
+        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
+            new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
+        });
+
     public AddItemReturnValue AddItem(int id, string itemCode, string barcode, int employeeID) {
         int returnValue;
         try {

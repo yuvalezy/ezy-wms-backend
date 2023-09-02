@@ -34,7 +34,8 @@ public class GoodsReceiptController : LWApiController {
     public AddItemReturnValue AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for adding item to document");
-        parameters.Validate();
+        if (!parameters.Validate(data))
+            return AddItemReturnValue.ClosedDocument;
         return data.GoodsReceiptData.AddItem(parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
     }
 

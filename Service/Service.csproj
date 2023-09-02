@@ -162,6 +162,7 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CancelGoodsReceipt.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceipt.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="ProjectInstaller.resx">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </EmbeddedResource>
