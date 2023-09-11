@@ -75,6 +75,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon_lw.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Interop.SAPbobsCOM">
       <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
@@ -230,6 +233,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MetaData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="icon_lw.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

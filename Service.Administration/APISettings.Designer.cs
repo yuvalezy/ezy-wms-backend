@@ -45,22 +45,22 @@
             this.chkActive = new System.Windows.Forms.CheckBox();
             this.chkLB = new System.Windows.Forms.CheckBox();
             this.tabLB = new System.Windows.Forms.TabPage();
-            this.pnlPortsUp = new System.Windows.Forms.Panel();
-            this.lblNodes = new System.Windows.Forms.Label();
-            this.lblRedisServer = new System.Windows.Forms.Label();
-            this.lblOpRestart = new System.Windows.Forms.Label();
-            this.lblOpHours = new System.Windows.Forms.Label();
-            this.lblNodesHours = new System.Windows.Forms.Label();
-            this.txtNodes = new System.Windows.Forms.NumericUpDown();
-            this.lblNodesRestart = new System.Windows.Forms.Label();
-            this.txtOpRestart = new System.Windows.Forms.NumericUpDown();
-            this.txtNodesRestart = new System.Windows.Forms.NumericUpDown();
-            this.txtRedisServer = new System.Windows.Forms.TextBox();
-            this.chkRedisServer = new System.Windows.Forms.CheckBox();
             this.pnlPortsContent = new System.Windows.Forms.Panel();
             this.gridNodes = new System.Windows.Forms.DataGridView();
-            this.colPortDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colNodeID = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colPortDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pnlPortsUp = new System.Windows.Forms.Panel();
+            this.chkRedisServer = new System.Windows.Forms.CheckBox();
+            this.txtRedisServer = new System.Windows.Forms.TextBox();
+            this.txtNodesRestart = new System.Windows.Forms.NumericUpDown();
+            this.txtOpRestart = new System.Windows.Forms.NumericUpDown();
+            this.lblNodesRestart = new System.Windows.Forms.Label();
+            this.txtNodes = new System.Windows.Forms.NumericUpDown();
+            this.lblNodesHours = new System.Windows.Forms.Label();
+            this.lblOpHours = new System.Windows.Forms.Label();
+            this.lblOpRestart = new System.Windows.Forms.Label();
+            this.lblRedisServer = new System.Windows.Forms.Label();
+            this.lblNodes = new System.Windows.Forms.Label();
             this.tabControl = new System.Windows.Forms.TabControl();
             ((System.ComponentModel.ISupportInitialize)(this.txtPort)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ds)).BeginInit();
@@ -68,12 +68,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.dtTokens)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dtNodes)).BeginInit();
             this.tabLB.SuspendLayout();
-            this.pnlPortsUp.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.txtNodes)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.txtOpRestart)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.txtNodesRestart)).BeginInit();
             this.pnlPortsContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gridNodes)).BeginInit();
+            this.pnlPortsUp.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.txtNodesRestart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtOpRestart)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtNodes)).BeginInit();
             this.tabControl.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -247,184 +247,6 @@
             this.tabLB.Text = "Load Balancing";
             this.tabLB.UseVisualStyleBackColor = true;
             // 
-            // pnlPortsUp
-            // 
-            this.pnlPortsUp.Controls.Add(this.chkRedisServer);
-            this.pnlPortsUp.Controls.Add(this.txtRedisServer);
-            this.pnlPortsUp.Controls.Add(this.txtNodesRestart);
-            this.pnlPortsUp.Controls.Add(this.txtOpRestart);
-            this.pnlPortsUp.Controls.Add(this.lblNodesRestart);
-            this.pnlPortsUp.Controls.Add(this.txtNodes);
-            this.pnlPortsUp.Controls.Add(this.lblNodesHours);
-            this.pnlPortsUp.Controls.Add(this.lblOpHours);
-            this.pnlPortsUp.Controls.Add(this.lblOpRestart);
-            this.pnlPortsUp.Controls.Add(this.lblRedisServer);
-            this.pnlPortsUp.Controls.Add(this.lblNodes);
-            this.pnlPortsUp.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlPortsUp.Location = new System.Drawing.Point(4, 5);
-            this.pnlPortsUp.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.pnlPortsUp.Name = "pnlPortsUp";
-            this.pnlPortsUp.Size = new System.Drawing.Size(1124, 154);
-            this.pnlPortsUp.TabIndex = 0;
-            // 
-            // lblNodes
-            // 
-            this.lblNodes.AutoSize = true;
-            this.lblNodes.Location = new System.Drawing.Point(6, 95);
-            this.lblNodes.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblNodes.Name = "lblNodes";
-            this.lblNodes.Size = new System.Drawing.Size(55, 20);
-            this.lblNodes.TabIndex = 4;
-            this.lblNodes.Text = "Nodes";
-            // 
-            // lblRedisServer
-            // 
-            this.lblRedisServer.AutoSize = true;
-            this.lblRedisServer.Location = new System.Drawing.Point(6, 55);
-            this.lblRedisServer.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblRedisServer.Name = "lblRedisServer";
-            this.lblRedisServer.Size = new System.Drawing.Size(100, 20);
-            this.lblRedisServer.TabIndex = 4;
-            this.lblRedisServer.Text = "Redis Server";
-            // 
-            // lblOpRestart
-            // 
-            this.lblOpRestart.AutoSize = true;
-            this.lblOpRestart.Location = new System.Drawing.Point(568, 15);
-            this.lblOpRestart.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblOpRestart.Name = "lblOpRestart";
-            this.lblOpRestart.Size = new System.Drawing.Size(144, 20);
-            this.lblOpRestart.TabIndex = 4;
-            this.lblOpRestart.Text = "Operations Restart";
-            // 
-            // lblOpHours
-            // 
-            this.lblOpHours.AutoSize = true;
-            this.lblOpHours.Location = new System.Drawing.Point(908, 12);
-            this.lblOpHours.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblOpHours.Name = "lblOpHours";
-            this.lblOpHours.Size = new System.Drawing.Size(62, 20);
-            this.lblOpHours.TabIndex = 4;
-            this.lblOpHours.Text = "(Hours)";
-            // 
-            // lblNodesHours
-            // 
-            this.lblNodesHours.AutoSize = true;
-            this.lblNodesHours.Location = new System.Drawing.Point(908, 52);
-            this.lblNodesHours.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblNodesHours.Name = "lblNodesHours";
-            this.lblNodesHours.Size = new System.Drawing.Size(62, 20);
-            this.lblNodesHours.TabIndex = 4;
-            this.lblNodesHours.Text = "(Hours)";
-            // 
-            // txtNodes
-            // 
-            this.txtNodes.Location = new System.Drawing.Point(117, 89);
-            this.txtNodes.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.txtNodes.Maximum = new decimal(new int[] {
-            32727,
-            0,
-            0,
-            0});
-            this.txtNodes.Minimum = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-            this.txtNodes.Name = "txtNodes";
-            this.txtNodes.ReadOnly = true;
-            this.txtNodes.Size = new System.Drawing.Size(180, 26);
-            this.txtNodes.TabIndex = 60;
-            this.txtNodes.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.txtNodes.Value = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-            this.txtNodes.ValueChanged += new System.EventHandler(this.NodesValueChanged);
-            // 
-            // lblNodesRestart
-            // 
-            this.lblNodesRestart.AutoSize = true;
-            this.lblNodesRestart.Location = new System.Drawing.Point(568, 55);
-            this.lblNodesRestart.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblNodesRestart.Name = "lblNodesRestart";
-            this.lblNodesRestart.Size = new System.Drawing.Size(112, 20);
-            this.lblNodesRestart.TabIndex = 4;
-            this.lblNodesRestart.Text = "Nodes Restart";
-            // 
-            // txtOpRestart
-            // 
-            this.txtOpRestart.Location = new System.Drawing.Point(718, 9);
-            this.txtOpRestart.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.txtOpRestart.Maximum = new decimal(new int[] {
-            24,
-            0,
-            0,
-            0});
-            this.txtOpRestart.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.txtOpRestart.Name = "txtOpRestart";
-            this.txtOpRestart.ReadOnly = true;
-            this.txtOpRestart.Size = new System.Drawing.Size(180, 26);
-            this.txtOpRestart.TabIndex = 70;
-            this.txtOpRestart.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.txtOpRestart.Value = new decimal(new int[] {
-            24,
-            0,
-            0,
-            0});
-            this.txtOpRestart.ValueChanged += new System.EventHandler(this.NodesValueChanged);
-            // 
-            // txtNodesRestart
-            // 
-            this.txtNodesRestart.Location = new System.Drawing.Point(718, 49);
-            this.txtNodesRestart.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.txtNodesRestart.Maximum = new decimal(new int[] {
-            24,
-            0,
-            0,
-            0});
-            this.txtNodesRestart.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.txtNodesRestart.Name = "txtNodesRestart";
-            this.txtNodesRestart.ReadOnly = true;
-            this.txtNodesRestart.Size = new System.Drawing.Size(180, 26);
-            this.txtNodesRestart.TabIndex = 80;
-            this.txtNodesRestart.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.txtNodesRestart.Value = new decimal(new int[] {
-            4,
-            0,
-            0,
-            0});
-            this.txtNodesRestart.ValueChanged += new System.EventHandler(this.NodesValueChanged);
-            // 
-            // txtRedisServer
-            // 
-            this.txtRedisServer.Location = new System.Drawing.Point(117, 49);
-            this.txtRedisServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.txtRedisServer.Name = "txtRedisServer";
-            this.txtRedisServer.Size = new System.Drawing.Size(414, 26);
-            this.txtRedisServer.TabIndex = 50;
-            // 
-            // chkRedisServer
-            // 
-            this.chkRedisServer.AutoSize = true;
-            this.chkRedisServer.Location = new System.Drawing.Point(10, 15);
-            this.chkRedisServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.chkRedisServer.Name = "chkRedisServer";
-            this.chkRedisServer.Size = new System.Drawing.Size(180, 24);
-            this.chkRedisServer.TabIndex = 81;
-            this.chkRedisServer.Text = "Enable Redis Server";
-            this.chkRedisServer.UseVisualStyleBackColor = true;
-            this.chkRedisServer.CheckedChanged += new System.EventHandler(this.EnableRedisChanged);
-            // 
             // pnlPortsContent
             // 
             this.pnlPortsContent.Controls.Add(this.gridNodes);
@@ -454,14 +276,6 @@
             this.gridNodes.Size = new System.Drawing.Size(1124, 311);
             this.gridNodes.TabIndex = 8;
             // 
-            // colPortDataGridViewTextBoxColumn
-            // 
-            this.colPortDataGridViewTextBoxColumn.DataPropertyName = "Port";
-            this.colPortDataGridViewTextBoxColumn.HeaderText = "Port";
-            this.colPortDataGridViewTextBoxColumn.MinimumWidth = 8;
-            this.colPortDataGridViewTextBoxColumn.Name = "colPortDataGridViewTextBoxColumn";
-            this.colPortDataGridViewTextBoxColumn.Width = 150;
-            // 
             // colNodeID
             // 
             this.colNodeID.DataPropertyName = "ID";
@@ -473,6 +287,192 @@
             this.colNodeID.Name = "colNodeID";
             this.colNodeID.ReadOnly = true;
             this.colNodeID.Width = 150;
+            // 
+            // colPortDataGridViewTextBoxColumn
+            // 
+            this.colPortDataGridViewTextBoxColumn.DataPropertyName = "Port";
+            this.colPortDataGridViewTextBoxColumn.HeaderText = "Port";
+            this.colPortDataGridViewTextBoxColumn.MinimumWidth = 8;
+            this.colPortDataGridViewTextBoxColumn.Name = "colPortDataGridViewTextBoxColumn";
+            this.colPortDataGridViewTextBoxColumn.Width = 150;
+            // 
+            // pnlPortsUp
+            // 
+            this.pnlPortsUp.Controls.Add(this.chkRedisServer);
+            this.pnlPortsUp.Controls.Add(this.txtRedisServer);
+            this.pnlPortsUp.Controls.Add(this.txtNodesRestart);
+            this.pnlPortsUp.Controls.Add(this.txtOpRestart);
+            this.pnlPortsUp.Controls.Add(this.lblNodesRestart);
+            this.pnlPortsUp.Controls.Add(this.txtNodes);
+            this.pnlPortsUp.Controls.Add(this.lblNodesHours);
+            this.pnlPortsUp.Controls.Add(this.lblOpHours);
+            this.pnlPortsUp.Controls.Add(this.lblOpRestart);
+            this.pnlPortsUp.Controls.Add(this.lblRedisServer);
+            this.pnlPortsUp.Controls.Add(this.lblNodes);
+            this.pnlPortsUp.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlPortsUp.Location = new System.Drawing.Point(4, 5);
+            this.pnlPortsUp.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.pnlPortsUp.Name = "pnlPortsUp";
+            this.pnlPortsUp.Size = new System.Drawing.Size(1124, 154);
+            this.pnlPortsUp.TabIndex = 0;
+            // 
+            // chkRedisServer
+            // 
+            this.chkRedisServer.AutoSize = true;
+            this.chkRedisServer.Location = new System.Drawing.Point(10, 15);
+            this.chkRedisServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.chkRedisServer.Name = "chkRedisServer";
+            this.chkRedisServer.Size = new System.Drawing.Size(180, 24);
+            this.chkRedisServer.TabIndex = 81;
+            this.chkRedisServer.Text = "Enable Redis Server";
+            this.chkRedisServer.UseVisualStyleBackColor = true;
+            this.chkRedisServer.CheckedChanged += new System.EventHandler(this.EnableRedisChanged);
+            // 
+            // txtRedisServer
+            // 
+            this.txtRedisServer.Location = new System.Drawing.Point(117, 49);
+            this.txtRedisServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.txtRedisServer.Name = "txtRedisServer";
+            this.txtRedisServer.Size = new System.Drawing.Size(414, 26);
+            this.txtRedisServer.TabIndex = 50;
+            // 
+            // txtNodesRestart
+            // 
+            this.txtNodesRestart.Location = new System.Drawing.Point(718, 49);
+            this.txtNodesRestart.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.txtNodesRestart.Maximum = new decimal(new int[] {
+            24,
+            0,
+            0,
+            0});
+            this.txtNodesRestart.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.txtNodesRestart.Name = "txtNodesRestart";
+            this.txtNodesRestart.ReadOnly = true;
+            this.txtNodesRestart.Size = new System.Drawing.Size(180, 26);
+            this.txtNodesRestart.TabIndex = 80;
+            this.txtNodesRestart.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.txtNodesRestart.Value = new decimal(new int[] {
+            4,
+            0,
+            0,
+            0});
+            this.txtNodesRestart.ValueChanged += new System.EventHandler(this.NodesValueChanged);
+            // 
+            // txtOpRestart
+            // 
+            this.txtOpRestart.Location = new System.Drawing.Point(718, 9);
+            this.txtOpRestart.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.txtOpRestart.Maximum = new decimal(new int[] {
+            24,
+            0,
+            0,
+            0});
+            this.txtOpRestart.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.txtOpRestart.Name = "txtOpRestart";
+            this.txtOpRestart.ReadOnly = true;
+            this.txtOpRestart.Size = new System.Drawing.Size(180, 26);
+            this.txtOpRestart.TabIndex = 70;
+            this.txtOpRestart.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.txtOpRestart.Value = new decimal(new int[] {
+            24,
+            0,
+            0,
+            0});
+            this.txtOpRestart.ValueChanged += new System.EventHandler(this.NodesValueChanged);
+            // 
+            // lblNodesRestart
+            // 
+            this.lblNodesRestart.AutoSize = true;
+            this.lblNodesRestart.Location = new System.Drawing.Point(568, 55);
+            this.lblNodesRestart.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblNodesRestart.Name = "lblNodesRestart";
+            this.lblNodesRestart.Size = new System.Drawing.Size(112, 20);
+            this.lblNodesRestart.TabIndex = 4;
+            this.lblNodesRestart.Text = "Nodes Restart";
+            // 
+            // txtNodes
+            // 
+            this.txtNodes.Location = new System.Drawing.Point(117, 89);
+            this.txtNodes.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.txtNodes.Maximum = new decimal(new int[] {
+            32727,
+            0,
+            0,
+            0});
+            this.txtNodes.Minimum = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.txtNodes.Name = "txtNodes";
+            this.txtNodes.ReadOnly = true;
+            this.txtNodes.Size = new System.Drawing.Size(180, 26);
+            this.txtNodes.TabIndex = 60;
+            this.txtNodes.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.txtNodes.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.txtNodes.ValueChanged += new System.EventHandler(this.NodesValueChanged);
+            // 
+            // lblNodesHours
+            // 
+            this.lblNodesHours.AutoSize = true;
+            this.lblNodesHours.Location = new System.Drawing.Point(908, 52);
+            this.lblNodesHours.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblNodesHours.Name = "lblNodesHours";
+            this.lblNodesHours.Size = new System.Drawing.Size(62, 20);
+            this.lblNodesHours.TabIndex = 4;
+            this.lblNodesHours.Text = "(Hours)";
+            // 
+            // lblOpHours
+            // 
+            this.lblOpHours.AutoSize = true;
+            this.lblOpHours.Location = new System.Drawing.Point(908, 12);
+            this.lblOpHours.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblOpHours.Name = "lblOpHours";
+            this.lblOpHours.Size = new System.Drawing.Size(62, 20);
+            this.lblOpHours.TabIndex = 4;
+            this.lblOpHours.Text = "(Hours)";
+            // 
+            // lblOpRestart
+            // 
+            this.lblOpRestart.AutoSize = true;
+            this.lblOpRestart.Location = new System.Drawing.Point(568, 15);
+            this.lblOpRestart.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblOpRestart.Name = "lblOpRestart";
+            this.lblOpRestart.Size = new System.Drawing.Size(144, 20);
+            this.lblOpRestart.TabIndex = 4;
+            this.lblOpRestart.Text = "Operations Restart";
+            // 
+            // lblRedisServer
+            // 
+            this.lblRedisServer.AutoSize = true;
+            this.lblRedisServer.Location = new System.Drawing.Point(6, 55);
+            this.lblRedisServer.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblRedisServer.Name = "lblRedisServer";
+            this.lblRedisServer.Size = new System.Drawing.Size(100, 20);
+            this.lblRedisServer.TabIndex = 4;
+            this.lblRedisServer.Text = "Redis Server";
+            // 
+            // lblNodes
+            // 
+            this.lblNodes.AutoSize = true;
+            this.lblNodes.Location = new System.Drawing.Point(6, 95);
+            this.lblNodes.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblNodes.Name = "lblNodes";
+            this.lblNodes.Size = new System.Drawing.Size(55, 20);
+            this.lblNodes.TabIndex = 4;
+            this.lblNodes.Text = "Nodes";
             // 
             // tabControl
             // 
@@ -517,13 +517,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.dtTokens)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dtNodes)).EndInit();
             this.tabLB.ResumeLayout(false);
-            this.pnlPortsUp.ResumeLayout(false);
-            this.pnlPortsUp.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.txtNodes)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.txtOpRestart)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.txtNodesRestart)).EndInit();
             this.pnlPortsContent.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gridNodes)).EndInit();
+            this.pnlPortsUp.ResumeLayout(false);
+            this.pnlPortsUp.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.txtNodesRestart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtOpRestart)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtNodes)).EndInit();
             this.tabControl.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();

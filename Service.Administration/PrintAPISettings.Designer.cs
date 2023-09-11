@@ -65,9 +65,10 @@
             // btnAccept
             // 
             this.btnAccept.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnAccept.Location = new System.Drawing.Point(12, 376);
+            this.btnAccept.Location = new System.Drawing.Point(18, 578);
+            this.btnAccept.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnAccept.Name = "btnAccept";
-            this.btnAccept.Size = new System.Drawing.Size(75, 23);
+            this.btnAccept.Size = new System.Drawing.Size(112, 35);
             this.btnAccept.TabIndex = 0;
             this.btnAccept.Text = "&Accept";
             this.btnAccept.UseVisualStyleBackColor = true;
@@ -77,9 +78,10 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(93, 376);
+            this.btnCancel.Location = new System.Drawing.Point(140, 578);
+            this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(75, 23);
+            this.btnCancel.Size = new System.Drawing.Size(112, 35);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "&Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -88,17 +90,19 @@
             // 
             this.cmbDefaultPrinter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbDefaultPrinter.FormattingEnabled = true;
-            this.cmbDefaultPrinter.Location = new System.Drawing.Point(127, 12);
+            this.cmbDefaultPrinter.Location = new System.Drawing.Point(190, 18);
+            this.cmbDefaultPrinter.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.cmbDefaultPrinter.Name = "cmbDefaultPrinter";
-            this.cmbDefaultPrinter.Size = new System.Drawing.Size(259, 21);
+            this.cmbDefaultPrinter.Size = new System.Drawing.Size(386, 28);
             this.cmbDefaultPrinter.TabIndex = 5;
             // 
             // lblDefaultPrinter
             // 
             this.lblDefaultPrinter.AutoSize = true;
-            this.lblDefaultPrinter.Location = new System.Drawing.Point(8, 15);
+            this.lblDefaultPrinter.Location = new System.Drawing.Point(12, 23);
+            this.lblDefaultPrinter.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblDefaultPrinter.Name = "lblDefaultPrinter";
-            this.lblDefaultPrinter.Size = new System.Drawing.Size(74, 13);
+            this.lblDefaultPrinter.Size = new System.Drawing.Size(111, 20);
             this.lblDefaultPrinter.TabIndex = 6;
             this.lblDefaultPrinter.Text = "Default Printer";
             // 
@@ -109,19 +113,21 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl.Controls.Add(this.tabPrinters);
             this.tabControl.Controls.Add(this.tabObjects);
-            this.tabControl.Location = new System.Drawing.Point(11, 39);
+            this.tabControl.Location = new System.Drawing.Point(16, 60);
+            this.tabControl.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabControl.Name = "tabControl";
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(760, 331);
+            this.tabControl.Size = new System.Drawing.Size(1140, 509);
             this.tabControl.TabIndex = 7;
             // 
             // tabPrinters
             // 
             this.tabPrinters.Controls.Add(this.chkPrinters);
-            this.tabPrinters.Location = new System.Drawing.Point(4, 22);
+            this.tabPrinters.Location = new System.Drawing.Point(4, 29);
+            this.tabPrinters.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabPrinters.Name = "tabPrinters";
-            this.tabPrinters.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPrinters.Size = new System.Drawing.Size(752, 305);
+            this.tabPrinters.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabPrinters.Size = new System.Drawing.Size(1132, 476);
             this.tabPrinters.TabIndex = 0;
             this.tabPrinters.Text = "Printers";
             this.tabPrinters.UseVisualStyleBackColor = true;
@@ -130,9 +136,10 @@
             // 
             this.chkPrinters.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chkPrinters.FormattingEnabled = true;
-            this.chkPrinters.Location = new System.Drawing.Point(3, 3);
+            this.chkPrinters.Location = new System.Drawing.Point(4, 5);
+            this.chkPrinters.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.chkPrinters.Name = "chkPrinters";
-            this.chkPrinters.Size = new System.Drawing.Size(746, 299);
+            this.chkPrinters.Size = new System.Drawing.Size(1124, 466);
             this.chkPrinters.TabIndex = 0;
             this.chkPrinters.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.chkPrinters_ItemCheck);
             // 
@@ -144,10 +151,11 @@
             this.tabObjects.Controls.Add(this.lblObjectDefaultPrinter);
             this.tabObjects.Controls.Add(this.cmbObject);
             this.tabObjects.Controls.Add(this.lblObject);
-            this.tabObjects.Location = new System.Drawing.Point(4, 22);
+            this.tabObjects.Location = new System.Drawing.Point(4, 29);
+            this.tabObjects.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.tabObjects.Name = "tabObjects";
-            this.tabObjects.Padding = new System.Windows.Forms.Padding(3);
-            this.tabObjects.Size = new System.Drawing.Size(752, 279);
+            this.tabObjects.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.tabObjects.Size = new System.Drawing.Size(1132, 476);
             this.tabObjects.TabIndex = 2;
             this.tabObjects.Text = "Objects";
             this.tabObjects.UseVisualStyleBackColor = true;
@@ -167,9 +175,11 @@
             this.colPrinter});
             this.gridLayouts.DataMember = "Layouts";
             this.gridLayouts.DataSource = this.ds;
-            this.gridLayouts.Location = new System.Drawing.Point(111, 60);
+            this.gridLayouts.Location = new System.Drawing.Point(166, 92);
+            this.gridLayouts.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.gridLayouts.Name = "gridLayouts";
-            this.gridLayouts.Size = new System.Drawing.Size(622, 200);
+            this.gridLayouts.RowHeadersWidth = 62;
+            this.gridLayouts.Size = new System.Drawing.Size(933, 308);
             this.gridLayouts.TabIndex = 5;
             this.gridLayouts.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.gridLayouts_CellValueChanged);
             this.gridLayouts.CurrentCellDirtyStateChanged += new System.EventHandler(this.gridLayouts_CurrentCellDirtyStateChanged);
@@ -180,6 +190,7 @@
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.ControlLight;
             this.colLayoutName.DefaultCellStyle = dataGridViewCellStyle1;
             this.colLayoutName.HeaderText = "Name";
+            this.colLayoutName.MinimumWidth = 8;
             this.colLayoutName.Name = "colLayoutName";
             this.colLayoutName.ReadOnly = true;
             this.colLayoutName.Width = 200;
@@ -193,6 +204,7 @@
             this.colActive.DefaultCellStyle = dataGridViewCellStyle2;
             this.colActive.FalseValue = "false";
             this.colActive.HeaderText = "Active";
+            this.colActive.MinimumWidth = 8;
             this.colActive.Name = "colActive";
             this.colActive.ReadOnly = true;
             this.colActive.TrueValue = "true";
@@ -203,6 +215,7 @@
             this.colPrinter.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.colPrinter.DataPropertyName = "Printer";
             this.colPrinter.HeaderText = "Default Printer";
+            this.colPrinter.MinimumWidth = 8;
             this.colPrinter.Name = "colPrinter";
             this.colPrinter.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.colPrinter.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
@@ -265,9 +278,10 @@
             // lblLayouts
             // 
             this.lblLayouts.AutoSize = true;
-            this.lblLayouts.Location = new System.Drawing.Point(6, 60);
+            this.lblLayouts.Location = new System.Drawing.Point(9, 92);
+            this.lblLayouts.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblLayouts.Name = "lblLayouts";
-            this.lblLayouts.Size = new System.Drawing.Size(44, 13);
+            this.lblLayouts.Size = new System.Drawing.Size(65, 20);
             this.lblLayouts.TabIndex = 4;
             this.lblLayouts.Text = "Layouts";
             // 
@@ -275,18 +289,20 @@
             // 
             this.cmbObjectDefaultPrinter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbObjectDefaultPrinter.FormattingEnabled = true;
-            this.cmbObjectDefaultPrinter.Location = new System.Drawing.Point(111, 33);
+            this.cmbObjectDefaultPrinter.Location = new System.Drawing.Point(166, 51);
+            this.cmbObjectDefaultPrinter.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.cmbObjectDefaultPrinter.Name = "cmbObjectDefaultPrinter";
-            this.cmbObjectDefaultPrinter.Size = new System.Drawing.Size(260, 21);
+            this.cmbObjectDefaultPrinter.Size = new System.Drawing.Size(388, 28);
             this.cmbObjectDefaultPrinter.TabIndex = 3;
             this.cmbObjectDefaultPrinter.SelectedIndexChanged += new System.EventHandler(this.cmbObjectDefaultPrinter_SelectedIndexChanged);
             // 
             // lblObjectDefaultPrinter
             // 
             this.lblObjectDefaultPrinter.AutoSize = true;
-            this.lblObjectDefaultPrinter.Location = new System.Drawing.Point(6, 36);
+            this.lblObjectDefaultPrinter.Location = new System.Drawing.Point(9, 55);
+            this.lblObjectDefaultPrinter.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblObjectDefaultPrinter.Name = "lblObjectDefaultPrinter";
-            this.lblObjectDefaultPrinter.Size = new System.Drawing.Size(74, 13);
+            this.lblObjectDefaultPrinter.Size = new System.Drawing.Size(111, 20);
             this.lblObjectDefaultPrinter.TabIndex = 2;
             this.lblObjectDefaultPrinter.Text = "Default Printer";
             // 
@@ -294,26 +310,28 @@
             // 
             this.cmbObject.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbObject.FormattingEnabled = true;
-            this.cmbObject.Location = new System.Drawing.Point(111, 6);
+            this.cmbObject.Location = new System.Drawing.Point(166, 9);
+            this.cmbObject.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.cmbObject.Name = "cmbObject";
-            this.cmbObject.Size = new System.Drawing.Size(260, 21);
+            this.cmbObject.Size = new System.Drawing.Size(388, 28);
             this.cmbObject.TabIndex = 1;
             this.cmbObject.SelectedIndexChanged += new System.EventHandler(this.cmbObject_SelectedIndexChanged);
             // 
             // lblObject
             // 
             this.lblObject.AutoSize = true;
-            this.lblObject.Location = new System.Drawing.Point(6, 9);
+            this.lblObject.Location = new System.Drawing.Point(9, 14);
+            this.lblObject.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblObject.Name = "lblObject";
-            this.lblObject.Size = new System.Drawing.Size(38, 13);
+            this.lblObject.Size = new System.Drawing.Size(55, 20);
             this.lblObject.TabIndex = 0;
             this.lblObject.Text = "Object";
             // 
             // PrintAPISettings
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 411);
+            this.ClientSize = new System.Drawing.Size(1176, 632);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.lblDefaultPrinter);
             this.Controls.Add(this.cmbDefaultPrinter);
@@ -321,8 +339,9 @@
             this.Controls.Add(this.btnAccept);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(800, 450);
+            this.MinimumSize = new System.Drawing.Size(1189, 662);
             this.Name = "PrintAPISettings";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

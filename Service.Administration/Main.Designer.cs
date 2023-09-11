@@ -261,7 +261,7 @@
             this.toolStripMenuItem2,
             this.mnuReloadSettings});
             this.rightClickMenu.Name = "rightClickMenu";
-            this.rightClickMenu.Size = new System.Drawing.Size(280, 203);
+            this.rightClickMenu.Size = new System.Drawing.Size(280, 170);
             this.rightClickMenu.Opening += new System.ComponentModel.CancelEventHandler(this.rightClickMenu_Opening);
             // 
             // mnuAPISettings

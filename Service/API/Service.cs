@@ -28,6 +28,7 @@ public class Service : IDisposable {
             service = WebApp.Start<Startup>(options);
 #if DEBUG
             Console.WriteLine($"Rest API Service Started in Port {port}");
+            Console.WriteLine($"File Service http://localhost:{port}/");
 #endif
         }
         catch (Exception ex) {

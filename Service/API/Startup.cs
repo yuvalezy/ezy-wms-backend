@@ -2,7 +2,9 @@ using System;
 using System.Web.Http;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
+using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.Security.OAuth;
+using Microsoft.Owin.StaticFiles;
 using Newtonsoft.Json.Converters;
 using Owin;
 
@@ -36,5 +38,17 @@ public class Startup {
         app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions());
 
         app.UseWebApi(config);
+
+        // Configure static file serving
+        var physicalFileSystem = new PhysicalFileSystem("./wwwroot");
+        var fileOptions = new FileServerOptions {
+            EnableDefaultFiles = true,
+            FileSystem         = physicalFileSystem,
+            StaticFileOptions = {
+                FileSystem            = physicalFileSystem,
+                ServeUnknownFileTypes = true
+            }
+        };
+        app.UseFileServer(fileOptions);
     }
 }
