@@ -16,7 +16,7 @@ public class GeneralData {
                         left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
                         where T0."empID" = @empID
                         """;
-        (string name, string whsCode, string whsName) = 
+        (string name, string whsCode, string whsName) =
             Global.DataObject.GetValue<string, string, string>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
         return new EmployeeData(name, whsCode, whsName);
     }
@@ -31,6 +31,20 @@ public class GeneralData {
     public bool ValidateVendor(string cardCode) {
         string query = """select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y'""";
         return Global.DataObject.GetValue<bool>(query, new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode));
+    }
+
+    public static int GetSeries(string objectCode) {
+        string query = """
+                       select top 1 T1."Series"
+                       from OFPR T0
+                                inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
+                       where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
+                       and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
+                       """;
+        return Global.DataObject.GetValue<int>(query, new Parameters {
+            new Parameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
+            new Parameter("@Date", SqlDbType.DateTime, DateTime.Now)
+        });
     }
 
     public IEnumerable<Item> ScanItemBarCode(string scanCode) {

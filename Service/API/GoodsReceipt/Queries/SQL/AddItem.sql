@@ -72,4 +72,6 @@ declare @LineID int = IsNull((select Max("U_LineID") + 1 from "@LW_YUVAL08_GRPO1
 insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_POEntry", "U_POLine", "U_TargetType", "U_TargetEntry", "U_TargetLine")
 select @ID, @LineID, @ItemCode, @BarCode, @empID, getdate(), IsNull(@POEntry, -1), IsNull(@POLine, -1), @TargetType, @TargetEntry, @TargetLine;
 
+update "@LW_YUVAL08_GRPO" set "U_Status" = 'I' where Code = @ID
+
 select @ReturnValue ReturnValue

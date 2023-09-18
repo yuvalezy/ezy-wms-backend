@@ -33,15 +33,15 @@ public static class Global {
     public static BoDataServerTypes ServerType { get; internal set; }
 
     //Database Settings
-    public static string                      DBServiceVersion   { get; set; }
-    public static string                      User               { get; set; }
-    public static string                      Password           { get; set; }
-    public static bool                        TestHelloWorld     { get; private set; }
-    public static bool                        PrintThread        { get; private set; }
-    public static bool                        Background         { get; set; }
-    public static bool                        Interactive        { get; set; }
-    public static bool                        LoadBalancing      { get; set; }
-    public static ServiceNodes                Nodes              { get; set; }
+    public static string                               DBServiceVersion   { get; set; }
+    public static string                               User               { get; set; }
+    public static string                               Password           { get; set; }
+    public static bool                                 TestHelloWorld     { get; private set; }
+    public static bool                                 PrintThread        { get; private set; }
+    public static bool                                 Background         { get; set; }
+    public static bool                                 Interactive        { get; set; }
+    public static bool                                 LoadBalancing      { get; set; }
+    public static ServiceNodes                         Nodes              { get; set; }
     public static Dictionary<int, Authorization>       RolesMap           { get; } = new();
     public static Dictionary<int, List<Authorization>> UserAuthorizations { get; } = new();
 
@@ -49,7 +49,8 @@ public static class Global {
 
     #region Methods & Functions
 
-    private static readonly Mutex ConnectionMutex = new(false, "connection");
+    private static readonly  Mutex ConnectionMutex  = new(false, "connection");
+    internal static readonly Mutex TransactionMutex = new(false, "transaction");
 
     public static void LoadArguments() {
         string[] args = Environment.GetCommandLineArgs();
@@ -183,7 +184,6 @@ public static class Global {
 
     public static void Load() {
         LoadRoles();
-        
     }
 
     private static void LoadRoles() {

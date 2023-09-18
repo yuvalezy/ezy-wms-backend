@@ -24,6 +24,14 @@ public class GoodsReceiptData {
         return true;
     }
 
+    public bool ProcessDocument(int id, int employeeID) {
+        var doc = GetDocument(id);
+        if (doc.Status != DocumentStatus.InProgress)
+            throw new Exception("Cannot process document if the Status is not In Progress");
+        using var creation = new GoodsReceiptCreation(id, employeeID);
+        return creation.Execute();
+    }
+
     public int CreateDocument(string cardCode, string name, int employeeID) =>
         Global.DataObject.GetValue<int>(GetQuery("CreateGoodsReceipt"), new Parameters {
             new Parameter("@Name", SqlDbType.NVarChar, 50, name),
@@ -70,9 +78,9 @@ public class GoodsReceiptData {
         List<Document> docs = new();
         var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
         sb.Append($" where DOCS.\"U_WhsCode\" = '{parameters.WhsCode.ToQuery()}' ");
-        if (parameters?.Statuses is { Length: > 0 }) {
+        if (parameters?.Status is { Length: > 0 }) {
             sb.Append(" and DOCS.\"U_Status\" in ('");
-            sb.Append(string.Join("','", parameters.Statuses.Select(v => (char)v)));
+            sb.Append(string.Join("','", parameters.Status.Select(v => (char)v)));
             sb.Append("')");
         }
 
@@ -119,7 +127,7 @@ public class GoodsReceiptData {
         return doc;
     }
 
-    private static string GetQuery(string id) {
+    public static string GetQuery(string id) {
         string resourceName = $"Service.API.GoodsReceipt.Queries.{ConnectionController.DatabaseType}.{id}.sql";
         var    assembly     = typeof(Queries).Assembly;
         string resourcePath = resourceName;

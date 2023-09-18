@@ -47,6 +47,13 @@ public class GoodsReceiptController : LWApiController {
 
         return data.GoodsReceiptData.CancelDocument(parameters.ID, EmployeeID);
     }
+    [HttpPost]
+    [ActionName("Process")]
+    public bool ProcessDocument([FromBody] IDParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+            throw new UnauthorizedAccessException("You don't have access for document cancellation");
+        return data.GoodsReceiptData.ProcessDocument(parameters.ID, EmployeeID);
+    }
 
     [HttpGet]
     [ActionName("Documents")]
