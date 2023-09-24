@@ -37,11 +37,8 @@ public partial class Connection : Form {
             Server        = txtServer.Text,
             DbUserName    = ServerUser,
             DbPassword    = ServerPassword,
-            LicenseServer = txtLicServer.Text
         };
-#if DEBUG
-        vCmp.SLDServer = $"{txtLicServer.Text}:40000";
-#endif
+
         switch (cmbType.Text) {
             case "HANA":
                 vCmp.DbServerType = BoDataServerTypes.dst_HANADB;
@@ -117,12 +114,6 @@ public partial class Connection : Form {
             return false;
         }
 
-        if (string.IsNullOrEmpty(txtLicServer.Text)) {
-            MessageBox.Show("You must enter the SBO license server name", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            txtLicServer.Focus();
-            return false;
-        }
-
         return true;
     }
 
@@ -167,27 +158,12 @@ public partial class Connection : Form {
             key.SetValue("ServerType", (int)dbType, RegistryValueKind.DWord);
             key.SetValue("ServerUser", ServerUser.EncryptData());
             key.SetValue("ServerPassword", ServerPassword.EncryptData());
-            key.SetValue("LicenseServer", txtLicServer.Text);
         }
         catch (Exception ex) {
             throw new Exception("Save Registry Error: " + ex.Message);
         }
     }
 
-    private void txtServer_TextChanged(object sender, EventArgs e) {
-        serverChange = true;
-#pragma warning disable 252,253
-        if (txtLicServer.Tag != "1")
-            txtLicServer.Text = txtServer.Text;
-#pragma warning restore 252,253
-        serverChange = false;
-    }
-
-    private void txtLicServerSBO_TextChanged(object sender, EventArgs e) {
-        if (serverChange)
-            return;
-        txtLicServer.Tag = "1";
-    }
 
     private void txtKeyDown(object sender, KeyEventArgs e) {
         if (e.KeyCode == Keys.Enter) btnAccept.PerformClick();

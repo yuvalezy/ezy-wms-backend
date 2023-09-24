@@ -17,10 +17,7 @@ public class GoodsReceiptData {
         var doc = GetDocument(id);
         if (doc.Status is not (DocumentStatus.Open or DocumentStatus.InProgress))
             throw new Exception("Cannot cancel document if the Status is not Open or In Progress");
-        Global.DataObject.Execute(GetQuery("CancelGoodsReceipt"), new Parameters {
-            new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@empID", SqlDbType.Int, employeeID),
-        });
+        UpdateDocumentStatus(id, employeeID, DocumentStatus.Cancelled);
         return true;
     }
 
@@ -28,8 +25,17 @@ public class GoodsReceiptData {
         var doc = GetDocument(id);
         if (doc.Status != DocumentStatus.InProgress)
             throw new Exception("Cannot process document if the Status is not In Progress");
-        using var creation = new GoodsReceiptCreation(id, employeeID);
-        return creation.Execute();
+        UpdateDocumentStatus(id, employeeID, DocumentStatus.Processing);
+        try {
+            using var creation    = new GoodsReceiptCreation(id, employeeID);
+            creation.Execute();
+            UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
+            return true;
+        }
+        catch (Exception e) {
+            UpdateDocumentStatus(id, employeeID, DocumentStatus.Open);
+            throw;
+        }
     }
 
     public int CreateDocument(string cardCode, string name, int employeeID) =>
@@ -139,5 +145,13 @@ public class GoodsReceiptData {
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    private static void UpdateDocumentStatus(int id, int employeeID, DocumentStatus status) {
+        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptStatus"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
+        });
     }
 }

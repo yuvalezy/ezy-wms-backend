@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Service.Shared.Company;
 
 namespace Service;
 

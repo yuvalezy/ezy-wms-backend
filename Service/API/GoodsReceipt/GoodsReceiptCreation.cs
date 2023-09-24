@@ -22,17 +22,20 @@ public class GoodsReceiptCreation : IDisposable {
         this.employeeID = employeeID;
     }
 
-    public bool Execute() {
+    public void Execute() {
         try {
             LoadData();
             Global.TransactionMutex.WaitOne();
             Global.ConnectCompany();
-            doc            = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPurchaseDeliveryNotes);
+            doc = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPurchaseDeliveryNotes);
+
             doc.CardCode   = cardCode;
             doc.DocDate    = DateTime.Now;
             doc.DocDueDate = DateTime.Now;
             doc.TaxDate    = DateTime.Now;
             doc.Series     = GeneralData.GetSeries("20");
+
+            doc.UserFields.Fields.Item("U_LW_GRPO").Value = id;
 
             var lines = doc.Lines;
 
@@ -51,7 +54,8 @@ public class GoodsReceiptCreation : IDisposable {
                     lines.BaseEntry = baseEntry;
                     lines.BaseLine  = baseLine;
                 }
-                lines.Quantity      = quantity;
+
+                lines.Quantity = quantity;
             }
 
             if (doc.Add() != 0) {
@@ -64,8 +68,6 @@ public class GoodsReceiptCreation : IDisposable {
         finally {
             Global.TransactionMutex.ReleaseMutex();
         }
-
-        return true;
     }
 
     private void LoadData() {

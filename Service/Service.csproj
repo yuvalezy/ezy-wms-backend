@@ -163,7 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\AddItem.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CancelGoodsReceipt.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateGoodsReceiptStatus.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceipt.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />

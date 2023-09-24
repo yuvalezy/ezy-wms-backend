@@ -1,5 +1,4 @@
-﻿using SAPbobsCOM;
-using Service.Shared.Data;
+﻿using Service.Shared.Data;
 using Service.Shared.Utils;
 
 namespace Service.Administration; 

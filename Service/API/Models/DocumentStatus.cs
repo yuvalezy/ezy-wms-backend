@@ -1,7 +1,4 @@
-﻿using System;
-using Newtonsoft.Json;
-
-namespace Service.API.Models;
+﻿namespace Service.API.Models;
 
 public enum DocumentStatus {
     Open       = 'O',

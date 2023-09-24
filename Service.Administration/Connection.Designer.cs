@@ -28,8 +28,6 @@
         /// </summary>
         private void InitializeComponent() {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Connection));
-            this.lblLicServerSBO = new System.Windows.Forms.Label();
-            this.txtLicServer = new System.Windows.Forms.TextBox();
             this.cmbType = new System.Windows.Forms.ComboBox();
             this.lblType = new System.Windows.Forms.Label();
             this.grpServer = new System.Windows.Forms.GroupBox();
@@ -43,29 +41,6 @@
             this.exit = new System.Windows.Forms.Button();
             this.grpServer.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // lblLicServerSBO
-            // 
-            this.lblLicServerSBO.AutoSize = true;
-            this.lblLicServerSBO.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.lblLicServerSBO.Location = new System.Drawing.Point(8, 185);
-            this.lblLicServerSBO.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblLicServerSBO.Name = "lblLicServerSBO";
-            this.lblLicServerSBO.Size = new System.Drawing.Size(114, 20);
-            this.lblLicServerSBO.TabIndex = 14;
-            this.lblLicServerSBO.Text = "License Server";
-            // 
-            // txtLicServer
-            // 
-            this.txtLicServer.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtLicServer.Location = new System.Drawing.Point(165, 180);
-            this.txtLicServer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.txtLicServer.Name = "txtLicServer";
-            this.txtLicServer.Size = new System.Drawing.Size(493, 26);
-            this.txtLicServer.TabIndex = 10;
-            this.txtLicServer.TextChanged += new System.EventHandler(this.txtLicServerSBO_TextChanged);
-            this.txtLicServer.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyDown);
             // 
             // cmbType
             // 
@@ -97,17 +72,15 @@
             // 
             this.grpServer.Controls.Add(this.cmbType);
             this.grpServer.Controls.Add(this.lblType);
-            this.grpServer.Controls.Add(this.lblLicServerSBO);
             this.grpServer.Controls.Add(this.lblServer);
             this.grpServer.Controls.Add(this.txtServer);
             this.grpServer.Controls.Add(this.txtServerUser);
-            this.grpServer.Controls.Add(this.txtLicServer);
             this.grpServer.Controls.Add(this.lblUser);
             this.grpServer.Controls.Add(this.txtServerPassword);
             this.grpServer.Controls.Add(this.lblPassword);
             this.grpServer.Location = new System.Drawing.Point(15, 17);
             this.grpServer.Name = "grpServer";
-            this.grpServer.Size = new System.Drawing.Size(687, 223);
+            this.grpServer.Size = new System.Drawing.Size(687, 184);
             this.grpServer.TabIndex = 32;
             this.grpServer.TabStop = false;
             this.grpServer.Text = "Server Information";
@@ -131,7 +104,6 @@
             this.txtServer.Name = "txtServer";
             this.txtServer.Size = new System.Drawing.Size(493, 26);
             this.txtServer.TabIndex = 1;
-            this.txtServer.TextChanged += new System.EventHandler(this.txtServer_TextChanged);
             this.txtServer.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtKeyDown);
             // 
             // txtServerUser
@@ -180,7 +152,7 @@
             // btnAccept
             // 
             this.btnAccept.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnAccept.Location = new System.Drawing.Point(15, 249);
+            this.btnAccept.Location = new System.Drawing.Point(15, 209);
             this.btnAccept.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnAccept.Name = "btnAccept";
             this.btnAccept.Size = new System.Drawing.Size(112, 37);
@@ -192,7 +164,7 @@
             // exit
             // 
             this.exit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.exit.Location = new System.Drawing.Point(588, 251);
+            this.exit.Location = new System.Drawing.Point(588, 211);
             this.exit.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.exit.Name = "exit";
             this.exit.Size = new System.Drawing.Size(112, 35);
@@ -205,7 +177,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(717, 302);
+            this.ClientSize = new System.Drawing.Size(717, 262);
             this.Controls.Add(this.btnAccept);
             this.Controls.Add(this.exit);
             this.Controls.Add(this.grpServer);
@@ -227,12 +199,10 @@
         private System.Windows.Forms.ComboBox cmbType;
         private System.Windows.Forms.Button exit;
         private System.Windows.Forms.GroupBox grpServer;
-        private System.Windows.Forms.Label lblLicServerSBO;
         private System.Windows.Forms.Label lblPassword;
         private System.Windows.Forms.Label lblServer;
         private System.Windows.Forms.Label lblType;
         private System.Windows.Forms.Label lblUser;
-        private System.Windows.Forms.TextBox txtLicServer;
         private System.Windows.Forms.TextBox txtServer;
         private System.Windows.Forms.TextBox txtServerPassword;
         private System.Windows.Forms.TextBox txtServerUser;
