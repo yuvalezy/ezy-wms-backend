@@ -10,12 +10,6 @@ public class MetaData {
     public MetaData(DataConnector data) => this.data = data;
 
 
-    public void CheckCommon() {
-        if (!data.GetValue<bool>(Queries.ExistsServiceManager)) {
-            data.Execute(Queries.CreateServiceManager);
-        }
-    }
-
     public void Check() {
         //todo verify common data
         string user     = "manager".EncryptData();

@@ -180,15 +180,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="Queries\HANA\ActivateDB.sql" />
-    <EmbeddedResource Include="Queries\HANA\CreateServiceManager.sql" />
-    <EmbeddedResource Include="Queries\HANA\IsDBUpdate.sql" />
-    <EmbeddedResource Include="Queries\HANA\UpdateDB.sql" />
-    <EmbeddedResource Include="Queries\SQL\ActivateDB.sql" />
-    <EmbeddedResource Include="Queries\SQL\CreateServiceManager.sql" />
     <EmbeddedResource Include="Queries\SQL\ExistsDatabase.sql" />
-    <EmbeddedResource Include="Queries\SQL\IsDBUpdate.sql" />
-    <EmbeddedResource Include="Queries\SQL\UpdateDB.sql" />
     <None Include="app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -214,12 +206,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Queries\HANA\ExistsCommon.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Queries\HANA\ExistsServiceManager.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Queries\SQL\ExistsServiceManager.sql" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Service.Shared\Service.Shared.csproj">

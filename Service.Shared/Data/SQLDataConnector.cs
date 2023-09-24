@@ -198,7 +198,7 @@ public class SQLDataConnector : DataConnector {
         }
     }
 
-    public override void CreateCommonDatabase() => Execute($"CREATE DATABASE {Const.CommonDatabase}");
+    public override void CreateCommonDatabase() => Execute($"CREATE DATABASE LW_YUVAL08_COMMON");
     public override void ChangeDatabase(string dbName) {
         if (conn is { State: ConnectionState.Open })
             conn.ChangeDatabase(dbName);

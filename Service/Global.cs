@@ -87,7 +87,7 @@ public static class Global {
             }
 
             try {
-                Connection.ConnectCompany(Connection.Server, ServerType, Connection.DbServerUser, Connection.DbServerPassword, Connection.Database, User, Password,
+                Connection.ConnectCompany(Connection.Server, ServerType, Connection.Database, User, Password,
                     Connection.Server);
             }
             catch (Exception ex) {

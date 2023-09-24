@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -11,6 +12,7 @@ using Service.Shared;
 using Service.Administration.Helpers;
 using Service.Administration.Views;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using SAPbobsCOM;
 using Service.Shared.Company;
 using Service.Shared.Data;
@@ -83,12 +85,14 @@ public class MainController {
         dv?.Dispose();
         dt?.Dispose();
         dt = data.GetDataTable(Queries.Load);
+        dt.Columns.Add("Active", Type.GetType("System.String"));
         dt.Columns.Add("Account", Type.GetType("System.String"));
         dt.Columns.Add("Version", Type.GetType("System.String"));
         dt.Columns.Add("Status", Type.GetType("System.String"));
         dt.Columns.Add("StartStop", Type.GetType("System.String"));
         dt.Columns.Add("Restart", Type.GetType("System.String"));
-        Task.Run(() => LoadVersions(dt));
+        LoadActiveStatus();
+        Task.Run(LoadVersions);
         FilterData();
         var services = ServiceController.GetServices();
         foreach (DataRowView drv in dv) {
@@ -101,14 +105,35 @@ public class MainController {
             view.ActiveOnly = false;
     }
 
-    private void LoadVersions(DataTable dt) {
+    private static string ActiveStatusFile => Path.Combine(Application.StartupPath, "Settings", "active_databases.json");
+
+    private void LoadActiveStatus() {
+        string[] active = Array.Empty<string>();
+        if (File.Exists(ActiveStatusFile)) {
+            try {
+                //read ActiveStatusFile into a string array
+                string activeStatus = File.ReadAllText(ActiveStatusFile);
+                //deserialize the string array into a List of strings
+                active = JsonConvert.DeserializeObject<string[]>(activeStatus);
+            }
+            catch (Exception e) {
+                MessageBox.Show(owner, "Error loading active databases json file: " + e.Message, "Load Active DatabaseS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        foreach (DataRow dr in dt.Rows)
+            dr["Active"] = active.Contains((string)dr["Name"]).ToYesNo();
+    }
+
+    private void LoadVersions() {
         foreach (DataRow dr in dt.Rows) {
             string dbName = (string)dr["Name"];
             try {
-                string version = data.GetValue<string>($"select \"U_Version\" from \"{dbName}\"{QueryHelper.OtherDB}\"@{Const.CommonDatabase}\"");
+                string version = data.GetValue<string>($"select \"U_Version\" from \"{dbName}\"{QueryHelper.OtherDB}\"@LW_YUVAL08_COMMON\"");
                 dr["Version"] = version;
             }
             catch {
+                //ignore
             }
         }
     }
@@ -123,11 +148,16 @@ public class MainController {
                 licenseServer  = (string)key.GetValue("LicenseServer");
             }
 
-            data = serverType switch {
-                BoDataServerTypes.dst_HANADB => new HANADataConnector(),
-                _                            => new SQLDataConnector()
-            };
-            ConnectionController.ConnectionString = ConnectionString;
+            switch (serverType) {
+                case BoDataServerTypes.dst_HANADB:
+                    data                                  = new HANADataConnector();
+                    ConnectionController.ConnectionString = ConnectionString("SBOCOMMON");
+                    break;
+                default:
+                    data                                  = new SQLDataConnector();
+                    ConnectionController.ConnectionString = ConnectionString("SBO-Common");
+                    break;
+            }
         }
         catch (Exception ex) {
             if (loadRegCount++ == 0) {
@@ -179,8 +209,8 @@ public class MainController {
     private DataConnector DatabaseDataConnector {
         get {
             DataConnector dbData = serverType switch {
-                BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.Replace(Const.CommonDatabase, view.Database)),
-                _                            => new SQLDataConnector(ConnectionString.Replace(Const.CommonDatabase, view.Database))
+                BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString(view.Database)),
+                _                            => new SQLDataConnector(ConnectionString(view.Database))
             };
             return dbData;
         }
@@ -420,10 +450,11 @@ public class MainController {
             var settings     = RestAPISettings.Load(APISettings.SettingsFilePath(view.Database));
             var registration = new ServiceRegistration(true, view.Database, settings, Error);
             registration.Execute();
-            SaveActiveStatus(true);
             if (settings.LoadBalancing)
                 registration.AddRemoveNodes();
             var dr = dv[view.CurrentRow].Row;
+            dr["Active"] = "Y";
+            SaveActiveStatus();
             UpdateServiceAccountInfo(dr);
             CheckStatus(dr);
         }
@@ -450,7 +481,8 @@ public class MainController {
 
             var registration = new ServiceRegistration(false, view.Database, Error);
             registration.Execute();
-            SaveActiveStatus(false);
+            row["Active"] = "N";
+            SaveActiveStatus();
             registration.RemoveServices();
             row["Status"]    = "";
             row["StartStop"] = "";
@@ -465,39 +497,44 @@ public class MainController {
         view.ClearSelection();
     }
 
-    private void SaveActiveStatus(bool active) {
-        var    @params = new Parameters(new Parameter("dbName", SqlDbType.NVarChar, 100, view.Database));
-        bool   update  = data.GetValue<bool>(Queries.IsDBUpdate, @params);
-        string sqlStr  = update ? Queries.UpdateDB : Queries.ActivateDB;
-        @params.Add("Active", SqlDbType.Char, 1).Value = active.ToYesNo();
-        data.Execute(sqlStr, @params);
+    private void SaveActiveStatus() {
+        try {
+            string[] active = dt.Rows.Cast<DataRow>().Where(v => (string)v["Active"] == "Y").Select(v => (string)v["Name"]).ToArray();
+            File.WriteAllText(ActiveStatusFile, JsonConvert.SerializeObject(active));
+        }
+        catch (Exception e) {
+            Error($"Error saving active status: " + e.Message);
+        }
     }
 
     private bool ValidateDatabase() {
-        DataConnector dbData;
         try {
-            dbData = serverType switch {
+            DataConnector dbData = serverType switch {
                 BoDataServerTypes.dst_HANADB => new HANADataConnector(Service.Shared.Data.ConnectionString.HanaConnectionString(server, serverUser, serverPassword, view.Database)),
                 _                            => new SQLDataConnector(Service.Shared.Data.ConnectionString.SqlConnectionString(server, serverUser, serverPassword, view.Database))
             };
             var md = new MetaData(dbData);
             md.Check();
-            var    v              = Assembly.GetExecutingAssembly().GetName().Version;
-            string currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
-            string sqlStr =
-                $@"select ""U_Version"" ""Version"", ""U_User"" ""User"", ""U_Password"" ""Password"" from ""@{Const.CommonDatabase}""";
-            var    dr         = dbData.GetDataTable(sqlStr).Rows[0];
-            string dbVersion  = (string)dr["Version"];
-            string dbUser     = dr["User"].ToString().DecryptString();
-            string dbPassword = dr["Password"].ToString().DecryptString();
+            var          v              = Assembly.GetExecutingAssembly().GetName().Version;
+            string       currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
+            const string sqlStr         = "select \"U_Version\" \"Version\", \"U_User\" \"User\", \"U_Password\" \"Password\" from \"@LW_YUVAL08_COMMON\"";
+            var          dr             = dbData.GetDataTable(sqlStr).Rows[0];
+            string       dbVersion      = (string)dr["Version"];
+            string       dbUser         = dr["User"].ToString().DecryptString();
+            string       dbPassword     = dr["Password"].ToString().DecryptString();
             if (Version.CheckVersion(dbVersion, currentVersion) != VersionCheck.Current) {
                 Error($"Cannot activate service for database \"{view.Database}\".\nDatabase version is {dbVersion} and service version is {currentVersion}.");
                 return false;
             }
 
-            if (!ValidateDBUser(dbUser, dbPassword)) {
+            if (!ValidateDBUser(dbUser, dbPassword, out string errorMessage)) {
                 Error(
-                    $"Cannot activate service for database \"{view.Database}\".\nDatabase service user or password is not valid\nUpdate database service password and try again.");
+                    $"""
+                     Cannot activate service for database "{view.Database}".
+                     Database service user or password is not valid
+                     Update database service password and try again.
+                     Error: {errorMessage}
+                     """);
                 //todo popoup to ask new user
                 return false;
             }
@@ -513,28 +550,28 @@ public class MainController {
         return true;
     }
 
-    private bool ValidateDBUser(string dbUser, string dbPassword) {
+    private bool ValidateDBUser(string dbUser, string dbPassword, out string errorMessage) {
+        errorMessage = string.Empty;
         var cmp = new Company {
-            CompanyDB     = view.Database,
-            Server        = server,
-            UserName      = dbUser,
-            Password      = dbPassword,
-            DbServerType  = serverType,
-            DbUserName    = serverUser,
-            DbPassword    = serverPassword,
-            LicenseServer = licenseServer,
-            UseTrusted    = false
+            CompanyDB    = view.Database,
+            Server       = server,
+            DbServerType = serverType,
+            UserName     = dbUser,
+            Password     = dbPassword,
         };
-#if DEBUG
-        cmp.SLDServer = $"{licenseServer}:40000";
-#endif
+        try {
+            int lRetCode = cmp.Connect();
+            if (lRetCode != 0) {
+                errorMessage = cmp.GetLastErrorDescription();
+                return false;
+            }
+        }
+        finally {
+            cmp.Disconnect();
+            Marshal.ReleaseComObject(cmp);
+            GC.Collect();
+        }
 
-        int lRetCode = cmp.Connect();
-        if (lRetCode != 0)
-            return false;
-        cmp.Disconnect();
-        Marshal.ReleaseComObject(cmp);
-        GC.Collect();
         return true;
     }
 
@@ -546,6 +583,6 @@ public class MainController {
             MessageBox.Show("Cannot run re test process without starting the service", view.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 
-    private string ConnectionString =>
-        Service.Shared.Data.ConnectionString.GetConnectionString(serverType, server, serverUser, serverPassword, Const.CommonDatabase, applicationName: "Light WMS Service");
+    private string ConnectionString(string dbName) =>
+        Service.Shared.Data.ConnectionString.GetConnectionString(serverType, server, serverUser, serverPassword, dbName, applicationName: "Light WMS Service");
 }

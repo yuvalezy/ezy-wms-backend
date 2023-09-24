@@ -145,7 +145,6 @@ public static class ConnectionController {
 
     #region SAP
 
-
     /// <summary>
     /// This function is used to directly connect to a SAP Business One database through
     /// the DI API. <br />
@@ -154,8 +153,6 @@ public static class ConnectionController {
     /// </summary>
     /// <param name="server">Server name / IP Address</param>
     /// <param name="dbServerType">Database server type</param>
-    /// <param name="dbUser">Database server login user</param>
-    /// <param name="dbPassword">Database server login password</param>
     /// <param name="dbName">Database (Company) name</param>
     /// <param name="sboUser">Company user name</param>
     /// <param name="sboPassword">Company password</param>
@@ -167,7 +164,7 @@ public static class ConnectionController {
     ///   <code lang="C#"><![CDATA[ConnectionController.ConnectCompany("LAPTOP-K2UQK03D", BoDataServerTypes.dst_MSSQL2016, "sa", "password", "SBODemo_DE", "manager", "password", "LAPTOP-K2UQK03D");]]></code>
     ///   <para></para>
     /// </example>
-    public static void ConnectCompany(string server, BoDataServerTypes dbServerType, string dbUser, string dbPassword, string dbName, string sboUser, string sboPassword, string licenseServer = "") {
+    public static void ConnectCompany(string server, BoDataServerTypes dbServerType, string dbName, string sboUser, string sboPassword, string licenseServer = "") {
         try {
             if (string.IsNullOrWhiteSpace(licenseServer))
                 licenseServer = server;
@@ -180,20 +177,18 @@ public static class ConnectionController {
             };
             int retVal = Company.Connect();
             if (retVal != 0)
-                throw new Exception("Connection Error: " + Company.GetLastErrorDescription());
+                throw new Exception($"Connection Error: {Company.GetLastErrorDescription()}");
             Server           = server;
             Database         = dbName;
-            DbServerUser     = dbUser;
-            DbServerPassword = dbPassword;
             DatabaseType     = dbServerType != BoDataServerTypes.dst_HANADB ? DatabaseType.SQL : DatabaseType.HANA;
         }
         catch (Exception e) {
             if (e.Message.IndexOf("RPC_E_SERVERFAULT") != -1)
-                ConnectCompany(server, dbServerType, dbUser, dbPassword, sboUser, sboPassword, licenseServer);
+                ConnectCompany(server, dbServerType, sboUser, sboPassword, licenseServer);
             else if (e.Message.IndexOf("-8037") != -1)
-                ConnectCompany(server, dbServerType, dbUser, dbPassword, sboUser, sboPassword, licenseServer);
+                ConnectCompany(server, dbServerType, sboUser, sboPassword, licenseServer);
             else if (e.Message.IndexOf("-105") != -1)
-                ConnectCompany(server, dbServerType, dbUser, dbPassword, sboUser, sboPassword, licenseServer);
+                ConnectCompany(server, dbServerType, sboUser, sboPassword, licenseServer);
             else
                 throw new Exception(e.Message);
         }

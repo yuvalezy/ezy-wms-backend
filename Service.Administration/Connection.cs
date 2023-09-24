@@ -34,9 +34,7 @@ public partial class Connection : Form {
             return;
 
         var vCmp = new Company {
-            Server        = txtServer.Text,
-            DbUserName    = ServerUser,
-            DbPassword    = ServerPassword,
+            Server = txtServer.Text
         };
 
         switch (cmbType.Text) {
@@ -76,7 +74,7 @@ public partial class Connection : Form {
         try {
             var rs = vCmp.GetCompanyList();
 
-            if (!CheckCommon(vCmp.DbServerType)) {
+            if (!CheckAdoConnection(vCmp.DbServerType)) {
                 DialogResult = DialogResult.Cancel;
                 return;
             }
@@ -117,7 +115,7 @@ public partial class Connection : Form {
         return true;
     }
 
-    private bool CheckCommon(BoDataServerTypes dbType) {
+    private bool CheckAdoConnection(BoDataServerTypes dbType) {
         DataConnector data = dbType switch {
             BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.HanaConnectionString(txtServer.Text, ServerUser, ServerPassword, "SBOCOMMON")),
             _                            => new SQLDataConnector(ConnectionString.SqlConnectionString(txtServer.Text, ServerUser, ServerPassword, "SBO-Common"))
@@ -132,13 +130,6 @@ public partial class Connection : Form {
         }
         try {
             ConnectionController.DatabaseType = dbType == BoDataServerTypes.dst_HANADB ? DatabaseType.HANA : DatabaseType.SQL;
-
-            if (!data.GetValue<bool>(string.Format(Queries.ExistsDatabase, Const.CommonDatabase)))
-                data.CreateCommonDatabase();
-
-            data.ChangeDatabase(Const.CommonDatabase);
-            var md = new MetaData(data);
-            md.CheckCommon();
         }
         catch (Exception e) {
             MessageBox.Show(e.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
