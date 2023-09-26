@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using Sap.Data.Hana;
 using SAPbobsCOM;
 using Service.Shared.Company;
 using Service.Shared.Utils;
@@ -224,27 +222,5 @@ public class Procedure {
     public List<T> ExecuteReader<T>() where T : class    => ToString().ExecuteQueryReader<T>();
     public T       ExecuteReaderRow<T>() where T : class => ToString().ExecuteQueryReaderRow<T>();
 
-    public SqlCommand ConvertToSqlCommand() {
-        var cm = new SqlCommand(Name) { CommandType = CommandType.StoredProcedure };
-        Parameters.ForEach(value => {
-            var parameter = cm.Parameters.Add($"@{value.Name}", value.Type);
-            if (value.Size > 0)
-                parameter.Size = value.Size;
-            parameter.Direction = value.Direction;
-            parameter.Value     = value.Value ?? DBNull.Value;
-        });
-        return cm;
-    }
 
-    public HanaCommand ConvertToHanaCommand() {
-        var cm = new HanaCommand(Name){CommandType = CommandType.StoredProcedure};
-        Parameters.ForEach(value => {
-            var parameter = cm.Parameters.Add(value.Name, value.Type);
-            if (value.Size > 0)
-                parameter.Size = value.Size;
-            parameter.Direction = value.Direction;
-            parameter.Value     = value.Value ?? DBNull.Value;
-        });
-        return cm;
-    }
 }

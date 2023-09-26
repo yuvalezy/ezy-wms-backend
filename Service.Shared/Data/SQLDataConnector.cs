@@ -104,8 +104,9 @@ public class SQLDataConnector : DataConnector {
                     reader.Close();
                 reader.Dispose();
             }
+
             if (!withTransaction)
-               DisposeTransaction();
+                DisposeTransaction();
         }
     }
 
@@ -138,7 +139,7 @@ public class SQLDataConnector : DataConnector {
         finally {
             GetValuesClose(dr);
             if (!withTransaction)
-               DisposeTransaction();
+                DisposeTransaction();
         }
     }
 
@@ -176,7 +177,7 @@ public class SQLDataConnector : DataConnector {
         }
         finally {
             if (!withTransaction)
-               DisposeTransaction();
+                DisposeTransaction();
         }
     }
 
@@ -199,6 +200,7 @@ public class SQLDataConnector : DataConnector {
     }
 
     public override void CreateCommonDatabase() => Execute($"CREATE DATABASE LW_YUVAL08_COMMON");
+
     public override void ChangeDatabase(string dbName) {
         if (conn is { State: ConnectionState.Open })
             conn.ChangeDatabase(dbName);
@@ -214,5 +216,17 @@ public class SQLDataConnector : DataConnector {
             sqlParam.Value     = param.Value ?? DBNull.Value;
             sqlParam.Direction = param.Direction;
         }
+    }
+
+    public static SqlCommand ConvertToCommand(Procedure proc) {
+        var cm = new SqlCommand(proc.Name) { CommandType = CommandType.StoredProcedure };
+        proc.Parameters.ForEach(value => {
+            var parameter = cm.Parameters.Add($"@{value.Name}", value.Type);
+            if (value.Size > 0)
+                parameter.Size = value.Size;
+            parameter.Direction = value.Direction;
+            parameter.Value     = value.Value ?? DBNull.Value;
+        });
+        return cm;
     }
 }

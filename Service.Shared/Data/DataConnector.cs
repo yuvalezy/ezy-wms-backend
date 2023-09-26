@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Text;
-using Sap.Data.Hana;
 using ConnectionController = Service.Shared.Company.ConnectionController;
 
 namespace Service.Shared.Data;
@@ -122,7 +121,7 @@ public abstract class DataConnector : IDisposable {
         return returnValue;
     }
 
-    private static T ReadValue<T>(object readData) {
+    private  T ReadValue<T>(object readData) {
         if (readData is T data)
             return data;
 
@@ -135,14 +134,14 @@ public abstract class DataConnector : IDisposable {
             readValueType = ReadValueType.Boolean;
         else if (type.IsEnum)
             readValueType = ReadValueType.Enum;
-        else if (readData is HanaDecimal)
+        else if (IsHanaDecimal(readData))
             readValueType = ReadValueType.HanaDecimal;
         try {
             return readValueType switch {
                 ReadValueType.Boolean => (T)Convert.ChangeType(readData.ToString().ToLower() is "y" or "1" or "true",
                     type),
                 ReadValueType.Enum        => (T)readData,
-                ReadValueType.HanaDecimal => (T)Convert.ChangeType(((HanaDecimal)readData).ToDecimal(), type),
+                ReadValueType.HanaDecimal => (T)Convert.ChangeType(ReadHanaDecimal(readData), type),
                 _                         => (T)Convert.ChangeType(readData, type)
             };
         }
@@ -150,6 +149,10 @@ public abstract class DataConnector : IDisposable {
             return default;
         }
     }
+    /* Cannot Use Sap.Data.Hana.HanaDecimal, it will cause an exception if it's not installed in an SQL environment */
+    protected virtual bool    IsHanaDecimal(object   readData) => false;
+    protected virtual decimal ReadHanaDecimal(object readData) => 0;
+    /* Cannot Use Sap.Data.Hana.HanaDecimal, it will cause an exception if it's not installed in an SQL environment */
 
     private enum ReadValueType {
         Default,

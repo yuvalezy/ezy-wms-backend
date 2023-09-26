@@ -142,6 +142,8 @@ public class HANADataConnector : DataConnector {
             GetValuesClose(dr);
         }
     }
+    protected override    bool    IsHanaDecimal(object   readData) => readData is HanaDecimal;
+    protected override decimal ReadHanaDecimal(object readData) => ((HanaDecimal)readData).ToDecimal();
 
     public override int Execute(string query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null) {
         bool withTransaction = true;
@@ -222,5 +224,17 @@ public class HANADataConnector : DataConnector {
         foreach (var parameter in parameters.Where(v => v.Direction is ParameterDirection.Output or ParameterDirection.InputOutput)) {
             parameter.Value = cmdMain.Parameters[parameter.Name].Value;
         }
+    }
+    public static decimal GetHanaDecimal(object value) => ((HanaDecimal)value).ToDecimal();
+    public static HanaCommand ConvertToCommand(Procedure proc) {
+        var cm = new HanaCommand(proc.Name){CommandType = CommandType.StoredProcedure};
+        proc.Parameters.ForEach(value => {
+            var parameter = cm.Parameters.Add(value.Name, value.Type);
+            if (value.Size > 0)
+                parameter.Size = value.Size;
+            parameter.Direction = value.Direction;
+            parameter.Value     = value.Value ?? DBNull.Value;
+        });
+        return cm;
     }
 }

@@ -30,7 +30,7 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
             context.Validated(identity);
         }
         else {
-            if (!isValidBranch) {
+            if (empID > 0 && !isValidBranch) {
                 context.SetError("invalid_grant", "The user does not have a valid branch defined.");
                 return;
             }

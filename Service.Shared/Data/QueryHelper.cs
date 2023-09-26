@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Text.RegularExpressions;
-using Sap.Data.Hana;
 using Service.Shared.Company;
 
 namespace Service.Shared.Data; 
@@ -205,7 +204,7 @@ public static class QueryHelper {
             object value = reader[id];
             return ConnectionController.DatabaseType switch {
                 DatabaseType.SQL  => Convert.ToDouble(value),
-                DatabaseType.HANA => Convert.ToDouble(((HanaDecimal)value).ToDecimal()),
+                DatabaseType.HANA => Convert.ToDouble(HANADataConnector.GetHanaDecimal(value)),
                 _                 => throw new Exception("ConnectionController.DatabaseType is not defined")
             };
         }
@@ -225,7 +224,7 @@ public static class QueryHelper {
             object value = reader[id];
             return ConnectionController.DatabaseType switch {
                 DatabaseType.SQL  => Convert.ToDecimal(value),
-                DatabaseType.HANA => ((HanaDecimal)value).ToDecimal(),
+                DatabaseType.HANA => HANADataConnector.GetHanaDecimal(value),
                 _                 => throw new Exception("ConnectionController.DatabaseType is not defined")
             };
         }

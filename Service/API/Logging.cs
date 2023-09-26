@@ -11,15 +11,23 @@ public class LoggingMiddleware : OwinMiddleware {
     public override async Task Invoke(IOwinContext context) {
         var request  = context.Request;
         var response = context.Response;
+        try {
+            // Log the incoming request
+            LogRequest(request);
 
-        // Log the incoming request
-        LogRequest(request);
+            // Allow the request to continue through the pipeline
+            await Next.Invoke(context);
 
-        // Allow the request to continue through the pipeline
-        await Next.Invoke(context);
+            // Optionally, you can log the response as well
+            LogResponse(response);
+        }
+        catch (Exception ex) {
+            // Log the unhandled exception
+            LogException(ex);
 
-        // Optionally, you can log the response as well
-        LogResponse(response);
+            // Re-throw the exception to propagate it up the middleware pipeline
+            throw;
+        }
     }
 
     private void LogRequest(IOwinRequest request) {
@@ -40,5 +48,12 @@ public class LoggingMiddleware : OwinMiddleware {
 
         // TODO: Add your logging logic here.
         Console.WriteLine($"Response - Status Code: {statusCode}, Reason: {reasonPhrase}");
+    }
+
+    private void LogException(Exception ex) {
+        // Log the exception details
+        // You can use a logging library or write to a log file here.
+        Console.WriteLine($"Exception: {ex.Message}");
+        Console.WriteLine($"StackTrace: {ex.StackTrace}");
     }
 }
