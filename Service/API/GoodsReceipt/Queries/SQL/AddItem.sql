@@ -62,7 +62,7 @@ from [@LW_YUVAL08_GRPO1] T0
          inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
 where T0.U_ItemCode = @ItemCode;
 
-WITH X0 AS (
+WITH DocData AS (
     select ROW_NUMBER() OVER(Order by [Priority], [DocDate]) ID, *
     from (
              --reserved invoice
@@ -91,10 +91,21 @@ WITH X0 AS (
                and T0."WhsCode" = @WhsCode
          ) T0
 )
-select top 1 @ReturnValue = Case X0.ObjType When 1250000001 Then 3 When 13 Then 2 When 17 Then 2 End
-from X0
-         left outer join X0 X1 on X1.ID <= X0.ID
-Group By X0.ID, X0.ObjType, X0.DocDate, X0.DocEntry, X0.LineNum
-Having Sum(X1.OpenInvQty) >= @TotalQuantity;
+, ScannedData AS (
+    select T0.ObjType, T0.DocEntry, T0.LineNum, Count(1) Quantity
+    from DocData T0
+    inner join "@LW_YUVAL08_GRPO1" T1 on T1.U_TargetEntry = T0.DocEntry and T1.U_TargetLine = T0.LineNum and T1.U_TargetType = T0.ObjType and T1.U_LineStatus in ('O', 'P', 'F')
+    group by T0.ObjType, T0.DocEntry, T0.LineNum)
+select top 1 @ReturnValue = Case X0.ObjType When 1250000001 Then 3 When 13 Then 2 When 17 Then 2 End,
+             @TargetType = X0.ObjType,
+             @TargetEntry = X0.DocEntry,
+             @TargetLine = X0.LineNum
+from DocData X0
+         left outer join ScannedData X1 on X1.DocEntry = X0.DocEntry and X1.ObjType = X0.ObjType and X1.LineNum = X0.LineNum
+where X0.OpenInvQty - IsNull(X1.Quantity, 0) > 0;
+
+If @TargetType is not null Begin
+    update "@LW_YUVAL08_GRPO1" set U_TargetType = @TargetType, U_TargetEntry = @TargetEntry, U_TargetLine = @TargetLine where U_ID = @ID and U_LineID = @LineID;
+end
 
 select @ReturnValue ReturnValue

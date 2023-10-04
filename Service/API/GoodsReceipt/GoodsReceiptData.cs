@@ -153,5 +153,9 @@ public class GoodsReceiptData {
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status),
         });
+        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptLineStatus"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
+        });
     }
 }

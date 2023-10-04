@@ -1,1 +1,1 @@
-﻿update [@LW_YUVAL08_GRPO] set "U_Status" = @Status, "U_StatusDate" = getdate(), "U_StatusEmpID" = @empID where "Code" = @ID;
+﻿update [@LW_YUVAL08_GRPO] set "U_Status" = @Status, "U_StatusDate" = getdate(), "U_StatusEmpID" = @empID where "Code" = @ID
