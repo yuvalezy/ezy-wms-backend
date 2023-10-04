@@ -33,7 +33,7 @@ public class GoodsReceiptData {
             return true;
         }
         catch (Exception e) {
-            UpdateDocumentStatus(id, employeeID, DocumentStatus.Open);
+            UpdateDocumentStatus(id, employeeID, DocumentStatus.InProgress);
             throw;
         }
     }

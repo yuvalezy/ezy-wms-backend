@@ -9,6 +9,7 @@ declare @ReturnValue int = 1;
 declare @WhsCode nvarchar(8) = (select U_LW_Branch
                                 from OHEM
                                 where empID = @empID);
+declare @CardCode nvarchar(50) = (select U_CardCode from "@LW_YUVAL08_GRPO" where Code = @ID);
 
 declare @POEntry int;
 declare @POLine int;
@@ -20,7 +21,7 @@ declare @TargetLine int;
 --get first open purchase order in the connected branch
 select top 1 @POEntry = T0."DocEntry", @POLine = T0."LineNum"
 from POR1 T0
-         inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+         inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1.CardCode = @CardCode
          left outer join (
     select T0.U_POEntry DocEntry, T0.U_POLine LineNum, Count(1) Quantity
     from [@LW_YUVAL08_GRPO1] T0

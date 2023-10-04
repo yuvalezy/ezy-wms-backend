@@ -12,6 +12,7 @@ public class AddItemParameter {
     public int    ID       { get; set; }
     public string ItemCode { get; set; }
     public string BarCode  { get; set; }
+    public string CardCode { get; set; }
 
     public bool Validate(Data data) {
         if (ID <= 0)
