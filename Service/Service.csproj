@@ -106,6 +106,7 @@
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptCreation.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptData.cs" />
+    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
     <Compile Include="API\GoodsReceipt\Models\Parameters.cs" />
     <Compile Include="API\GoodsReceipt\Models\Document.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
@@ -232,6 +233,7 @@
     <Folder Include="API\GoodsReceipt\Queries\HANA\" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptVSExit.sql" />
     <Content Include="wwwroot\index.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

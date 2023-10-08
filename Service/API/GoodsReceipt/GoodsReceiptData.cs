@@ -81,10 +81,10 @@ public class GoodsReceiptData {
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
-        List<Document> docs        = new();
-        var            sb          = new StringBuilder(GetQuery("GetGoodsReceipts"));
-        var            queryParams = new Parameters() {
-            new Parameter("@WhsCode", SqlDbType.NVarChar, 8){Value = parameters.WhsCode}
+        List<Document> docs = new();
+        var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        var queryParams = new Parameters() {
+            new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
         };
         sb.Append($" where DOCS.\"U_WhsCode\" = @WhsCode ");
         if (parameters.Status is { Length: > 0 }) {
@@ -183,5 +183,29 @@ public class GoodsReceiptData {
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status),
         });
+    }
+
+    public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
+        var data    = new List<GoodsReceiptVSExitReport>();
+        var control = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
+        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptVSExit"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
+            int objectType = (int)dr["ObjType"];
+            int docNum     = (int)dr["DocNum"];
+            var tuple      = (targetType: objectType, docNum);
+
+            GoodsReceiptVSExitReport value;
+            if (!control.ContainsKey(tuple)) {
+                value = new GoodsReceiptVSExitReport(objectType, docNum, dr["CardName"].ToString(), dr["Address2"].ToString());
+                control.Add(tuple, value);
+            }
+            else {
+                value = control[tuple];
+            }
+
+            value.Lines.Add(new GoodsReceiptVSExitReportLine((string)dr["ItemCode"], dr["ItemName"].ToString(), (int)dr["OpenInvQty"], (int)dr["Quantity"]));
+
+            data.Add(value);
+        });
+        return data;
     }
 }
