@@ -38,11 +38,16 @@ public class AddItemParameter {
 }
 
 public class FilterParameters {
-    internal string           WhsCode { get; set; }
-    public   DocumentStatus[] Status  { get; set; }
-    public   OrderBy?         OrderBy { get; set; }
-    public   int?             ID      { get; set; }
-    public   bool             Desc    { get; set; }
+    internal string WhsCode { get; set; }
+
+    public DateTime?        Date            { get; set; }
+    public string           BusinessPartner { get; set; }
+    public string           Name            { get; set; }
+    public DocumentStatus[] Status          { get; set; }
+    public OrderBy?         OrderBy         { get; set; }
+    public int?             ID              { get; set; }
+    public int?             GRPO            { get; set; }
+    public bool             Desc            { get; set; }
 }
 
 public enum OrderBy {

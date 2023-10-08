@@ -27,7 +27,7 @@ public class GoodsReceiptData {
             throw new Exception("Cannot process document if the Status is not In Progress");
         UpdateDocumentStatus(id, employeeID, DocumentStatus.Processing);
         try {
-            using var creation    = new GoodsReceiptCreation(id, employeeID);
+            using var creation = new GoodsReceiptCreation(id, employeeID);
             creation.Execute();
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
             return true;
@@ -81,20 +81,44 @@ public class GoodsReceiptData {
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
-        List<Document> docs = new();
-        var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
-        sb.Append($" where DOCS.\"U_WhsCode\" = '{parameters.WhsCode.ToQuery()}' ");
-        if (parameters?.Status is { Length: > 0 }) {
+        List<Document> docs        = new();
+        var            sb          = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        var            queryParams = new Parameters() {
+            new Parameter("@WhsCode", SqlDbType.NVarChar, 8){Value = parameters.WhsCode}
+        };
+        sb.Append($" where DOCS.\"U_WhsCode\" = @WhsCode ");
+        if (parameters.Status is { Length: > 0 }) {
             sb.Append(" and DOCS.\"U_Status\" in ('");
             sb.Append(string.Join("','", parameters.Status.Select(v => (char)v)));
             sb.Append("')");
         }
 
-        if (parameters?.ID != null) {
-            sb.Append($" and DOCS.\"Code\" = {parameters.ID} ");
+        if (parameters.ID != null) {
+            queryParams.Add("@Code", SqlDbType.Int).Value = parameters.ID;
+            sb.Append(" and DOCS.\"Code\" = @Code ");
         }
 
-        if (parameters?.OrderBy != null) {
+        if (parameters.Name != null) {
+            queryParams.Add("@Name", SqlDbType.NVarChar, 50).Value = parameters.Name;
+            sb.Append(" and DOCS.\"Name\" = @Name ");
+        }
+
+        if (parameters.BusinessPartner != null) {
+            queryParams.Add("@CardCode", SqlDbType.NVarChar, 50).Value = parameters.BusinessPartner;
+            sb.Append(" and DOCS.\"U_CardCode\" = @CardCode ");
+        }
+
+        if (parameters.Date != null) {
+            queryParams.Add("@Date", SqlDbType.DateTime).Value = parameters.Date;
+            sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@Date) = 0 ");
+        }
+
+        if (parameters.GRPO != null) {
+            queryParams.Add("@GRPO", SqlDbType.Int).Value = parameters.GRPO;
+            sb.Append(" and OPDN.\"DocNum\" = @GRPO ");
+        }
+
+        if (parameters.OrderBy != null) {
             sb.Append(" order by DOCS.");
             switch (parameters.OrderBy) {
                 case OrderBy.ID:
@@ -114,7 +138,7 @@ public class GoodsReceiptData {
                 sb.Append(" desc");
         }
 
-        Global.DataObject.ExecuteReader(sb, dr => docs.Add(ReadDocument(dr)));
+        Global.DataObject.ExecuteReader(sb.ToString(), queryParams, dr => docs.Add(ReadDocument(dr)));
         return docs;
     }
 
@@ -130,6 +154,8 @@ public class GoodsReceiptData {
             BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString()),
             WhsCode         = (string)dr["WhsCode"]
         };
+        if (dr["GRPO"] != DBNull.Value)
+            doc.GRPO = (int)dr["GRPO"];
         return doc;
     }
 
