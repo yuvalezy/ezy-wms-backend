@@ -25,11 +25,10 @@ public class Startup {
         var item          = new StringEnumConverter();
         jsonFormatter.SerializerSettings.Converters.Add(item);
         jsonFormatter.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
-
+        
         var options = new OAuthAuthorizationServerOptions {
             TokenEndpointPath         = new PathString("/token"),
             Provider                  = new ApplicationAuthProvider(),
-            AccessTokenExpireTimeSpan = TimeSpan.FromMinutes(60),
             AllowInsecureHttp         = true
         };
         if (Global.LoadBalancing && Global.RestAPISettings.EnableRedisServer)
@@ -51,4 +50,5 @@ public class Startup {
         };
         app.UseFileServer(fileOptions);
     }
+    
 }

@@ -27,6 +27,13 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
             var identity = new ClaimsIdentity(context.Options.AuthenticationType);
             identity.AddClaim(new Claim("Username", userName));
             identity.AddClaim(new Claim("EmployeeID", empID.ToString()));
+
+            //set the expiration token to midnight
+            var now            = DateTime.Now;
+            var midnight       = now.Date.AddDays(1);
+            var timeToMidnight = midnight - now;
+            context.Options.AccessTokenExpireTimeSpan = timeToMidnight;
+
             context.Validated(identity);
         }
         else {

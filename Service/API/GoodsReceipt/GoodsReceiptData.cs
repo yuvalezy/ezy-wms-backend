@@ -191,12 +191,13 @@ public class GoodsReceiptData {
         Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptVSExit"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             int objectType = (int)dr["ObjType"];
             int docNum     = (int)dr["DocNum"];
-            var tuple      = (targetType: objectType, docNum);
+            var tuple      = (objectType, docNum);
 
             GoodsReceiptVSExitReport value;
             if (!control.ContainsKey(tuple)) {
                 value = new GoodsReceiptVSExitReport(objectType, docNum, dr["CardName"].ToString(), dr["Address2"].ToString());
                 control.Add(tuple, value);
+                data.Add(value);
             }
             else {
                 value = control[tuple];
@@ -204,7 +205,6 @@ public class GoodsReceiptData {
 
             value.Lines.Add(new GoodsReceiptVSExitReportLine((string)dr["ItemCode"], dr["ItemName"].ToString(), (int)dr["OpenInvQty"], (int)dr["Quantity"]));
 
-            data.Add(value);
         });
         return data;
     }
