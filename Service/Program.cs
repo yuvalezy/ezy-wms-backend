@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.ServiceProcess;
 using System.Threading;
@@ -15,6 +16,8 @@ public static class Program {
     /// </summary>
     private static void Main() {
         SBOAssembly.RedirectAssembly();
+        Thread.CurrentThread.CurrentCulture   = new CultureInfo("es-PA");
+        Thread.CurrentThread.CurrentUICulture = new CultureInfo("es-PA");
         RunService();
     }
 

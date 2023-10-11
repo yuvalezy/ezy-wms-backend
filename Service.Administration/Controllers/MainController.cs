@@ -558,6 +558,7 @@ public class MainController {
             DbServerType = serverType,
             UserName     = dbUser,
             Password     = dbPassword,
+            language = BoSuppLangs.ln_Spanish_La
         };
         try {
             int lRetCode = cmp.Connect();

@@ -37,7 +37,7 @@ order by T1."CreateDate";
 
 
 declare @LineID int = IsNull((select Max("U_LineID") + 1
-                              from "@LW_YUVAL08_GRPO1"), 0);
+                              from "@LW_YUVAL08_GRPO1" where "U_ID" = @ID), 0);
 insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_POEntry", "U_POLine")
 select @ID,
        @LineID,

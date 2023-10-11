@@ -130,6 +130,16 @@
     <Compile Include="Controllers\ServiceController.cs" />
     <Compile Include="DataCommands.cs" />
     <Compile Include="Controllers\HelloWorldController.cs" />
+    <Compile Include="ErrorMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ErrorMessages.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ErrorMessages.es-PA.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ErrorMessages.es-PA.resx</DependentUpon>
+    </Compile>
     <Compile Include="Models\CustomServiceController.cs" />
     <Compile Include="Models\InteractiveServiceController.cs" />
     <Compile Include="Models\ServiceNode.cs" />
@@ -170,6 +180,14 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
+    <EmbeddedResource Include="ErrorMessages.es-PA.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ErrorMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="ProjectInstaller.resx">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </EmbeddedResource>

@@ -34,7 +34,8 @@ public partial class Connection : Form {
             return;
 
         var vCmp = new Company {
-            Server = txtServer.Text
+            Server   = txtServer.Text,
+            language = BoSuppLangs.ln_Spanish_La
         };
 
         switch (cmbType.Text) {
@@ -128,6 +129,7 @@ public partial class Connection : Form {
             data.Dispose();
             Application.Exit();
         }
+
         try {
             ConnectionController.DatabaseType = dbType == BoDataServerTypes.dst_HANADB ? DatabaseType.HANA : DatabaseType.SQL;
         }

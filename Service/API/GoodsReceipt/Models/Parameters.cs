@@ -16,19 +16,21 @@ public class AddItemParameter {
 
     public bool Validate(Data data) {
         if (ID <= 0)
-            throw new ArgumentException("ID is a required parameter");
+            throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(ItemCode))
-            throw new ArgumentException("ItemCode is a required parameter");
+            throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(BarCode))
-            throw new ArgumentException("BarCode is a required parameter");
+            throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
         int value = data.GoodsReceiptData.ValidateAddItem(ID, ItemCode, BarCode);
         switch (value) {
             case -1:
-                throw new ArgumentException($"Item Code {ItemCode} was not found in the database");
+                throw new ArgumentException(string.Format(ErrorMessages.Item_Code__0__was_not_found_in_the_database, ItemCode));
             case -2:
-                throw new ArgumentException($"The BarCode {BarCode} does not match with Item {ItemCode} BarCode");
+                throw new ArgumentException(string.Format(ErrorMessages.BarCode__0__does_not_match_with_Item__1__BarCode, BarCode, ItemCode));
             case -3:
-                throw new ArgumentException($"Transaction with ID {ID} does not exists in the system");
+                throw new ArgumentException(string.Format(ErrorMessages.Transaction_with_ID__0__does_not_exists_in_the_system, ID));
+            case -5:
+                throw new ArgumentException(string.Format(ErrorMessages.Item__0___Bar_Code__1__is_not_a_purchase_item, ItemCode, BarCode));
             case -4:
                 return false;
         }
