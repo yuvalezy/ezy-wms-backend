@@ -25,11 +25,11 @@ public class Startup {
         var item          = new StringEnumConverter();
         jsonFormatter.SerializerSettings.Converters.Add(item);
         jsonFormatter.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
-        
+
         var options = new OAuthAuthorizationServerOptions {
-            TokenEndpointPath         = new PathString("/token"),
-            Provider                  = new ApplicationAuthProvider(),
-            AllowInsecureHttp         = true
+            TokenEndpointPath = new PathString("/token"),
+            Provider          = new ApplicationAuthProvider(),
+            AllowInsecureHttp = true
         };
         if (Global.LoadBalancing && Global.RestAPISettings.EnableRedisServer)
             options.RefreshTokenProvider = new RefreshTokenProvider(Global.RestAPISettings.RedisServer);
@@ -49,6 +49,14 @@ public class Startup {
             }
         };
         app.UseFileServer(fileOptions);
+
+        app.Use(async (context, next) => {
+            await next();
+
+            if (context.Response.StatusCode == 404 && context.Request.Method == "GET") {
+                context.Response.StatusCode = 302;             // Set to redirect status code
+                context.Response.Headers.Set("Location", "/"); // Set the location to redirect to
+            }
+        });
     }
-    
 }
