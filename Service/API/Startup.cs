@@ -53,7 +53,7 @@ public class Startup {
         app.Use(async (context, next) => {
             await next();
 
-            if (context.Response.StatusCode == 404 && context.Request.Method == "GET") {
+            if (context.Response.StatusCode == 404 && context.Request.Method == "GET" && !context.Request.Path.Value.Equals("/config.json", StringComparison.OrdinalIgnoreCase)) {
                 context.Response.StatusCode = 302;             // Set to redirect status code
                 context.Response.Headers.Set("Location", "/"); // Set the location to redirect to
             }

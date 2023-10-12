@@ -185,6 +185,29 @@ public class GoodsReceiptData {
         });
     }
 
+    public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
+        var data    = new List<GoodsReceiptReportAll>();
+        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
+            string itemCode = (string)dr["ItemCode"];
+            string itemName = dr["ItemName"].ToString();
+            int    quantity = (int)dr["Quantity"];
+            int    delivery = (int)dr["Delivery"];
+            int    showroom = (int)dr["Showroom"];
+            int    stock    = Convert.ToInt32(dr["OnHand"]);
+
+            var line = new GoodsReceiptReportAll {
+                ItemCode = itemCode,
+                ItemName = itemName,
+                Quantity = quantity,
+                Delivery = delivery,
+                Showroom = showroom,
+                Stock = stock
+            };
+            data.Add(line);
+        });
+        return data;
+    }
+
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
         var data    = new List<GoodsReceiptVSExitReport>();
         var control = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
@@ -204,7 +227,6 @@ public class GoodsReceiptData {
             }
 
             value.Lines.Add(new GoodsReceiptVSExitReportLine((string)dr["ItemCode"], dr["ItemName"].ToString(), (int)dr["OpenInvQty"], (int)dr["Quantity"]));
-
         });
         return data;
     }
