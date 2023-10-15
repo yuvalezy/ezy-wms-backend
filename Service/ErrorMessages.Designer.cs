@@ -78,6 +78,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Numero Borrador.
+        /// </summary>
+        internal static string DraftNumber {
+            get {
+                return ResourceManager.GetString("DraftNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ID is a required parameter.
         /// </summary>
         internal static string ID_is_a_required_parameter {
@@ -114,11 +123,38 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to LineID is a required parameter.
+        /// </summary>
+        internal static string LineID_is_a_required_parameter {
+            get {
+                return ResourceManager.GetString("LineID_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Transaction with ID {0} does not exists in the system.
         /// </summary>
         internal static string Transaction_with_ID__0__does_not_exists_in_the_system {
             get {
                 return ResourceManager.GetString("Transaction_with_ID__0__does_not_exists_in_the_system", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Transaccón WMS.
+        /// </summary>
+        internal static string WMSTransaction {
+            get {
+                return ResourceManager.GetString("WMSTransaction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Transacción de Entrada WMS #{0}.
+        /// </summary>
+        internal static string WMSTransactionAlert {
+            get {
+                return ResourceManager.GetString("WMSTransactionAlert", resourceCulture);
             }
         }
     }

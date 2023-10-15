@@ -17,6 +17,8 @@ public class GoodsReceiptCreation : IDisposable {
     private DataTable dt;
     private Documents doc;
 
+    public int NewEntry { get; set; }
+
     public GoodsReceiptCreation(int id, int employeeID) {
         this.id         = id;
         this.employeeID = employeeID;
@@ -27,7 +29,8 @@ public class GoodsReceiptCreation : IDisposable {
             LoadData();
             Global.TransactionMutex.WaitOne();
             Global.ConnectCompany();
-            doc = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPurchaseDeliveryNotes);
+            doc               = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oDrafts);
+            doc.DocObjectCode = BoObjectTypes.oPurchaseDeliveryNotes;
 
             doc.CardCode   = cardCode;
             doc.DocDate    = DateTime.Now;
@@ -61,6 +64,8 @@ public class GoodsReceiptCreation : IDisposable {
             if (doc.Add() != 0) {
                 throw new Exception(ConnectionController.Company.GetLastErrorDescription());
             }
+
+            NewEntry = int.Parse(ConnectionController.Company.GetNewObjectKey());
         }
         catch (Exception e) {
             throw new Exception("Error generating GRPO: " + e.Message);

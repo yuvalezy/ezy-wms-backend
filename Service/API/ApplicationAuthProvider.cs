@@ -21,7 +21,7 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
         string password = context.Password;
         int    empID    = -1;
         if (!string.IsNullOrWhiteSpace(context.UserName))
-            valid = ValidateAccess(context.UserName, out empID, out isValidBranch);
+            valid = Data.ValidateAccess(context.UserName, out empID, out isValidBranch);
 
         if (valid) {
             var identity = new ClaimsIdentity(context.Options.AuthenticationType);
@@ -46,19 +46,6 @@ public class ApplicationAuthProvider : OAuthAuthorizationServerProvider {
         }
     }
 
-    private bool ValidateAccess(string loginString, out int empID, out bool isValidBranch) {
-        empID = -1;
-        string sqlStr = $"select empID, (select WhsCode from OWHS where WhsCode = OHEM.U_LW_Branch) Branch from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
-        (empID, string branch) = Global.DataObject.GetValue<int, string>(sqlStr);
-
-        isValidBranch = !string.IsNullOrWhiteSpace(branch);
-        if (!isValidBranch)
-            return false;
-
-        if (empID > 0)
-            Global.LoadAuthorization(empID);
-        return empID > 0;
-    }
 
 
     private static bool IsLocalIP(string ipAddress) {

@@ -1,12 +1,6 @@
-using System;
-using Service.API.Models;
+﻿using System;
 
 namespace Service.API.GoodsReceipt.Models;
-
-public class CreateParameters {
-    public string CardCode { get; set; }
-    public string Name     { get; set; }
-}
 
 public class AddItemParameter {
     public int    ID       { get; set; }
@@ -37,30 +31,4 @@ public class AddItemParameter {
 
         return true;
     }
-}
-
-public class FilterParameters {
-    internal string WhsCode { get; set; }
-
-    public DateTime?        Date            { get; set; }
-    public string           BusinessPartner { get; set; }
-    public string           Name            { get; set; }
-    public DocumentStatus[] Status          { get; set; }
-    public OrderBy?         OrderBy         { get; set; }
-    public int?             ID              { get; set; }
-    public int?             GRPO            { get; set; }
-    public bool             Desc            { get; set; }
-}
-
-public enum OrderBy {
-    ID,
-    Name,
-    Date
-}
-
-public enum AddItemReturnValue {
-    ClosedDocument   = -1,
-    StoreInWarehouse = 1,
-    Fulfillment      = 2,
-    Showroom         = 3
 }

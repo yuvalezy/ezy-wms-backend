@@ -4,11 +4,13 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using CrystalDecisions.ReportAppServer.DataDefModel;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
 using Service.Shared.Utils;
+using Alert = Service.API.General.Alert;
 
 namespace Service.API.GoodsReceipt;
 
@@ -21,7 +23,7 @@ public class GoodsReceiptData {
         return true;
     }
 
-    public bool ProcessDocument(int id, int employeeID) {
+    public bool ProcessDocument(int id, int employeeID, List<string> sendTo) {
         var doc = GetDocument(id);
         if (doc.Status != DocumentStatus.InProgress)
             throw new Exception("Cannot process document if the Status is not In Progress");
@@ -30,6 +32,20 @@ public class GoodsReceiptData {
             using var creation = new GoodsReceiptCreation(id, employeeID);
             creation.Execute();
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
+            using var alert = new Alert();
+            alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+            alert.Columns.Add(new AlertColumn(ErrorMessages.WMSTransaction) {
+                Values = new List<AlertValue> {
+                    new(id.ToString())
+                }
+            });
+            alert.Columns.Add(new AlertColumn(ErrorMessages.DraftNumber, true) {
+                Values = new List<AlertValue> {
+                    new(creation.NewEntry.ToString(), "112", creation.NewEntry.ToString())
+                }
+            });
+
+            alert.Send(sendTo);
             return true;
         }
         catch (Exception e) {
@@ -45,6 +61,37 @@ public class GoodsReceiptData {
             new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode),
         });
 
+    public int ValidateUpdateLine(UpdateLineParameter parameters) =>
+        Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
+        });
+
+    public void UpdateLine(UpdateLineParameter updateLineParameter) {
+        var parameters = new Parameters {
+            new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
+            new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
+        };
+        var  sb    = new StringBuilder("update \"@LW_YUVAL08_GRPO1\" set ");
+        bool comma = false;
+        if (updateLineParameter.Comment != null) {
+            sb.AppendLine("\"U_Comments\" = @Comments");
+            parameters.Add("@Comments", SqlDbType.NText).Value = updateLineParameter.Comment;
+            comma                                              = true;
+        }
+
+        if (updateLineParameter.CloseLine.HasValue && updateLineParameter.CloseLine.Value) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_LineStatus\" = 'C'");
+            comma                                              = true;
+        }
+
+        sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
+
+        Global.DataObject.Execute(sb.ToString(), parameters);
+    }
+
     public int ValidateAddItem(int id, string itemCode, string barCode) =>
         Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), new Parameters {
             new Parameter("@ID", SqlDbType.Int, id),
@@ -52,11 +99,11 @@ public class GoodsReceiptData {
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
         });
 
-    public AddItemReturnValue AddItem(int id, string itemCode, string barcode, int employeeID) {
-        int returnValue;
+    public AddItemResponse AddItem(int id, string itemCode, string barcode, int employeeID) {
+        int returnValue, lineID;
         try {
             Global.DataObject.BeginTransaction();
-            returnValue = Global.DataObject.GetValue<int>(GetQuery("AddItem"), new Parameters {
+            (returnValue, lineID) = Global.DataObject.GetValue<int, int>(GetQuery("AddItem"), new Parameters {
                 new Parameter("@ID", SqlDbType.Int, id),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
@@ -69,7 +116,7 @@ public class GoodsReceiptData {
             throw;
         }
 
-        return (AddItemReturnValue)returnValue;
+        return new AddItemResponse((AddItemReturnValue)returnValue, lineID);
     }
 
     public Document GetDocument(int id) {
@@ -186,7 +233,7 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
-        var data    = new List<GoodsReceiptReportAll>();
+        var data = new List<GoodsReceiptReportAll>();
         Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             string itemCode = (string)dr["ItemCode"];
             string itemName = dr["ItemName"].ToString();
@@ -201,7 +248,7 @@ public class GoodsReceiptData {
                 Quantity = quantity,
                 Delivery = delivery,
                 Showroom = showroom,
-                Stock = stock
+                Stock    = stock
             };
             data.Add(line);
         });

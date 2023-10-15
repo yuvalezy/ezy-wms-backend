@@ -108,4 +108,4 @@ If @TargetType is not null Begin
     update "@LW_YUVAL08_GRPO1" set U_TargetType = @TargetType, U_TargetEntry = @TargetEntry, U_TargetLine = @TargetLine where U_ID = @ID and U_LineID = @LineID;
 end
 
-select @ReturnValue ReturnValue
+select @ReturnValue ReturnValue, @LineID LineID

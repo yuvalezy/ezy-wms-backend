@@ -69,4 +69,13 @@ public class GeneralData {
             });
         return list;
     }
+
+    public List<string> AlertUsers {
+        get {
+            var    list  = new List<string>();
+            string query = "select USER_CODE from OUSR where U_LW_WMS_ALERTS = 'Y'";
+            Global.DataObject.ExecuteReader(query, dr => list.Add(dr.GetString(0)));
+            return list;
+        }
+    }
 }

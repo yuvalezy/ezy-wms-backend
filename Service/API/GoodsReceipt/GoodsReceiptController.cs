@@ -31,12 +31,24 @@ public class GoodsReceiptController : LWApiController {
 
     [HttpPost]
     [ActionName("AddItem")]
-    public AddItemReturnValue AddItem([FromBody] AddItemParameter parameters) {
+    public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for adding item to document");
         if (!parameters.Validate(data))
-            return AddItemReturnValue.ClosedDocument;
+            return new AddItemResponse(AddItemReturnValue.ClosedDocument);
         return data.GoodsReceiptData.AddItem(parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+    }
+
+    [HttpPost]
+    [ActionName("UpdateLine")]
+    public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+            throw new UnauthorizedAccessException("You don't have access for updating line in document");
+        var returnValue = parameters.Validate(data);
+        if (returnValue != UpdateLineReturnValue.Ok)
+            return returnValue;
+        data.GoodsReceiptData.UpdateLine(parameters);
+        return returnValue;
     }
 
     [HttpPost]
@@ -47,12 +59,13 @@ public class GoodsReceiptController : LWApiController {
 
         return data.GoodsReceiptData.CancelDocument(parameters.ID, EmployeeID);
     }
+
     [HttpPost]
     [ActionName("Process")]
     public bool ProcessDocument([FromBody] IDParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
-        return data.GoodsReceiptData.ProcessDocument(parameters.ID, EmployeeID);
+        return data.GoodsReceiptData.ProcessDocument(parameters.ID, EmployeeID, data.GeneralData.AlertUsers);
     }
 
     [HttpGet]
@@ -71,7 +84,7 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get document");
         return data.GoodsReceiptData.GetDocument(id);
     }
-    
+
     [HttpGet]
     [Route("GoodsReceiptAll/{id:int}")]
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
@@ -79,7 +92,7 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return data.GoodsReceiptData.GetGoodsReceiptAllReport(id);
     }
-    
+
     [HttpGet]
     [Route("GoodsReceiptVSExitReport/{id:int}")]
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {

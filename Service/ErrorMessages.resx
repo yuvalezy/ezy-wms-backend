@@ -21,6 +21,9 @@
     <data name="ID_is_a_required_parameter" xml:space="preserve">
         <value>ID is a required parameter</value>
     </data>
+    <data name="LineID_is_a_required_parameter" xml:space="preserve">
+        <value>LineID is a required parameter</value>
+    </data>
     <data name="ItemCode_is_a_required_parameter" xml:space="preserve">
         <value>ItemCode is a required parameter</value>
     </data>
@@ -38,5 +41,14 @@
     </data>
     <data name="Item__0___Bar_Code__1__is_not_a_purchase_item" xml:space="preserve">
         <value>Item {0}, Bar Code {1} is not a purchase item</value>
+    </data>
+    <data name="WMSTransactionAlert" xml:space="preserve">
+        <value>Transacción de Entrada WMS #{0}</value>
+    </data>
+    <data name="WMSTransaction" xml:space="preserve">
+        <value>Transaccón WMS</value>
+    </data>
+    <data name="DraftNumber" xml:space="preserve">
+        <value>Numero Borrador</value>
     </data>
 </root>
