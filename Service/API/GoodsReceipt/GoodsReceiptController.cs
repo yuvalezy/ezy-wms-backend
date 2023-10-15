@@ -44,10 +44,10 @@ public class GoodsReceiptController : LWApiController {
     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for updating line in document");
-        var returnValue = parameters.Validate(data);
+        (var returnValue, int empID) = parameters.Validate(data);
         if (returnValue != UpdateLineReturnValue.Ok)
             return returnValue;
-        data.GoodsReceiptData.UpdateLine(parameters);
+        data.GoodsReceiptData.UpdateLine(parameters, empID);
         return returnValue;
     }
 
@@ -66,6 +66,18 @@ public class GoodsReceiptController : LWApiController {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         return data.GoodsReceiptData.ProcessDocument(parameters.ID, EmployeeID, data.GeneralData.AlertUsers);
+    }
+    [HttpGet]
+    [ActionName("CancelReasons")]
+    public IEnumerable<ValueDescription<int>> GetCancelReasons() {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+            throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
+        var values = new List<ValueDescription<int>>();
+        Global.DataObject.ExecuteReader("select \"Code\", \"Name\" from \"@LW_YUVAL08_GRPO_CR\" order by 2", dr => {
+            var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
+            values.Add(value);
+        });
+        return values;
     }
 
     [HttpGet]

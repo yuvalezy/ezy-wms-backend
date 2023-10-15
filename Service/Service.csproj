@@ -128,6 +128,7 @@
     <Compile Include="API\Models\Response.cs" />
     <Compile Include="API\Models\Item.cs" />
     <Compile Include="API\Models\UserInfo.cs" />
+    <Compile Include="API\Models\ValueDescription.cs" />
     <Compile Include="API\Print\Initializer.cs" />
     <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\PrintParameters.cs" />

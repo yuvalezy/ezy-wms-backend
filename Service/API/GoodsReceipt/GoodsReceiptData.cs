@@ -65,26 +65,35 @@ public class GoodsReceiptData {
         Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), new Parameters {
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
+            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
         });
 
-    public void UpdateLine(UpdateLineParameter updateLineParameter) {
+    public void UpdateLine(UpdateLineParameter updateLineParameter, int empID) {
         var parameters = new Parameters {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
         };
-        var  sb    = new StringBuilder("update \"@LW_YUVAL08_GRPO1\" set ");
-        bool comma = false;
+        var  sb       = new StringBuilder("update \"@LW_YUVAL08_GRPO1\" set ");
+        bool comma    = false;
+        bool userSign = false;
         if (updateLineParameter.Comment != null) {
-            sb.AppendLine("\"U_Comments\" = @Comments");
+            sb.AppendLine("\"U_Comments\" = @Comments ");
             parameters.Add("@Comments", SqlDbType.NText).Value = updateLineParameter.Comment;
             comma                                              = true;
         }
 
-        if (updateLineParameter.CloseLine.HasValue && updateLineParameter.CloseLine.Value) {
+        if (updateLineParameter.CloseReason.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
-            sb.AppendLine("\"U_LineStatus\" = 'C'");
-            comma                                              = true;
+            sb.AppendLine("\"U_LineStatus\" = 'C', \"U_StatusReason\" = @Reason ");
+            parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
+            comma    = true;
+            userSign = true;
+        }
+
+        if (userSign) {
+            sb.AppendLine(", \"U_StatusUserSign\" = @UserSign, \"U_StatusTimeStamp\" = getdate() ");
+            parameters.Add(new Parameter("@UserSign", SqlDbType.Int) { Value = empID });
         }
 
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
