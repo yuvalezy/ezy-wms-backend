@@ -1,18 +1,10 @@
 ﻿namespace Service.API.GoodsReceipt.Models;
 
 public class AddItemResponse {
-    public int?               LineID { get; }
-    public AddItemReturnValue Value  { get; }
-
-    public AddItemResponse(AddItemReturnValue value, int? lineID = null) {
-        Value  = value;
-        LineID = lineID;
-    }
+    public int? LineID         { get; set; }
+    public bool ClosedDocument { get; set; }
+    public bool Fulfillment    { get; set; }
+    public bool Showroom       { get; set; }
+    public bool Warehouse      { get; set; }
+    public int  NumInBuy       { get; set; }
 }
-public enum AddItemReturnValue {
-    ClosedDocument   = -1,
-    StoreInWarehouse = 1,
-    Fulfillment      = 2,
-    Showroom         = 3
-}
-

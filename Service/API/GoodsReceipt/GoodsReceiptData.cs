@@ -4,12 +4,10 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
-using CrystalDecisions.ReportAppServer.DataDefModel;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
-using Service.Shared.Utils;
 using Alert = Service.API.General.Alert;
 
 namespace Service.API.GoodsReceipt;
@@ -99,6 +97,13 @@ public class GoodsReceiptData {
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
         Global.DataObject.Execute(sb.ToString(), parameters);
+
+        if (updateLineParameter.CloseReason.HasValue) {
+            Global.DataObject.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", new Parameters {
+                new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
+                new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
+            });
+        }
     }
 
     public int ValidateAddItem(int id, string itemCode, string barCode) =>
@@ -109,15 +114,25 @@ public class GoodsReceiptData {
         });
 
     public AddItemResponse AddItem(int id, string itemCode, string barcode, int employeeID) {
-        int returnValue, lineID;
+        AddItemResponse returnValue = null;
         try {
             Global.DataObject.BeginTransaction();
-            (returnValue, lineID) = Global.DataObject.GetValue<int, int>(GetQuery("AddItem"), new Parameters {
+            Global.DataObject.ExecuteReader(GetQuery("AddItem"), new Parameters {
                 new Parameter("@ID", SqlDbType.Int, id),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
+            }, dr => {
+                returnValue = new AddItemResponse() {
+                    LineID = (int)dr["LineID"],
+                    Fulfillment = (int)dr["Fulfillment"] > 0,
+                    Showroom = (int)dr["Showroom"] > 0,
+                    Warehouse = (int)dr["Warehouse"] > 0,
+                    NumInBuy = (int)dr["NumInBuy"]
+                };
             });
+            if (returnValue == null)
+                throw new Exception("Add Item Result Empty!");
             Global.DataObject.CommitTransaction();
         }
         catch {
@@ -125,7 +140,7 @@ public class GoodsReceiptData {
             throw;
         }
 
-        return new AddItemResponse((AddItemReturnValue)returnValue, lineID);
+        return returnValue;
     }
 
     public Document GetDocument(int id) {
@@ -246,9 +261,9 @@ public class GoodsReceiptData {
         Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             string itemCode = (string)dr["ItemCode"];
             string itemName = dr["ItemName"].ToString();
-            int    quantity = (int)dr["Quantity"];
-            int    delivery = (int)dr["Delivery"];
-            int    showroom = (int)dr["Showroom"];
+            int    quantity = Convert.ToInt32(dr["Quantity"]);
+            int    delivery = Convert.ToInt32(dr["Delivery"]);
+            int    showroom = Convert.ToInt32(dr["Showroom"]);
             int    stock    = Convert.ToInt32(dr["OnHand"]);
 
             var line = new GoodsReceiptReportAll {

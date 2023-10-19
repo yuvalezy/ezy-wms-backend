@@ -21,6 +21,8 @@ public class Alert : IDisposable {
     }
 
     public void Send(List<string> sendTo) {
+        if (sendTo.Count == 0)
+            return;
         message.Subject = Subject;
 
         if (Columns is { Count: > 0 }) {

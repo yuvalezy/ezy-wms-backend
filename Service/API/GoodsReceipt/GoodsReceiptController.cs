@@ -35,7 +35,7 @@ public class GoodsReceiptController : LWApiController {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for adding item to document");
         if (!parameters.Validate(data))
-            return new AddItemResponse(AddItemReturnValue.ClosedDocument);
+            return new AddItemResponse { ClosedDocument = true };
         return data.GoodsReceiptData.AddItem(parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
     }
 
@@ -67,6 +67,7 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         return data.GoodsReceiptData.ProcessDocument(parameters.ID, EmployeeID, data.GeneralData.AlertUsers);
     }
+
     [HttpGet]
     [ActionName("CancelReasons")]
     public IEnumerable<ValueDescription<int>> GetCancelReasons() {
