@@ -1,6 +1,6 @@
 ﻿--begin tran
 
--- declare @ID int = 2;
+-- declare @ID int = 4;
 -- declare @BarCode nvarchar(254) = '34567890455555';
 -- declare @ItemCode nvarchar(50) = 'SCUOM';
 -- declare @empID int = 1;
@@ -25,7 +25,7 @@ declare @TargetLine int;
 
 
 --get first open purchase order in the connected branch
-select top 1 @POEntry = T0."DocEntry", @POLine = T0."LineNum", @NumInBuy = Case T0.UseBaseUn When 'N' Then OpenCreQty Else 1 End
+select top 1 @POEntry = T0."DocEntry", @POLine = T0."LineNum", @NumInBuy = Case T0.UseBaseUn When 'N' Then NumPerMsr Else 1 End
 from POR1 T0
          inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1.CardCode = @CardCode
          left outer join (

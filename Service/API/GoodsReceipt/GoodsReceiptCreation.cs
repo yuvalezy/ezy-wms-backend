@@ -45,7 +45,8 @@ public class GoodsReceiptCreation : IDisposable {
             for (int i = 0; i < dt.Rows.Count; i++) {
                 var    row       = dt.Rows[i];
                 string itemCode  = (string)row["ItemCode"];
-                int    quantity  = (int)row["Quantity"];
+                double quantity  = Convert.ToDouble(row["Quantity"]);
+                bool   useBaseUn         = (int)row["UseBaseUn"] > 0;
                 int    baseEntry = (int)row["BaseEntry"];
                 int    baseLine  = (int)row["BaseLine"];
                 if (i > 0)
@@ -58,7 +59,11 @@ public class GoodsReceiptCreation : IDisposable {
                     lines.BaseLine  = baseLine;
                 }
 
-                lines.Quantity = quantity;
+                if (useBaseUn) {
+                    lines.UseBaseUnits      = BoYesNoEnum.tYES;
+                    lines.UnitsOfMeasurment = 1;
+                }
+                lines.Quantity     = quantity;
             }
 
             if (doc.Add() != 0) {

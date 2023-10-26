@@ -167,7 +167,7 @@ public static class Global {
             }
         }
         catch (Exception ex) {
-            LogError($"Error checking LM version in database \"{Connection.Database}\":\n{ex.Message}");
+            LogError($"Error checking LW version in database \"{Connection.Database}\":\n{ex.Message}");
             return false;
         }
 

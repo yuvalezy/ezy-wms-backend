@@ -510,18 +510,39 @@ public class MainController {
     private bool ValidateDatabase() {
         try {
             DataConnector dbData = serverType switch {
-                BoDataServerTypes.dst_HANADB => new HANADataConnector(Service.Shared.Data.ConnectionString.HanaConnectionString(server, serverUser, serverPassword, view.Database)),
-                _                            => new SQLDataConnector(Service.Shared.Data.ConnectionString.SqlConnectionString(server, serverUser, serverPassword, view.Database))
+                BoDataServerTypes.dst_HANADB => new HANADataConnector(Shared.Data.ConnectionString.HanaConnectionString(server, serverUser, serverPassword, view.Database)),
+                _                            => new SQLDataConnector(Shared.Data.ConnectionString.SqlConnectionString(server, serverUser, serverPassword, view.Database))
             };
             var md = new MetaData(dbData);
             md.Check();
-            var          v              = Assembly.GetExecutingAssembly().GetName().Version;
-            string       currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
-            const string sqlStr         = "select \"U_Version\" \"Version\", \"U_User\" \"User\", \"U_Password\" \"Password\" from \"@LW_YUVAL08_COMMON\"";
-            var          dr             = dbData.GetDataTable(sqlStr).Rows[0];
-            string       dbVersion      = (string)dr["Version"];
-            string       dbUser         = dr["User"].ToString().DecryptString();
-            string       dbPassword     = dr["Password"].ToString().DecryptString();
+            var    v              = Assembly.GetExecutingAssembly().GetName().Version;
+            string currentVersion = $"{v.Major}.{v.Minor}.{v.Build}";
+            const string sqlStr = """
+                                  select "U_Version" "Version", "U_User" "User", "U_Password" "Password" from "@LW_YUVAL08_COMMON"
+                                  """;
+            var    dr        = dbData.GetDataTable(sqlStr).Rows[0];
+            string dbVersion = (string)dr["Version"];
+            
+            string dbUser    = dr["User"].ToString();
+            try {
+                if (!string.IsNullOrWhiteSpace(dbUser))
+                    dbUser = dbUser.DecryptString();
+            }
+            catch {
+                string encryptedUser = dbUser.EncryptData();
+                dbData.Execute($"update \"@LW_YUVAL08_COMMON\" set \"U_User\" = '{encryptedUser.ToQuery()}'");
+            }
+
+            string dbPassword = dr["Password"].ToString();
+            try {
+                if (!string.IsNullOrWhiteSpace(dbPassword))
+                    dbPassword = dbPassword.DecryptString();
+            }
+            catch {
+                string encryptedPassword = dbPassword.EncryptData();
+                dbData.Execute($"update \"@LW_YUVAL08_COMMON\" set \"U_Password\" = '{encryptedPassword.ToQuery()}'");
+            }
+            
             if (Version.CheckVersion(dbVersion, currentVersion) != VersionCheck.Current) {
                 Error($"Cannot activate service for database \"{view.Database}\".\nDatabase version is {dbVersion} and service version is {currentVersion}.");
                 return false;
@@ -540,7 +561,7 @@ public class MainController {
             }
         }
         catch (Exception ex) {
-            Error($"Error checking LM version in database \"{view.Database}\":\n{ex.Message}");
+            Error($"Error checking LW version in database \"{view.Database}\":\n{ex.Message}");
             return false;
         }
         finally {
@@ -558,7 +579,7 @@ public class MainController {
             DbServerType = serverType,
             UserName     = dbUser,
             Password     = dbPassword,
-            language = BoSuppLangs.ln_Spanish_La
+            language     = BoSuppLangs.ln_Spanish_La
         };
         try {
             int lRetCode = cmp.Connect();

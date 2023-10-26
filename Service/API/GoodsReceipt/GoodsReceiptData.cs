@@ -89,6 +89,15 @@ public class GoodsReceiptData {
             userSign = true;
         }
 
+        if (updateLineParameter.QuantityInUnit.HasValue) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_QtyPerUnit\" = @QuantityInUnit ");
+            parameters.Add(new Parameter("@QuantityInUnit", SqlDbType.Int) { Value = updateLineParameter.QuantityInUnit.Value });
+            comma    = true;
+            userSign = true;
+        }
+
         if (userSign) {
             sb.AppendLine(", \"U_StatusUserSign\" = @UserSign, \"U_StatusTimeStamp\" = getdate() ");
             parameters.Add(new Parameter("@UserSign", SqlDbType.Int) { Value = empID });
