@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared.Data;
+using Service.Shared.Utils;
 
 namespace Service.API.General;
 
@@ -72,10 +74,49 @@ public class GeneralData {
 
     public List<string> AlertUsers {
         get {
-            var    list  = new List<string>();
-            string query = "select USER_CODE from OUSR where U_LW_WMS_ALERTS = 'Y'";
+            var          list  = new List<string>();
+            const string query = "select USER_CODE from OUSR where U_LW_WMS_ALERTS = 'Y'";
             Global.DataObject.ExecuteReader(query, dr => list.Add(dr.GetString(0)));
             return list;
         }
+    }
+
+    public IEnumerable<ItemCheckResponse> ItemCheck(string scanItemCode, string scanBarCode) {
+        var response = new List<ItemCheckResponse>();
+        if (string.IsNullOrWhiteSpace(scanItemCode) && string.IsNullOrWhiteSpace(scanBarCode))
+            return response;
+
+        if (!string.IsNullOrWhiteSpace(scanBarCode)) {
+            const string query = """
+                                 select T0."ItemCode", T1."ItemName", COALESCE(T1."NumInBuy", 1) "NumInBuy"
+                                 from OBCD T0
+                                 inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
+                                 where T0."BcdCode" = @ScanCode
+                                 """;
+            var parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
+            var items     = Global.DataObject.GetDataTable(query, parameter);
+            foreach (DataRow row in items.Rows)
+                AddItem((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["NumInBuy"]));
+        }
+        else {
+            const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"NumInBuy\", 1) \"NumInBuy\" from OITM where \"ItemCode\" = @ItemCode";
+            var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
+            Global.DataObject.ExecuteReader(query, parameter, dr =>
+                AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["NumInBuy"])));
+        }
+
+        void AddItem(string itemCode, string itemName, int numInBuy) {
+            var responseValue = new ItemCheckResponse {
+                ItemCode = itemCode,
+                ItemName = itemName,
+                NumInBuy = numInBuy
+            };
+            const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
+            Global.DataObject.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
+                dr => responseValue.Barcodes.Add((string)dr[0]));
+            response.Add(responseValue);
+        }
+
+        return response;
     }
 }

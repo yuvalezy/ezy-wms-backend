@@ -182,6 +182,8 @@ public abstract class DataConnector : IDisposable {
     public void ExecuteReader(StringBuilder sb, Parameter parameter, Action<IDataReader> action) => ExecuteReader(sb.ToString(), new Parameters { parameter }, CommandType.Text, action);
     public void ExecuteReader(string query, Parameters parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
     public abstract void ExecuteReader(string query, Parameters parameters, CommandType commandType, Action<IDataReader> action);
+
+    public DataTable GetDataTable(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetDataTable(query, new Parameters(parameter), commandType);
     public abstract DataTable GetDataTable(string query, Parameters parameters = null, CommandType commandType = CommandType.Text);
     protected abstract void GetValuesExecution(string query, Parameters parameters, CommandType commandType, Action<IDataReader> readerAction);
     public abstract void Dispose();

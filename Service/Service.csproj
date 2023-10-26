@@ -103,7 +103,12 @@
     <Compile Include="API\General\Alert.cs" />
     <Compile Include="API\General\GeneralController.cs" />
     <Compile Include="API\General\GeneralData.cs" />
+    <Compile Include="API\General\ItemBarCodeUpdate.cs" />
     <Compile Include="API\General\Models\EmployeeData.cs" />
+    <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
+    <Compile Include="API\General\Models\ItemCheckResponse.cs" />
+    <Compile Include="API\General\Models\ResponseBase.cs" />
+    <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptCreation.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptData.cs" />
