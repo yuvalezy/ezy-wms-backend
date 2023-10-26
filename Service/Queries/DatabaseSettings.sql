@@ -4,5 +4,6 @@
        'N'                                                                      "TestHelloWorld",
        U_DEBUG                                                                  DEBUG,
        "U_PrintThread"                                                          "PrintThread",
-       Case When (select top 1 "Version" from CINF) < 1000180 Then 1 Else 0 End "CrystalLegacy"
+       Case When (select top 1 "Version" from CINF) < 1000180 Then 1 Else 0 End "CrystalLegacy",
+       "U_GRPODraft"                                                            "GRPODraft"
 from "@LW_YUVAL08_COMMON" T0

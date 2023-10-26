@@ -37,6 +37,7 @@ public static class Global {
     public static string                               User               { get; set; }
     public static string                               Password           { get; set; }
     public static bool                                 TestHelloWorld     { get; private set; }
+    public static bool                                 GRPODraft          { get; private set; }
     public static bool                                 PrintThread        { get; private set; }
     public static bool                                 Background         { get; set; }
     public static bool                                 Interactive        { get; set; }
@@ -87,8 +88,7 @@ public static class Global {
             }
 
             try {
-                Connection.ConnectCompany(Connection.Server, ServerType, Connection.Database, User, Password,
-                    Connection.Server);
+                Connection.ConnectCompany(Connection.Server, ServerType, Connection.Database, User, Password, Connection.Server);
             }
             catch (Exception ex) {
                 LogError("DI API connection error: " + ex.Message);
@@ -140,6 +140,7 @@ public static class Global {
         User                          = dr["User"].ToString().DecryptString();
         Password                      = dr["Password"].ToString().DecryptString();
         TestHelloWorld                = dr["TestHelloWorld"].ToString() == "Y";
+        GRPODraft                     = dr["GRPODraft"].ToString() == "Y";
         CompanySettings.CrystalLegacy = Convert.ToBoolean(dr["CrystalLegacy"]);
 
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")

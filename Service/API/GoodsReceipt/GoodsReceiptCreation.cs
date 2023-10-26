@@ -29,8 +29,13 @@ public class GoodsReceiptCreation : IDisposable {
             LoadData();
             Global.TransactionMutex.WaitOne();
             Global.ConnectCompany();
-            doc               = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oDrafts);
-            doc.DocObjectCode = BoObjectTypes.oPurchaseDeliveryNotes;
+            if (Global.GRPODraft) {
+                doc               = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oDrafts);
+                doc.DocObjectCode = BoObjectTypes.oPurchaseDeliveryNotes;
+            }
+            else {
+                doc = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPurchaseDeliveryNotes);
+            }
 
             doc.CardCode   = cardCode;
             doc.DocDate    = DateTime.Now;
@@ -46,7 +51,7 @@ public class GoodsReceiptCreation : IDisposable {
                 var    row       = dt.Rows[i];
                 string itemCode  = (string)row["ItemCode"];
                 double quantity  = Convert.ToDouble(row["Quantity"]);
-                bool   useBaseUn         = (int)row["UseBaseUn"] > 0;
+                bool   useBaseUn = (int)row["UseBaseUn"] > 0;
                 int    baseEntry = (int)row["BaseEntry"];
                 int    baseLine  = (int)row["BaseLine"];
                 if (i > 0)
@@ -63,7 +68,8 @@ public class GoodsReceiptCreation : IDisposable {
                     lines.UseBaseUnits      = BoYesNoEnum.tYES;
                     lines.UnitsOfMeasurment = 1;
                 }
-                lines.Quantity     = quantity;
+
+                lines.Quantity = quantity;
             }
 
             if (doc.Add() != 0) {
