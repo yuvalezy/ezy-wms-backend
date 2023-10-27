@@ -77,9 +77,12 @@ public class ItemBarCodeUpdate : IDisposable {
             return;
         for (int i = item.BarCodes.Count - 1; i >= 0; i--) {
             item.BarCodes.SetCurrentLine(i);
-            if (!removeBarcodes.Contains(item.BarCodes.BarCode))
+            string barcode = item.BarCodes.BarCode;
+            if (!removeBarcodes.Contains(barcode))
                 continue;
             item.BarCodes.Delete();
+            if (item.BarCode.Equals(barcode))
+                item.BarCode = null;
         }
     }
 
