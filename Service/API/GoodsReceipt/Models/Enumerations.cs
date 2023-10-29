@@ -5,3 +5,8 @@ public enum OrderBy {
     Name,
     Date
 }
+
+public enum GoodsReceiptType {
+    AutoConfirm = 'A',
+    SpecificOrders = 'S'
+}

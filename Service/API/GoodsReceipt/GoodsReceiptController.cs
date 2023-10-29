@@ -17,15 +17,11 @@ public class GoodsReceiptController : LWApiController {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document creation");
 
-        if (string.IsNullOrWhiteSpace(parameters.CardCode))
-            throw new ArgumentException("Card Code cannot be empty", nameof(parameters.CardCode));
-        if (!data.GeneralData.ValidateVendor(parameters.CardCode))
-            throw new ArgumentException($"Card Code {parameters.CardCode} is not aa valid vendor", nameof(parameters.CardCode));
+        var validateReturnValue = parameters.Validate(data, EmployeeID);
+        if (validateReturnValue != null)
+            return validateReturnValue;
 
-        if (string.IsNullOrWhiteSpace(parameters.Name))
-            throw new ArgumentException("Name cannot be empty", nameof(parameters.Name));
-
-        int id = data.GoodsReceiptData.CreateDocument(parameters.CardCode, parameters.Name, EmployeeID);
+        int id = data.GoodsReceiptData.CreateDocument(parameters, EmployeeID);
         return data.GoodsReceiptData.GetDocument(id);
     }
 

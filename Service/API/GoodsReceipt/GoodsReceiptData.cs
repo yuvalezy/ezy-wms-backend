@@ -8,6 +8,7 @@ using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
+using Service.Shared.Utils;
 using Alert = Service.API.General.Alert;
 
 namespace Service.API.GoodsReceipt;
@@ -52,12 +53,35 @@ public class GoodsReceiptData {
         }
     }
 
-    public int CreateDocument(string cardCode, string name, int employeeID) =>
-        Global.DataObject.GetValue<int>(GetQuery("CreateGoodsReceipt"), new Parameters {
-            new Parameter("@Name", SqlDbType.NVarChar, 50, name),
+    public int CreateDocument(CreateParameters createParameters, int employeeID) {
+        var @params = new Parameters {
+            new Parameter("@Name", SqlDbType.NVarChar, 50, createParameters.Name),
             new Parameter("@empID", SqlDbType.Int, employeeID),
-            new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode),
+            new Parameter("@CardCode", SqlDbType.NVarChar, 50, DBNull.Value),
+            // ReSharper disable once PossibleInvalidOperationException
+            new Parameter("@Type", SqlDbType.Char, 1, ((char)createParameters.Type).ToString()),
+        };
+        if (!string.IsNullOrWhiteSpace(createParameters.CardCode))
+            @params["@CardCode"].Value = createParameters.CardCode;
+        int id = Global.DataObject.GetValue<int>(GetQuery("CreateGoodsReceipt"), @params);
+
+        if (createParameters.Type != GoodsReceiptType.SpecificOrders)
+            return id;
+
+        string query = GetQuery("CreateGoodsReceiptDocument");
+        @params = new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@ObjType", SqlDbType.Int),
+            new Parameter("@DocEntry", SqlDbType.Int),
+        };
+        createParameters.Documents.ForEach(value => {
+            @params["@ObjType"].Value  = value.ObjectType;
+            @params["@DocEntry"].Value = value.DocumentNumber;
+            Global.DataObject.Execute(query, @params);
         });
+
+        return id;
+    }
 
     public int ValidateUpdateLine(UpdateLineParameter parameters) =>
         Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), new Parameters {
@@ -133,11 +157,11 @@ public class GoodsReceiptData {
                 new Parameter("@empID", SqlDbType.Int, employeeID),
             }, dr => {
                 returnValue = new AddItemResponse() {
-                    LineID = (int)dr["LineID"],
+                    LineID      = (int)dr["LineID"],
                     Fulfillment = (int)dr["Fulfillment"] > 0,
-                    Showroom = (int)dr["Showroom"] > 0,
-                    Warehouse = (int)dr["Warehouse"] > 0,
-                    NumInBuy = (int)dr["NumInBuy"]
+                    Showroom    = (int)dr["Showroom"] > 0,
+                    Warehouse   = (int)dr["Warehouse"] > 0,
+                    NumInBuy    = (int)dr["NumInBuy"]
                 };
             });
             if (returnValue == null)
@@ -157,13 +181,14 @@ public class GoodsReceiptData {
         var      sb  = new StringBuilder(GetQuery("GetGoodsReceipts"));
         sb.Append(" where DOCS.\"Code\" = @ID");
         Global.DataObject.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => doc = ReadDocument(dr));
+        GetDocumentsSpecificDocuments(doc);
         return doc;
     }
 
-    public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
+    public Document[] GetDocuments(FilterParameters parameters) {
         List<Document> docs = new();
         var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
-        var queryParams = new Parameters() {
+        var queryParams = new Parameters {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
         };
         sb.Append($" where DOCS.\"U_WhsCode\" = @WhsCode ");
@@ -219,24 +244,55 @@ public class GoodsReceiptData {
         }
 
         Global.DataObject.ExecuteReader(sb.ToString(), queryParams, dr => docs.Add(ReadDocument(dr)));
-        return docs;
+        var documents = docs.ToArray();
+        GetDocumentsSpecificDocuments(documents);
+        return documents;
     }
 
     private static Document ReadDocument(IDataReader dr) {
         var doc = new Document {
-            ID              = (int)dr["ID"],
-            Name            = (string)dr["Name"],
-            Date            = (DateTime)dr["Date"],
-            Employee        = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
-            Status          = (DocumentStatus)Convert.ToChar(dr["Status"]),
-            StatusDate      = (DateTime)dr["StatusDate"],
-            StatusEmployee  = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"]),
-            BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString()),
-            WhsCode         = (string)dr["WhsCode"]
+            ID             = (int)dr["ID"],
+            Name           = (string)dr["Name"],
+            Date           = (DateTime)dr["Date"],
+            Employee       = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
+            Status         = (DocumentStatus)Convert.ToChar(dr["Status"]),
+            StatusDate     = (DateTime)dr["StatusDate"],
+            StatusEmployee = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"]),
+            WhsCode        = (string)dr["WhsCode"],
+            Type           = (GoodsReceiptType)Convert.ToChar(dr["Type"])
         };
+        if (dr["CardCode"] != DBNull.Value)
+            doc.BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString());
         if (dr["GRPO"] != DBNull.Value)
             doc.GRPO = (int)dr["GRPO"];
         return doc;
+    }
+
+    private void GetDocumentsSpecificDocuments(params Document[] documents) {
+        var filtered = documents.Where(v => v.Type == GoodsReceiptType.SpecificOrders).ToArray();
+        if (filtered.Length == 0)
+            return;
+        string query = filtered.Aggregate("", (a, b) => a + a.AggregateQuery() + b.ID);
+        query = $"""
+                 select X0."U_ID" ID, X0."U_ObjType" "ObjType", X0."U_DocEntry" "DocEntry", COALESCE(X1."DocNum", X2."DocNum") "DocNum"
+                 from "@LW_YUVAL08_GRPO3" X0
+                 left outer join OPOR X1 on X1."DocEntry" = X0."U_DocEntry" and X1."ObjType" = X0."U_ObjType"
+                 left outer join OPCH X2 on X2."DocEntry" = X0."U_DocEntry" and X2."ObjType" = X0."U_ObjType"
+                 where X0."U_ID" in ({query})
+                 """;
+        using var dt = Global.DataObject.GetDataTable(query);
+        using var dv = new DataView(dt);
+        foreach (var document in filtered) {
+            dv.RowFilter = $"ID = {document.ID}";
+            var specific = new List<DocumentParameter>();
+            document.SpecificDocuments = specific;
+            specific.AddRange(
+                from DataRowView dvr
+                    in dv
+                select new DocumentParameter {
+                    ObjectType = (int)dvr["ObjType"], DocumentNumber = (int)dvr["DocNum"],
+                });
+        }
     }
 
     public static string GetQuery(string id) {
