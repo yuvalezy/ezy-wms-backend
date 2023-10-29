@@ -116,6 +116,7 @@
     <Compile Include="API\GoodsReceipt\Models\AddItemResponse.cs" />
     <Compile Include="API\GoodsReceipt\Models\CreateParameters.cs" />
     <Compile Include="API\GoodsReceipt\Models\FilterParameters.cs" />
+    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptCreationValue.cs" />
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptReportAll.cs" />
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
     <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />

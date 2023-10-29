@@ -33,15 +33,12 @@ public class GoodsReceiptData {
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
             using var alert = new Alert();
             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
-            alert.Columns.Add(new AlertColumn(ErrorMessages.WMSTransaction) {
-                Values = new List<AlertValue> {
-                    new(id.ToString())
-                }
-            });
-            alert.Columns.Add(new AlertColumn(ErrorMessages.DraftNumber, true) {
-                Values = new List<AlertValue> {
-                    new(creation.NewEntry.ToString(), "112", creation.NewEntry.ToString())
-                }
+            var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+            var documentColumn    = new AlertColumn(Global.GRPODraft ? ErrorMessages.Draft : ErrorMessages.PurchaseDeliveryNote, true);
+            alert.Columns.AddRange(new[] { transactionColumn, documentColumn });
+            creation.NewEntries.ForEach(tuple => {
+                transactionColumn.Values.Add(new AlertValue(tuple.Entry.ToString()));
+                documentColumn.Values.Add(new AlertValue(tuple.Number.ToString(), Global.GRPODraft ? "112" : "20", tuple.Entry.ToString()));
             });
 
             alert.Send(sendTo);
@@ -76,7 +73,7 @@ public class GoodsReceiptData {
         };
         createParameters.Documents.ForEach(value => {
             @params["@ObjType"].Value  = value.ObjectType;
-            @params["@DocEntry"].Value = value.DocumentNumber;
+            @params["@DocEntry"].Value = value.DocumentEntry;
             Global.DataObject.Execute(query, @params);
         });
 
@@ -139,11 +136,12 @@ public class GoodsReceiptData {
         }
     }
 
-    public int ValidateAddItem(int id, string itemCode, string barCode) =>
+    public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
         Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), new Parameters {
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
+            new Parameter("@empID", SqlDbType.Int, empID),
         });
 
     public AddItemResponse AddItem(int id, string itemCode, string barcode, int employeeID) {
@@ -290,7 +288,8 @@ public class GoodsReceiptData {
                 from DataRowView dvr
                     in dv
                 select new DocumentParameter {
-                    ObjectType = (int)dvr["ObjType"], DocumentNumber = (int)dvr["DocNum"],
+                    ObjectType     = (int)dvr["ObjType"],
+                    DocumentNumber = Convert.ToInt32(dvr["DocNum"]),
                 });
         }
     }

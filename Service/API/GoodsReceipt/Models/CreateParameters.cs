@@ -39,17 +39,17 @@ public class CreateParameters {
         if (Documents == null || Documents.Count == 0)
             throw new ArgumentException("You must specify the documents argument", nameof(Documents));
 
-        string documents = Documents.Aggregate("", (a, b) => a + a.UnionQuery() + 
-        $"""
-           select {b.ObjectType} "ObjType", 
-                  {b.DocumentNumber} "DocNum",
-                  (select top 1 "DocEntry" from O{QueryHelper.ObjectTable(b.ObjectType)} where "DocNum" = {b.DocumentNumber} order by "DocEntry" desc) "DocEntry" 
-                  {QueryHelper.FromDummy} 
-       """);
+        string documents = Documents.Aggregate("", (a, b) => a + a.UnionQuery() +
+                                                             $"""
+                                                                  select {b.ObjectType} "ObjType",
+                                                                         {b.DocumentNumber} "DocNum",
+                                                                         (select top 1 "DocEntry" from O{QueryHelper.ObjectTable(b.ObjectType)} where "DocNum" = {b.DocumentNumber} order by "DocEntry" desc) "DocEntry"
+                                                                         {QueryHelper.FromDummy}
+                                                              """);
 
         string query = $"""
-                        declare @WhsCode nvarchar(8) = (select U_LW_Branch from OHEM where empID = @empID);
-                        select top 1 X0."ObjType", X0."DocNum", 
+                        declare @WhsCode nvarchar(8) = (select U_LW_Branch from OHEM where "empID" = @empID);
+                        select X0."ObjType", X0."DocNum", X0."DocEntry",
                         Case
                             When COALESCE(X1."DocStatus", X2."DocStatus") is null Then 'E'
                             When X0."ObjType" = 18 and X2."isIns" = 'N' Then 'R'
@@ -61,20 +61,21 @@ public class CreateParameters {
                         left outer join OPCH X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType"
                         left outer join POR1 X3 on X3."DocEntry" = X1."DocEntry" and X3."WhsCode" = @WhsCode
                         left outer join PCH1 X4 on X4."DocEntry" = X2."DocEntry" and X4."WhsCode" = @WhsCode
-                        group by X0."ObjType", X0."DocNum", X1."DocStatus", X2."DocStatus", X2."isIns"
-                        Having Case
-                            When COALESCE(X1."DocStatus", X2."DocStatus") is null Then 'E'
-                            When X0."ObjType" = 18 and X2."isIns" = 'N' Then 'R'
-                            When Sum(COALESCE(X3."Quantity", X4."Quantity", 0)) = 0 Then 'W'
-                            When COALESCE(X1."DocStatus", X2."DocStatus") = 'O' Then 'O'
-                        Else 'C' End <> 'O'
+                        group by X0."ObjType", X0."DocNum", X0."DocEntry", X1."DocStatus", X2."DocStatus", X2."isIns"
                         """;
         Document returnValue = null;
-        Global.DataObject.ExecuteReader(query, new Parameter("@empID", SqlDbType.Int){Value = employeeID}, dr => {
+        Global.DataObject.ExecuteReader(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID }, dr => {
+            string docStatus      = (string)dr["DocStatus"];
+            int    objectType     = (int)dr["ObjType"];
+            int    documentNumber = (int)dr["DocNum"];
+            int    documentEntry  = (int)dr["DocEntry"];
+            Documents.First(v => v.ObjectType == objectType && v.DocumentNumber == documentNumber).DocumentEntry = documentEntry;
+            if (docStatus == "O")
+                return;
             returnValue = new Document {
                 Error           = true,
                 ErrorCode       = -1,
-                ErrorParameters = new object[] { (int)dr["ObjType"], (int)dr["DocNum"], (string)dr["DocStatus"] }
+                ErrorParameters = new object[] { objectType, documentNumber, docStatus }
             };
         });
         return returnValue;
@@ -82,6 +83,7 @@ public class CreateParameters {
 }
 
 public class DocumentParameter {
-    public int ObjectType    { get; set; }
+    public int ObjectType     { get; set; }
     public int DocumentNumber { get; set; }
+    public int DocumentEntry  { get; set; }
 }

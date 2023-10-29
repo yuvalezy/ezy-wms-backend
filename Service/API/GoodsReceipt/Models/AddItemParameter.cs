@@ -8,14 +8,14 @@ public class AddItemParameter {
     public string BarCode  { get; set; }
     public string CardCode { get; set; }
 
-    public bool Validate(Data data) {
+    public bool Validate(Data data, int empID) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(ItemCode))
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
-        int value = data.GoodsReceiptData.ValidateAddItem(ID, ItemCode, BarCode);
+        int value = data.GoodsReceiptData.ValidateAddItem(ID, ItemCode, BarCode, empID);
         switch (value) {
             case -1:
                 throw new ArgumentException(string.Format(ErrorMessages.Item_Code__0__was_not_found_in_the_database, ItemCode));
@@ -25,6 +25,8 @@ public class AddItemParameter {
                 throw new ArgumentException(string.Format(ErrorMessages.Transaction_with_ID__0__does_not_exists_in_the_system, ID));
             case -5:
                 throw new ArgumentException(string.Format(ErrorMessages.Item__0___Bar_Code__1__is_not_a_purchase_item, ItemCode, BarCode));
+            case -6:
+                throw new ArgumentException(string.Format(ErrorMessages.AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents, ItemCode, BarCode));
             case -4:
                 return false;
         }

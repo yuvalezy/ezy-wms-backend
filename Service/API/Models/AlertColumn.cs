@@ -7,7 +7,7 @@ public class AlertColumn {
 
     public string           Name   { get; set; }
     public bool             Link   { get; set; }
-    public List<AlertValue> Values { get; set; }
+    public List<AlertValue> Values { get; set; } = new();
     
     public AlertColumn() {
     }

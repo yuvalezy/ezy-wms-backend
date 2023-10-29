@@ -60,6 +60,16 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Artículo {0}, Código de Barras {1} no fue encontrado en los documentos especficos de la transacción.
+        /// </summary>
+        internal static string AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents {
+            get {
+                return ResourceManager.GetString("AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_spe" +
+                        "cific_documents", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to El código de barras {0} no coincide con el código de barras del artículo {1}.
         /// </summary>
         internal static string BarCode__0__does_not_match_with_Item__1__BarCode {
@@ -74,6 +84,24 @@ namespace Service {
         internal static string BarCode_is_a_required_parameter {
             get {
                 return ResourceManager.GetString("BarCode_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Borrador.
+        /// </summary>
+        internal static string Draft {
+            get {
+                return ResourceManager.GetString("Draft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Numero Borrador.
+        /// </summary>
+        internal static string DraftNumber {
+            get {
+                return ResourceManager.GetString("DraftNumber", resourceCulture);
             }
         }
         
@@ -114,11 +142,47 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to LineID es un parameter requerido.
+        /// </summary>
+        internal static string LineID_is_a_required_parameter {
+            get {
+                return ResourceManager.GetString("LineID_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entrada de Mercancia.
+        /// </summary>
+        internal static string PurchaseDeliveryNote {
+            get {
+                return ResourceManager.GetString("PurchaseDeliveryNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to La transacción con ID {0} no existe en el sistema.
         /// </summary>
         internal static string Transaction_with_ID__0__does_not_exists_in_the_system {
             get {
                 return ResourceManager.GetString("Transaction_with_ID__0__does_not_exists_in_the_system", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Transacción WMS.
+        /// </summary>
+        internal static string WMSTransaction {
+            get {
+                return ResourceManager.GetString("WMSTransaction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Transacción de Entrada WMS #{0}.
+        /// </summary>
+        internal static string WMSTransactionAlert {
+            get {
+                return ResourceManager.GetString("WMSTransactionAlert", resourceCulture);
             }
         }
     }

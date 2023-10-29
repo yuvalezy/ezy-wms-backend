@@ -60,6 +60,16 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
+        /// </summary>
+        internal static string AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents {
+            get {
+                return ResourceManager.GetString("AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_spe" +
+                        "cific_documents", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The BarCode {0} does not match with Item {1} BarCode.
         /// </summary>
         internal static string BarCode__0__does_not_match_with_Item__1__BarCode {
@@ -78,7 +88,16 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Numero Borrador.
+        ///   Looks up a localized string similar to Draft.
+        /// </summary>
+        internal static string Draft {
+            get {
+                return ResourceManager.GetString("Draft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Draft Number.
         /// </summary>
         internal static string DraftNumber {
             get {
@@ -132,6 +151,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Purchase Delivery Note.
+        /// </summary>
+        internal static string PurchaseDeliveryNote {
+            get {
+                return ResourceManager.GetString("PurchaseDeliveryNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Transaction with ID {0} does not exists in the system.
         /// </summary>
         internal static string Transaction_with_ID__0__does_not_exists_in_the_system {
@@ -141,7 +169,7 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Transaccón WMS.
+        ///   Looks up a localized string similar to WMS Transaction.
         /// </summary>
         internal static string WMSTransaction {
             get {
@@ -150,7 +178,7 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Transacción de Entrada WMS #{0}.
+        ///   Looks up a localized string similar to WMS Incoming Transaction #{0}.
         /// </summary>
         internal static string WMSTransactionAlert {
             get {
