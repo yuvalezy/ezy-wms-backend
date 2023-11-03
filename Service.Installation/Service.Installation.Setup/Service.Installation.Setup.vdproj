@@ -2502,7 +2502,7 @@
                 {
                 "Name" = "8:.NET Framework"
                 "Message" = "8:[VSDNETMSG]"
-                "FrameworkVersion" = "8:v4.6.1                   "
+                "FrameworkVersion" = "8:v4.6.1                    "
                 "AllowLaterVersions" = "11:FALSE"
                 "InstallUrl" = "8:http://go.microsoft.com/fwlink/?LinkId=671728"
                 }
@@ -5805,15 +5805,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Light WMS Service"
-        "ProductCode" = "8:{2DB668AE-77B1-4AC6-A180-13180EFD1058}"
-        "PackageCode" = "8:{E4EBCE4D-DE07-4594-A1CD-EF4918246673}"
+        "ProductCode" = "8:{9A64275C-1291-40EB-8962-58A580B08A8C}"
+        "PackageCode" = "8:{DE98572B-2D97-4916-AF03-AA9D916D9F07}"
         "UpgradeCode" = "8:{2D60D96A-8AF8-4B14-AFB2-F3751253BB91}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:1.0.2"
+        "ProductVersion" = "8:1.0.3"
         "Manufacturer" = "8:yuval08"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"

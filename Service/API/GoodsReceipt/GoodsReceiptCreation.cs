@@ -29,9 +29,11 @@ public class GoodsReceiptCreation : IDisposable {
     }
 
     public void Execute() {
+        bool releaseMutex = false;
         try {
             LoadData();
             Global.TransactionMutex.WaitOne();
+            releaseMutex = true;
             Global.ConnectCompany();
             foreach (var pair in data) 
                 CreateDocument(pair.Key, pair.Value);
@@ -40,7 +42,8 @@ public class GoodsReceiptCreation : IDisposable {
             throw new Exception("Error generating GRPO: " + e.Message);
         }
         finally {
-            Global.TransactionMutex.ReleaseMutex();
+            if (releaseMutex)
+                Global.TransactionMutex.ReleaseMutex();
         }
     }
 
@@ -94,7 +97,7 @@ public class GoodsReceiptCreation : IDisposable {
     }
 
     private void LoadData() {
-        const string query = "select \"U_WhsCode\" \"WhsCode\", \"U_Type\" \"Type\" from \"@LW_YUVAL08_GRPO\" where \"Code\" = @ID";
+        const string query = """select "U_WhsCode" "WhsCode", "U_Type" "Type" from "@LW_YUVAL08_GRPO" where "Code" = @ID""";
         (whsCode, char typeValue) = Global.DataObject.GetValue<string, char>(query, new Parameter("@ID", SqlDbType.Int, id));
         type = (GoodsReceiptType)typeValue;
         using var dt = Global.DataObject.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), new Parameters {

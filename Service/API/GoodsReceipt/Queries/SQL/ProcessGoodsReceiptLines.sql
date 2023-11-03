@@ -28,9 +28,16 @@ WITH Data AS (select T0."U_ItemCode"                                            
                       , X0."BaseEntry"
                       , X0."BaseLine"
                  from Data X0)
-select T0."ItemCode", Sum(T0."UseBaseUn") "UseBaseUn", Sum(T0."Quantity") "Quantity", COALESCE(T1."CardCode", T2."CardCode") "CardCode", T0."BaseType", T0."BaseEntry", T0."BaseLine"
+select T0."ItemCode",
+       Sum(T0."UseBaseUn")                                     "UseBaseUn",
+       Sum(T0."Quantity")                                      "Quantity",
+       COALESCE(T1."CardCode", T2."CardCode", T3."U_CardCode") "CardCode",
+       COALESCE(T0."BaseType", -1)                             "BaseType",
+       COALESCE(T0."BaseEntry", -1)                            "BaseEntry",
+       COALESCE(T0."BaseLine", -1)                             "BaseLine"
 from EndData T0
-left outer join OPOR T1 on T1."DocEntry" = T0."BaseEntry" and T1."ObjType" = T0."BaseType"
-left outer join OPCH T2 on T2."DocEntry" = T0."BaseEntry" and T2."ObjType" = T0."BaseType"
-Group By T0."ItemCode", T0."BaseType", T0."BaseEntry", T0."BaseLine", T1."CardCode", T2."CardCode"
+         left outer join OPOR T1 on T1."DocEntry" = T0."BaseEntry" and T1."ObjType" = T0."BaseType"
+         left outer join OPCH T2 on T2."DocEntry" = T0."BaseEntry" and T2."ObjType" = T0."BaseType"
+         inner join "@LW_YUVAL08_GRPO" T3 on T3.Code = @ID
+Group By T0."ItemCode", T0."BaseType", T0."BaseEntry", T0."BaseLine", T1."CardCode", T2."CardCode", T3."U_CardCode"
 order by T0."ItemCode"
