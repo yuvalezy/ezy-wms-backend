@@ -154,7 +154,7 @@ public class GoodsReceiptData {
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
             }, dr => {
-                returnValue = new AddItemResponse() {
+                returnValue = new AddItemResponse {
                     LineID      = (int)dr["LineID"],
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
