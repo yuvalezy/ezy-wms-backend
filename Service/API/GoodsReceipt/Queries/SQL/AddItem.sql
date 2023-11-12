@@ -19,7 +19,7 @@ select @CardCode = U_CardCode, @Type = U_Type
 from "@LW_YUVAL08_GRPO" 
 where Code = @ID;
 
-declare @NumInBuy int = (select COALESCE("NumInBuy", 1) from OITM where "ItemCode" = @ItemCode);
+declare @PurPackUn int = (select COALESCE("PurPackUn", 1) from OITM where "ItemCode" = @ItemCode);
 
 declare @SourceType int;
 declare @SourceEntry int;
@@ -33,11 +33,11 @@ declare @TargetLine int;
 --get first open purchase order in the connected branch
 
 If @Type = 'A' Begin
-	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum", @NumInBuy = Case T0.UseBaseUn When 'N' Then NumPerMsr Else 1 End
+	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
 	from POR1 T0
 			 inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1.CardCode = @CardCode
 			 left outer join (
-				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity" * "U_QtyPerUnit") Quantity
+				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
 				from [@LW_YUVAL08_GRPO1] T0
 						 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
 				where T0.U_ItemCode = @ItemCode
@@ -49,11 +49,11 @@ If @Type = 'A' Begin
 	  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
 	order by T1."CreateDate";
 End Else If @Type = 'S' Begin
-	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum", @NumInBuy = Case T0.UseBaseUn When 'N' Then NumPerMsr Else 1 End
+	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
 	from POR1 T0
 			 inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
 			 left outer join (
-				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity" * "U_QtyPerUnit") Quantity
+				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
 				from [@LW_YUVAL08_GRPO1] T0
 						 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
 				where T0.U_ItemCode = @ItemCode
@@ -67,11 +67,11 @@ End Else If @Type = 'S' Begin
 	order by T1."CreateDate";
 
 	If @SourceType is null Begin
-		select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum", @NumInBuy = Case T0.UseBaseUn When 'N' Then NumPerMsr Else 1 End
+		select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
 		from PCH1 T0
 				 inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
 				 left outer join (
-					select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity" * "U_QtyPerUnit") Quantity
+					select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
 					from [@LW_YUVAL08_GRPO1] T0
 							 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
 					where T0.U_ItemCode = @ItemCode
@@ -86,13 +86,13 @@ End Else If @Type = 'S' Begin
 	End
 
 	If @SourceType is null Begin
-		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @SourceLine = T0."U_SourceLine", @NumInBuy = "U_QtyPerUnit"
+		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @SourceLine = T0."U_SourceLine"
 		from "@LW_YUVAL08_GRPO1" T0
 		where T0.U_ID = @ID and T0."U_SourceType" = 22 and T0."U_ItemCode" = @ItemCode;
 	End
 
 	If @SourceType is null Begin
-		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @NumInBuy = "U_QtyPerUnit"
+		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry"
 		from "@LW_YUVAL08_GRPO1" T0
 		where T0.U_ID = @ID and T0."U_SourceType" = 18 and T0."U_ItemCode" = @ItemCode;
 	End
@@ -103,12 +103,12 @@ End Else If @Type = 'S' Begin
 	End
 End
 
-declare @Quantity int = @NumInBuy
+declare @Quantity int = @PurPackUn
 
 --insert grpo line
 declare @LineID int = IsNull((select Max("U_LineID") + 1
                               from "@LW_YUVAL08_GRPO1" where "U_ID" = @ID), 0);
-insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_SourceType", "U_SourceEntry", "U_SourceLine", "U_Quantity", "U_QtyPerUnit")
+insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_SourceType", "U_SourceEntry", "U_SourceLine", "U_Quantity")
 select @ID,
        @LineID,
        @ItemCode,
@@ -118,15 +118,14 @@ select @ID,
        IsNull(@SourceType, -1),
        IsNull(@SourceEntry, -1),
        IsNull(@SourceLine, -1),
-       1,
        @Quantity;
 
 --update status of grpo header to InProgress
 update "@LW_YUVAL08_GRPO" set "U_Status" = 'I' where Code = @ID;
 
---todo Consider NumInBuy into next code
+--todo Consider PurPackUn into next code
 declare @TotalQuantity int
-select @TotalQuantity = Sum("U_Quantity" * "U_QtyPerUnit") + (
+select @TotalQuantity = Sum("U_Quantity") + (
     select T0.OnHand
     from OITW T0
     where T0.ItemCode = @ItemCode and WhsCode = @WhsCode)
@@ -198,8 +197,8 @@ End
 select T0."U_LineID" LineID
 , Sum(Case When U_TargetType in (13, 17) Then 1 Else 0 End) Fulfillment
 , Sum(Case When U_TargetType = 1250000001 Then 1 Else 0 End) Showroom
-, Case When IsNull(Sum(T1.U_TargetQty), 0) < @NumInBuy Then 1 Else 0 End Warehouse
-, @NumInBuy NumInBuy 
+, Case When IsNull(Sum(T1.U_TargetQty), 0) < @PurPackUn Then 1 Else 0 End Warehouse
+, @PurPackUn PurPackUn 
 from [@LW_YUVAL08_GRPO1] T0
 left outer join [@LW_YUVAL08_GRPO2] T1 on T1.U_ID = T0.U_ID and T1.U_LineID = T0.U_LineID
 where T0.U_ID = @ID and T0.U_LineID = @LineID

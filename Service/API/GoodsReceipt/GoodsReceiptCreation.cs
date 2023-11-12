@@ -79,11 +79,6 @@ public class GoodsReceiptCreation : IDisposable {
                 lines.BaseLine  = value.BaseLine;
             }
 
-            if (value.UseBaseUn) {
-                lines.UseBaseUnits      = BoYesNoEnum.tYES;
-                lines.UnitsOfMeasurment = 1;
-            }
-
             lines.Quantity = value.Quantity;
         }
 

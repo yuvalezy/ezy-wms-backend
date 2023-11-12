@@ -113,8 +113,8 @@ public class GoodsReceiptData {
         if (updateLineParameter.QuantityInUnit.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
-            sb.AppendLine("\"U_QtyPerUnit\" = @QuantityInUnit ");
-            parameters.Add(new Parameter("@QuantityInUnit", SqlDbType.Int) { Value = updateLineParameter.QuantityInUnit.Value });
+            sb.AppendLine("\"U_Quantity\" = @Quantity ");
+            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.QuantityInUnit.Value });
             comma    = true;
             userSign = true;
         }
@@ -159,7 +159,7 @@ public class GoodsReceiptData {
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
-                    NumInBuy    = (int)dr["NumInBuy"]
+                    PurPackUn    = (int)dr["PurPackUn"]
                 };
             });
             if (returnValue == null)

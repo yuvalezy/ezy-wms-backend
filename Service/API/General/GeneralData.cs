@@ -88,7 +88,7 @@ public class GeneralData {
 
         if (!string.IsNullOrWhiteSpace(scanBarCode)) {
             const string query = """
-                                 select T0."ItemCode", T1."ItemName", COALESCE(T1."NumInBuy", 1) "NumInBuy"
+                                 select T0."ItemCode", T1."ItemName", COALESCE(T1."PurPackUn", 1) "PurPackUn"
                                  from OBCD T0
                                  inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
                                  where T0."BcdCode" = @ScanCode
@@ -96,20 +96,20 @@ public class GeneralData {
             var parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
             var items     = Global.DataObject.GetDataTable(query, parameter);
             foreach (DataRow row in items.Rows)
-                AddItem((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["NumInBuy"]));
+                AddItem((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["PurPackUn"]));
         }
         else {
-            const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"NumInBuy\", 1) \"NumInBuy\" from OITM where \"ItemCode\" = @ItemCode";
+            const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"PurPackUn\", 1) \"PurPackUn\" from OITM where \"ItemCode\" = @ItemCode";
             var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
             Global.DataObject.ExecuteReader(query, parameter, dr =>
-                AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["NumInBuy"])));
+                AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"])));
         }
 
-        void AddItem(string itemCode, string itemName, int numInBuy) {
+        void AddItem(string itemCode, string itemName, int PurPackUn) {
             var responseValue = new ItemCheckResponse {
                 ItemCode = itemCode,
                 ItemName = itemName,
-                NumInBuy = numInBuy
+                PurPackUn = PurPackUn
             };
             const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
             Global.DataObject.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),

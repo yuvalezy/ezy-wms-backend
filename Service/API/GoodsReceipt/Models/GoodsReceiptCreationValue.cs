@@ -5,7 +5,6 @@ namespace Service.API.GoodsReceipt.Models;
 
 public class GoodsReceiptCreationValue {
     public string ItemCode  { get; set; }
-    public bool   UseBaseUn { get; set; }
     public double Quantity  { get; set; }
     public string CardCode  { get; set; }
     public int    BaseType  { get; set; }
@@ -14,7 +13,6 @@ public class GoodsReceiptCreationValue {
 
     public GoodsReceiptCreationValue(DataRow dr) {
         ItemCode  = (string)dr["ItemCode"];
-        UseBaseUn = Convert.ToBoolean(dr["UseBaseUn"]);
         Quantity  = Convert.ToDouble(dr["Quantity"]);
         if (dr["CardCode"] != DBNull.Value)
             CardCode = (string)dr["CardCode"];

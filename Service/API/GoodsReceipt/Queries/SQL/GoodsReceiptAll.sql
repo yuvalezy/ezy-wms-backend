@@ -1,10 +1,10 @@
 ﻿-- declare @ID int = 2;
-select T0."U_ItemCode"                          "ItemCode",
+select T0."U_ItemCode"                 "ItemCode",
        T7."ItemName",
-       Sum(T0."U_Quantity" * T0."U_QtyPerUnit") "Quantity",
-       COALESCE(Sum(T9."Delivery"), 0)          "Delivery",
-       COALESCE(Sum(T9."Showroom"), 0)          "Showroom",
-       COALESCE(T8."OnHand", 0)                 "OnHand"
+       Sum(T0."U_Quantity")            "Quantity",
+       COALESCE(Sum(T9."Delivery"), 0) "Delivery",
+       COALESCE(Sum(T9."Showroom"), 0) "Showroom",
+       COALESCE(T8."OnHand", 0)        "OnHand"
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1."Code" = T0."U_ID"
          inner join OITM T7 on T7."ItemCode" = T0."U_ItemCode"
