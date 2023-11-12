@@ -19,7 +19,7 @@ public class GoodsReceiptCreation : IDisposable {
     private GoodsReceiptType type;
     private Documents        doc;
 
-    private Dictionary<string, List<GoodsReceiptCreationValue>> data;
+    private Dictionary<(string CardCode, int Type, int Entry), List<GoodsReceiptCreationValue>> data;
 
     public List<(int Entry, int Number)> NewEntries { get; } = new();
 
@@ -36,7 +36,7 @@ public class GoodsReceiptCreation : IDisposable {
             releaseMutex = true;
             Global.ConnectCompany();
             foreach (var pair in data) 
-                CreateDocument(pair.Key, pair.Value);
+                CreateDocument(pair.Key.CardCode, pair.Value);
         }
         catch (Exception e) {
             throw new Exception("Error generating GRPO: " + e.Message);
@@ -106,7 +106,7 @@ public class GoodsReceiptCreation : IDisposable {
         });
         data = dt.Rows.Cast<DataRow>()
             .Select(dr => new GoodsReceiptCreationValue(dr))
-            .GroupBy(v => v.CardCode)
+            .GroupBy(v => (v.CardCode, v.BaseType, v.BaseEntry))
             .ToDictionary(g => g.Key, g => g.ToList());
     }
 

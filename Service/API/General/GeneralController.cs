@@ -8,6 +8,17 @@ using Service.Shared;
 
 namespace Service.API.General;
 
+public class PublicController : LWApiController {
+    private readonly Data data = new();
+
+    [HttpGet]
+    [ActionName("CompanyInfo")]
+    public CompanyInfo GetCompanyInfo() =>
+        new() {
+            Name = Global.CompanyName
+        };
+}
+
 [Authorize]
 public class GeneralController : LWApiController {
     private readonly Data data = new();

@@ -104,6 +104,7 @@
     <Compile Include="API\General\GeneralController.cs" />
     <Compile Include="API\General\GeneralData.cs" />
     <Compile Include="API\General\ItemBarCodeUpdate.cs" />
+    <Compile Include="API\General\Models\CompanyInfo.cs" />
     <Compile Include="API\General\Models\EmployeeData.cs" />
     <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
     <Compile Include="API\General\Models\ItemCheckResponse.cs" />

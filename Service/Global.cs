@@ -20,8 +20,8 @@ namespace Service;
 
 public static class Global {
     #region Variables & Properties
-
     public static  string          Database        { get; set; }
+    public static  string          CompanyName     { get; set; }
     public static  bool            IsMain          { get; private set; }
     public static  int?            Port            { get; set; }
     public static  Service         Service         { get; set; }
@@ -142,6 +142,7 @@ public static class Global {
         TestHelloWorld                = dr["TestHelloWorld"].ToString() == "Y";
         GRPODraft                     = dr["GRPODraft"].ToString() == "Y";
         CompanySettings.CrystalLegacy = Convert.ToBoolean(dr["CrystalLegacy"]);
+        CompanyName                   = (string)dr["CompanyName"];
 
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
