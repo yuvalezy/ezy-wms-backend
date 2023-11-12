@@ -8,4 +8,6 @@ public static class Const {
     public const string ServiceName                 = "LW-YUVAL08-SERV";
     public const string GoodsReceipt                = "Entrada";
     public const string GoodsReceiptSupervisor      = "Supervisor Entrada";
+    public const string Delivery                    = "Salida";
+    public const string DeliverySupervisor          = "Supervisor Salida";
 }
