@@ -35,8 +35,8 @@ public class GoodsReceiptCreation : IDisposable {
             Global.TransactionMutex.WaitOne();
             releaseMutex = true;
             Global.ConnectCompany();
-            foreach (var pair in data) 
-                CreateDocument(pair.Key.CardCode, pair.Value);
+            foreach (var pair in data)
+                CreateDocument(pair.Key.CardCode, pair.Key.Type, pair.Key.Entry, pair.Value);
         }
         catch (Exception e) {
             throw new Exception("Error generating GRPO: " + e.Message);
@@ -48,7 +48,7 @@ public class GoodsReceiptCreation : IDisposable {
     }
 
     // ReSharper disable once ParameterHidesMember
-    private void CreateDocument(string cardCode, List<GoodsReceiptCreationValue> values) {
+    private void CreateDocument(string cardCode, int baseType, int baseEntry, List<GoodsReceiptCreationValue> values) {
         if (Global.GRPODraft) {
             doc               = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oDrafts);
             doc.DocObjectCode = BoObjectTypes.oPurchaseDeliveryNotes;
@@ -66,16 +66,16 @@ public class GoodsReceiptCreation : IDisposable {
         doc.UserFields.Fields.Item("U_LW_GRPO").Value = id;
 
         var lines = doc.Lines;
-        
+
         for (int i = 0; i < values.Count; i++) {
             if (i > 0)
                 lines.Add();
             var value = values[i];
             lines.ItemCode      = value.ItemCode;
             lines.WarehouseCode = whsCode;
-            if (value.BaseEntry != -1) {
-                lines.BaseType  = value.BaseType;
-                lines.BaseEntry = value.BaseEntry;
+            if (baseType != -1) {
+                lines.BaseType  = baseType;
+                lines.BaseEntry = baseEntry;
                 lines.BaseLine  = value.BaseLine;
             }
 
@@ -99,14 +99,18 @@ public class GoodsReceiptCreation : IDisposable {
     private void LoadData() {
         const string query = """select "U_WhsCode" "WhsCode", "U_Type" "Type" from "@LW_YUVAL08_GRPO" where "Code" = @ID""";
         (whsCode, char typeValue) = Global.DataObject.GetValue<string, char>(query, new Parameter("@ID", SqlDbType.Int, id));
-        type = (GoodsReceiptType)typeValue;
+        type                      = (GoodsReceiptType)typeValue;
         using var dt = Global.DataObject.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), new Parameters {
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
         });
         data = dt.Rows.Cast<DataRow>()
             .Select(dr => new GoodsReceiptCreationValue(dr))
-            .GroupBy(v => (v.CardCode, v.BaseType, v.BaseEntry))
+            .GroupBy(v => (
+                v.CardCode,
+                BaseType: v.BaseLine >= 0 ? v.BaseType : -1,
+                BaseEntry: v.BaseLine >= 0 ? v.BaseEntry : -1
+            ))
             .ToDictionary(g => g.Key, g => g.ToList());
     }
 

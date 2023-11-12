@@ -1,6 +1,6 @@
 ﻿--begin tran
 
--- declare @ID int = 22;
+-- declare @ID int = 31;
 -- declare @BarCode nvarchar(254) = '34567890455555';
 -- declare @ItemCode nvarchar(50) = 'SCUOM';
 -- declare @empID int = 1;
@@ -83,6 +83,23 @@ End Else If @Type = 'S' Begin
 		  and T0."WhsCode" = @WhsCode
 		  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
 		order by T1."CreateDate";
+	End
+
+	If @SourceType is null Begin
+		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @SourceLine = T0."U_SourceLine", @NumInBuy = "U_QtyPerUnit"
+		from "@LW_YUVAL08_GRPO1" T0
+		where T0.U_ID = @ID and T0."U_SourceType" = 22 and T0."U_ItemCode" = @ItemCode;
+	End
+
+	If @SourceType is null Begin
+		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @NumInBuy = "U_QtyPerUnit"
+		from "@LW_YUVAL08_GRPO1" T0
+		where T0.U_ID = @ID and T0."U_SourceType" = 18 and T0."U_ItemCode" = @ItemCode;
+	End
+
+	If @SourceType is null Begin
+		declare @Error nvarchar(100) = 'No valid source found for item ' + @ItemCode
+		RAISERROR(@Error,16,1);
 	End
 End
 

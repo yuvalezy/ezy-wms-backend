@@ -1,4 +1,5 @@
-﻿-- declare @ID int = 22;
+﻿-- update "@LW_YUVAL08_GRPO" set U_Status = 'I' where Code = 32;
+-- declare @ID int = 32;
 WITH Data AS (select T0."U_ItemCode"                                                                                          "ItemCode",
                      Sum(T0."U_Quantity")                                                                                     "Quantity",
                      T0."U_QtyPerUnit"                                                                                        "NumPerMsr",
