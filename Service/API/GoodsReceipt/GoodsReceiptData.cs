@@ -196,7 +196,7 @@ public class GoodsReceiptData {
         return doc;
     }
 
-    public Document[] GetDocuments(FilterParameters parameters) {
+    public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
         List<Document> docs = new();
         var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
         var queryParams = new Parameters {

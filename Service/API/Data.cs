@@ -1,6 +1,7 @@
 ﻿using System;
 using Service.API.General;
 using Service.API.GoodsReceipt;
+using Service.API.Picking;
 using Service.Shared.Utils;
 
 namespace Service.API;
@@ -8,6 +9,7 @@ namespace Service.API;
 public class Data {
     public GoodsReceiptData GoodsReceiptData { get; } = new();
     public GeneralData      GeneralData      { get; } = new();
+    public PickingData      PickingData      { get; } = new();
 
     public const string ValidateAccessFailedMessage = "Wrong supervisor password!";
 
