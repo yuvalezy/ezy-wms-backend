@@ -14,7 +14,6 @@ public class Document {
     public UserInfo         StatusEmployee  { get; set; }
     public BusinessPartner  BusinessPartner { get; set; }
     public string           WhsCode         { get; set; }
-    public int              GRPO            { get; set; }
     public GoodsReceiptType Type            { get; set; }
     public bool             Error           { get; set; }
     public int              ErrorCode       { get; set; }

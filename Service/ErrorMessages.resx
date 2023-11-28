@@ -60,4 +60,7 @@
     <data name="Draft" xml:space="preserve">
         <value>Draft</value>
     </data>
+    <data name="GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_" xml:space="preserve">
+        <value>No valid source purchase document found for item {0}</value>
+    </data>
 </root>

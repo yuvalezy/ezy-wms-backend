@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Service.Shared.Data;
 
 namespace Service.API.General.Models;
 

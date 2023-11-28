@@ -415,6 +415,6 @@ public enum ObjectTypes {
 public enum Authorization {
     GoodsReceipt = 1,
     GoodsReceiptSupervisor = 2,
-    Delivery = 3,
-    DeliverySupervisor = 4
+    Picking = 3,
+    PickingSupervisor = 4
 }

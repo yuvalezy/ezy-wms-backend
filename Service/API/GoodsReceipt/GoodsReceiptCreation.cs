@@ -34,11 +34,19 @@ public class GoodsReceiptCreation : IDisposable {
             LoadData();
             Global.TransactionMutex.WaitOne();
             releaseMutex = true;
+            ConnectionController.BeginTransaction();
             Global.ConnectCompany();
             foreach (var pair in data)
                 CreateDocument(pair.Key.CardCode, pair.Key.Type, pair.Key.Entry, pair.Value);
+            ConnectionController.Commit();
         }
         catch (Exception e) {
+            try {
+
+            }
+            catch {
+                ConnectionController.Rollback();
+            }
             throw new Exception("Error generating GRPO: " + e.Message);
         }
         finally {

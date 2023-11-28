@@ -106,6 +106,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No valid source purchase document found for item {0}.
+        /// </summary>
+        internal static string GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_ {
+            get {
+                return ResourceManager.GetString("GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ID is a required parameter.
         /// </summary>
         internal static string ID_is_a_required_parameter {

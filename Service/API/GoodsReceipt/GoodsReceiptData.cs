@@ -31,6 +31,17 @@ public class GoodsReceiptData {
             using var creation = new GoodsReceiptCreation(id, employeeID);
             creation.Execute();
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
+            ProcessDocumentSendAlert(id, sendTo, creation);
+            return true;
+        }
+        catch (Exception e) {
+            UpdateDocumentStatus(id, employeeID, DocumentStatus.InProgress);
+            throw;
+        }
+    }
+
+    private static void ProcessDocumentSendAlert(int id, List<string> sendTo, GoodsReceiptCreation creation) {
+        try {
             using var alert = new Alert();
             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
@@ -42,11 +53,9 @@ public class GoodsReceiptData {
             });
 
             alert.Send(sendTo);
-            return true;
         }
         catch (Exception e) {
-            UpdateDocumentStatus(id, employeeID, DocumentStatus.InProgress);
-            throw;
+            //todo log error handler
         }
     }
 
@@ -166,9 +175,13 @@ public class GoodsReceiptData {
                 throw new Exception("Add Item Result Empty!");
             Global.DataObject.CommitTransaction();
         }
-        catch {
+        catch(Exception ex) {
             Global.DataObject.RollbackTransaction();
-            throw;
+            if (!ex.Message.Contains("No valid source found for item"))
+                throw;
+            returnValue              = new AddItemResponse {
+                ErrorMessage = string.Format(ErrorMessages.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_, itemCode)
+            };
         }
 
         return returnValue;
@@ -241,13 +254,15 @@ public class GoodsReceiptData {
                 sb.Append(" desc");
         }
 
-        Global.DataObject.ExecuteReader(sb.ToString(), queryParams, dr => docs.Add(ReadDocument(dr)));
+        string query = sb.ToString();
+
+        Global.DataObject.ExecuteReader(query, queryParams, dr => docs.Add(ReadDocument(dr)));
         var documents = docs.ToArray();
         GetDocumentsSpecificDocuments(documents);
         return documents;
     }
 
-    private static Document ReadDocument(IDataReader dr) {
+    private static Document ReadDocument(IDataRecord dr) {
         var doc = new Document {
             ID             = (int)dr["ID"],
             Name           = (string)dr["Name"],
@@ -261,8 +276,6 @@ public class GoodsReceiptData {
         };
         if (dr["CardCode"] != DBNull.Value)
             doc.BusinessPartner = new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString());
-        if (dr["GRPO"] != DBNull.Value)
-            doc.GRPO = (int)dr["GRPO"];
         return doc;
     }
 
