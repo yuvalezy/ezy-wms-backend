@@ -12,34 +12,35 @@ namespace Service.API.Picking;
 
 public class PickingData {
     public PickingDocument GetPicking(int id, string whsCode, int? type, int? entry) {
-        var pick = GetPickings(new PickingParameters { ID = id, WhsCode = whsCode, Statues = null}).FirstOrDefault();
-        if (pick == null) 
+        var pick = GetPickings(new PickingParameters { ID = id, WhsCode = whsCode, Statues = null }).FirstOrDefault();
+        if (pick == null)
             return null;
         GetPickingDetail(pick, type, entry);
         return pick;
     }
 
     private void GetPickingDetail(PickingDocument pick, int? type, int? entry) {
-        pick.Detail = new ();
-        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetails"), 
-           new Parameters {
+        pick.Detail = new();
+        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetails"),
+            new Parameters {
                 new Parameter("@AbsEntry", SqlDbType.Int, pick.Entry),
                 new Parameter("@Type", SqlDbType.Int, type.HasValue ? type.Value : DBNull.Value),
                 new Parameter("@Entry", SqlDbType.Int, entry.HasValue ? entry.Value : DBNull.Value),
-           }, 
+            },
             dr => pick.Detail.Add(PickingDocumentDetail.Read(dr)));
         if (!type.HasValue || !entry.HasValue || pick.Detail.Count == 0)
             return;
         GetPickingDetailItems(pick.Entry, pick.Detail[0]);
     }
+
     private void GetPickingDetailItems(int absEntry, PickingDocumentDetail detail) {
         detail.Items = new();
-        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItems"), 
-           new Parameters {
+        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItems"),
+            new Parameters {
                 new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
                 new Parameter("@Type", SqlDbType.Int, detail.Type),
                 new Parameter("@Entry", SqlDbType.Int, detail.Entry),
-           }, 
+            },
             dr => detail.Items.Add(PickingDocumentDetailItem.Read(dr)));
     }
 
@@ -54,8 +55,10 @@ public class PickingData {
                     sb.Append(", ");
                 sb.Append($"'{(char)parameters.Statues[i]}'");
             }
+
             sb.Append(") ");
         }
+
         var queryParams = new Parameters {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
         };
@@ -89,4 +92,44 @@ public class PickingData {
         return reader.ReadToEnd();
     }
 
+    public AddItemResponse AddItem(int id, int pickEntry, int quantity, int empID) {
+        AddItemResponse returnValue;
+        try {
+            Global.DataObject.BeginTransaction();
+            Global.DataObject.Execute(GetQuery("AddItem"), new Parameters {
+                new Parameter("@AbsEntry", SqlDbType.Int, id),
+                new Parameter("@PickEntry", SqlDbType.Int, pickEntry),
+                new Parameter("@Quantity", SqlDbType.Int, id, quantity),
+                new Parameter("@empID", SqlDbType.Int, empID),
+            });
+            returnValue = AddItemResponse.OkResponse;
+            Global.DataObject.CommitTransaction();
+        }
+        catch {
+            Global.DataObject.RollbackTransaction();
+            throw;
+        }
+
+        return returnValue;
+    }
+
+    public int ValidateAddItem(int id, int sourceType, int sourceEntry, string itemCode, int empID, int quantity, out int pickEntry) {
+        int returnValue = -1, returnPickEntry = -1;
+        Global.DataObject.ExecuteReader(GetQuery("ValidateAddItemParameters"), new Parameters {
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@SourceType", SqlDbType.Int, sourceType),
+            new Parameter("@SourceEntry", SqlDbType.Int, sourceEntry),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
+            new Parameter("@empID", SqlDbType.Int, empID),
+            new Parameter("@Quantity", SqlDbType.Int, quantity),
+        }, dr => {
+            returnPickEntry = (int)dr[0];
+            returnValue     = (int)dr[1];
+        });
+        if (returnPickEntry == -1) {
+            returnValue = -6;
+        }
+        pickEntry = returnPickEntry;
+        return returnValue;
+    }
 }

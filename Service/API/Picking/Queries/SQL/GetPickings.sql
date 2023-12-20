@@ -7,8 +7,7 @@ from (select PICKS."AbsEntry",
              PICKS."PickDate",
              PICKS."Status",
              Cast(PICKS."Remarks" as nvarchar(4000)) "Remarks",
-             T1."BaseObject",
-             T1."OrderEntry"
+             T1."BaseObject"
       from OPKL PICKS
                left outer join PKL1 T1 on T1."AbsEntry" = PICKS."AbsEntry"
                left outer join RDR1 T2 on T2."DocEntry" = T1."OrderEntry" and T2."LineNum" = T1."OrderLine" and T2."ObjType" = T1."BaseObject"

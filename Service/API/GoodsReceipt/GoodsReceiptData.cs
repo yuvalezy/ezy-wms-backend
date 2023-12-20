@@ -31,6 +31,7 @@ public class GoodsReceiptData {
             using var creation = new GoodsReceiptCreation(id, employeeID);
             creation.Execute();
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
+            creation.SetClosedLines();
             ProcessDocumentSendAlert(id, sendTo, creation);
             return true;
         }

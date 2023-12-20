@@ -1,16 +1,17 @@
 ﻿-- declare @AbsEntry int = 5;
 -- declare @Type int = 17;
 -- declare @Entry int = 528;
-select COALESCE(T2."ItemCode", T3."ItemCode", T4."ItemCode") "ItemCode",
+select T2."ItemCode",
        T5."ItemName",
-       T1."RelQtty" + T1."PickQtty"                          "Quantity",
-       T1."PickQtty"                                         "Picked",
-       T1."RelQtty"                                          "OpenQuantity"
+       T1."RelQtty" + T1."PickQtty"               "Quantity",
+       T1."PickQtty" + COALESCE(T6."Quantity", 0) "Picked",
+       T1."RelQtty" - COALESCE(T6."Quantity", 0)  "OpenQuantity"
 from PKL1 T1
-         left outer join RDR1 T2 on T2."DocEntry" = T1."OrderEntry" and T2."LineNum" = T1."OrderLine" and T2."ObjType" = T1."BaseObject"
-         left outer join INV1 T3 on T3."DocEntry" = T1."OrderEntry" and T3."LineNum" = T1."OrderLine" and T3."ObjType" = T1."BaseObject"
-         left outer join WTQ1 T4 on T4."DocEntry" = T1."OrderEntry" and T4."LineNum" = T1."OrderLine" and T4."ObjType" = T1."BaseObject"
-         inner join OITM T5 on T5."ItemCode" = COALESCE(T2."ItemCode", T3."ItemCode", T4."ItemCode")
+         inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
+         inner join OITM T5 on T5."ItemCode" = T2."ItemCode"
+         left outer join (select "U_PickEntry" "PickEntry", Sum("U_Quantity") "Quantity" from [@LW_YUVAL08_PKL1] where "U_AbsEntry" = @AbsEntry Group By "U_PickEntry") T6
+                         on T6."PickEntry" = T1."PickEntry"
 where T1."AbsEntry" = @AbsEntry
   and T1."BaseObject" = @Type
   and T1."OrderEntry" = @Entry
+order by Case When T1."RelQtty" - COALESCE(T6."Quantity", 0) = 0 Then 1 Else 0 End, T2."ItemCode"

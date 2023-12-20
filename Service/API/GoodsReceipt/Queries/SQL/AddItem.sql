@@ -73,7 +73,7 @@ declare @TargetLine int;
 	If @SourceType is null Begin
 		select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
 		from PCH1 T0
-				 inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and (
+				 inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and (
 				@Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
 				or @Type = 'S'
 			 )

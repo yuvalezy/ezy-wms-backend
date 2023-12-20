@@ -29,24 +29,26 @@ public class PickingDocument {
 }
 
 public class PickingDocumentDetail {
-    public        int                             Type       { get; set; }
-    public        int                             Entry      { get; set; }
-    public        int                             Number     { get; set; }
-    public        DateTime                        Date       { get; set; }
-    public        string                          CardCode   { get; set; }
-    public        string                          CardName   { get; set; }
-    public        List<PickingDocumentDetailItem> Items      { get; set; }
-    public        int                             TotalItems { get; set; }
+    public int                             Type           { get; set; }
+    public int                             Entry          { get; set; }
+    public int                             Number         { get; set; }
+    public DateTime                        Date           { get; set; }
+    public string                          CardCode       { get; set; }
+    public string                          CardName       { get; set; }
+    public List<PickingDocumentDetailItem> Items          { get; set; }
+    public int                             TotalItems     { get; set; }
+    public int                             TotalOpenItems { get; set; }
 
     public static PickingDocumentDetail Read(IDataReader dr) {
         var detail = new PickingDocumentDetail();
-        detail.Type       = (int)dr["Type"];
-        detail.Entry      = (int)dr["Entry"];
-        detail.Number     = (int)dr["DocNum"];
-        detail.Date       = (DateTime)dr["DocDate"];
-        detail.CardCode   = dr["CardCode"].ToString();
-        detail.CardName   = dr["CardName"].ToString();
-        detail.TotalItems = Convert.ToInt32(dr["TotalItems"]);
+        detail.Type           = (int)dr["Type"];
+        detail.Entry          = (int)dr["Entry"];
+        detail.Number         = (int)dr["DocNum"];
+        detail.Date           = (DateTime)dr["DocDate"];
+        detail.CardCode       = dr["CardCode"].ToString();
+        detail.CardName       = dr["CardName"].ToString();
+        detail.TotalItems     = Convert.ToInt32(dr["TotalItems"]);
+        detail.TotalOpenItems = Convert.ToInt32(dr["TotalOpenItems"]);
         return detail;
     }
 }
