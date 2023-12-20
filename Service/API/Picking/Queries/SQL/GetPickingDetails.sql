@@ -13,7 +13,11 @@ from PKL1 T0
          left outer join ORDR T2 on T2."DocEntry" = T0."OrderEntry" and T2."ObjType" = T0."BaseObject"
          left outer join OINV T3 on T3."DocEntry" = T0."OrderEntry" and T3."ObjType" = T0."BaseObject"
          left outer join OWTQ T4 on T4."DocEntry" = T0."OrderEntry" and T4."ObjType" = T0."BaseObject"
-         left outer join (select "U_PickEntry" "PickEntry", Sum("U_Quantity") "Quantity" from [@LW_YUVAL08_PKL1] where "U_AbsEntry" = @AbsEntry Group By "U_PickEntry") T6
+         left outer join (select "U_PickEntry"     "PickEntry",
+                                 Sum("U_Quantity") "Quantity"
+                          from [@LW_YUVAL08_PKL1]
+                          where "U_AbsEntry" = @AbsEntry and "U_Status" in ('O', 'P')
+                          Group By "U_PickEntry") T6
                          on T6."PickEntry" = T0."PickEntry"
 where T0."AbsEntry" = @AbsEntry
   and (@Type is null or T0."BaseObject" = @Type)

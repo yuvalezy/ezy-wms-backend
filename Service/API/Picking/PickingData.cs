@@ -4,9 +4,11 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using SAPbobsCOM;
 using Service.API.Picking.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
+using Service.Shared.Utils;
 
 namespace Service.API.Picking;
 
@@ -129,7 +131,14 @@ public class PickingData {
         if (returnPickEntry == -1) {
             returnValue = -6;
         }
+
         pickEntry = returnPickEntry;
         return returnValue;
+    }
+
+    public AddItemResponse Process(int id, string whsCode) {
+        using var picking = new PickingUpdate(id, whsCode);
+        picking.Execute();
+        return AddItemResponse.OkResponse;
     }
 }

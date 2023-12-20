@@ -5,3 +5,9 @@ public enum PickStatus {
     Picked   = 'P',
     Closed   = 'C'
 }
+public enum PickingStatus {
+    Open       = 'O',
+    Processing = 'P',
+    Finished   = 'F',
+    Error      = 'E'
+}

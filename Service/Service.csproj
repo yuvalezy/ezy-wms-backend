@@ -109,6 +109,7 @@
     <Compile Include="API\General\Models\EmployeeData.cs" />
     <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
     <Compile Include="API\General\Models\ItemCheckResponse.cs" />
+    <Compile Include="API\General\Models\ProcessDocument.cs" />
     <Compile Include="API\General\Models\ResponseBase.cs" />
     <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
@@ -142,8 +143,10 @@
     <Compile Include="API\Picking\Models\Enumerations.cs" />
     <Compile Include="API\Picking\Models\PickingDocument.cs" />
     <Compile Include="API\Picking\Models\PickingParameters.cs" />
+    <Compile Include="API\Picking\Models\PickingValue.cs" />
     <Compile Include="API\Picking\PickingController.cs" />
     <Compile Include="API\Picking\PickingData.cs" />
+    <Compile Include="API\Picking\PickingUpdate.cs" />
     <Compile Include="API\Print\Initializer.cs" />
     <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\PrintParameters.cs" />
@@ -211,6 +214,7 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItems.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="ErrorMessages.es-PA.resx">
       <Generator>ResXFileCodeGenerator</Generator>

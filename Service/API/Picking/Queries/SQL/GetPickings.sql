@@ -1,19 +1,34 @@
 ﻿-- declare @WhsCode nvarchar(8) = 'SM';
-select X0."AbsEntry", X0."PickDate", X0."Status", X0."Remarks",
+select X0."AbsEntry",
+       X0."PickDate",
+       X0."Status",
+       X0."Remarks",
        Sum(Case X0."BaseObject" When 17 Then 1 Else 0 End)         "SalesOrders",
        Sum(Case X0."BaseObject" When 13 Then 1 Else 0 End)         "Invoices",
-       Sum(Case X0."BaseObject" When 1250000001 Then 1 Else 0 End) "Transfers"
+       Sum(Case X0."BaseObject" When 1250000001 Then 1 Else 0 End) "Transfers",
+       Sum("Quantity")                                             "Quantity",
+       Sum("OpenQuantity")                                         "OpenQuantity",
+       Sum("UpdateQuantity")                                       "UpdateQuantity"
 from (select PICKS."AbsEntry",
              PICKS."PickDate",
              PICKS."Status",
-             Cast(PICKS."Remarks" as nvarchar(4000)) "Remarks",
-             T1."BaseObject"
+             Cast(PICKS."Remarks" as nvarchar(4000))        "Remarks",
+             T1."BaseObject",
+             Sum(T1."RelQtty" + T1."PickQtty")              "Quantity",
+             Sum(T1."RelQtty" - COALESCE(T6."Quantity", 0)) "OpenQuantity",
+             Sum(COALESCE(T6."Quantity", 0))                "UpdateQuantity"
       from OPKL PICKS
-               left outer join PKL1 T1 on T1."AbsEntry" = PICKS."AbsEntry"
-               left outer join RDR1 T2 on T2."DocEntry" = T1."OrderEntry" and T2."LineNum" = T1."OrderLine" and T2."ObjType" = T1."BaseObject"
-               left outer join INV1 T3 on T3."DocEntry" = T1."OrderEntry" and T3."LineNum" = T1."OrderLine" and T3."ObjType" = T1."BaseObject"
-               left outer join WTQ1 T4 on T4."DocEntry" = T1."OrderEntry" and T4."LineNum" = T1."OrderLine" and T4."ObjType" = T1."BaseObject"
-      where COALESCE(T2."WhsCode", T3."WhsCode", T4."FromWhsCod") = @WhsCode
+               inner join PKL1 T1 on T1."AbsEntry" = PICKS."AbsEntry"
+               inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
+               left outer join (select "U_AbsEntry"      "AbsEntry",
+                                       "U_PickEntry"     "PickEntry",
+                                       Sum("U_Quantity") "Quantity"
+                                from [@LW_YUVAL08_PKL1]
+                                where "U_Status" in ('O', 'P')
+                                Group By "U_AbsEntry", "U_PickEntry") T6
+                               on T6."AbsEntry" = T1."AbsEntry" and T6."PickEntry" = T1."PickEntry"
+      where T2.LocCode = @WhsCode
+        and PICKS."Status" in ('R', 'P')
 -- {0}
       GROUP BY PICKS."AbsEntry",
                PICKS."PickDate",

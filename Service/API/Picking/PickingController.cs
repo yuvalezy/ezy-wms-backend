@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using Service.API.General.Models;
 using Service.API.Picking.Models;
 using Service.Shared;
 
@@ -26,7 +27,6 @@ public class PickingController : LWApiController {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Picking, Authorization.PickingSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get picking");
         string whsCode = data.GeneralData.GetEmployeeData(EmployeeID).WhsCode;
-
         return data.PickingData.GetPicking(id, whsCode, type, entry);
     }
 
@@ -39,4 +39,15 @@ public class PickingController : LWApiController {
             return new AddItemResponse { ClosedDocument = true };
         return data.PickingData.AddItem(parameters.ID, parameters.PickEntry, parameters.Quantity, EmployeeID);
     }
+    
+    [HttpPost]
+    [ActionName("Process")]
+    public AddItemResponse Process([FromBody] ProcessDocument parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.PickingSupervisor))
+            throw new UnauthorizedAccessException("You don't have access for picking supervisor");
+        string whsCode = data.GeneralData.GetEmployeeData(EmployeeID).WhsCode;
+        return data.PickingData.Process(parameters.ID, whsCode);
+    }
+    
+    
 }

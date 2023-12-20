@@ -9,7 +9,12 @@ select T2."ItemCode",
 from PKL1 T1
          inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
          inner join OITM T5 on T5."ItemCode" = T2."ItemCode"
-         left outer join (select "U_PickEntry" "PickEntry", Sum("U_Quantity") "Quantity" from [@LW_YUVAL08_PKL1] where "U_AbsEntry" = @AbsEntry Group By "U_PickEntry") T6
+         left outer join (select "U_PickEntry"     "PickEntry",
+                                 Sum("U_Quantity") "Quantity"
+                          from [@LW_YUVAL08_PKL1]
+                          where "U_AbsEntry" = @AbsEntry
+                            and "U_Status" in ('O', 'P')
+                          Group By "U_PickEntry") T6
                          on T6."PickEntry" = T1."PickEntry"
 where T1."AbsEntry" = @AbsEntry
   and T1."BaseObject" = @Type
