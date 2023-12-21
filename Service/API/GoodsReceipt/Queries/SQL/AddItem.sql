@@ -68,7 +68,7 @@ declare @TargetLine int;
 	  and T0."WhsCode" = @WhsCode
 	  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
 	  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
-	order by T1."CreateDate";
+	order by T1."CreateDate", T1.CreateTS;
 
 	If @SourceType is null Begin
 		select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
@@ -90,7 +90,7 @@ declare @TargetLine int;
 		  and T0."WhsCode" = @WhsCode
 		  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
 		  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
-		order by T1."CreateDate";
+		order by T1."CreateDate", T1.CreateTS;
 	End
 
 	If @SourceType is null Begin
