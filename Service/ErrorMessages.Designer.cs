@@ -60,30 +60,20 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
+        ///   Looks up a localized string similar to BarCode is a required parameter.
         /// </summary>
-        internal static string AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents {
+        internal static string BarCode_is_a_required_parameter {
             get {
-                return ResourceManager.GetString("AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_spe" +
-                        "cific_documents", resourceCulture);
+                return ResourceManager.GetString("BarCode_is_a_required_parameter", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to The BarCode {0} does not match with Item {1} BarCode.
         /// </summary>
-        internal static string BarCode__0__does_not_match_with_Item__1__BarCode {
+        internal static string BarCodentoMatchItemCode {
             get {
-                return ResourceManager.GetString("BarCode__0__does_not_match_with_Item__1__BarCode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to BarCode is a required parameter.
-        /// </summary>
-        internal static string BarCode_is_a_required_parameter {
-            get {
-                return ResourceManager.GetString("BarCode_is_a_required_parameter", resourceCulture);
+                return ResourceManager.GetString("BarCodentoMatchItemCode", resourceCulture);
             }
         }
         
@@ -106,6 +96,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No valid source purchase document found for item {0}.
+        /// </summary>
+        internal static string GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_ {
+            get {
+                return ResourceManager.GetString("GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ID is a required parameter.
         /// </summary>
         internal static string ID_is_a_required_parameter {
@@ -115,20 +114,20 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Item {0}, Bar Code {1} is not a purchase item.
+        ///   Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
         /// </summary>
-        internal static string Item__0___Bar_Code__1__is_not_a_purchase_item {
+        internal static string ItemBarCode1WasNotFoundInTransactionSpecificDocuments {
             get {
-                return ResourceManager.GetString("Item__0___Bar_Code__1__is_not_a_purchase_item", resourceCulture);
+                return ResourceManager.GetString("ItemBarCode1WasNotFoundInTransactionSpecificDocuments", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Item Code {0} was not found in the database.
+        ///   Looks up a localized string similar to Item {0}, Bar Code {1} is not a purchase item.
         /// </summary>
-        internal static string Item_Code__0__was_not_found_in_the_database {
+        internal static string ItemBarCodeNotPurchaseItem {
             get {
-                return ResourceManager.GetString("Item_Code__0__was_not_found_in_the_database", resourceCulture);
+                return ResourceManager.GetString("ItemBarCodeNotPurchaseItem", resourceCulture);
             }
         }
         
@@ -138,6 +137,15 @@ namespace Service {
         internal static string ItemCode_is_a_required_parameter {
             get {
                 return ResourceManager.GetString("ItemCode_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Item Code {0} was not found in the database.
+        /// </summary>
+        internal static string ItemCodeWasNotFoundIndatabase {
+            get {
+                return ResourceManager.GetString("ItemCodeWasNotFoundIndatabase", resourceCulture);
             }
         }
         
@@ -160,11 +168,20 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Released quantity from item {0} is less then added quantity.
+        /// </summary>
+        internal static string ReleasedQuantityFromItemIsless {
+            get {
+                return ResourceManager.GetString("ReleasedQuantityFromItemIsless", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Transaction with ID {0} does not exists in the system.
         /// </summary>
-        internal static string Transaction_with_ID__0__does_not_exists_in_the_system {
+        internal static string TransactionIDNotExists {
             get {
-                return ResourceManager.GetString("Transaction_with_ID__0__does_not_exists_in_the_system", resourceCulture);
+                return ResourceManager.GetString("TransactionIDNotExists", resourceCulture);
             }
         }
         

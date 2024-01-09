@@ -190,7 +190,7 @@ public static class Global {
 
     private static void LoadRoles() {
         LogInfo("Loading roles");
-        string sqlStr = $"""select "typeID", "name" from OHTY where "name" in ('{Const.GoodsReceipt}', '{Const.GoodsReceiptSupervisor}')""";
+        string sqlStr = $"""select "typeID", "name" from OHTY where "name" in ('{Const.GoodsReceipt}', '{Const.GoodsReceiptSupervisor}', '{Const.Picking}', '{Const.PickingSupervisor}')""";
         var    dt     = Data.GetDataTable(sqlStr);
         foreach (DataRow dr in dt.Rows) {
             int id = (int)dr["typeID"];
@@ -200,6 +200,12 @@ public static class Global {
                     break;
                 case Const.GoodsReceiptSupervisor:
                     RolesMap.Add(id, Authorization.GoodsReceiptSupervisor);
+                    break;
+                case Const.Picking:
+                    RolesMap.Add(id, Authorization.Picking);
+                    break;
+                case Const.PickingSupervisor:
+                    RolesMap.Add(id, Authorization.PickingSupervisor);
                     break;
             }
         }

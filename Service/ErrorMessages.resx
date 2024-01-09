@@ -30,16 +30,16 @@
     <data name="BarCode_is_a_required_parameter" xml:space="preserve">
         <value>BarCode is a required parameter</value>
     </data>
-    <data name="Item_Code__0__was_not_found_in_the_database" xml:space="preserve">
+    <data name="ItemCodeWasNotFoundIndatabase" xml:space="preserve">
         <value>Item Code {0} was not found in the database</value>
     </data>
-    <data name="BarCode__0__does_not_match_with_Item__1__BarCode" xml:space="preserve">
+    <data name="BarCodentoMatchItemCode" xml:space="preserve">
         <value>The BarCode {0} does not match with Item {1} BarCode</value>
     </data>
-    <data name="Transaction_with_ID__0__does_not_exists_in_the_system" xml:space="preserve">
+    <data name="TransactionIDNotExists" xml:space="preserve">
         <value>Transaction with ID {0} does not exists in the system</value>
     </data>
-    <data name="Item__0___Bar_Code__1__is_not_a_purchase_item" xml:space="preserve">
+    <data name="ItemBarCodeNotPurchaseItem" xml:space="preserve">
         <value>Item {0}, Bar Code {1} is not a purchase item</value>
     </data>
     <data name="WMSTransactionAlert" xml:space="preserve">
@@ -51,7 +51,7 @@
     <data name="DraftNumber" xml:space="preserve">
         <value>Draft Number</value>
     </data>
-    <data name="AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents" xml:space="preserve">
+    <data name="ItemBarCode1WasNotFoundInTransactionSpecificDocuments" xml:space="preserve">
         <value>Item {0}, Bar Code {1} was not found in transaction specific documents</value>
     </data>
     <data name="PurchaseDeliveryNote" xml:space="preserve">
@@ -59,5 +59,11 @@
     </data>
     <data name="Draft" xml:space="preserve">
         <value>Draft</value>
+    </data>
+    <data name="GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_" xml:space="preserve">
+        <value>No valid source purchase document found for item {0}</value>
+    </data>
+    <data name="ReleasedQuantityFromItemIsless" xml:space="preserve">
+        <value>Released quantity from item {0} is less then added quantity</value>
     </data>
 </root>

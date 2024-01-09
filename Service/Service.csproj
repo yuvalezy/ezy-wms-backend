@@ -100,6 +100,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API\Data.cs" />
+    <Compile Include="API\General\AddItemReturnValueType.cs" />
     <Compile Include="API\General\Alert.cs" />
     <Compile Include="API\General\GeneralController.cs" />
     <Compile Include="API\General\GeneralData.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="API\General\Models\EmployeeData.cs" />
     <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
     <Compile Include="API\General\Models\ItemCheckResponse.cs" />
+    <Compile Include="API\General\Models\ProcessDocument.cs" />
     <Compile Include="API\General\Models\ResponseBase.cs" />
     <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
@@ -136,6 +138,15 @@
     <Compile Include="API\Models\Item.cs" />
     <Compile Include="API\Models\UserInfo.cs" />
     <Compile Include="API\Models\ValueDescription.cs" />
+    <Compile Include="API\Picking\Models\AddItemParameter.cs" />
+    <Compile Include="API\Picking\Models\AddItemResponse.cs" />
+    <Compile Include="API\Picking\Models\Enumerations.cs" />
+    <Compile Include="API\Picking\Models\PickingDocument.cs" />
+    <Compile Include="API\Picking\Models\PickingParameters.cs" />
+    <Compile Include="API\Picking\Models\PickingValue.cs" />
+    <Compile Include="API\Picking\PickingController.cs" />
+    <Compile Include="API\Picking\PickingData.cs" />
+    <Compile Include="API\Picking\PickingUpdate.cs" />
     <Compile Include="API\Print\Initializer.cs" />
     <Compile Include="API\Print\PrintController.cs" />
     <Compile Include="API\Print\PrintParameters.cs" />
@@ -200,6 +211,11 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateUpdateLineParameters.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItems.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="ErrorMessages.es-PA.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
@@ -269,9 +285,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="API\GoodsReceipt\Queries\HANA\" />
+    <Folder Include="API\Picking\Queries\HANA\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptVSExit.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickings.sql" />
     <Content Include="wwwroot\index.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -60,30 +60,20 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Artículo {0}, Código de Barras {1} no fue encontrado en los documentos especficos de la transacción.
+        ///   Looks up a localized string similar to El parametero &quot;BarCode&quot; (Codigó de Barra) es obligatorio.
         /// </summary>
-        internal static string AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents {
+        internal static string BarCode_is_a_required_parameter {
             get {
-                return ResourceManager.GetString("AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_spe" +
-                        "cific_documents", resourceCulture);
+                return ResourceManager.GetString("BarCode_is_a_required_parameter", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to El código de barras {0} no coincide con el código de barras del artículo {1}.
         /// </summary>
-        internal static string BarCode__0__does_not_match_with_Item__1__BarCode {
+        internal static string BarCodentoMatchItemCode {
             get {
-                return ResourceManager.GetString("BarCode__0__does_not_match_with_Item__1__BarCode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to El parametero &quot;BarCode&quot; (Codigó de Barra) es obligatorio.
-        /// </summary>
-        internal static string BarCode_is_a_required_parameter {
-            get {
-                return ResourceManager.GetString("BarCode_is_a_required_parameter", resourceCulture);
+                return ResourceManager.GetString("BarCodentoMatchItemCode", resourceCulture);
             }
         }
         
@@ -106,6 +96,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No se encontrol documento de compra fuente valido para el artículo {0}.
+        /// </summary>
+        internal static string GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_ {
+            get {
+                return ResourceManager.GetString("GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to El parametero &quot;ID&quot; (Identificación de Transacción) es obligatorio.
         /// </summary>
         internal static string ID_is_a_required_parameter {
@@ -115,20 +114,20 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Artículo {0}, Código de Barras {1} no es un artículo de compra.
+        ///   Looks up a localized string similar to Artículo {0}, Código de Barras {1} no fue encontrado en los documentos especficos de la transacción.
         /// </summary>
-        internal static string Item__0___Bar_Code__1__is_not_a_purchase_item {
+        internal static string ItemBarCode1WasNotFoundInTransactionSpecificDocuments {
             get {
-                return ResourceManager.GetString("Item__0___Bar_Code__1__is_not_a_purchase_item", resourceCulture);
+                return ResourceManager.GetString("ItemBarCode1WasNotFoundInTransactionSpecificDocuments", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to El código de artículo {0} no se encontró en la base de datos.
+        ///   Looks up a localized string similar to Artículo {0}, Código de Barras {1} no es un artículo de compra.
         /// </summary>
-        internal static string Item_Code__0__was_not_found_in_the_database {
+        internal static string ItemBarCodeNotPurchaseItem {
             get {
-                return ResourceManager.GetString("Item_Code__0__was_not_found_in_the_database", resourceCulture);
+                return ResourceManager.GetString("ItemBarCodeNotPurchaseItem", resourceCulture);
             }
         }
         
@@ -138,6 +137,15 @@ namespace Service {
         internal static string ItemCode_is_a_required_parameter {
             get {
                 return ResourceManager.GetString("ItemCode_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to El código de artículo {0} no se encontró en la base de datos.
+        /// </summary>
+        internal static string ItemCodeWasNotFoundIndatabase {
+            get {
+                return ResourceManager.GetString("ItemCodeWasNotFoundIndatabase", resourceCulture);
             }
         }
         
@@ -160,11 +168,20 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to La cantidad liberada del artículo {0} es menor que la cantidad agregada..
+        /// </summary>
+        internal static string ReleasedQuantityFromItemIsless {
+            get {
+                return ResourceManager.GetString("ReleasedQuantityFromItemIsless", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to La transacción con ID {0} no existe en el sistema.
         /// </summary>
-        internal static string Transaction_with_ID__0__does_not_exists_in_the_system {
+        internal static string TransactionIDNotExists {
             get {
-                return ResourceManager.GetString("Transaction_with_ID__0__does_not_exists_in_the_system", resourceCulture);
+                return ResourceManager.GetString("TransactionIDNotExists", resourceCulture);
             }
         }
         

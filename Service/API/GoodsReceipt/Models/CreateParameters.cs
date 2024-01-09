@@ -28,8 +28,8 @@ public class CreateParameters {
     }
 
     private void ValidateAutoConfirm(Data data) {
-        if (string.IsNullOrWhiteSpace(CardCode))
-            throw new ArgumentException("Card Code cannot be empty", nameof(CardCode));
+        //if (string.IsNullOrWhiteSpace(CardCode))
+        //throw new ArgumentException("Card Code cannot be empty", nameof(CardCode));
 
         if (!data.GeneralData.ValidateVendor(CardCode))
             throw new ArgumentException($"Card Code {CardCode} is not a valid vendor", nameof(CardCode));
@@ -39,13 +39,14 @@ public class CreateParameters {
         if (Documents == null || Documents.Count == 0)
             throw new ArgumentException("You must specify the documents argument", nameof(Documents));
 
-        string documents = Documents.Aggregate("", (a, b) => a + a.UnionQuery() +
-                                                             $"""
-                                                                  select {b.ObjectType} "ObjType",
-                                                                         {b.DocumentNumber} "DocNum",
-                                                                         (select top 1 "DocEntry" from O{QueryHelper.ObjectTable(b.ObjectType)} where "DocNum" = {b.DocumentNumber} order by "DocEntry" desc) "DocEntry"
-                                                                         {QueryHelper.FromDummy}
-                                                              """);
+        string documents = Documents.Aggregate("",
+            (a, b) => a + a.UnionQuery() +
+                      $"""
+                       select {b.ObjectType} "ObjType",
+                       {b.DocumentNumber} "DocNum",
+                       (select top 1 "DocEntry" from O{QueryHelper.ObjectTable(b.ObjectType)} where "DocNum" = {b.DocumentNumber} order by "DocEntry" desc) "DocEntry"
+                       {QueryHelper.FromDummy}
+                       """);
 
         string query = $"""
                         declare @WhsCode nvarchar(8) = (select U_LW_Branch from OHEM where "empID" = @empID);

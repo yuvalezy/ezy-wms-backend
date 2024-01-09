@@ -14,7 +14,7 @@ public class UpdateLineParameter {
     public (UpdateLineReturnValue, int) Validate(Data data) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
-        if (LineID <= 0)
+        if (LineID < 0)
             throw new ArgumentException(ErrorMessages.LineID_is_a_required_parameter);
 
         if (QuantityInUnit is < 1)

@@ -24,19 +24,19 @@
     <data name="ID_is_a_required_parameter" xml:space="preserve">
         <value>El parametero "ID" (Identificación de Transacción) es obligatorio</value>
     </data>
-    <data name="BarCode__0__does_not_match_with_Item__1__BarCode" xml:space="preserve">
+    <data name="BarCodentoMatchItemCode" xml:space="preserve">
         <value>El código de barras {0} no coincide con el código de barras del artículo {1}</value>
     </data>
     <data name="ItemCode_is_a_required_parameter" xml:space="preserve">
         <value>El parametero "ItemCode" (Codigó de Artículo) es obligatorio</value>
     </data>
-    <data name="Item__0___Bar_Code__1__is_not_a_purchase_item" xml:space="preserve">
+    <data name="ItemBarCodeNotPurchaseItem" xml:space="preserve">
         <value>Artículo {0}, Código de Barras {1} no es un artículo de compra</value>
     </data>
-    <data name="Transaction_with_ID__0__does_not_exists_in_the_system" xml:space="preserve">
+    <data name="TransactionIDNotExists" xml:space="preserve">
         <value>La transacción con ID {0} no existe en el sistema</value>
     </data>
-    <data name="Item_Code__0__was_not_found_in_the_database" xml:space="preserve">
+    <data name="ItemCodeWasNotFoundIndatabase" xml:space="preserve">
         <value>El código de artículo {0} no se encontró en la base de datos</value>
     </data>
     <data name="WMSTransaction" xml:space="preserve">
@@ -51,7 +51,7 @@
     <data name="DraftNumber" xml:space="preserve">
         <value>Numero Borrador</value>
     </data>
-    <data name="AddItemParameter_Validate_Item__0___Bar_Code__1__was_not_found_in_transaction_specific_documents" xml:space="preserve">
+    <data name="ItemBarCode1WasNotFoundInTransactionSpecificDocuments" xml:space="preserve">
         <value>Artículo {0}, Código de Barras {1} no fue encontrado en los documentos especficos de la transacción</value>
     </data>
     <data name="PurchaseDeliveryNote" xml:space="preserve">
@@ -59,5 +59,11 @@
     </data>
     <data name="Draft" xml:space="preserve">
         <value>Borrador</value>
+    </data>
+    <data name="GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_" xml:space="preserve">
+        <value>No se encontrol documento de compra fuente valido para el artículo {0}</value>
+    </data>
+    <data name="ReleasedQuantityFromItemIsless" xml:space="preserve">
+        <value>La cantidad liberada del artículo {0} es menor que la cantidad agregada.</value>
     </data>
 </root>

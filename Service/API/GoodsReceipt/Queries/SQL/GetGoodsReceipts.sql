@@ -1,4 +1,4 @@
-﻿select DOCS."Code"                                                                         ID,
+﻿select DISTINCT DOCS."Code"                                                                         ID,
        DOCS."Name",
        DOCS."U_Date"                                                                       "Date",
        DOCS."U_empID"                                                                      "EmployeeID",
@@ -10,7 +10,6 @@
        DOCS."U_CardCode"                                                                   "CardCode",
        T3."CardName",
        DOCS."U_WhsCode"                                                                    "WhsCode",
-       OPDN."DocNum"                                                                       "GRPO",
        DOCS."U_Type"                                                                       "Type"
 from [@LW_YUVAL08_GRPO] DOCS
          inner join OHEM T1 on T1."empID" = DOCS."U_empID"
