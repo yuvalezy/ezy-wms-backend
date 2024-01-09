@@ -4,6 +4,7 @@ using System.Web.Http;
 namespace Service.API;
 
 public class LWApiController : ApiController {
+    protected readonly Data Data = new();
     protected int EmployeeID {
         get {
             int empID      = -1;

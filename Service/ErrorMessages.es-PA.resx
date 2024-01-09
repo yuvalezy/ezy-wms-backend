@@ -66,4 +66,7 @@
     <data name="ReleasedQuantityFromItemIsless" xml:space="preserve">
         <value>La cantidad liberada del artículo {0} es menor que la cantidad agregada.</value>
     </data>
+    <data name="PickEntryRequiredParameter" xml:space="preserve">
+        <value>El parametero "PickEntry" es obligatorio</value>
+    </data>
 </root>

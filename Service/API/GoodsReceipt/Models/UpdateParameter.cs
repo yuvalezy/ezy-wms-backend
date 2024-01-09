@@ -31,6 +31,6 @@ public class UpdateLineParameter {
                 return (UpdateLineReturnValue.NotSupervisor, -1);
         }
 
-        return ((UpdateLineReturnValue)data.GoodsReceiptData.ValidateUpdateLine(this), empID);
+        return ((UpdateLineReturnValue)data.GoodsReceipt.ValidateUpdateLine(this), empID);
     }
 }

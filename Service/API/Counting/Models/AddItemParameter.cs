@@ -1,19 +1,22 @@
 ﻿using System;
 using Service.API.General;
 
-namespace Service.API.GoodsReceipt.Models;
+namespace Service.API.Counting.Models;
 
 public class AddItemParameter : AddItemParameterBase {
-    public string CardCode { get; set; }
-
+    public int Quantity { get; set; }
     public bool Validate(Data data, int empID) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
+        if (Quantity <= 0)
+            throw new ArgumentException(ErrorMessages.Quantity_is_a_required_parameter);
+            
         if (string.IsNullOrWhiteSpace(ItemCode))
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
-        var value = (AddItemReturnValueType)data.GoodsReceipt.ValidateAddItem(ID, ItemCode, BarCode, empID);
+        var value = (AddItemReturnValueType)data.Counting.ValidateAddItem(ID, ItemCode, BarCode, empID);
         return value.Value(this);
     }
+
 }

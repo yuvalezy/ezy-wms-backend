@@ -31,7 +31,7 @@ public class CreateParameters {
         //if (string.IsNullOrWhiteSpace(CardCode))
         //throw new ArgumentException("Card Code cannot be empty", nameof(CardCode));
 
-        if (!data.GeneralData.ValidateVendor(CardCode))
+        if (!data.General.ValidateVendor(CardCode))
             throw new ArgumentException($"Card Code {CardCode} is not a valid vendor", nameof(CardCode));
     }
 

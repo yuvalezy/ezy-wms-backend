@@ -99,6 +99,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="API\Counting\CountingController.cs" />
+    <Compile Include="API\Counting\CountingCreation.cs" />
+    <Compile Include="API\Counting\CountingData.cs" />
+    <Compile Include="API\Counting\Models\AddItemParameter.cs" />
+    <Compile Include="API\Counting\Models\AddItemResponse.cs" />
+    <Compile Include="API\Counting\Models\Counting.cs" />
+    <Compile Include="API\Counting\Models\CreateParameters.cs" />
+    <Compile Include="API\Counting\Models\Enumerations.cs" />
+    <Compile Include="API\Counting\Models\FilterParameters.cs" />
     <Compile Include="API\Data.cs" />
     <Compile Include="API\General\AddItemReturnValueType.cs" />
     <Compile Include="API\General\Alert.cs" />
@@ -201,6 +210,12 @@
     <None Include="Web.config.old" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="API\Counting\Queries\SQL\AddItem.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\CreateCounting.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\GetCountings.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingLineStatus.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingStatus.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceiptDocument.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptAll.sql" />

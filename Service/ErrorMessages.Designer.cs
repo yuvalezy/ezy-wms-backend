@@ -78,6 +78,33 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Bin Location {0} is not current warehouse Warehouses.
+        /// </summary>
+        internal static string BinNotInWarehouse {
+            get {
+                return ResourceManager.GetString("BinNotInWarehouse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bin is a required parameter.
+        /// </summary>
+        internal static string BinRequiredParameterForWarehouse {
+            get {
+                return ResourceManager.GetString("BinRequiredParameterForWarehouse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bin Location {0} was not found in the database.
+        /// </summary>
+        internal static string BinWasNotFoundIndatabase {
+            get {
+                return ResourceManager.GetString("BinWasNotFoundIndatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Draft.
         /// </summary>
         internal static string Draft {
@@ -114,6 +141,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Inventory Counting.
+        /// </summary>
+        internal static string InventoryCounting {
+            get {
+                return ResourceManager.GetString("InventoryCounting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
         /// </summary>
         internal static string ItemBarCode1WasNotFoundInTransactionSpecificDocuments {
@@ -128,6 +164,15 @@ namespace Service {
         internal static string ItemBarCodeNotPurchaseItem {
             get {
                 return ResourceManager.GetString("ItemBarCodeNotPurchaseItem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Item {0}, Bar Code {1} is not a inventory managed item.
+        /// </summary>
+        internal static string ItemBarCodeNotStockItem {
+            get {
+                return ResourceManager.GetString("ItemBarCodeNotStockItem", resourceCulture);
             }
         }
         
@@ -150,6 +195,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Item {0}, Bar Code {1} is not enabled in Item Master Data, Warehouses.
+        /// </summary>
+        internal static string ItemNotInWarehouse {
+            get {
+                return ResourceManager.GetString("ItemNotInWarehouse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to LineID is a required parameter.
         /// </summary>
         internal static string LineID_is_a_required_parameter {
@@ -159,11 +213,29 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PickEntry is a required parameter.
+        /// </summary>
+        internal static string PickEntryRequiredParameter {
+            get {
+                return ResourceManager.GetString("PickEntryRequiredParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Purchase Delivery Note.
         /// </summary>
         internal static string PurchaseDeliveryNote {
             get {
                 return ResourceManager.GetString("PurchaseDeliveryNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quantity is a required parameter.
+        /// </summary>
+        internal static string Quantity_is_a_required_parameter {
+            get {
+                return ResourceManager.GetString("Quantity_is_a_required_parameter", resourceCulture);
             }
         }
         

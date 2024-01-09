@@ -16,7 +16,7 @@ public class UpdateBarCodeParameters {
         return AddBarcodes == null
             ? null
             : (from barcode in AddBarcodes
-                select data.GeneralData.ScanItemBarCode(barcode).FirstOrDefault()
+                select data.General.ScanItemBarCode(barcode).FirstOrDefault()
                 into item
                 where item != null
                 select new UpdateItemBarCodeResponse { ExistItem = item.Code, Status = ResponseStatus.Error }).FirstOrDefault();

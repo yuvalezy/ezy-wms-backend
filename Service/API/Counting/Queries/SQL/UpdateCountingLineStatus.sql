@@ -1,0 +1,1 @@
+﻿update [@LW_YUVAL08_OINC1] set U_LineStatus = @Status where "U_ID" = @ID

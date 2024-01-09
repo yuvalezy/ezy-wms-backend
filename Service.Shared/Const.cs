@@ -10,4 +10,6 @@ public static class Const {
     public const string GoodsReceiptSupervisor      = "Supervisor Entrada";
     public const string Picking                     = "Picking";
     public const string PickingSupervisor           = "Supervisor Picking";
+    public const string Counting                    = "Inventario";
+    public const string CountingSupervisor          = "Supervisor Inventari";
 }

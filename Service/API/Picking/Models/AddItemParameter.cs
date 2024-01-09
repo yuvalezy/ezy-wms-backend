@@ -17,7 +17,7 @@ public class AddItemParameter : AddItemParameterBase {
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(ItemCode))
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
-        var value = (AddItemReturnValueType)data.PickingData.ValidateAddItem(ID, Type, Entry, ItemCode, empID, Quantity, out int pickEntry);
+        var value = (AddItemReturnValueType)data.Picking.ValidateAddItem(ID, Type, Entry, ItemCode, empID, Quantity, out int pickEntry);
         PickEntry = pickEntry;
         return value.Value(this);
     }

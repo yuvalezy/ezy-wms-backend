@@ -18,6 +18,9 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
+    <data name="Quantity_is_a_required_parameter" xml:space="preserve">
+        <value>Quantity is a required parameter</value>
+    </data>
     <data name="ID_is_a_required_parameter" xml:space="preserve">
         <value>ID is a required parameter</value>
     </data>
@@ -30,6 +33,9 @@
     <data name="BarCode_is_a_required_parameter" xml:space="preserve">
         <value>BarCode is a required parameter</value>
     </data>
+    <data name="BinWasNotFoundIndatabase" xml:space="preserve">
+        <value>Bin Location {0} was not found in the database</value>
+    </data>
     <data name="ItemCodeWasNotFoundIndatabase" xml:space="preserve">
         <value>Item Code {0} was not found in the database</value>
     </data>
@@ -38,6 +44,18 @@
     </data>
     <data name="TransactionIDNotExists" xml:space="preserve">
         <value>Transaction with ID {0} does not exists in the system</value>
+    </data>
+    <data name="BinNotInWarehouse" xml:space="preserve">
+        <value>Bin Location {0} is not current warehouse Warehouses</value>
+    </data>
+    <data name="BinRequiredParameterForWarehouse" xml:space="preserve">
+        Bin is a required parameter
+    </data>
+    <data name="ItemNotInWarehouse" xml:space="preserve">
+        <value>Item {0}, Bar Code {1} is not enabled in Item Master Data, Warehouses</value>
+    </data>
+    <data name="ItemBarCodeNotStockItem" xml:space="preserve">
+        <value>Item {0}, Bar Code {1} is not a inventory managed item</value>
     </data>
     <data name="ItemBarCodeNotPurchaseItem" xml:space="preserve">
         <value>Item {0}, Bar Code {1} is not a purchase item</value>
@@ -54,6 +72,9 @@
     <data name="ItemBarCode1WasNotFoundInTransactionSpecificDocuments" xml:space="preserve">
         <value>Item {0}, Bar Code {1} was not found in transaction specific documents</value>
     </data>
+    <data name="InventoryCounting" xml:space="preserve">
+        <value>Inventory Counting</value>
+    </data>
     <data name="PurchaseDeliveryNote" xml:space="preserve">
         <value>Purchase Delivery Note</value>
     </data>
@@ -65,5 +86,8 @@
     </data>
     <data name="ReleasedQuantityFromItemIsless" xml:space="preserve">
         <value>Released quantity from item {0} is less then added quantity</value>
+    </data>
+    <data name="PickEntryRequiredParameter" xml:space="preserve">
+        <value>PickEntry is a required parameter</value>
     </data>
 </root>

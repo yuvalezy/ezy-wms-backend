@@ -159,6 +159,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to El parametero &quot;PickEntry&quot; es obligatorio.
+        /// </summary>
+        internal static string PickEntryRequiredParameter {
+            get {
+                return ResourceManager.GetString("PickEntryRequiredParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Entrada de Mercancia.
         /// </summary>
         internal static string PurchaseDeliveryNote {

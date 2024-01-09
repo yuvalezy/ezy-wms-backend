@@ -4,8 +4,8 @@
 -- declare @empID int = 1;
 declare @WhsCode nvarchar(8) = (select U_LW_Branch from OHEM where empID = @empID);
 select Case 
-    When T0.ItemCode is null Then -1 
-    When T0.BarCode <> T1.CodeBars Then -2
+    When T1.ItemCode is null Then -1 
+    When T0.BarCode <> T1.CodeBars and T3.BcdCode is null Then -2
     When T2.Code is null Then -3
     When T2.U_Status not in ('O', 'I') Then -4
     When T1.PrchseItem = 'N' Then -5
@@ -20,4 +20,5 @@ select Case
 from (select @ID ID, @BarCode BarCode, @ItemCode ItemCode) T0
          left outer join OITM T1 on T1.ItemCode = T0.ItemCode
 left outer join "@LW_YUVAL08_GRPO" T2 on T2.Code = T0.ID
+         left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
 

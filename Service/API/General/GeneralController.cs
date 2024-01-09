@@ -26,7 +26,7 @@ public class GeneralController : LWApiController {
     [HttpGet]
     [ActionName("UserInfo")]
     public UserInfo GetUserInfo() {
-        var employeeData = data.GeneralData.GetEmployeeData(EmployeeID);
+        var employeeData = data.General.GetEmployeeData(EmployeeID);
         return new UserInfo {
             ID             = EmployeeID,
             Name           = employeeData.Name,
@@ -40,7 +40,7 @@ public class GeneralController : LWApiController {
     public IEnumerable<BusinessPartner> GetVendors() {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for vendors list");
-        return data.GeneralData.GetVendors();
+        return data.General.GetVendors();
     }
 
     [HttpGet]
@@ -48,14 +48,14 @@ public class GeneralController : LWApiController {
     public IEnumerable<Item> ScanItemBarCode([FromUri] string scanCode) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for Scan Item BarCode");
-        return data.GeneralData.ScanItemBarCode(scanCode);
+        return data.General.ScanItemBarCode(scanCode);
     }
     [HttpPost]
     [ActionName("ItemCheck")]
     public IEnumerable<ItemCheckResponse> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for Item Check");
-        return data.GeneralData.ItemCheck(parameters.ItemCode, parameters.Barcode);
+        return data.General.ItemCheck(parameters.ItemCode, parameters.Barcode);
     }
     [HttpPost]
     [ActionName("UpdateItemBarCode")]

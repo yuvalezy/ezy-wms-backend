@@ -20,6 +20,7 @@ namespace Service;
 
 public static class Global {
     #region Variables & Properties
+
     public static  string          Database        { get; set; }
     public static  string          CompanyName     { get; set; }
     public static  bool            IsMain          { get; private set; }
@@ -190,8 +191,9 @@ public static class Global {
 
     private static void LoadRoles() {
         LogInfo("Loading roles");
-        string sqlStr = $"""select "typeID", "name" from OHTY where "name" in ('{Const.GoodsReceipt}', '{Const.GoodsReceiptSupervisor}', '{Const.Picking}', '{Const.PickingSupervisor}')""";
-        var    dt     = Data.GetDataTable(sqlStr);
+        const string sqlStr = "select \"typeID\", \"name\" from OHTY";
+
+        var dt = Data.GetDataTable(sqlStr);
         foreach (DataRow dr in dt.Rows) {
             int id = (int)dr["typeID"];
             switch ((string)dr["name"]) {
@@ -206,6 +208,12 @@ public static class Global {
                     break;
                 case Const.PickingSupervisor:
                     RolesMap.Add(id, Authorization.PickingSupervisor);
+                    break;
+                case Const.Counting:
+                    RolesMap.Add(id, Authorization.Counting);
+                    break;
+                case Const.CountingSupervisor:
+                    RolesMap.Add(id, Authorization.CountingSupervisor);
                     break;
             }
         }
