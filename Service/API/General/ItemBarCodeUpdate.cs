@@ -53,6 +53,7 @@ public class ItemBarCodeUpdate : IDisposable {
         }
         catch {
             company?.EndTransaction(BoWfTransOpt.wf_RollBack);
+            throw;
         }
         finally {
             Global.TransactionMutex.ReleaseMutex();
