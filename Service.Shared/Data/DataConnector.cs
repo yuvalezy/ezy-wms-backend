@@ -64,13 +64,8 @@ public abstract class DataConnector : IDisposable {
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(Procedure procedure) => GetValue<T1, T2, T3>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
 
 
-    public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
-        var returnValue = new Tuple<T1, T2, T3>(default, default, default);
-        GetValuesExecution(query, new Parameters{parameter}, commandType,
-            dr => returnValue =
-                new Tuple<T1, T2, T3>(ReadValue<T1>(dr[0]), ReadValue<T2>(dr[1]), ReadValue<T3>(dr[2])));
-        return returnValue;
-    }
+    public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3>(query, new Parameters{parameter}, commandType);
+
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3>(default, default, default);
         GetValuesExecution(query, parameters, commandType,
@@ -80,6 +75,7 @@ public abstract class DataConnector : IDisposable {
     }
 
     public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(Procedure procedure) => GetValue<T1, T2, T3, T4>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
+    public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3, T4>(query, new Parameters{parameter}, commandType);
 
     public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3, T4>(default, default, default, default);

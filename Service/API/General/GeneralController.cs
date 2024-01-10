@@ -31,6 +31,7 @@ public class GeneralController : LWApiController {
             ID             = EmployeeID,
             Name           = employeeData.Name,
             Branch         = employeeData.WhsName,
+            BinLocations      = employeeData.EnableBin,
             Authorizations = Global.UserAuthorizations[EmployeeID]
         };
     }
@@ -50,6 +51,7 @@ public class GeneralController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for Scan Item BarCode");
         return data.General.ScanItemBarCode(scanCode);
     }
+
     [HttpPost]
     [ActionName("ItemCheck")]
     public IEnumerable<ItemCheckResponse> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
@@ -57,6 +59,7 @@ public class GeneralController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for Item Check");
         return data.General.ItemCheck(parameters.ItemCode, parameters.Barcode);
     }
+
     [HttpPost]
     [ActionName("UpdateItemBarCode")]
     public UpdateItemBarCodeResponse AddItemBarCode([FromBody] UpdateBarCodeParameters parameters) {
@@ -67,6 +70,5 @@ public class GeneralController : LWApiController {
             return validationResponse;
         using var itemBarcode = new ItemBarCodeUpdate(EmployeeID, parameters.ItemCode, parameters.AddBarcodes, parameters.RemoveBarcodes);
         return itemBarcode.Execute();
-
     }
 }

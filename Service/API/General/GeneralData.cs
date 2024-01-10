@@ -13,14 +13,14 @@ public class GeneralData {
     public EmployeeData GetEmployeeData(int employeeID) {
         string query = $"""
                         select COALESCE(T0."firstName", 'NO_NAME') {QueryHelper.Concat} ' ' {QueryHelper.Concat} COALESCE(T0."lastName", 'NO_LAST_NAME') "Name",
-                        T1."WhsCode", T1."WhsName"
+                        T1."WhsCode", T1."WhsName", T1."BinActivat"
                         from OHEM T0
                         left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
                         where T0."empID" = @empID
                         """;
-        (string name, string whsCode, string whsName) =
-            Global.DataObject.GetValue<string, string, string>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
-        return new EmployeeData(name, whsCode, whsName);
+        (string name, string whsCode, string whsName, bool enableBin) =
+            Global.DataObject.GetValue<string, string, string, bool>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
+        return new EmployeeData(name, whsCode, whsName, enableBin);
     }
 
     public IEnumerable<BusinessPartner> GetVendors() {

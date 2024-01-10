@@ -13,6 +13,7 @@ public class UserInfo {
 
     [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public string Branch { get; set; }
+    public bool BinLocations { get; set; }
 
     public UserInfo() {
     }
