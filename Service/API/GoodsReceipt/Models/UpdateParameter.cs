@@ -22,7 +22,7 @@ public class UpdateLineParameter {
 
         int empID = -1;
         
-        if (CloseReason.HasValue || QuantityInUnit.HasValue) {
+        if ((CloseReason.HasValue || QuantityInUnit.HasValue) && Global.GRPOModificationsRequiredSupervisor) {
             if (string.IsNullOrWhiteSpace(UserName))
                 throw new Exception("A supervisor password is required to update line!");
             if (!Data.ValidateAccess(UserName, out empID, out _))

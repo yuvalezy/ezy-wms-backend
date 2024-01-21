@@ -13,7 +13,12 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("Create")]
     public Document CreateDocument([FromBody] CreateParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var authorizations = new []{Authorization.GoodsReceiptSupervisor};
+        if (!Global.GRPOCreateSupervisorRequired) {
+            Array.Resize(ref authorizations, authorizations.Length + 1);
+            authorizations[authorizations.Length - 1] = Authorization.GoodsReceipt;
+        }
+        if (!Global.ValidateAuthorization(EmployeeID, authorizations))
             throw new UnauthorizedAccessException("You don't have access for document creation");
 
         var validateReturnValue = parameters.Validate(Data, EmployeeID);

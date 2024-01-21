@@ -64,4 +64,11 @@ public class CountingController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get counting");
         return Data.Counting.GetCounting(id);
     }
+    [HttpPost]
+    [ActionName("CountingContent")]
+    public IEnumerable<CountingContent> CountingContent([FromBody] CountingContentParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
+            throw new UnauthorizedAccessException("You don't have access to get counting content");
+        return Data.Counting.GetCountingContent(parameters.ID, parameters.BinEntry);
+    }
 }

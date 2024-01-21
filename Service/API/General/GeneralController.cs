@@ -15,7 +15,7 @@ public class PublicController : LWApiController {
     [ActionName("CompanyInfo")]
     public CompanyInfo GetCompanyInfo() =>
         new() {
-            Name = Global.CompanyName
+            Name = Global.CompanyName,
         };
 }
 
@@ -31,17 +31,29 @@ public class GeneralController : LWApiController {
             ID             = EmployeeID,
             Name           = employeeData.Name,
             Branch         = employeeData.WhsName,
-            BinLocations      = employeeData.EnableBin,
-            Authorizations = Global.UserAuthorizations[EmployeeID]
+            BinLocations   = employeeData.EnableBin,
+            Authorizations = Global.UserAuthorizations[EmployeeID],
+            Settings = new ApplicationSettings {
+                GRPOModificationSupervisor   = Global.GRPOModificationsRequiredSupervisor,
+                GRPOCreateSupervisorRequired = Global.GRPOCreateSupervisorRequired
+            }
         };
     }
 
     [HttpGet]
     [ActionName("Vendors")]
     public IEnumerable<BusinessPartner> GetVendors() {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for vendors list");
         return data.General.GetVendors();
+    }
+
+    [HttpGet]
+    [ActionName("ScanBinLocation")]
+    public BinLocation ScanBinLocation([FromUri] string bin) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.Counting))
+            throw new UnauthorizedAccessException("You don't have access for Scan Bin Location");
+        return data.General.ScanBinLocation(bin);
     }
 
     [HttpGet]

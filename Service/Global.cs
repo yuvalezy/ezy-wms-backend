@@ -34,18 +34,20 @@ public static class Global {
     public static BoDataServerTypes ServerType { get; internal set; }
 
     //Database Settings
-    public static string                               DBServiceVersion   { get; set; }
-    public static string                               User               { get; set; }
-    public static string                               Password           { get; set; }
-    public static bool                                 TestHelloWorld     { get; private set; }
-    public static bool                                 GRPODraft          { get; private set; }
-    public static bool                                 PrintThread        { get; private set; }
-    public static bool                                 Background         { get; set; }
-    public static bool                                 Interactive        { get; set; }
-    public static bool                                 LoadBalancing      { get; set; }
-    public static ServiceNodes                         Nodes              { get; set; }
-    public static Dictionary<int, Authorization>       RolesMap           { get; } = new();
-    public static Dictionary<int, List<Authorization>> UserAuthorizations { get; } = new();
+    public static string                               DBServiceVersion                    { get; set; }
+    public static string                               User                                { get; set; }
+    public static string                               Password                            { get; set; }
+    public static bool                                 TestHelloWorld                      { get; private set; }
+    public static bool                                 GRPODraft                           { get; private set; }
+    public static bool                                 GRPOModificationsRequiredSupervisor { get; private set; }
+    public static bool                                 GRPOCreateSupervisorRequired        { get; private set; }
+    public static bool                                 PrintThread                         { get; private set; }
+    public static bool                                 Background                          { get; set; }
+    public static bool                                 Interactive                         { get; set; }
+    public static bool                                 LoadBalancing                       { get; set; }
+    public static ServiceNodes                         Nodes                               { get; set; }
+    public static Dictionary<int, Authorization>       RolesMap                            { get; } = new();
+    public static Dictionary<int, List<Authorization>> UserAuthorizations                  { get; } = new();
 
     #endregion
 
@@ -137,13 +139,15 @@ public static class Global {
             Service.LogInfo("Loading database settings");
         string sqlStr = Queries.DatabaseSettings;
         var    dr     = Data.GetDataTable(sqlStr).Rows[0];
-        DBServiceVersion              = dr["Version"].ToString();
-        User                          = dr["User"].ToString().DecryptString();
-        Password                      = dr["Password"].ToString().DecryptString();
-        TestHelloWorld                = dr["TestHelloWorld"].ToString() == "Y";
-        GRPODraft                     = dr["GRPODraft"].ToString() == "Y";
-        CompanySettings.CrystalLegacy = Convert.ToBoolean(dr["CrystalLegacy"]);
-        CompanyName                   = (string)dr["CompanyName"];
+        DBServiceVersion                    = dr["Version"].ToString();
+        User                                = dr["User"].ToString().DecryptString();
+        Password                            = dr["Password"].ToString().DecryptString();
+        TestHelloWorld                      = dr["TestHelloWorld"].ToString() == "Y";
+        GRPODraft                           = dr["GRPODraft"].ToString() == "Y";
+        GRPOModificationsRequiredSupervisor = dr["GRPOModSup"].ToString().Equals("Y");
+        GRPOCreateSupervisorRequired        = dr["GRPOCreateSup"].ToString().Equals("Y");
+        CompanySettings.CrystalLegacy       = Convert.ToBoolean(dr["CrystalLegacy"]);
+        CompanyName                         = (string)dr["CompanyName"];
 
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
@@ -233,6 +237,7 @@ public static class Global {
 
         string sqlStr = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
         var    dt     = DataObject.GetDataTable(sqlStr);
-        authorizations.AddRange(from DataRow dr in dt.Rows select RolesMap[(int)dr["roleID"]]);
+        var    data   = dt.Rows.Cast<DataRow>().Select(dr => (int)dr["roleID"]);
+        authorizations.AddRange(from roleID in data where RolesMap.ContainsKey(roleID) select RolesMap[roleID]);
     }
 }

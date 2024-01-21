@@ -1,0 +1,7 @@
+﻿namespace Service.API.Counting.Models;
+
+public class CountingContent {
+    public string Code     { get; set; }
+    public string Name     { get; set; }
+    public int    Quantity { get; set; }
+}

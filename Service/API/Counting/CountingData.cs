@@ -78,26 +78,27 @@ public class CountingData {
     }
 
     public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), new Parameters {
+        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
-            new Parameter("@empID", SqlDbType.Int, empID),
-        });
+            new Parameter("@empID", SqlDbType.Int, empID)
+        ]);
 
     public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
         try {
+            var returnValue = new AddItemResponse();
             Global.DataObject.BeginTransaction();
-            Global.DataObject.Execute(GetQuery("AddItem"), new Parameters {
+            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
                 new Parameter("@ID", SqlDbType.Int, parameters.ID),
                 new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry.HasValue ? parameters.BinEntry.Value : DBNull.Value),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
-                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
-            });
+                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+            ], dr => returnValue.LineID = (int)dr["LineID"]);
             Global.DataObject.CommitTransaction();
-            return new AddItemResponse();
+            return returnValue;
         }
         catch {
             Global.DataObject.RollbackTransaction();
@@ -194,5 +195,20 @@ public class CountingData {
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    public IEnumerable<CountingContent> GetCountingContent(int id, int binEntry) {
+        var list = new List<CountingContent>();
+        Global.DataObject.ExecuteReader(GetQuery("CountingContent"), [
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@BinEntry", SqlDbType.Int, binEntry <= 0 ? binEntry : DBNull.Value)
+        ], dr => {
+            list.Add(new() {
+                Code     = (string)dr["ItemCode"],
+                Name     = dr["ItemName"].ToString(),
+                Quantity = Convert.ToInt32(dr["Quantity"])
+            });
+        });
+        return list;
     }
 }

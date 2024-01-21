@@ -18,6 +18,9 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
+    <data name="Bin_is_a_required_parameter" xml:space="preserve">
+        <value>Bin is a required parameter</value>
+    </data>
     <data name="Quantity_is_a_required_parameter" xml:space="preserve">
         <value>Quantity is a required parameter</value>
     </data>

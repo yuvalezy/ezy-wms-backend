@@ -105,6 +105,8 @@
     <Compile Include="API\Counting\Models\AddItemParameter.cs" />
     <Compile Include="API\Counting\Models\AddItemResponse.cs" />
     <Compile Include="API\Counting\Models\Counting.cs" />
+    <Compile Include="API\Counting\Models\CountingContent.cs" />
+    <Compile Include="API\Counting\Models\CountingContentParameters.cs" />
     <Compile Include="API\Counting\Models\CreateParameters.cs" />
     <Compile Include="API\Counting\Models\Enumerations.cs" />
     <Compile Include="API\Counting\Models\FilterParameters.cs" />
@@ -114,6 +116,8 @@
     <Compile Include="API\General\GeneralController.cs" />
     <Compile Include="API\General\GeneralData.cs" />
     <Compile Include="API\General\ItemBarCodeUpdate.cs" />
+    <Compile Include="API\General\Models\ApplicationSettings.cs" />
+    <Compile Include="API\General\Models\BinLocation.cs" />
     <Compile Include="API\General\Models\CompanyInfo.cs" />
     <Compile Include="API\General\Models\EmployeeData.cs" />
     <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
@@ -211,6 +215,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="API\Counting\Queries\SQL\AddItem.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\CountingContent.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\CreateCounting.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\GetCountings.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingLineStatus.sql" />

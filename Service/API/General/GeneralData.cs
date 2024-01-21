@@ -108,11 +108,11 @@ public class GeneralData {
                 AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"])));
         }
 
-        void AddItem(string itemCode, string itemName, int PurPackUn) {
+        void AddItem(string itemCode, string itemName, int purPackUn) {
             var responseValue = new ItemCheckResponse {
                 ItemCode = itemCode,
                 ItemName = itemName,
-                PurPackUn = PurPackUn
+                PurPackUn = purPackUn
             };
             const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
             Global.DataObject.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
@@ -121,5 +121,17 @@ public class GeneralData {
         }
 
         return response;
+    }
+
+    public BinLocation ScanBinLocation(string binCode) {
+        string query = $"select \"AbsEntry\", \"BinCode\" from OBIN where \"BinCode\" = '{binCode.ToQuery()}'";
+        (int absEntry, string code) = query.ExecuteQueryValue<int, string>();
+        if (!string.IsNullOrWhiteSpace(code)) {
+            return new() {
+                Entry = absEntry,
+                Code = code,
+            };
+        }
+        return null;
     }
 }

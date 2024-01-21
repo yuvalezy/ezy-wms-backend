@@ -78,6 +78,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Bin is a required parameter.
+        /// </summary>
+        internal static string Bin_is_a_required_parameter {
+            get {
+                return ResourceManager.GetString("Bin_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Bin Location {0} is not current warehouse Warehouses.
         /// </summary>
         internal static string BinNotInWarehouse {
