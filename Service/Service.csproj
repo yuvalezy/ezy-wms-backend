@@ -110,6 +110,7 @@
     <Compile Include="API\Counting\Models\CreateParameters.cs" />
     <Compile Include="API\Counting\Models\Enumerations.cs" />
     <Compile Include="API\Counting\Models\FilterParameters.cs" />
+    <Compile Include="API\Counting\Models\UpdateParameter.cs" />
     <Compile Include="API\Data.cs" />
     <Compile Include="API\General\AddItemReturnValueType.cs" />
     <Compile Include="API\General\Alert.cs" />
@@ -125,6 +126,7 @@
     <Compile Include="API\General\Models\ProcessDocument.cs" />
     <Compile Include="API\General\Models\ResponseBase.cs" />
     <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
+    <Compile Include="API\General\Models\UpdateLineResponse.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptCreation.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptData.cs" />
@@ -137,7 +139,6 @@
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
     <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />
     <Compile Include="API\GoodsReceipt\Models\Document.cs" />
-    <Compile Include="API\GoodsReceipt\Models\UpdateLineResponse.cs" />
     <Compile Include="API\GoodsReceipt\Models\UpdateParameter.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
     <Compile Include="API\Logging.cs" />
@@ -221,6 +222,7 @@
     <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingLineStatus.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingStatus.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateAddItemParameters.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateUpdateLineParameters.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceiptDocument.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptAll.sql" />

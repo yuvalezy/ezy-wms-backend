@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Web.Http;
 using Service.API.Counting.Models;
+using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared;
 
@@ -22,6 +23,7 @@ public class CountingController : LWApiController {
         int id = Data.Counting.CreateCounting(parameters, EmployeeID);
         return Data.Counting.GetCounting(id);
     }
+
     [HttpPost]
     [ActionName("AddItem")]
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
@@ -31,6 +33,19 @@ public class CountingController : LWApiController {
             return new AddItemResponse { ClosedCounting = true };
         return Data.Counting.AddItem(parameters, EmployeeID);
     }
+
+    [HttpPost]
+    [ActionName("UpdateLine")]
+    public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
+            throw new UnauthorizedAccessException("You don't have access for updating line in counting");
+        var returnValue = parameters.Validate(Data);
+        if (returnValue != UpdateLineReturnValue.Ok)
+            return returnValue;
+        Data.Counting.UpdateLine(parameters);
+        return returnValue;
+    }
+
     [HttpPost]
     [ActionName("Cancel")]
     public bool CancelCounting([FromBody] IDParameters parameters) {
@@ -47,7 +62,20 @@ public class CountingController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for counting cancellation");
         return Data.Counting.ProcessCounting(parameters.ID, EmployeeID, Data.General.AlertUsers);
     }
-    
+
+    [HttpGet]
+    [ActionName("CancelReasons")]
+    public IEnumerable<ValueDescription<int>> GetCancelReasons() {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
+            throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
+        var values = new List<ValueDescription<int>>();
+        Global.DataObject.ExecuteReader("select \"Code\", \"Name\" from \"@LW_YUVAL08_OINC_CR\" order by 2", dr => {
+            var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
+            values.Add(value);
+        });
+        return values;
+    }
+
     [HttpGet]
     [ActionName("Countings")]
     public IEnumerable<Models.Counting> GetCountings([FromUri] FilterParameters parameters) {
@@ -64,6 +92,7 @@ public class CountingController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get counting");
         return Data.Counting.GetCounting(id);
     }
+
     [HttpPost]
     [ActionName("CountingContent")]
     public IEnumerable<CountingContent> CountingContent([FromBody] CountingContentParameters parameters) {

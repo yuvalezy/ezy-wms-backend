@@ -1,4 +1,4 @@
-﻿namespace Service.API.GoodsReceipt.Models;
+﻿namespace Service.API.General.Models;
 
 public enum UpdateLineReturnValue {
     Status             = -1,

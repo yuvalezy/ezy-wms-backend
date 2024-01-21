@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared;

@@ -1,4 +1,5 @@
 ﻿using System;
+using Service.API.General.Models;
 using Service.Shared;
 
 namespace Service.API.GoodsReceipt.Models;
