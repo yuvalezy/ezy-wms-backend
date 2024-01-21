@@ -4,6 +4,7 @@ using System.Data;
 using System.Text;
 using Service.API.General.Models;
 using Service.API.Models;
+using Service.Shared;
 using Service.Shared.Data;
 using Service.Shared.Utils;
 
@@ -36,6 +37,8 @@ public class GeneralData {
         string query = """select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y'""";
         return Global.DataObject.GetValue<bool>(query, new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode));
     }
+
+    public static int GetSeries(ObjectTypes objectType) => GetSeries(((int)objectType).ToString());
 
     public static int GetSeries(string objectCode) {
         string query = 

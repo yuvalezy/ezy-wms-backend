@@ -14,7 +14,7 @@ using Service.Shared.Utils;
 /// <img src="VSdocImages/Global\Global.cd"/>
 /// </remarks>
 #pragma warning restore 1587
-namespace Service.Shared.Company; 
+namespace Service.Shared.Company;
 
 /// <summary>
 /// This class contains all the connection objects to work with the SAP Business One DI API and UI API
@@ -178,9 +178,9 @@ public static class ConnectionController {
             int retVal = Company.Connect();
             if (retVal != 0)
                 throw new Exception($"Connection Error: {Company.GetLastErrorDescription()}");
-            Server           = server;
-            Database         = dbName;
-            DatabaseType     = dbServerType != BoDataServerTypes.dst_HANADB ? DatabaseType.SQL : DatabaseType.HANA;
+            Server       = server;
+            Database     = dbName;
+            DatabaseType = dbServerType != BoDataServerTypes.dst_HANADB ? DatabaseType.SQL : DatabaseType.HANA;
         }
         catch (Exception e) {
             if (e.Message.IndexOf("RPC_E_SERVERFAULT") != -1)
@@ -235,6 +235,15 @@ public static class ConnectionController {
         if (Company is { InTransaction: true })
             Company?.EndTransaction(BoWfTransOpt.wf_RollBack);
         Utils.Shared.ReleaseExecuteQuery();
+    }
+
+    public static void TryRollback() {
+        try {
+            Rollback();
+        }
+        catch {
+            //ignore
+        }
     }
 
     #endregion

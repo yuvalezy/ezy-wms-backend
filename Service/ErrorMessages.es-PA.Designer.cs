@@ -204,7 +204,7 @@ namespace Service {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Transacción de Entrada WMS #{0}.
+        ///   Looks up a localized string similar to Transacción de WMS #{0}.
         /// </summary>
         internal static string WMSTransactionAlert {
             get {

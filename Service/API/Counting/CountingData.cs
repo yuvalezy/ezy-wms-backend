@@ -60,8 +60,8 @@ public class CountingData {
             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
             var documentColumn    = new AlertColumn(ErrorMessages.InventoryCounting, true);
             alert.Columns.AddRange(new[] { transactionColumn, documentColumn });
-            transactionColumn.Values.Add(new AlertValue(creation.Entry.ToString()));
-            documentColumn.Values.Add(new AlertValue(creation.Number.ToString(), "1470000065", creation.Entry.ToString()));
+            transactionColumn.Values.Add(new AlertValue(creation.NewEntry.Entry.ToString()));
+            documentColumn.Values.Add(new AlertValue(creation.NewEntry.Number.ToString(), "1470000065", creation.NewEntry.Entry.ToString()));
             alert.Send(sendTo);
         }
         catch (Exception e) {

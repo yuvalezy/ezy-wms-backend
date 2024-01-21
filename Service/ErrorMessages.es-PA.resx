@@ -43,7 +43,7 @@
         <value>Transacción WMS</value>
     </data>
     <data name="WMSTransactionAlert" xml:space="preserve">
-        <value>Transacción de Entrada WMS #{0}</value>
+        <value>Transacción de WMS #{0}</value>
     </data>
     <data name="LineID_is_a_required_parameter" xml:space="preserve">
         <value>LineID es un parameter requerido</value>

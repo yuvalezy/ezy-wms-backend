@@ -64,7 +64,7 @@
         <value>Item {0}, Bar Code {1} is not a purchase item</value>
     </data>
     <data name="WMSTransactionAlert" xml:space="preserve">
-        <value>WMS Incoming Transaction #{0}</value>
+        <value>WMS Transaction #{0}</value>
     </data>
     <data name="WMSTransaction" xml:space="preserve">
         <value>WMS Transaction</value>

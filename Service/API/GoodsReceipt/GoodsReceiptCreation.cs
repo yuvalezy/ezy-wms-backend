@@ -12,10 +12,7 @@ using GeneralData = Service.API.General.GeneralData;
 
 namespace Service.API.GoodsReceipt;
 
-public class GoodsReceiptCreation : IDisposable {
-    private readonly int id;
-    private readonly int employeeID;
-
+public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
     private string           whsCode;
     private GoodsReceiptType type;
     private Documents        doc;
@@ -24,11 +21,6 @@ public class GoodsReceiptCreation : IDisposable {
     private Dictionary<(string CardCode, int Type, int Entry), List<GoodsReceiptCreationValue>> data;
 
     public List<(int Entry, int Number)> NewEntries { get; } = new();
-
-    public GoodsReceiptCreation(int id, int employeeID) {
-        this.id         = id;
-        this.employeeID = employeeID;
-    }
 
     public void Execute() {
         bool releaseMutex = false;
@@ -48,13 +40,7 @@ public class GoodsReceiptCreation : IDisposable {
             ConnectionController.Commit();
         }
         catch (Exception e) {
-            try {
-                ConnectionController.Rollback();
-            }
-            catch {
-                // ignored
-            }
-
+            ConnectionController.TryRollback();
             throw new Exception("Error generating GRPO: " + e.Message);
         }
         finally {
@@ -65,7 +51,6 @@ public class GoodsReceiptCreation : IDisposable {
 
     // ReSharper disable once ParameterHidesMember
     private void CreateDocument(string cardCode, int baseType, int baseEntry, int docSeries, List<GoodsReceiptCreationValue> values) {
-        
         if (Global.GRPODraft) {
             doc               = (Documents)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oDrafts);
             doc.DocObjectCode = BoObjectTypes.oPurchaseDeliveryNotes;
@@ -115,10 +100,10 @@ public class GoodsReceiptCreation : IDisposable {
         const string query = """select "U_WhsCode" "WhsCode", "U_Type" "Type" from "@LW_YUVAL08_GRPO" where "Code" = @ID""";
         (whsCode, char typeValue) = Global.DataObject.GetValue<string, char>(query, new Parameter("@ID", SqlDbType.Int, id));
         type                      = (GoodsReceiptType)typeValue;
-        using var dt = Global.DataObject.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), new Parameters {
+        using var dt = Global.DataObject.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), [
             new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@empID", SqlDbType.Int, employeeID),
-        });
+            new Parameter("@empID", SqlDbType.Int, employeeID)
+        ]);
         data = dt.Rows.Cast<DataRow>()
             .Select(dr => new GoodsReceiptCreationValue(dr))
             .GroupBy(v => (

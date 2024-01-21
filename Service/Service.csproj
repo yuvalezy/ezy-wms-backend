@@ -219,6 +219,7 @@
     <EmbeddedResource Include="API\Counting\Queries\SQL\CountingContent.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\CreateCounting.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\GetCountings.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\ProcessCountingLines.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingLineStatus.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingStatus.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateAddItemParameters.sql" />
