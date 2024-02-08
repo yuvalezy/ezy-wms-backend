@@ -1,9 +1,9 @@
 namespace Service.Shared; 
 
 public class PrintObjects {
-    public static readonly PrintObject[] ObjectsList = {
+    public static readonly PrintObject[] ObjectsList = [
         new(1, "Hello World!")
-    };
+    ];
 }
 
 public class PrintObject {

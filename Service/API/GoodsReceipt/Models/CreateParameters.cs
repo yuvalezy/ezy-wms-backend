@@ -76,7 +76,7 @@ public class CreateParameters {
             returnValue = new Document {
                 Error           = true,
                 ErrorCode       = -1,
-                ErrorParameters = new object[] { objectType, documentNumber, docStatus }
+                ErrorParameters = [objectType, documentNumber, docStatus]
             };
         });
         return returnValue;

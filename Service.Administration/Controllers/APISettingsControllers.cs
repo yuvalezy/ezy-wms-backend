@@ -42,7 +42,7 @@ public class APISettingsControllers {
         }
         catch (Exception ex) {
             MessageBox.Show(owner, $"Load Ports Manager Error: {ex.Message}", view.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return new PortsManager();
+            return [];
         }
     }
 
@@ -207,7 +207,7 @@ public class APISettingsControllers {
         int port = NextPort;
         if (port <= view.CurrentPort)
             port++;
-        view.Settings.Nodes ??= new List<Node> { new(port), new(port + 1) };
+        view.Settings.Nodes ??= [new(port), new(port + 1)];
         SetNodesDataSource();
     }
 

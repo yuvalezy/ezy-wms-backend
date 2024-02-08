@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared;
@@ -49,10 +48,10 @@ public class GeneralData {
            where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
            and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
            """;
-        return Global.DataObject.GetValue<int>(query, new Parameters {
+        return Global.DataObject.GetValue<int>(query, [
             new Parameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
             new Parameter("@Date", SqlDbType.DateTime, DateTime.Now)
-        });
+        ]);
     }
 
     public IEnumerable<Item> ScanItemBarCode(string scanCode) {

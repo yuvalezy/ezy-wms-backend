@@ -13,12 +13,12 @@ namespace Service.Administration;
 public partial class Connection : Form {
     private bool serverChange;
 
-    private readonly List<BoDataServerTypes> fallbackIndex = new() {
+    private readonly List<BoDataServerTypes> fallbackIndex = [
         BoDataServerTypes.dst_MSSQL2014,
         BoDataServerTypes.dst_MSSQL2016,
         BoDataServerTypes.dst_MSSQL2017,
         BoDataServerTypes.dst_MSSQL2019
-    };
+    ];
 
     public Connection() => InitializeComponent();
 

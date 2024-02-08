@@ -46,7 +46,7 @@ public static class Program {
                 serviceName += $" Node Port {Global.Port}";
             if (!Global.Interactive)
                 Console.WriteLine("Starting {0}...", serviceName);
-            onStartMethod.Invoke(service, new object[] { new string[] { } });
+            onStartMethod.Invoke(service, [new string[] { }]);
             if (!Global.Interactive)
                 Console.WriteLine("{0} Started", serviceName);
         }
@@ -98,7 +98,7 @@ public static class Program {
         foreach (var service in servicesToRun) {
             Console.WriteLine();
             Console.WriteLine("Custom Command {0}: {1}...", service.ServiceName, readKey.Key);
-            onCustomCommandMethod.Invoke(service, new object[] { commandNumber });
+            onCustomCommandMethod.Invoke(service, [commandNumber]);
             Console.WriteLine("Custom Command {0}: {1} Executed", service.ServiceName, readKey.Key);
         }
 

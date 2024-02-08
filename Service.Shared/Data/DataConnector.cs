@@ -35,7 +35,7 @@ public abstract class DataConnector : IDisposable {
 
     public T GetValue<T>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
         var returnValue = default(T);
-        GetValuesExecution(query, new Parameters { parameter }, commandType, dr => returnValue = ReadValue<T>(dr[0]));
+        GetValuesExecution(query, [parameter], commandType, dr => returnValue = ReadValue<T>(dr[0]));
         return returnValue;
     }
 
@@ -49,7 +49,7 @@ public abstract class DataConnector : IDisposable {
 
     public Tuple<T1, T2> GetValue<T1, T2>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2>(default, default);
-        GetValuesExecution(query, new Parameters { parameter }, commandType,
+        GetValuesExecution(query, [parameter], commandType,
             dr => returnValue = new Tuple<T1, T2>(ReadValue<T1>(dr[0]), ReadValue<T2>(dr[1])));
         return returnValue;
     }
@@ -64,7 +64,7 @@ public abstract class DataConnector : IDisposable {
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(Procedure procedure) => GetValue<T1, T2, T3>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
 
 
-    public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3>(query, new Parameters{parameter}, commandType);
+    public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3>(query, [parameter], commandType);
 
     public Tuple<T1, T2, T3> GetValue<T1, T2, T3>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3>(default, default, default);
@@ -75,7 +75,7 @@ public abstract class DataConnector : IDisposable {
     }
 
     public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(Procedure procedure) => GetValue<T1, T2, T3, T4>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
-    public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3, T4>(query, new Parameters{parameter}, commandType);
+    public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetValue<T1, T2, T3, T4>(query, [parameter], commandType);
 
     public Tuple<T1, T2, T3, T4> GetValue<T1, T2, T3, T4>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3, T4>(default, default, default, default);
@@ -170,14 +170,14 @@ public abstract class DataConnector : IDisposable {
     public int Execute(string query, Parameter parameter, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null) =>
         Execute(query, new Parameters(parameter), commandType, scopeIdentity, timeout);
 
-    public abstract int Execute(string query, Parameters parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
-    public void ExecuteReader(Procedure proc, Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
-    public void ExecuteReader(string query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
-    public void ExecuteReader(StringBuilder sb, Action<IDataReader> action) => ExecuteReader(sb.ToString(), null, CommandType.Text, action);
-    public void ExecuteReader(string query, Parameter parameter, Action<IDataReader> action) => ExecuteReader(query, new Parameters { parameter }, CommandType.Text, action);
-    public void ExecuteReader(StringBuilder sb, Parameter parameter, Action<IDataReader> action) => ExecuteReader(sb.ToString(), new Parameters { parameter }, CommandType.Text, action);
-    public void ExecuteReader(string query, Parameters parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
-    public abstract void ExecuteReader(string query, Parameters parameters, CommandType commandType, Action<IDataReader> action);
+    public abstract int  Execute(string              query, Parameters          parameters = null, CommandType commandType = CommandType.Text, bool scopeIdentity = false, int? timeout = null);
+    public          void ExecuteReader(Procedure     proc,  Action<IDataReader> action) => ExecuteReader(proc.Name, proc.Parameters, CommandType.StoredProcedure, action);
+    public          void ExecuteReader(string        query, Action<IDataReader> action) => ExecuteReader(query, null, CommandType.Text, action);
+    public          void ExecuteReader(StringBuilder sb,    Action<IDataReader> action) => ExecuteReader(sb.ToString(), null, CommandType.Text, action);
+    public          void ExecuteReader(string        query, Parameter           parameter,  Action<IDataReader> action) => ExecuteReader(query, [parameter], CommandType.Text, action);
+    public          void ExecuteReader(StringBuilder sb,    Parameter           parameter,  Action<IDataReader> action) => ExecuteReader(sb.ToString(), [parameter], CommandType.Text, action);
+    public          void ExecuteReader(string        query, Parameters          parameters, Action<IDataReader> action) => ExecuteReader(query, parameters, CommandType.Text, action);
+    public abstract void ExecuteReader(string        query, Parameters          parameters, CommandType         commandType, Action<IDataReader> action);
 
     public DataTable GetDataTable(string query, Parameter parameter, CommandType commandType = CommandType.Text) => GetDataTable(query, new Parameters(parameter), commandType);
     public abstract DataTable GetDataTable(string query, Parameters parameters = null, CommandType commandType = CommandType.Text);

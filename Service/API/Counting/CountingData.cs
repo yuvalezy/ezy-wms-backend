@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using Service.API.Counting.Models;
 using Service.API.General;
-using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
@@ -42,15 +41,15 @@ public class CountingData {
     }
 
     private static void UpdateCountingStatus(int id, int employeeID, DocumentStatus status) {
-        Global.DataObject.Execute(GetQuery("UpdateCountingStatus"), new Parameters {
+        Global.DataObject.Execute(GetQuery("UpdateCountingStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
-            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
-        });
-        Global.DataObject.Execute(GetQuery("UpdateCountingLineStatus"), new Parameters {
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
+        Global.DataObject.Execute(GetQuery("UpdateCountingLineStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
-        });
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
     }
 
     private static void ProcessCountingSendAlert(int id, List<string> sendTo, CountingCreation creation) {
@@ -116,7 +115,7 @@ public class CountingData {
     }
 
     public IEnumerable<Models.Counting> GetCountings(FilterParameters parameters) {
-        List<Models.Counting> counts = new();
+        List<Models.Counting> counts = [];
         var                   sb     = new StringBuilder(GetQuery("GetCountings"));
         var queryParams = new Parameters {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
@@ -214,11 +213,11 @@ public class CountingData {
     }
 
     public int ValidateUpdateLine(UpdateLineParameter parameters) {
-        return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), new Parameters {
+        return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
-            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
-        });
+            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value)
+        ]);
     }
 
     public void UpdateLine(UpdateLineParameter updateLineParameter) {

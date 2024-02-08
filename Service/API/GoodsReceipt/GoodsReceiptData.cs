@@ -76,11 +76,11 @@ public class GoodsReceiptData {
             return id;
 
         string query = GetQuery("CreateGoodsReceiptDocument");
-        @params = new Parameters {
+        @params = [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@ObjType", SqlDbType.Int),
-            new Parameter("@DocEntry", SqlDbType.Int),
-        };
+            new Parameter("@DocEntry", SqlDbType.Int)
+        ];
         createParameters.Documents.ForEach(value => {
             @params["@ObjType"].Value  = value.ObjectType;
             @params["@DocEntry"].Value = value.DocumentEntry;
@@ -91,11 +91,11 @@ public class GoodsReceiptData {
     }
 
     public int ValidateUpdateLine(UpdateLineParameter parameters) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), new Parameters {
+        Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
-            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
-        });
+            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value)
+        ]);
 
     public void UpdateLine(UpdateLineParameter updateLineParameter, int empID) {
         var parameters = new Parameters {
@@ -139,31 +139,31 @@ public class GoodsReceiptData {
         Global.DataObject.Execute(sb.ToString(), parameters);
 
         if (updateLineParameter.CloseReason.HasValue) {
-            Global.DataObject.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", new Parameters {
+            Global.DataObject.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", [
                 new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
-                new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
-            });
+                new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID }
+            ]);
         }
     }
 
     public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), new Parameters {
+        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
-            new Parameter("@empID", SqlDbType.Int, empID),
-        });
+            new Parameter("@empID", SqlDbType.Int, empID)
+        ]);
 
     public AddItemResponse AddItem(int id, string itemCode, string barcode, int employeeID) {
         AddItemResponse returnValue = null;
         try {
             Global.DataObject.BeginTransaction();
-            Global.DataObject.ExecuteReader(GetQuery("AddItem"), new Parameters {
+            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
                 new Parameter("@ID", SqlDbType.Int, id),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
-                new Parameter("@empID", SqlDbType.Int, employeeID),
-            }, dr => {
+                new Parameter("@empID", SqlDbType.Int, employeeID)
+            ], dr => {
                 returnValue = new AddItemResponse {
                     LineID      = (int)dr["LineID"],
                     Fulfillment = (int)dr["Fulfillment"] > 0,
@@ -198,7 +198,7 @@ public class GoodsReceiptData {
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
-        List<Document> docs = new();
+        List<Document> docs = [];
         var            sb   = new StringBuilder(GetQuery("GetGoodsReceipts"));
         var queryParams = new Parameters {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
@@ -323,15 +323,15 @@ public class GoodsReceiptData {
     }
 
     private static void UpdateDocumentStatus(int id, int employeeID, DocumentStatus status) {
-        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptStatus"), new Parameters {
+        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
-            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
-        });
-        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptLineStatus"), new Parameters {
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
+        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptLineStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@Status", SqlDbType.Char, 1, (char)status),
-        });
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
     }
 
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {

@@ -4,11 +4,9 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
-using SAPbobsCOM;
 using Service.API.Picking.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
-using Service.Shared.Utils;
 
 namespace Service.API.Picking;
 
@@ -22,13 +20,13 @@ public class PickingData {
     }
 
     private void GetPickingDetail(PickingDocument pick, int? type, int? entry) {
-        pick.Detail = new();
+        pick.Detail = [];
         Global.DataObject.ExecuteReader(GetQuery("GetPickingDetails"),
-            new Parameters {
+            [
                 new Parameter("@AbsEntry", SqlDbType.Int, pick.Entry),
                 new Parameter("@Type", SqlDbType.Int, type.HasValue ? type.Value : DBNull.Value),
-                new Parameter("@Entry", SqlDbType.Int, entry.HasValue ? entry.Value : DBNull.Value),
-            },
+                new Parameter("@Entry", SqlDbType.Int, entry.HasValue ? entry.Value : DBNull.Value)
+            ],
             dr => pick.Detail.Add(PickingDocumentDetail.Read(dr)));
         if (!type.HasValue || !entry.HasValue || pick.Detail.Count == 0)
             return;
@@ -36,19 +34,19 @@ public class PickingData {
     }
 
     private void GetPickingDetailItems(int absEntry, PickingDocumentDetail detail) {
-        detail.Items = new();
+        detail.Items = [];
         Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItems"),
-            new Parameters {
+            [
                 new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
                 new Parameter("@Type", SqlDbType.Int, detail.Type),
-                new Parameter("@Entry", SqlDbType.Int, detail.Entry),
-            },
+                new Parameter("@Entry", SqlDbType.Int, detail.Entry)
+            ],
             dr => detail.Items.Add(PickingDocumentDetailItem.Read(dr)));
     }
 
 
     public IEnumerable<PickingDocument> GetPickings(PickingParameters parameters) {
-        List<PickingDocument> values = new();
+        List<PickingDocument> values = [];
         var                   sb     = new StringBuilder(Environment.NewLine);
         if (parameters.Statues is { Length: > 0 }) {
             sb.AppendLine("and PICKS.\"Status\" in (");
@@ -98,12 +96,12 @@ public class PickingData {
         AddItemResponse returnValue;
         try {
             Global.DataObject.BeginTransaction();
-            Global.DataObject.Execute(GetQuery("AddItem"), new Parameters {
+            Global.DataObject.Execute(GetQuery("AddItem"), [
                 new Parameter("@AbsEntry", SqlDbType.Int, id),
                 new Parameter("@PickEntry", SqlDbType.Int, pickEntry),
                 new Parameter("@Quantity", SqlDbType.Int, id, quantity),
-                new Parameter("@empID", SqlDbType.Int, empID),
-            });
+                new Parameter("@empID", SqlDbType.Int, empID)
+            ]);
             returnValue = AddItemResponse.OkResponse;
             Global.DataObject.CommitTransaction();
         }
@@ -117,14 +115,14 @@ public class PickingData {
 
     public int ValidateAddItem(int id, int sourceType, int sourceEntry, string itemCode, int empID, int quantity, out int pickEntry) {
         int returnValue = -1, returnPickEntry = -1;
-        Global.DataObject.ExecuteReader(GetQuery("ValidateAddItemParameters"), new Parameters {
+        Global.DataObject.ExecuteReader(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@SourceType", SqlDbType.Int, sourceType),
             new Parameter("@SourceEntry", SqlDbType.Int, sourceEntry),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             new Parameter("@empID", SqlDbType.Int, empID),
-            new Parameter("@Quantity", SqlDbType.Int, quantity),
-        }, dr => {
+            new Parameter("@Quantity", SqlDbType.Int, quantity)
+        ], dr => {
             returnPickEntry = (int)dr[0];
             returnValue     = (int)dr[1];
         });

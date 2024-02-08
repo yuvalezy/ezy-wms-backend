@@ -1,5 +1,4 @@
 ﻿using System;
-using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 
 namespace Service.API.Counting.Models;
