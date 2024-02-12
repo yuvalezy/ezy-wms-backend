@@ -1,4 +1,4 @@
-﻿-- declare @ID int = 2;
+﻿-- declare @ID int = 1037;
 select T0."U_ItemCode"                 "ItemCode",
        T7."ItemName",
        Sum(T0."U_Quantity")            "Quantity",
@@ -15,6 +15,6 @@ from "@LW_YUVAL08_GRPO1" T0
                           from "@LW_YUVAL08_GRPO2"
                           where U_ID = @ID
                           Group By "U_LineID") T9 on T9.U_LineID = T0.U_LineID
-where T0.U_ID = @ID
+where T0.U_ID = @ID and T0."U_LineStatus" <> 'C'
 group by T7."ItemName", T0."U_ItemCode", T8."OnHand"
 order by "ItemCode"

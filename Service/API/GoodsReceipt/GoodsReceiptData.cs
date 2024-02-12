@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Web.Management;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
@@ -111,10 +113,18 @@ public class GoodsReceiptData {
             comma                                              = true;
         }
 
+        if (updateLineParameter.CloseReason.HasValue || updateLineParameter.InternalClose) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_LineStatus\" = 'C' ");
+            comma    = true;
+            userSign = true;
+        }
+
         if (updateLineParameter.CloseReason.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
-            sb.AppendLine("\"U_LineStatus\" = 'C', \"U_StatusReason\" = @Reason ");
+            sb.AppendLine("\"U_StatusReason\" = @Reason ");
             parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
             comma    = true;
             userSign = true;
@@ -138,7 +148,7 @@ public class GoodsReceiptData {
 
         Global.DataObject.Execute(sb.ToString(), parameters);
 
-        if (updateLineParameter.CloseReason.HasValue) {
+        if (updateLineParameter.CloseReason.HasValue || updateLineParameter.InternalClose) {
             Global.DataObject.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", [
                 new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
                 new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID }
@@ -169,18 +179,18 @@ public class GoodsReceiptData {
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
-                    PurPackUn    = (int)dr["PurPackUn"]
+                    PurPackUn   = (int)dr["PurPackUn"]
                 };
             });
             if (returnValue == null)
                 throw new Exception("Add Item Result Empty!");
             Global.DataObject.CommitTransaction();
         }
-        catch(Exception ex) {
+        catch (Exception ex) {
             Global.DataObject.RollbackTransaction();
             if (!ex.Message.Contains("No valid source found for item"))
                 throw;
-            returnValue              = new AddItemResponse {
+            returnValue = new AddItemResponse {
                 ErrorMessage = string.Format(ErrorMessages.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_, itemCode)
             };
         }
@@ -355,6 +365,59 @@ public class GoodsReceiptData {
             data.Add(line);
         });
         return data;
+    }
+
+    public List<GoodsReceiptReportAllDetails> GetGoodsReceiptAllReportDetails(int id, string item) {
+        var data = new List<GoodsReceiptReportAllDetails>();
+        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAllDetails"), [
+                new Parameter("@ID", SqlDbType.Int) { Value                = id },
+                new Parameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = item }
+            ],
+            dr => {
+                int    lineID       = (int)dr["LineID"];
+                string employeeName = (string)dr["EmployeeName"];
+                var    timestamp    = (DateTime)dr["TimeStamp"];
+                int    quantity     = Convert.ToInt32(dr["Quantity"]);
+
+                var line = new GoodsReceiptReportAllDetails {
+                    LineID       = lineID,
+                    EmployeeName = employeeName,
+                    TimeStamp    = timestamp,
+                    Quantity     = quantity,
+                };
+                data.Add(line);
+            });
+        return data;
+    }
+
+    public void UpdateGoodsReceiptAll(UpdateGoodsReceiptAllParameters parameters, int employeeID) {
+        try {
+            parameters.RemoveRows?.ForEach(row => {
+                UpdateLine(new UpdateLineParameter {
+                    ID            = parameters.ID,
+                    LineID        = row,
+                    InternalClose = true,
+                }, employeeID);
+            });
+        }
+        catch (Exception e) {
+            throw new Exception("Remove Rows Error: " + e.Message);
+        }
+        if (parameters.QuantityChanges == null) 
+            return;
+
+        try {
+            foreach (var pair in parameters.QuantityChanges) {
+                UpdateLine(new UpdateLineParameter {
+                    ID             = parameters.ID,
+                    LineID         = pair.Key,
+                    QuantityInUnit = pair.Value
+                }, employeeID);
+            }
+        }
+        catch (Exception e) {
+            throw new Exception("Update Quantity Error: " + e.Message);
+        }
     }
 
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
