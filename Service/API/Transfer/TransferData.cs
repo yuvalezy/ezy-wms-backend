@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Service.API.General;
 using Service.API.General.Models;
 using Service.API.Models;
 using Service.API.Transfer.Models;
@@ -74,6 +75,7 @@ public class TransferData {
         var documents = counts.ToArray();
         return documents;
     }
+
     private Models.Transfer ReadTransfer(IDataReader dr) {
         var count = new Models.Transfer {
             ID             = (int)dr["ID"],
@@ -88,8 +90,35 @@ public class TransferData {
     }
 
 
+    public int ValidateAddItem(AddItemParameter parameters, int employeeID) =>
+        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+            new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+        ]);
+
     public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
-        throw new System.NotImplementedException();
+        try {
+            var returnValue = new AddItemResponse();
+            Global.DataObject.BeginTransaction();
+            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
+                new Parameter("@ID", SqlDbType.Int, parameters.ID),
+                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+                new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+                new Parameter("@empID", SqlDbType.Int, employeeID),
+                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+            ], dr => returnValue.LineID = (int)dr["LineID"]);
+            Global.DataObject.CommitTransaction();
+            return returnValue;
+        }
+        catch {
+            Global.DataObject.RollbackTransaction();
+            throw;
+        }
     }
 
     public void UpdateLine(UpdateLineParameter parameters) {
@@ -104,12 +133,25 @@ public class TransferData {
         throw new System.NotImplementedException();
     }
 
-    public IEnumerable<TransferContent> GetTransferContent(int id, int binEntry) {
-        throw new NotImplementedException();
+    public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters parameters) {
+        var list = new List<TransferContent>();
+        Global.DataObject.ExecuteReader(GetQuery($"TransferContent{parameters.Type.ToString()}"), [
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry > 0 ? parameters.BinEntry : DBNull.Value),
+        ], dr => {
+            list.Add(new() {
+                Code     = (string)dr["ItemCode"],
+                Name     = dr["ItemName"].ToString(),
+                Quantity = Convert.ToInt32(dr["Quantity"])
+            });
+        });
+        return list;
     }
+
     public UpdateLineReturnValue ValidateUpdateLine(UpdateLineParameter updateLineParameter) {
         throw new NotImplementedException();
     }
+
     public static string GetQuery(string id) {
         string resourceName = $"Service.API.Transfer.Queries.{ConnectionController.DatabaseType}.{id}.sql";
         var    assembly     = typeof(Queries).Assembly;
@@ -123,5 +165,4 @@ public class TransferData {
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
-
 }

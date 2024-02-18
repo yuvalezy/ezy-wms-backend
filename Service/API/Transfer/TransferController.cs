@@ -81,6 +81,6 @@ public class TransferController : LWApiController {
     public IEnumerable<TransferContent> TransferContent([FromBody] TransferContentParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get transfer content");
-        return Data.Transfer.GetTransferContent(parameters.ID, parameters.BinEntry);
+        return Data.Transfer.GetTransferContent(parameters);
     }
 }

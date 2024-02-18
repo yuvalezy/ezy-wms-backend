@@ -76,12 +76,13 @@ public class CountingData {
         return Global.DataObject.GetValue<int>(GetQuery("CreateCounting"), @params);
     }
 
-    public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
+    public int ValidateAddItem(AddItemParameter parameters, int employeeID) =>
         Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
-            new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
-            new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
-            new Parameter("@empID", SqlDbType.Int, empID)
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+            new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
         ]);
 
     public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
@@ -90,7 +91,7 @@ public class CountingData {
             Global.DataObject.BeginTransaction();
             Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
                 new Parameter("@ID", SqlDbType.Int, parameters.ID),
-                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry.HasValue ? parameters.BinEntry.Value : DBNull.Value),
+                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
@@ -200,7 +201,7 @@ public class CountingData {
         var list = new List<CountingContent>();
         Global.DataObject.ExecuteReader(GetQuery("CountingContent"), [
             new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@BinEntry", SqlDbType.Int, binEntry <= 0 ? binEntry : DBNull.Value)
+            new Parameter("@BinEntry", SqlDbType.Int, binEntry > 0 ? binEntry : DBNull.Value)
         ], dr => {
             list.Add(new() {
                 Code     = (string)dr["ItemCode"],
@@ -224,8 +225,8 @@ public class CountingData {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
         };
-        var  sb       = new StringBuilder("update \"@LW_YUVAL08_OINC1\" set ");
-        bool comma    = false;
+        var  sb    = new StringBuilder("update \"@LW_YUVAL08_OINC1\" set ");
+        bool comma = false;
         if (updateLineParameter.Comment != null) {
             sb.AppendLine("\"U_Comments\" = @Comments ");
             parameters.Add("@Comments", SqlDbType.NText).Value = updateLineParameter.Comment;
@@ -237,7 +238,7 @@ public class CountingData {
                 sb.AppendLine(", ");
             sb.AppendLine("\"U_LineStatus\" = 'C', \"U_StatusReason\" = @Reason ");
             parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
-            comma    = true;
+            comma = true;
         }
 
         if (updateLineParameter.Quantity.HasValue) {

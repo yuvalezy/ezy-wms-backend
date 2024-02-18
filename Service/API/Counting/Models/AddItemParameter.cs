@@ -18,7 +18,7 @@ public class AddItemParameter : AddItemParameterBase {
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
-        var value = (AddItemReturnValueType)data.Counting.ValidateAddItem(ID, ItemCode, BarCode, empID);
+        var value = (AddItemReturnValueType)data.Counting.ValidateAddItem(this, empID);
         return value.Value(this);
     }
 

@@ -255,8 +255,11 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\AddItem.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentSource.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\CreateTransfer.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="ErrorMessages.es-PA.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>

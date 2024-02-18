@@ -3,7 +3,7 @@
 -- declare @ItemCode nvarchar(50) = 'SCSIW';
 -- declare @empID int = 1;
 declare @WhsCode nvarchar(8) = (select U_LW_Branch from OHEM where empID = @empID);
-declare @BinEntry int = 3500;
+-- declare @BinEntry int = 3500;
 select Case 
     When T1.ItemCode is null Then -1 
     When T0.BarCode <> T1.CodeBars and T3.BcdCode is null Then -2
