@@ -170,6 +170,18 @@
     <Compile Include="API\Print\PrintResponseLayout.cs" />
     <Compile Include="API\RefreshTokenProvider.cs" />
     <Compile Include="API\ServiceTracer.cs" />
+    <Compile Include="API\Transfer\Models\AddItemParameter.cs" />
+    <Compile Include="API\Transfer\Models\AddItemResponse.cs" />
+    <Compile Include="API\Transfer\Models\CreateParameters.cs" />
+    <Compile Include="API\Transfer\Models\Enumerations.cs" />
+    <Compile Include="API\Transfer\Models\FilterParameters.cs" />
+    <Compile Include="API\Transfer\Models\Transfer.cs" />
+    <Compile Include="API\Transfer\Models\TransferContent.cs" />
+    <Compile Include="API\Transfer\Models\TransferContentParameters.cs" />
+    <Compile Include="API\Transfer\Models\UpdateParameter.cs" />
+    <Compile Include="API\Transfer\TransferController.cs" />
+    <Compile Include="API\Transfer\TransferCreation.cs" />
+    <Compile Include="API\Transfer\TransferData.cs" />
     <Compile Include="Controllers\BaseBackgroundController.cs" />
     <Compile Include="Controllers\ServiceController.cs" />
     <Compile Include="DataCommands.cs" />
@@ -243,6 +255,8 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\CreateTransfer.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />
     <EmbeddedResource Include="ErrorMessages.es-PA.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>

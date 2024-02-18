@@ -219,6 +219,12 @@ public static class Global {
                 case Const.CountingSupervisor:
                     RolesMap.Add(id, Authorization.CountingSupervisor);
                     break;
+                case Const.Transfer:
+                    RolesMap.Add(id, Authorization.Transfer);
+                    break;
+                case Const.TransferSupervisor:
+                    RolesMap.Add(id, Authorization.TransferSupervisor);
+                    break;
             }
         }
     }

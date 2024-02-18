@@ -418,5 +418,7 @@ public enum Authorization {
     Picking                = 3,
     PickingSupervisor      = 4,
     Counting               = 5,
-    CountingSupervisor     = 6
+    CountingSupervisor     = 6,
+    Transfer               = 7,
+    TransferSupervisor     = 8,
 }

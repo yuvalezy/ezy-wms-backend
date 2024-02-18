@@ -73,8 +73,7 @@ public class CountingData {
             new Parameter("@Name", SqlDbType.NVarChar, 50, parameters.Name),
             new Parameter("@empID", SqlDbType.Int, employeeID),
         };
-        int id = Global.DataObject.GetValue<int>(GetQuery("CreateCounting"), @params);
-        return id;
+        return Global.DataObject.GetValue<int>(GetQuery("CreateCounting"), @params);
     }
 
     public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
