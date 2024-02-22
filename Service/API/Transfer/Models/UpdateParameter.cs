@@ -9,7 +9,7 @@ public class UpdateLineParameter {
     public              int    ID             { get; set; }
     public              int    LineID         { get; set; }
     public              string Comment        { get; set; }
-    public              int?   QuantityInUnit { get; set; }
+    public              int?   Quantity { get; set; }
     public              int?   CloseReason    { get; set; }
     public              string UserName       { get; set; }
     [JsonIgnore] public bool   InternalClose  { get; set; }
@@ -20,12 +20,12 @@ public class UpdateLineParameter {
         if (LineID < 0)
             throw new ArgumentException(ErrorMessages.LineID_is_a_required_parameter);
 
-        if (QuantityInUnit is < 1)
+        if (Quantity is < 1)
             throw new Exception("Quantity in Unit cannot be less then 1!");
 
         int empID = -1;
 
-        if ((CloseReason.HasValue || QuantityInUnit.HasValue) && Global.GRPOModificationsRequiredSupervisor) {
+        if ((CloseReason.HasValue || Quantity.HasValue) && Global.GRPOModificationsRequiredSupervisor) {
             if (string.IsNullOrWhiteSpace(UserName))
                 throw new Exception("A supervisor password is required to update line!");
             if (!Data.ValidateAccess(UserName, out empID, out _))
@@ -34,6 +34,6 @@ public class UpdateLineParameter {
                 return (UpdateLineReturnValue.NotSupervisor, -1);
         }
 
-        return (data.Transfer.ValidateUpdateLine(this), empID);
+        return ((UpdateLineReturnValue, int))(data.Transfer.ValidateUpdateLine(this), empID);
     }
 }

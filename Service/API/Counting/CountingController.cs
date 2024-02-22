@@ -68,12 +68,7 @@ public class CountingController : LWApiController {
     public IEnumerable<ValueDescription<int>> GetCancelReasons() {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
             throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
-        var values = new List<ValueDescription<int>>();
-        Global.DataObject.ExecuteReader("select \"Code\", \"Name\" from \"@LW_YUVAL08_OINC_CR\" order by 2", dr => {
-            var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
-            values.Add(value);
-        });
-        return values;
+        return Data.General.GetCancelReasons(ReasonType.Counting);
     }
 
     [HttpGet]

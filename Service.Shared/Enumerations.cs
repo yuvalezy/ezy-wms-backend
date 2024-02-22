@@ -425,3 +425,9 @@ public enum Authorization {
 public enum SourceTarget {
     Source, Target
 }
+
+public enum ReasonType {
+    Transfer,
+    GoodsReceipt,
+    Counting
+}

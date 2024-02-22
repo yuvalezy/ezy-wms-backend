@@ -59,6 +59,15 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for transfer cancellation");
         return Data.Transfer.ProcessTransfer(parameters.ID, EmployeeID, Data.General.AlertUsers);
     }
+    
+    [HttpGet]
+    [ActionName("CancelReasons")]
+    public IEnumerable<ValueDescription<int>> GetCancelReasons() {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
+            throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
+        return Data.General.GetCancelReasons(ReasonType.Transfer);
+    }
+    
     [HttpGet]
     [ActionName("Transfers")]
     public IEnumerable<Models.Transfer> GetTransfers([FromUri] FilterParameters parameters) {

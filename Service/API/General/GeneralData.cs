@@ -136,4 +136,19 @@ public class GeneralData {
         }
         return null;
     }
+
+    public IEnumerable<ValueDescription<int>> GetCancelReasons(ReasonType type) {
+        string tableID = type switch {
+            ReasonType.Counting     => "OINC",
+            ReasonType.Transfer     => "TRANS",
+            ReasonType.GoodsReceipt => "GRPO",
+            _                       => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+        var values = new List<ValueDescription<int>>();
+        Global.DataObject.ExecuteReader($"select \"Code\", \"Name\" from \"@LW_YUVAL08_CR\" where \"U_{tableID}\" = 'Y' order by 2", dr => {
+            var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
+            values.Add(value);
+        });
+        return values;
+    }
 }

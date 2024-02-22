@@ -121,8 +121,37 @@ public class TransferData {
         }
     }
 
-    public void UpdateLine(UpdateLineParameter parameters) {
-        throw new System.NotImplementedException();
+    public void UpdateLine(UpdateLineParameter updateLineParameter) {
+        var parameters = new Parameters {
+            new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
+            new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
+        };
+        var  sb    = new StringBuilder("update \"@LW_YUVAL08_TRANS1\" set ");
+        bool comma = false;
+        if (updateLineParameter.Comment != null) {
+            sb.AppendLine("\"U_Comments\" = @Comments ");
+            parameters.Add("@Comments", SqlDbType.NText).Value = updateLineParameter.Comment;
+            comma                                              = true;
+        }
+
+        if (updateLineParameter.CloseReason.HasValue) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_LineStatus\" = 'C', \"U_StatusReason\" = @Reason ");
+            parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
+            comma = true;
+        }
+
+        if (updateLineParameter.Quantity.HasValue) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_Quantity\" = @Quantity ");
+            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
+        }
+
+        sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
+
+        Global.DataObject.Execute(sb.ToString(), parameters);
     }
 
     public bool CancelTransfer(int id, int employeeID) {
@@ -148,8 +177,13 @@ public class TransferData {
         return list;
     }
 
-    public UpdateLineReturnValue ValidateUpdateLine(UpdateLineParameter updateLineParameter) {
-        throw new NotImplementedException();
+    public int ValidateUpdateLine(UpdateLineParameter parameters) {
+        return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
+            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity.HasValue ? parameters.Quantity.Value : DBNull.Value),
+        ]);
     }
 
     public static string GetQuery(string id) {

@@ -130,11 +130,11 @@ public class GoodsReceiptData {
             userSign = true;
         }
 
-        if (updateLineParameter.QuantityInUnit.HasValue) {
+        if (updateLineParameter.Quantity.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
             sb.AppendLine("\"U_Quantity\" = @Quantity ");
-            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.QuantityInUnit.Value });
+            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
             comma    = true;
             userSign = true;
         }
@@ -411,7 +411,7 @@ public class GoodsReceiptData {
                 UpdateLine(new UpdateLineParameter {
                     ID             = parameters.ID,
                     LineID         = pair.Key,
-                    QuantityInUnit = pair.Value
+                    Quantity = pair.Value
                 }, employeeID);
             }
         }

@@ -8,4 +8,4 @@ select Case
 from (select @ID ID, @LineID LineID) T0
          left outer join "@LW_YUVAL08_GRPO" T2 on T2.Code = T0.ID
          left outer join "@LW_YUVAL08_GRPO1" T3 on T3.U_ID = T0.ID and T3."U_LineID" = T0.LineID
-         left outer join "@LW_YUVAL08_GRPO_CR" T4 on T4."Code" = @Reason
+         left outer join "@LW_YUVAL08_CR" T4 on T4."Code" = @Reason and T4."U_GRPO" = 'Y'
