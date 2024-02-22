@@ -249,6 +249,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Selected quantity for item {0} is less then available quantity.
+        /// </summary>
+        internal static string QuantityMoreThenAvailable {
+            get {
+                return ResourceManager.GetString("QuantityMoreThenAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Released quantity from item {0} is less then added quantity.
         /// </summary>
         internal static string ReleasedQuantityFromItemIsless {

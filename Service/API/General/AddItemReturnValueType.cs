@@ -50,6 +50,7 @@ public static class AddItemReturnValueTypeDescription {
                         itemCode,
                         barCode),
                     AddItemReturnValueType.QuantityMoreThenReleased => string.Format(ErrorMessages.ReleasedQuantityFromItemIsless, itemCode),
+                    AddItemReturnValueType.QuantityMoreAvailable => string.Format(ErrorMessages.QuantityMoreThenAvailable, itemCode),
                     _                                               => throw new ArgumentOutOfRangeException(nameof(type))
                 });
         }

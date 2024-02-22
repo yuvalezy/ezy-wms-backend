@@ -90,6 +90,9 @@
     <data name="ReleasedQuantityFromItemIsless" xml:space="preserve">
         <value>Released quantity from item {0} is less then added quantity</value>
     </data>
+    <data name="QuantityMoreThenAvailable" xml:space="preserve">
+        <value>Selected quantity for item {0} is less then available quantity</value>
+    </data>
     <data name="PickEntryRequiredParameter" xml:space="preserve">
         <value>PickEntry is a required parameter</value>
     </data>

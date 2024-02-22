@@ -256,6 +256,7 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\AddItem.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\CheckIsCompleted.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentSource.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\CreateTransfer.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />

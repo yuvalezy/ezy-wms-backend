@@ -21,6 +21,13 @@ public class TransferData {
         return Global.DataObject.GetValue<int>(GetQuery("CreateTransfer"), @params);
     }
 
+    public bool IsComplete(int id) {
+        var @params = new Parameters {
+            new Parameter("@id", SqlDbType.Int, id),
+        };
+        return !Global.DataObject.GetValue<bool>(GetQuery("CheckIsCompleted"), @params);
+    }
+
     public Models.Transfer GetTransfer(int id) {
         Models.Transfer count = null;
         var             sb    = new StringBuilder(GetQuery("GetTransfers"));
