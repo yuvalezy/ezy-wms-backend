@@ -422,8 +422,10 @@ public enum Authorization {
     Transfer               = 7,
     TransferSupervisor     = 8,
 }
+
 public enum SourceTarget {
-    Source, Target
+    Source = 'S',
+    Target = 'T'
 }
 
 public enum ReasonType {

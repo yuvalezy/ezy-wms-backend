@@ -1,10 +1,13 @@
 ﻿using System;
 using Service.API.General;
+using Service.Shared;
 
 namespace Service.API.Transfer.Models;
 
 public class AddItemParameter : AddItemParameterBase {
-    public int Quantity { get; set; }
+    public int          Quantity { get; set; }
+    public SourceTarget Type     { get; set; }
+
     public bool Validate(Data data, int empID) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
@@ -13,13 +16,12 @@ public class AddItemParameter : AddItemParameterBase {
         //todo validate Bin Entry only if current session warehouse managed bin location
         // if (BinEntry <= 0)
         //     throw new ArgumentException(ErrorMessages.Bin_is_a_required_parameter);
-            
+
         if (string.IsNullOrWhiteSpace(ItemCode))
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
-        if (string.IsNullOrWhiteSpace(BarCode))
+        if (Type == SourceTarget.Source && string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
         var value = (AddItemReturnValueType)data.Transfer.ValidateAddItem(this, empID);
         return value.Value(this);
     }
-
 }

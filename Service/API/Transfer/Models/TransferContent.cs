@@ -1,8 +1,17 @@
-﻿namespace Service.API.Transfer.Models;
+﻿using System.Collections.Generic;
+
+namespace Service.API.Transfer.Models;
 
 public class TransferContent {
+    public string                   Code     { get; set; }
+    public string                   Name     { get; set; }
+    public int                      Quantity { get; set; }
+    public int?                     Progress { get; set; }
+    public List<TransferContentBin> Bins     { get; set; }
+}
+
+public class TransferContentBin {
+    public int    Entry    { get; set; }
     public string Code     { get; set; }
-    public string Name     { get; set; }
     public int    Quantity { get; set; }
-    public int?   Progress { get; set; }
 }

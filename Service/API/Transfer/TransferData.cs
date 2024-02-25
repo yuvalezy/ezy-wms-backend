@@ -118,7 +118,8 @@ public class TransferData {
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
-                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+                new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
             ], dr => returnValue.LineID = (int)dr["LineID"]);
             Global.DataObject.CommitTransaction();
             return returnValue;
@@ -172,24 +173,50 @@ public class TransferData {
 
     public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters contentParameters) {
         var        list        = new List<TransferContent>();
-        string     query       = $"TransferContent{(!contentParameters.Open ? "" : "Open")}{contentParameters.Type.ToString()}";
+        string     query       = $"TransferContent{contentParameters.Type.ToString()}";
         Parameters queryParams = [new Parameter("@ID", SqlDbType.Int, contentParameters.ID)];
-        if (contentParameters.Type == SourceTarget.Source) {
-            queryParams.Add(new Parameter("@BinEntry", SqlDbType.Int, contentParameters.BinEntry > 0 ? contentParameters.BinEntry : DBNull.Value));
+        switch (contentParameters.Type) {
+            case SourceTarget.Source:
+                queryParams.Add(new Parameter("@BinEntry", SqlDbType.Int, contentParameters.BinEntry > 0 ? contentParameters.BinEntry : DBNull.Value));
+                break;
+            case SourceTarget.Target:
+                queryParams.Add(new Parameter("@ItemCode", SqlDbType.NVarChar, contentParameters.ItemCode != null ? contentParameters.ItemCode : DBNull.Value));
+                break;
         }
 
+        Dictionary<string, TransferContent> control = new();
+
         Global.DataObject.ExecuteReader(GetQuery(query), queryParams, dr => {
-            var content = new TransferContent() {
+            var content = new TransferContent {
                 Code     = (string)dr["ItemCode"],
                 Name     = dr["ItemName"].ToString(),
                 Quantity = Convert.ToInt32(dr["Quantity"])
             };
-            if (contentParameters.Type == SourceTarget.Target && contentParameters.Open) {
+            if (contentParameters.Type == SourceTarget.Target) {
                 content.Progress = Convert.ToInt32(dr["Progress"]);
             }
+
             list.Add(content);
+            control.Add(content.Code, content);
         });
+
+        if (contentParameters.Type == SourceTarget.Target && contentParameters.TargetBins)
+            GetTransferContentBins(queryParams, control);
+
         return list;
+    }
+
+    private static void GetTransferContentBins(Parameters queryParams, Dictionary<string, TransferContent> control) {
+        Global.DataObject.ExecuteReader(GetQuery("TransferContentTargetBins"), queryParams, dr => {
+            string itemCode = (string)dr["ItemCode"];
+            var bin = new TransferContentBin {
+                Entry    = (int)dr["Entry"],
+                Code     = (string)dr["Code"],
+                Quantity = Convert.ToInt32(dr["Quantity"])
+            };
+            control[itemCode].Bins ??= [];
+            control[itemCode].Bins.Add(bin);
+        });
     }
 
     public int ValidateUpdateLine(UpdateLineParameter parameters) {
