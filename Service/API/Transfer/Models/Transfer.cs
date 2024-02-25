@@ -11,4 +11,5 @@ public class Transfer {
     public DateTime       StatusDate     { get; set; }
     public UserInfo       StatusEmployee { get; set; }
     public string         WhsCode        { get; set; }
+    public int?           Progress       { get; set; }
 }

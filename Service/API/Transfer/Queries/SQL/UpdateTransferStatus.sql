@@ -1,0 +1,1 @@
+﻿update [@LW_YUVAL08_TRANS] set "U_Status" = @Status, "U_StatusDate" = getdate(), "U_StatusEmpID" = @empID where "Code" = @ID

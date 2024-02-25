@@ -39,16 +39,24 @@ public class TransferData {
     }
 
     public IEnumerable<Models.Transfer> GetTransfers(FilterParameters parameters) {
-        List<Models.Transfer> counts = [];
-        var                   sb     = new StringBuilder(GetQuery("GetTransfers"));
+        List<Models.Transfer> counts            = [];
+        var                   sb                = new StringBuilder(GetQuery("GetTransfers"));
+        string                additionalColumns = string.Empty;
         var queryParams = new Parameters {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
         };
+
+        if (parameters.Progress) {
+            additionalColumns = $@"{Environment.NewLine}, IIF(Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)) > 0,
+                    Sum(IIF(TRANS1.""U_Type"" = 'T', TRANS1.""U_Quantity"", 0)) * 100 / Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)), 0) ""Progress"" ";
+            sb.Append("left outer join \"@LW_YUVAL08_TRANS1\" TRANS1 on TRANS1.\"U_ID\" = TRANSFERS.\"Code\" and TRANS1.\"U_LineStatus\" <> 'C' ");
+        }
+
         sb.Append($" where TRANSFERS.\"U_WhsCode\" = @WhsCode ");
         if (parameters.Status is { Length: > 0 }) {
             sb.Append(" and TRANSFERS.\"U_Status\" in ('");
             sb.Append(string.Join("','", parameters.Status.Select(v => (char)v)));
-            sb.Append("')");
+            sb.Append("') ");
         }
 
         if (parameters.ID != null) {
@@ -59,6 +67,20 @@ public class TransferData {
         if (parameters.Date != null) {
             queryParams.Add("@Date", SqlDbType.DateTime).Value = parameters.Date;
             sb.Append(" and DATEDIFF(day,TRANSFERS.\"U_StatusDate\",@Date) = 0 ");
+        }
+
+        if (parameters.Progress) {
+            sb.Append(@"Group By TRANSFERS.""Code"",
+         TRANSFERS.""U_Date"",
+         TRANSFERS.""U_empID"",
+         T1.""firstName"",
+         T1.""lastName"",
+         TRANSFERS.""U_Status"",
+         TRANSFERS.""U_StatusDate"",
+         TRANSFERS.""U_StatusEmpID"",
+         T2.""firstName"",
+         T2.""lastName"",
+         TRANSFERS.""U_WhsCode"" ");
         }
 
         if (parameters.OrderBy != null) {
@@ -79,8 +101,16 @@ public class TransferData {
         }
 
         string query = sb.ToString();
+        query = string.Format(query, additionalColumns);
 
-        Global.DataObject.ExecuteReader(query, queryParams, dr => counts.Add(ReadTransfer(dr)));
+        Global.DataObject.ExecuteReader(query, queryParams, dr => {
+            var transfer = ReadTransfer(dr);
+            if (parameters.Progress) {
+                transfer.Progress = Convert.ToInt32(dr["Progress"]);
+            }
+
+            counts.Add(transfer);
+        });
         var documents = counts.ToArray();
         return documents;
     }
@@ -173,7 +203,11 @@ public class TransferData {
     }
 
     public bool CancelTransfer(int id, int employeeID) {
-        throw new System.NotImplementedException();
+        var transfer = GetTransfer(id);
+        if (transfer.Status is not (DocumentStatus.Open or DocumentStatus.InProgress))
+            throw new Exception("Cannot cancel transfer if the Status is not Open or In Progress");
+        UpdateTransferStatus(id, employeeID, DocumentStatus.Cancelled);
+        return true;
     }
 
     public bool ProcessTransfer(int id, int employeeID, List<string> alertUsers) {
@@ -281,8 +315,10 @@ public class TransferData {
                         case UpdateLineReturnValue.QuantityMoreThenAvailable:
                             throw new Exception(ErrorMessages.QuantityMoreThenAvailableCurrent);
                     }
+
                     control.Add(updateLineParameter);
                 }
+
                 control.ForEach(UpdateLine);
             }
             catch (Exception e) {
@@ -316,5 +352,16 @@ public class TransferData {
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+    private static void UpdateTransferStatus(int id, int employeeID, DocumentStatus status) {
+        Global.DataObject.Execute(GetQuery("UpdateTransferStatus"), [
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
+        Global.DataObject.Execute(GetQuery("UpdateTransferLineStatus"), [
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@Status", SqlDbType.Char, 1, (char)status)
+        ]);
     }
 }
