@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web.Management;
+using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
 using Service.Shared.Company;
@@ -390,7 +391,7 @@ public class GoodsReceiptData {
         return data;
     }
 
-    public void UpdateGoodsReceiptAll(UpdateGoodsReceiptAllParameters parameters, int employeeID) {
+    public void UpdateGoodsReceiptAll(UpdateDetailParameters parameters, int employeeID) {
         try {
             parameters.RemoveRows?.ForEach(row => {
                 UpdateLine(new UpdateLineParameter {

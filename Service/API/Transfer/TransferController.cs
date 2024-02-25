@@ -100,4 +100,18 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get transfer content");
         return Data.Transfer.GetTransferContent(parameters);
     }
+    [HttpPost]
+    [ActionName("TransferContentTargetDetail")]
+    public IEnumerable<TransferContentTargetItemDetail> TransferContentTargetDetail([FromBody] TransferContentTargetItemDetailParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
+            throw new UnauthorizedAccessException("You don't have access to get transfer content");
+        return Data.Transfer.TransferContentTargetDetail(parameters);
+    }
+    [HttpPost]
+    [ActionName("UpdateContentTargetDetail")]
+    public void UpdateContentTargetDetail([FromBody] UpdateDetailParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+            throw new UnauthorizedAccessException("You don't have access for document cancellation");
+        Data.Transfer.UpdateContentTargetDetail(parameters);
+    }
 }

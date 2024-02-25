@@ -126,6 +126,7 @@
     <Compile Include="API\General\Models\ProcessDocument.cs" />
     <Compile Include="API\General\Models\ResponseBase.cs" />
     <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
+    <Compile Include="API\General\Models\UpdateDetailParameters.cs" />
     <Compile Include="API\General\Models\UpdateLineResponse.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
     <Compile Include="API\GoodsReceipt\GoodsReceiptCreation.cs" />
@@ -140,7 +141,6 @@
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
     <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />
     <Compile Include="API\GoodsReceipt\Models\Document.cs" />
-    <Compile Include="API\GoodsReceipt\Models\UpdateGoodsReceiptAllParameters.cs" />
     <Compile Include="API\GoodsReceipt\Models\UpdateParameter.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
     <Compile Include="API\Logging.cs" />
@@ -178,6 +178,8 @@
     <Compile Include="API\Transfer\Models\Transfer.cs" />
     <Compile Include="API\Transfer\Models\TransferContent.cs" />
     <Compile Include="API\Transfer\Models\TransferContentParameters.cs" />
+    <Compile Include="API\Transfer\Models\TransferContentTargetItemDetail.cs" />
+    <Compile Include="API\Transfer\Models\TransferContentTargetItemDetailParameters.cs" />
     <Compile Include="API\Transfer\Models\UpdateParameter.cs" />
     <Compile Include="API\Transfer\TransferController.cs" />
     <Compile Include="API\Transfer\TransferCreation.cs" />
@@ -262,6 +264,7 @@
     <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTarget.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetBins.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetItemDetail.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateUpdateLineParameters.sql" />
     <EmbeddedResource Include="ErrorMessages.es-PA.resx">

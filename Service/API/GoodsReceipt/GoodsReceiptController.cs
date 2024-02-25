@@ -111,7 +111,7 @@ public class GoodsReceiptController : LWApiController {
     }
     [HttpPost]
     [ActionName("UpdateGoodsReceiptAll")]
-    public void UpdateGoodsReceiptAll([FromBody] UpdateGoodsReceiptAllParameters parameters) {
+    public void UpdateGoodsReceiptAll([FromBody] UpdateDetailParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         Data.GoodsReceipt.UpdateGoodsReceiptAll(parameters, EmployeeID);

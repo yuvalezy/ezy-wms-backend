@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using CrystalDecisions.ReportAppServer.DataDefModel;
 using Service.API.General;
 using Service.API.General.Models;
 using Service.API.Models;
@@ -144,10 +145,17 @@ public class TransferData {
             comma                                              = true;
         }
 
+        if (updateLineParameter.CloseReason.HasValue || updateLineParameter.InternalClose) {
+            if (comma)
+                sb.AppendLine(", ");
+            sb.AppendLine("\"U_LineStatus\" = 'C' ");
+            comma = true;
+        }
+
         if (updateLineParameter.CloseReason.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
-            sb.AppendLine("\"U_LineStatus\" = 'C', \"U_StatusReason\" = @Reason ");
+            sb.AppendLine("\"U_StatusReason\" = @Reason ");
             parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
             comma = true;
         }
@@ -221,6 +229,30 @@ public class TransferData {
         });
     }
 
+    public IEnumerable<TransferContentTargetItemDetail> TransferContentTargetDetail(TransferContentTargetItemDetailParameters queryParams) {
+        var data = new List<TransferContentTargetItemDetail>();
+        Global.DataObject.ExecuteReader(GetQuery("TransferContentTargetItemDetail"), [
+                new Parameter("@ID", SqlDbType.Int) { Value                = queryParams.ID },
+                new Parameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = queryParams.ItemCode },
+                new Parameter("@BinEntry", SqlDbType.Int) { Value          = queryParams.BinEntry }
+            ],
+            dr => {
+                int    lineID       = (int)dr["LineID"];
+                string employeeName = (string)dr["EmployeeName"];
+                var    timestamp    = (DateTime)dr["TimeStamp"];
+                int    quantity     = Convert.ToInt32(dr["Quantity"]);
+
+                var line = new TransferContentTargetItemDetail {
+                    LineID       = lineID,
+                    EmployeeName = employeeName,
+                    TimeStamp    = timestamp,
+                    Quantity     = quantity,
+                };
+                data.Add(line);
+            });
+        return data;
+    }
+
     public int ValidateUpdateLine(UpdateLineParameter parameters) {
         return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
@@ -228,6 +260,48 @@ public class TransferData {
             new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity.HasValue ? parameters.Quantity.Value : DBNull.Value),
         ]);
+    }
+
+    public void UpdateContentTargetDetail(UpdateDetailParameters parameters) {
+        if (parameters.QuantityChanges != null) {
+            try {
+                var control = new List<UpdateLineParameter>();
+                foreach (var pair in parameters.QuantityChanges) {
+                    var updateLineParameter = new UpdateLineParameter {
+                        ID       = parameters.ID,
+                        LineID   = pair.Key,
+                        Quantity = pair.Value
+                    };
+                    var isValid = (UpdateLineReturnValue)ValidateUpdateLine(updateLineParameter);
+                    switch (isValid) {
+                        case UpdateLineReturnValue.Status:
+                            throw new Exception($"Transfer status is not In Progress");
+                        case UpdateLineReturnValue.LineStatus:
+                            throw new Exception($"Trans Line Status is not In Progress");
+                        case UpdateLineReturnValue.QuantityMoreThenAvailable:
+                            throw new Exception(ErrorMessages.QuantityMoreThenAvailableCurrent);
+                    }
+                    control.Add(updateLineParameter);
+                }
+                control.ForEach(UpdateLine);
+            }
+            catch (Exception e) {
+                throw new Exception($"Update Quantity Error: {e.Message}");
+            }
+        }
+
+        try {
+            parameters.RemoveRows?.ForEach(row => {
+                UpdateLine(new UpdateLineParameter {
+                    ID            = parameters.ID,
+                    LineID        = row,
+                    InternalClose = true,
+                });
+            });
+        }
+        catch (Exception e) {
+            throw new Exception("Remove Rows Error: " + e.Message);
+        }
     }
 
     public static string GetQuery(string id) {
