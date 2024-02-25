@@ -1,9 +1,11 @@
-﻿-- declare @ID int = 2;
--- declare @BarCode nvarchar(255) = '0000002';
--- declare @ItemCode nvarchar(50) = '0000002';
--- declare @empID int = 1;
--- declare @BinEntry int = 3404;
--- declare @Quantity int = 98 - 24;
+﻿-- DECLARE @ID INT = 2,
+--     @ItemCode NVARCHAR(50) = N'0000002',
+--     @BarCode NVARCHAR(254) = NULL,
+--     @empID INT = 1,
+--     @BinEntry INT = 3430,
+--     @Quantity INT = 1,
+--     @Type char(1) = 'T';
+
 declare @WhsCode nvarchar(8) = (select U_LW_Branch
                                 from OHEM
                                 where empID = @empID);
@@ -17,7 +19,8 @@ select Case
            When @BinEntry is not null and T5.AbsEntry is null Then -10
            When @BinEntry is not null and T5.WhsCode <> @WhsCode Then -11
            When @BinEntry is null and T6.BinActivat = 'Y' Then -12
-           When @BinEntry is not null and T7.OnHandQty - T8.SelectedQty < @Quantity Then -13
+           When @BinEntry is not null and @Type = 'S' and COALESCE(T7.OnHandQty, 0) - T8.SourceQuantity < @Quantity Then -13
+           When @BinEntry is not null and @Type = 'T' and T8.SourceQuantity - T8.TargetQuantity < @Quantity Then -13
            Else 0 End ValidationMessage
 from (select @ID ID, @BarCode BarCode, @ItemCode ItemCode) T0
          left outer join OITM T1 on T1.ItemCode = T0.ItemCode
@@ -27,9 +30,9 @@ from (select @ID ID, @BarCode BarCode, @ItemCode ItemCode) T0
          left outer join OBIN T5 on T5.AbsEntry = @BinEntry
          left outer join OWHS T6 on T6.WhsCode = @WhsCode
          left outer join OIBQ T7 on T7.ItemCode = T0.ItemCode and T7.BinAbs = @BinEntry
-         cross join (select COALESCE(Sum(X0.U_Quantity), 0) "SelectedQty"
+         cross join (select COALESCE(Sum(IIF((X0.U_BinEntry = @BinEntry and @Type = 'S' or @Type = 'T') and X0."U_Type" = 'S', X0.U_Quantity, 0)), 0) SourceQuantity,
+                            COALESCE(Sum(IIF(@Type = 'T' and X0."U_Type" = 'T', X0.U_Quantity, 0)), 0)                                                TargetQuantity
                      from "@LW_YUVAL08_TRANS1" X0
                      where X0.U_ID = @ID
-                       and X0.U_BinEntry = @BinEntry
                        and X0.U_ItemCode = @ItemCode
-                       and X0.U_LineStatus <> 'C') T8
+                       and X0.U_LineStatus <> 'C') T8;

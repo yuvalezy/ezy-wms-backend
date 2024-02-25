@@ -105,7 +105,8 @@ public class TransferData {
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
-            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
         ]);
 
     public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
@@ -193,7 +194,8 @@ public class TransferData {
                 Quantity = Convert.ToInt32(dr["Quantity"])
             };
             if (contentParameters.Type == SourceTarget.Target) {
-                content.Progress = Convert.ToInt32(dr["Progress"]);
+                content.Progress     = Convert.ToInt32(dr["Progress"]);
+                content.OpenQuantity = Convert.ToInt32(dr["OpenQuantity"]);
             }
 
             list.Add(content);
