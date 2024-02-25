@@ -8,6 +8,7 @@ using Service.API.General;
 using Service.API.General.Models;
 using Service.API.Models;
 using Service.API.Transfer.Models;
+using Service.Shared;
 using Service.Shared.Company;
 using Service.Shared.Data;
 
@@ -169,17 +170,24 @@ public class TransferData {
         throw new System.NotImplementedException();
     }
 
-    public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters parameters) {
-        var list = new List<TransferContent>();
-        Global.DataObject.ExecuteReader(GetQuery($"TransferContent{parameters.Type.ToString()}"), [
-            new Parameter("@ID", SqlDbType.Int, parameters.ID),
-            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry > 0 ? parameters.BinEntry : DBNull.Value),
-        ], dr => {
-            list.Add(new() {
+    public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters contentParameters) {
+        var        list        = new List<TransferContent>();
+        string     query       = $"TransferContent{(!contentParameters.Open ? "" : "Open")}{contentParameters.Type.ToString()}";
+        Parameters queryParams = [new Parameter("@ID", SqlDbType.Int, contentParameters.ID)];
+        if (contentParameters.Type == SourceTarget.Source) {
+            queryParams.Add(new Parameter("@BinEntry", SqlDbType.Int, contentParameters.BinEntry > 0 ? contentParameters.BinEntry : DBNull.Value));
+        }
+
+        Global.DataObject.ExecuteReader(GetQuery(query), queryParams, dr => {
+            var content = new TransferContent() {
                 Code     = (string)dr["ItemCode"],
                 Name     = dr["ItemName"].ToString(),
                 Quantity = Convert.ToInt32(dr["Quantity"])
-            });
+            };
+            if (contentParameters.Type == SourceTarget.Target && contentParameters.Open) {
+                content.Progress = Convert.ToInt32(dr["Progress"]);
+            }
+            list.Add(content);
         });
         return list;
     }
