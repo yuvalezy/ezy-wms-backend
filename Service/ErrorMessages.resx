@@ -78,6 +78,9 @@
     <data name="InventoryCounting" xml:space="preserve">
         <value>Inventory Counting</value>
     </data>
+    <data name="InventoryTransfer" xml:space="preserve">
+        <value>Inventory Transfer</value>
+    </data>
     <data name="PurchaseDeliveryNote" xml:space="preserve">
         <value>Purchase Delivery Note</value>
     </data>

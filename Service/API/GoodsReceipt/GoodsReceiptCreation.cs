@@ -128,12 +128,12 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
         GC.Collect();
     }
 
-    public void SetClosedLines() {
+    public void SetFinishedLines() {
         string sqlStr = data.SelectMany(a => a.Value.Where(b => b.LineStatus != "O"))
             .Aggregate("", (a, b) => a + a.OrQuery() + $"\"U_SourceType\" = {b.BaseType} and \"U_SourceEntry\" = {b.BaseEntry} and \"U_SourceLine\" = {b.BaseLine}");
         if (string.IsNullOrWhiteSpace(sqlStr))
             return;
-        sqlStr = $"update \"@LW_YUVAL08_GRPO1\" set \"U_LineStatus\" = 'O' where U_ID = {id} and ({sqlStr})";
+        sqlStr = $"update \"@LW_YUVAL08_GRPO1\" set \"U_LineStatus\" = 'F' where U_ID = {id} and ({sqlStr})";
         Global.DataObject.Execute(sqlStr);
     }
 }

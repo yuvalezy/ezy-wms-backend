@@ -63,7 +63,7 @@ public class TransferController : LWApiController {
     [HttpPost]
     [ActionName("Process")]
     public bool ProcessTransfer([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
             throw new UnauthorizedAccessException("You don't have access for transfer cancellation");
         return Data.Transfer.ProcessTransfer(parameters.ID, EmployeeID, Data.General.AlertUsers);
     }

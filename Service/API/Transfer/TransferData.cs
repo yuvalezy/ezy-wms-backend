@@ -12,6 +12,7 @@ using Service.API.Transfer.Models;
 using Service.Shared;
 using Service.Shared.Company;
 using Service.Shared.Data;
+using Alert = Service.API.General.Alert;
 
 namespace Service.API.Transfer;
 
@@ -210,8 +211,40 @@ public class TransferData {
         return true;
     }
 
-    public bool ProcessTransfer(int id, int employeeID, List<string> alertUsers) {
-        throw new System.NotImplementedException();
+    public bool ProcessTransfer(int id, int employeeID, List<string> sendTo) {
+        var transfer = GetTransfer(id);
+        if (transfer.Status != DocumentStatus.InProgress)
+            throw new Exception("Cannot process transfer if the Status is not In Progress");
+        UpdateTransferStatus(id, employeeID, DocumentStatus.Processing);
+        try {
+            using var creation = new TransferCreation(id, employeeID);
+            creation.Execute();
+            UpdateTransferStatus(id, employeeID, DocumentStatus.Finished);
+            creation.SetFinishedLines();
+            ProcessTransferSendAlert(id, sendTo, creation);
+            return true;
+        }
+        catch (Exception e) {
+            UpdateTransferStatus(id, employeeID, DocumentStatus.InProgress);
+            throw;
+        }
+    }
+
+    private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
+        try {
+            using var alert = new Alert();
+            alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+            var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+            var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
+            alert.Columns.AddRange(new[] { transactionColumn, transferColumn });
+            transactionColumn.Values.Add(new AlertValue(id.ToString()));
+            transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
+
+            alert.Send(sendTo);
+        }
+        catch (Exception e) {
+            //todo log error handler
+        }
     }
 
     public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters contentParameters) {
@@ -353,6 +386,7 @@ public class TransferData {
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }
+
     private static void UpdateTransferStatus(int id, int employeeID, DocumentStatus status) {
         Global.DataObject.Execute(GetQuery("UpdateTransferStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),

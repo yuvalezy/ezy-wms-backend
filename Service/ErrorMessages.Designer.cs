@@ -159,6 +159,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Inventory Transfer.
+        /// </summary>
+        internal static string InventoryTransfer {
+            get {
+                return ResourceManager.GetString("InventoryTransfer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
         /// </summary>
         internal static string ItemBarCode1WasNotFoundInTransactionSpecificDocuments {

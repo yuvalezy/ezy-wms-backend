@@ -173,6 +173,7 @@
     <Compile Include="API\Transfer\Models\AddItemParameter.cs" />
     <Compile Include="API\Transfer\Models\AddItemResponse.cs" />
     <Compile Include="API\Transfer\Models\CreateParameters.cs" />
+    <Compile Include="API\Transfer\Models\CreateTransferLine.cs" />
     <Compile Include="API\Transfer\Models\Enumerations.cs" />
     <Compile Include="API\Transfer\Models\FilterParameters.cs" />
     <Compile Include="API\Transfer\Models\Transfer.cs" />
@@ -259,6 +260,8 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\CheckIsCompleted.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\ProcessTransferLines.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\ProcessTransferLinesBins.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentSource.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\CreateTransfer.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />
