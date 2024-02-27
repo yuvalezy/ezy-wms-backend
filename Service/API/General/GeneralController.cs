@@ -66,15 +66,23 @@ public class GeneralController : LWApiController {
     [HttpPost]
     [ActionName("ItemCheck")]
     public IEnumerable<ItemCheckResponse> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor))
             throw new UnauthorizedAccessException("You don't have access for Item Check");
         return data.General.ItemCheck(parameters.ItemCode, parameters.Barcode);
+    }
+    [HttpPost]
+    [ActionName("ItemStock")]
+    public IEnumerable<ItemStockResponse> ItemStock([FromBody] ItemBarCodeParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor))
+            throw new UnauthorizedAccessException("You don't have access for Item Stock");
+        string whsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
+        return data.General.ItemStock(parameters.ItemCode, whsCode);
     }
 
     [HttpPost]
     [ActionName("UpdateItemBarCode")]
     public UpdateItemBarCodeResponse AddItemBarCode([FromBody] UpdateBarCodeParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor))
             throw new UnauthorizedAccessException("You don't have access for Adding Item BarCode");
         var validationResponse = parameters.Validate(data);
         if (validationResponse != null)

@@ -123,6 +123,7 @@
     <Compile Include="API\General\Models\EmployeeData.cs" />
     <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
     <Compile Include="API\General\Models\ItemCheckResponse.cs" />
+    <Compile Include="API\General\Models\ItemStockResponse.cs" />
     <Compile Include="API\General\Models\ProcessDocument.cs" />
     <Compile Include="API\General\Models\ResponseBase.cs" />
     <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />

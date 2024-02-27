@@ -40,14 +40,14 @@ public class GeneralData {
     public static int GetSeries(ObjectTypes objectType) => GetSeries(((int)objectType).ToString());
 
     public static int GetSeries(string objectCode) {
-        string query = 
+        string query =
             """
-           select top 1 T1."Series"
-           from OFPR T0
-                    inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
-           where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
-           and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
-           """;
+            select top 1 T1."Series"
+            from OFPR T0
+                     inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
+            where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
+            and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
+            """;
         return Global.DataObject.GetValue<int>(query, [
             new Parameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
             new Parameter("@Date", SqlDbType.DateTime, DateTime.Now)
@@ -112,8 +112,8 @@ public class GeneralData {
 
         void AddItem(string itemCode, string itemName, int purPackUn) {
             var responseValue = new ItemCheckResponse {
-                ItemCode = itemCode,
-                ItemName = itemName,
+                ItemCode  = itemCode,
+                ItemName  = itemName,
                 PurPackUn = purPackUn
             };
             const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
@@ -131,9 +131,10 @@ public class GeneralData {
         if (!string.IsNullOrWhiteSpace(code)) {
             return new() {
                 Entry = absEntry,
-                Code = code,
+                Code  = code,
             };
         }
+
         return null;
     }
 
@@ -149,6 +150,22 @@ public class GeneralData {
             var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
             values.Add(value);
         });
+        return values;
+    }
+
+    public IEnumerable<ItemStockResponse> ItemStock(string itemCode, string whsCode) {
+        string query = """
+                       select T1."BinCode", T0."OnHandQty"
+                       from OIBQ T0
+                                inner join OBIN T1 on T1."AbsEntry" = T0."BinAbs"
+                       where T0."ItemCode" = @ItemCode
+                         and T0."WhsCode" = @WhsCode
+                         and T0."OnHandQty" > 0
+                       order by 1
+                       """;
+        var values = new List<ItemStockResponse>();
+        Global.DataObject.ExecuteReader(query, [new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode), new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode)],
+            dr => { values.Add(new ItemStockResponse { BinCode = (string)dr["BinCode"], Quantity = Convert.ToInt32(dr["OnHandQty"]) }); });
         return values;
     }
 }
