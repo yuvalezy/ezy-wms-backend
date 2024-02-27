@@ -15,6 +15,7 @@ public class PickingUpdate(int id) : IDisposable {
 
     private Recordset rs = Shared.Utils.Shared.GetRecordset();
     private PickLists pl = (PickLists)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPickLists);
+    private bool      ready;
 
     public void Execute() {
         Global.TransactionMutex.WaitOne();
@@ -41,18 +42,21 @@ public class PickingUpdate(int id) : IDisposable {
         string query = string.Format(PickingData.GetQuery("LoadPickValues"), id);
         data = query.ExecuteQueryReader<PickingValue>();
         var control = data.ToDictionary(v => v.PickEntry, v => v);
-        
+
         query = string.Format(PickingData.GetQuery("LoadPickValuesBins"), id);
-        var bins    = query.ExecuteQueryReader<PickingValueBin>();
+        var bins = query.ExecuteQueryReader<PickingValueBin>();
         bins.ForEach(bin => control[bin.PickEntry].BinLocations.Add(bin));
-        
+
         if (!pl.GetByKey(id)) {
             throw new Exception($"Could not find Pick List ${id}");
         }
 
-        if (pl.Status is not (BoPickStatus.ps_Released or BoPickStatus.ps_PartiallyPicked)) {
-            throw new Exception("Cannot process document if the Status is not Released");
+        if (pl.Status == BoPickStatus.ps_Closed) {
+            throw new Exception("Cannot process document if the Status is closed");
         }
+
+        ready = pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value.ToString() == "Y";
+
     }
 
     private void UpdatePickList() {
@@ -64,18 +68,27 @@ public class PickingUpdate(int id) : IDisposable {
             }
 
             pl.Lines.PickedQuantity += value.Quantity;
-            
+
             UpdatePickListBinLocations(value);
         }
 
+        pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value = "Y";
         if (pl.Update() != 0) {
             throw new Exception($"Could not update Pick List: {ConnectionController.Company.GetLastErrorDescription()}");
         }
     }
 
     private void UpdatePickListBinLocations(PickingValue value) {
-        var  bins    = pl.Lines.BinAllocations;
-        var  control = new Dictionary<int, int>();
+        var bins    = pl.Lines.BinAllocations;
+
+        if (!ready) {
+            for (int i = 0; i < bins.Count; i++) {
+                bins.SetCurrentLine(i);
+                bins.Quantity = 0;
+            }
+        }
+        
+        var control = new Dictionary<int, int>();
         for (int i = 0; i < bins.Count; i++) {
             if (bins.BinAbsEntry == 0)
                 continue;
@@ -93,6 +106,7 @@ public class PickingUpdate(int id) : IDisposable {
                 bins.BinAbsEntry = binValue.BinEntry;
                 control.Add(binValue.BinEntry, bins.Count - 1);
             }
+
             bins.Quantity += binValue.Quantity;
         });
     }
