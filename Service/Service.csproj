@@ -256,6 +256,7 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateUpdateLineParameters.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItems.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItemsAvailableBins.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />

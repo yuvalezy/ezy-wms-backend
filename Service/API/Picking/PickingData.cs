@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Service.API.General.Models;
 using Service.API.Picking.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
@@ -11,15 +12,15 @@ using Service.Shared.Data;
 namespace Service.API.Picking;
 
 public class PickingData {
-    public PickingDocument GetPicking(int id, string whsCode, int? type, int? entry) {
+    public PickingDocument GetPicking(int id, string whsCode, int? type, int? entry, bool? availableBins) {
         var pick = GetPickings(new PickingParameters { ID = id, WhsCode = whsCode, Statues = null }).FirstOrDefault();
         if (pick == null)
             return null;
-        GetPickingDetail(pick, type, entry);
+        GetPickingDetail(pick, type, entry, availableBins);
         return pick;
     }
 
-    private void GetPickingDetail(PickingDocument pick, int? type, int? entry) {
+    private void GetPickingDetail(PickingDocument pick, int? type, int? entry, bool? availableBins) {
         pick.Detail = [];
         Global.DataObject.ExecuteReader(GetQuery("GetPickingDetails"),
             [
@@ -30,18 +31,42 @@ public class PickingData {
             dr => pick.Detail.Add(PickingDocumentDetail.Read(dr)));
         if (!type.HasValue || !entry.HasValue || pick.Detail.Count == 0)
             return;
-        GetPickingDetailItems(pick.Entry, pick.Detail[0]);
+        GetPickingDetailItems(pick.Entry, pick.Detail[0], availableBins);
     }
 
-    private void GetPickingDetailItems(int absEntry, PickingDocumentDetail detail) {
+    private void GetPickingDetailItems(int absEntry, PickingDocumentDetail detail, bool? availableBins) {
         detail.Items = [];
+        var control = new Dictionary<string, PickingDocumentDetailItem>();
         Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItems"),
             [
                 new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
                 new Parameter("@Type", SqlDbType.Int, detail.Type),
                 new Parameter("@Entry", SqlDbType.Int, detail.Entry)
             ],
-            dr => detail.Items.Add(PickingDocumentDetailItem.Read(dr)));
+            dr => {
+                var value = PickingDocumentDetailItem.Read(dr);
+                control.Add(value.ItemCode, value);
+                detail.Items.Add(value);
+            });
+
+        if (availableBins == null || !availableBins.Value) 
+            return;
+        
+        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItemsAvailableBins"),
+            [
+                new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
+                new Parameter("@Type", SqlDbType.Int, detail.Type),
+                new Parameter("@Entry", SqlDbType.Int, detail.Entry)
+            ],
+            dr => {
+                string itemCode = (string)dr["ItemCode"];
+                control[itemCode].BinQuantities ??= [];
+                control[itemCode].BinQuantities.Add(new BinLocationQuantity {
+                    Entry = (int)dr["BinEntry"],
+                    Code = (string)dr["BinCode"],
+                    Quantity = Convert.ToInt32(dr["Quantity"])
+                });
+            });
     }
 
 
@@ -92,7 +117,7 @@ public class PickingData {
         return reader.ReadToEnd();
     }
 
-    public AddItemResponse AddItem(int id, int pickEntry, int quantity, int empID) {
+    public AddItemResponse AddItem(int id, int pickEntry, int quantity, string itemCode, int empID) {
         AddItemResponse returnValue;
         try {
             Global.DataObject.BeginTransaction();
@@ -100,7 +125,8 @@ public class PickingData {
                 new Parameter("@AbsEntry", SqlDbType.Int, id),
                 new Parameter("@PickEntry", SqlDbType.Int, pickEntry),
                 new Parameter("@Quantity", SqlDbType.Int, id, quantity),
-                new Parameter("@empID", SqlDbType.Int, empID)
+                new Parameter("@empID", SqlDbType.Int, empID),
+                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             ]);
             returnValue = AddItemResponse.OkResponse;
             Global.DataObject.CommitTransaction();

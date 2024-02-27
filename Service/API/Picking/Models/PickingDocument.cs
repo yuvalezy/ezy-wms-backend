@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using Service.API.General.Models;
 
 namespace Service.API.Picking.Models;
 
@@ -61,11 +62,12 @@ public class PickingDocumentDetail {
 }
 
 public class PickingDocumentDetailItem {
-    public string ItemCode     { get; set; }
-    public string ItemName     { get; set; }
-    public int    Quantity     { get; set; }
-    public int    Picked       { get; set; }
-    public int    OpenQuantity { get; set; }
+    public string                    ItemCode      { get; set; }
+    public string                    ItemName      { get; set; }
+    public int                       Quantity      { get; set; }
+    public int                       Picked        { get; set; }
+    public int                       OpenQuantity  { get; set; }
+    public List<BinLocationQuantity> BinQuantities { get; set; }
 
     public static PickingDocumentDetailItem Read(IDataReader dr) {
         var item = new PickingDocumentDetailItem();

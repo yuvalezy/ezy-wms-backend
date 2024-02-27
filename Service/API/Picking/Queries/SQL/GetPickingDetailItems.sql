@@ -1,6 +1,6 @@
-﻿-- declare @AbsEntry int = 5;
--- declare @Type int = 17;
--- declare @Entry int = 528;
+﻿-- declare @AbsEntry int = 8;
+-- declare @Type int = 13;
+-- declare @Entry int = 414;
 select T2."ItemCode",
        T5."ItemName",
        T1."RelQtty" + T1."PickQtty"               "Quantity",
