@@ -48,6 +48,7 @@ public static class Global {
     public static ServiceNodes                         Nodes                               { get; set; }
     public static Dictionary<int, Authorization>       RolesMap                            { get; } = new();
     public static Dictionary<int, List<Authorization>> UserAuthorizations                  { get; } = new();
+    public static Dictionary<string, List<int>>        WarehouseEntryBins                  { get; } = new();
 
     #endregion
 
@@ -137,8 +138,9 @@ public static class Global {
     public static void LoadDatabaseSettings() {
         if (IsMain)
             Service.LogInfo("Loading database settings");
-        string sqlStr = Queries.DatabaseSettings;
-        var    dr     = Data.GetDataTable(sqlStr).Rows[0];
+        string    sqlStr = Queries.DatabaseSettings;
+        using var dt     = Data.GetDataTable(sqlStr);
+        var       dr     = dt.Rows[0];
         DBServiceVersion                    = dr["Version"].ToString();
         User                                = dr["User"].ToString().DecryptString();
         Password                            = dr["Password"].ToString().DecryptString();
@@ -151,8 +153,20 @@ public static class Global {
 
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
+
+        LoadWarehousesEntryBins();
     }
 
+    private static void LoadWarehousesEntryBins() {
+        const string query = "select \"WhsCode\", \"AbsEntry\" from OBIN where \"U_LW_YUVAL08_ENTRY_BIN\" = 'Y'";
+        using var    dt    = Data.GetDataTable(query);
+        foreach (DataRow dr in dt.Rows) {
+            string whsCode = (string)dr["WhsCode"];
+            if (!WarehouseEntryBins.ContainsKey(whsCode))
+                WarehouseEntryBins.Add(whsCode, []);
+            WarehouseEntryBins[whsCode].Add((int)dr["AbsEntry"]);
+        }
+    }
 
     public static void LoadRestAPISettings() {
         string fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings", $"{Connection.Database}.json");

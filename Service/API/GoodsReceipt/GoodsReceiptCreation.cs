@@ -37,6 +37,7 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
                     CreateDocument(pair.Key.CardCode, pair.Key.Type, pair.Key.Entry, docSeries, openValues);
                 }
             }
+
             ConnectionController.Commit();
         }
         catch (Exception e) {
@@ -69,7 +70,10 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
 
         var lines = doc.Lines;
 
-        
+        int? binEntry = Global.WarehouseEntryBins[whsCode].FirstOrDefault();
+        if (!binEntry.HasValue)
+            throw new Exception($"Warehouse ${whsCode} does not have bin locations enabled as Reception");
+
         for (int i = 0; i < values.Count; i++) {
             if (i > 0)
                 lines.Add();
@@ -83,13 +87,16 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
             }
 
             lines.Quantity = value.Quantity;
+
+            lines.BinAllocations.BinAbsEntry = binEntry.Value;
+            lines.BinAllocations.Quantity    = value.Quantity;
         }
 
         if (doc.Add() != 0) {
             throw new Exception(ConnectionController.Company.GetLastErrorDescription());
         }
 
-        int entry  = int.Parse(ConnectionController.Company.GetNewObjectKey());
+        int entry = int.Parse(ConnectionController.Company.GetNewObjectKey());
         rs = (Recordset)ConnectionController.Company.GetBusinessObject(BoObjectTypes.BoRecordset);
         rs.DoQuery($"select \"DocNum\" from OPDN where \"DocEntry\" = {entry}");
         int number = (int)rs.Fields.Item(0).Value;
