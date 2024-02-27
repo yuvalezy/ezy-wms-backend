@@ -21,11 +21,16 @@ public class PickingController : LWApiController {
 
     [HttpGet]
     [Route("Picking/{id:int}")]
-    public PickingDocument GetPicking(int id, [FromUri(Name = "type")] int? type = null, [FromUri(Name = "entry")] int? entry = null, [FromUri(Name = "availableBins")] bool? availableBins = false) {
+    public PickingDocument GetPicking(
+        int                                     id,
+        [FromUri(Name = "type")]          int?  type          = null,
+        [FromUri(Name = "entry")]         int?  entry         = null,
+        [FromUri(Name = "availableBins")] bool? availableBins = false,
+        [FromUri(Name = "binEntry")]      int?  binEntry      = null) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Picking, Authorization.PickingSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get picking");
         string whsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
-        return Data.Picking.GetPicking(id, whsCode, type, entry, availableBins);
+        return Data.Picking.GetPicking(id, whsCode, type, entry, availableBins, binEntry);
     }
 
     [HttpPost]
@@ -35,7 +40,7 @@ public class PickingController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for picking item");
         if (!parameters.Validate(Data, EmployeeID))
             return new AddItemResponse { ClosedDocument = true };
-        return Data.Picking.AddItem(parameters.ID, parameters.PickEntry, parameters.Quantity, parameters.ItemCode, EmployeeID);
+        return Data.Picking.AddItem(parameters, EmployeeID);
     }
 
     [HttpPost]

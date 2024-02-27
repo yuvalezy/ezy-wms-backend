@@ -1,2 +1,2 @@
-﻿insert into "@LW_YUVAL08_PKL1"("U_AbsEntry", "U_PickEntry", "U_Status", "U_ErrorMessage", "U_Quantity", "U_empID", "U_ItemCode")
-values(@AbsEntry, @PickEntry, 'O', null, @Quantity, @empID, @ItemCode)
+﻿insert into "@LW_YUVAL08_PKL1"("U_AbsEntry", "U_PickEntry", "U_Status", "U_ErrorMessage", "U_Quantity", "U_empID", "U_ItemCode", "U_BinEntry")
+values(@AbsEntry, @PickEntry, 'O', null, @Quantity, @empID, @ItemCode, @BinEntry)

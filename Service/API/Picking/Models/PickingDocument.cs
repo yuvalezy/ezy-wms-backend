@@ -68,6 +68,7 @@ public class PickingDocumentDetailItem {
     public int                       Picked        { get; set; }
     public int                       OpenQuantity  { get; set; }
     public List<BinLocationQuantity> BinQuantities { get; set; }
+    public int?                      Available     { get; set; }
 
     public static PickingDocumentDetailItem Read(IDataReader dr) {
         var item = new PickingDocumentDetailItem();

@@ -25,3 +25,4 @@ from Items T0
          inner join OIBQ T3 on T3."ItemCode" = T0."ItemCode" and T3."WhsCode" = T0."WhsCode"
          inner join OBIN T4 on T4."AbsEntry" = T3."BinAbs"
          left outer join Commited T5 on T5."ItemCode" = T0."ItemCode" and T5."BinEntry" = T3."BinAbs"
+where (@BinEntry is null or T3."BinAbs" = @BinEntry) and T3."OnHandQty" - COALESCE(T5."Quantity", 0) > 0
