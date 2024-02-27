@@ -166,7 +166,7 @@ public class PickingData {
     }
 
     public AddItemResponse Process(int id, string whsCode) {
-        using var picking = new PickingUpdate(id, whsCode);
+        using var picking = new PickingUpdate(id);
         picking.Execute();
         return AddItemResponse.OkResponse;
     }

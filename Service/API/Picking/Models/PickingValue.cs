@@ -1,8 +1,17 @@
-﻿using Service.Shared.Data;
+﻿using System.Collections.Generic;
+using Service.Shared.Data;
 
 namespace Service.API.Picking.Models;
 
 public class PickingValue {
     [RecordsetReaderColumn] public int PickEntry { get; set; }
+    [RecordsetReaderColumn] public int Quantity  { get; set; }
+
+    public List<PickingValueBin> BinLocations { get; } = new();
+}
+
+public class PickingValueBin {
+    [RecordsetReaderColumn] public int PickEntry { get; set; }
+    [RecordsetReaderColumn] public int BinEntry  { get; set; }
     [RecordsetReaderColumn] public int Quantity  { get; set; }
 }

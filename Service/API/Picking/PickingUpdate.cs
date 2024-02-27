@@ -10,23 +10,11 @@ using Service.Shared.Utils;
 
 namespace Service.API.Picking;
 
-public class PickingUpdate : IDisposable {
-    private readonly int    id;
-    private readonly string whsCode;
-    private readonly int    defaultBin;
-    private readonly bool   enableBIN;
-
+public class PickingUpdate(int id) : IDisposable {
     private List<PickingValue> data;
 
     private Recordset rs = Shared.Utils.Shared.GetRecordset();
     private PickLists pl = (PickLists)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPickLists);
-
-    public PickingUpdate(int id, string whsCode) {
-        this.id      = id;
-        this.whsCode = whsCode;
-        (defaultBin, enableBIN) = $"select \"DftBinAbs\", \"BinActivat\" from OWHS where \"WhsCode\" = '{whsCode.ToQuery()}'"
-            .ExecuteQueryValue<int, bool>();
-    }
 
     public void Execute() {
         Global.TransactionMutex.WaitOne();
@@ -52,6 +40,12 @@ public class PickingUpdate : IDisposable {
     private void LoadPickList() {
         string query = string.Format(PickingData.GetQuery("LoadPickValues"), id);
         data = query.ExecuteQueryReader<PickingValue>();
+        var control = data.ToDictionary(v => v.PickEntry, v => v);
+        
+        query = string.Format(PickingData.GetQuery("LoadPickValuesBins"), id);
+        var bins    = query.ExecuteQueryReader<PickingValueBin>();
+        bins.ForEach(bin => control[bin.PickEntry].BinLocations.Add(bin));
+        
         if (!pl.GetByKey(id)) {
             throw new Exception($"Could not find Pick List ${id}");
         }
@@ -70,27 +64,37 @@ public class PickingUpdate : IDisposable {
             }
 
             pl.Lines.PickedQuantity += value.Quantity;
-            if (!enableBIN) 
-                continue;
-            bool found = false;
-            var  bins  = pl.Lines.BinAllocations;
-            for (int j = 0; j < bins.Count; j++) {
-                if (bins.BinAbsEntry != defaultBin) 
-                    continue;
-                found         =  true;
-                bins.Quantity += value.Quantity;
-                break;
-            }
-            if (found) 
-                continue;
-            bins.Add();
-            bins.BinAbsEntry = defaultBin;
-            bins.Quantity    = value.Quantity;
+            
+            UpdatePickListBinLocations(value);
         }
 
         if (pl.Update() != 0) {
             throw new Exception($"Could not update Pick List: {ConnectionController.Company.GetLastErrorDescription()}");
         }
+    }
+
+    private void UpdatePickListBinLocations(PickingValue value) {
+        var  bins    = pl.Lines.BinAllocations;
+        var  control = new Dictionary<int, int>();
+        for (int i = 0; i < bins.Count; i++) {
+            if (bins.BinAbsEntry == 0)
+                continue;
+            bins.SetCurrentLine(i);
+            control[bins.BinAbsEntry] = i;
+        }
+
+        value.BinLocations.ForEach(binValue => {
+            if (control.TryGetValue(binValue.BinEntry, out int index)) {
+                bins.SetCurrentLine(index);
+            }
+            else {
+                if (bins.Count == 1 && bins.BinAbsEntry != 0)
+                    bins.Add();
+                bins.BinAbsEntry = binValue.BinEntry;
+                control.Add(binValue.BinEntry, bins.Count - 1);
+            }
+            bins.Quantity += binValue.Quantity;
+        });
     }
 
     private void UpdatePickingStatus(PickingStatus status, string errorMessage = null) {

@@ -259,6 +259,7 @@
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItemsAvailableBins.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValuesBins.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\CheckIsCompleted.sql" />
