@@ -61,14 +61,16 @@ internal class CountingCreation(int id, int employeeID) : IDisposable {
             line.Counted         = BoYesNoEnum.tYES;
             line.CountedQuantity = value.Quantity;
         }
+
         var @params = service.Add(counting);
         NewEntry = (@params.DocumentEntry, @params.DocumentNumber);
     }
 
     private void LoadData() {
         const string query = """select "U_WhsCode" "WhsCode" from "@LW_YUVAL08_OINC" where "Code" = @ID""";
-        whsCode = Global.DataObject.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
-        using var dt = Global.DataObject.GetDataTable(CountingData.GetQuery("ProcessCountingLines"), [
+        using var    conn  = Global.Connector;
+        whsCode = conn.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
+        using var dt = conn.GetDataTable(CountingData.GetQuery("ProcessCountingLines"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode),
         ]);
@@ -107,7 +109,8 @@ internal class CountingCreation(int id, int employeeID) : IDisposable {
 
 
     public void SetClosedLines() {
-        string sqlStr = "update \"@LW_YUVAL08_OINC1\" set \"U_LineStatus\" = 'C' where U_ID = @ID and \"U_LineStatus\" = 'O'";
-        Global.DataObject.Execute(sqlStr, new Parameter("@ID", SqlDbType.Int, id));
+        string    sqlStr = "update \"@LW_YUVAL08_OINC1\" set \"U_LineStatus\" = 'C' where U_ID = @ID and \"U_LineStatus\" = 'O'";
+        using var conn   = Global.Connector;
+        conn.Execute(sqlStr, new Parameter("@ID", SqlDbType.Int, id));
     }
 }

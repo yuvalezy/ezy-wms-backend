@@ -88,15 +88,16 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
 
     private void LoadData() {
         const string query = """select "U_WhsCode" "WhsCode" from "@LW_YUVAL08_TRANS" where "Code" = @ID""";
-        whsCode = Global.DataObject.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
+        using var    conn  = Global.Connector;
+        whsCode = conn.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
 
-        using (var dt = Global.DataObject.GetDataTable(TransferData.GetQuery("ProcessTransferLines"), [new Parameter("@ID", SqlDbType.Int, id)])) {
+        using (var dt = conn.GetDataTable(TransferData.GetQuery("ProcessTransferLines"), [new Parameter("@ID", SqlDbType.Int, id)])) {
             data = dt.Rows.Cast<DataRow>()
                 .Select(dr => new CreateTransferLine(dr))
                 .ToDictionary(g => g.ItemCode, g => g);
         }
 
-        using (var dt = Global.DataObject.GetDataTable(TransferData.GetQuery("ProcessTransferLinesBins"), [new Parameter("@ID", SqlDbType.Int, id)])) {
+        using (var dt = conn.GetDataTable(TransferData.GetQuery("ProcessTransferLinesBins"), [new Parameter("@ID", SqlDbType.Int, id)])) {
             foreach (DataRow dr in dt.Rows) {
                 string itemCode = (string)dr["ItemCode"];
                 var    type     = (SourceTarget)Convert.ToChar(dr["Type"]);
@@ -129,7 +130,8 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
     }
 
     public void SetFinishedLines() {
-        string sqlStr = $"update \"@LW_YUVAL08_TRANS1\" set \"U_LineStatus\" = 'F' where U_ID = {id} and \"U_LineStatus\" <> 'C'";
-        Global.DataObject.Execute(sqlStr);
+        string    sqlStr = $"update \"@LW_YUVAL08_TRANS1\" set \"U_LineStatus\" = 'F' where U_ID = {id} and \"U_LineStatus\" <> 'C'";
+        using var conn   = Global.Connector;
+        conn.Execute(sqlStr);
     }
 }

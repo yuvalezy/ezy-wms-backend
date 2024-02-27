@@ -64,8 +64,9 @@ public class CreateParameters {
                         left outer join PCH1 X4 on X4."DocEntry" = X2."DocEntry" and X4."WhsCode" = @WhsCode
                         group by X0."ObjType", X0."DocNum", X0."DocEntry", X1."DocStatus", X2."DocStatus", X2."isIns"
                         """;
-        Document returnValue = null;
-        Global.DataObject.ExecuteReader(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID }, dr => {
+        Document returnValue   = null;
+        using var      conn = Global.Connector;
+        conn.ExecuteReader(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID }, dr => {
             string docStatus      = (string)dr["DocStatus"];
             int    objectType     = (int)dr["ObjType"];
             int    documentNumber = (int)dr["DocNum"];

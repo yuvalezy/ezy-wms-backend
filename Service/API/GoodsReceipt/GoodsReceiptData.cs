@@ -73,7 +73,8 @@ public class GoodsReceiptData {
         };
         if (!string.IsNullOrWhiteSpace(createParameters.CardCode))
             @params["@CardCode"].Value = createParameters.CardCode;
-        int id = Global.DataObject.GetValue<int>(GetQuery("CreateGoodsReceipt"), @params);
+        using var conn = Global.Connector;
+        int       id   = conn.GetValue<int>(GetQuery("CreateGoodsReceipt"), @params);
 
         if (createParameters.Type != GoodsReceiptType.SpecificOrders)
             return id;
@@ -87,20 +88,20 @@ public class GoodsReceiptData {
         createParameters.Documents.ForEach(value => {
             @params["@ObjType"].Value  = value.ObjectType;
             @params["@DocEntry"].Value = value.DocumentEntry;
-            Global.DataObject.Execute(query, @params);
+            conn.Execute(query, @params);
         });
 
         return id;
     }
 
-    public int ValidateUpdateLine(UpdateLineParameter parameters) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
+    public int ValidateUpdateLine(DataConnector conn, UpdateLineParameter parameters) =>
+        conn.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
             new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value)
         ]);
 
-    public void UpdateLine(UpdateLineParameter updateLineParameter, int empID) {
+    public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter, int empID) {
         var parameters = new Parameters {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
@@ -147,29 +148,28 @@ public class GoodsReceiptData {
 
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
-        Global.DataObject.Execute(sb.ToString(), parameters);
+        conn.Execute(sb.ToString(), parameters);
 
         if (updateLineParameter.CloseReason.HasValue || updateLineParameter.InternalClose) {
-            Global.DataObject.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", [
+            conn.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", [
                 new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
                 new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID }
             ]);
         }
     }
 
-    public int ValidateAddItem(int id, string itemCode, string barCode, int empID) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
+    public int ValidateAddItem(DataConnector conn, int id, string itemCode, string barCode, int empID) =>
+        conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, barCode),
             new Parameter("@empID", SqlDbType.Int, empID)
         ]);
 
-    public AddItemResponse AddItem(int id, string itemCode, string barcode, int employeeID) {
+    public AddItemResponse AddItem(DataConnector conn, int id, string itemCode, string barcode, int employeeID) {
         AddItemResponse returnValue = null;
         try {
-            Global.DataObject.BeginTransaction();
-            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
+            conn.ExecuteReader(GetQuery("AddItem"), [
                 new Parameter("@ID", SqlDbType.Int, id),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
@@ -185,12 +185,11 @@ public class GoodsReceiptData {
             });
             if (returnValue == null)
                 throw new Exception("Add Item Result Empty!");
-            Global.DataObject.CommitTransaction();
         }
         catch (Exception ex) {
-            Global.DataObject.RollbackTransaction();
             if (!ex.Message.Contains("No valid source found for item"))
                 throw;
+            conn.RollbackTransaction();
             returnValue = new AddItemResponse {
                 ErrorMessage = string.Format(ErrorMessages.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_, itemCode)
             };
@@ -203,7 +202,8 @@ public class GoodsReceiptData {
         Document doc = null;
         var      sb  = new StringBuilder(GetQuery("GetGoodsReceipts"));
         sb.Append(" where DOCS.\"Code\" = @ID");
-        Global.DataObject.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => doc = ReadDocument(dr));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => doc = ReadDocument(dr));
         GetDocumentsSpecificDocuments(doc);
         return doc;
     }
@@ -268,7 +268,8 @@ public class GoodsReceiptData {
 
         string query = sb.ToString();
 
-        Global.DataObject.ExecuteReader(query, queryParams, dr => docs.Add(ReadDocument(dr)));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(query, queryParams, dr => docs.Add(ReadDocument(dr)));
         var documents = docs.ToArray();
         GetDocumentsSpecificDocuments(documents);
         return documents;
@@ -303,8 +304,9 @@ public class GoodsReceiptData {
                  left outer join OPCH X2 on X2."DocEntry" = X0."U_DocEntry" and X2."ObjType" = X0."U_ObjType"
                  where X0."U_ID" in ({query})
                  """;
-        using var dt = Global.DataObject.GetDataTable(query);
-        using var dv = new DataView(dt);
+        using var conn = Global.Connector;
+        using var dt   = conn.GetDataTable(query);
+        using var dv   = new DataView(dt);
         foreach (var document in filtered) {
             dv.RowFilter = $"ID = {document.ID}";
             var specific = new List<DocumentParameter>();
@@ -334,20 +336,22 @@ public class GoodsReceiptData {
     }
 
     private static void UpdateDocumentStatus(int id, int employeeID, DocumentStatus status) {
-        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptStatus"), [
+        using var conn = Global.Connector;
+        conn.Execute(GetQuery("UpdateGoodsReceiptStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
-        Global.DataObject.Execute(GetQuery("UpdateGoodsReceiptLineStatus"), [
+        conn.Execute(GetQuery("UpdateGoodsReceiptLineStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
     }
 
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
-        var data = new List<GoodsReceiptReportAll>();
-        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
+        var data          = new List<GoodsReceiptReportAll>();
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             string itemCode = (string)dr["ItemCode"];
             string itemName = dr["ItemName"].ToString();
             int    quantity = Convert.ToInt32(dr["Quantity"]);
@@ -369,8 +373,9 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptReportAllDetails> GetGoodsReceiptAllReportDetails(int id, string item) {
-        var data = new List<GoodsReceiptReportAllDetails>();
-        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptAllDetails"), [
+        var data          = new List<GoodsReceiptReportAllDetails>();
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("GoodsReceiptAllDetails"), [
                 new Parameter("@ID", SqlDbType.Int) { Value                = id },
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = item }
             ],
@@ -392,39 +397,49 @@ public class GoodsReceiptData {
     }
 
     public void UpdateGoodsReceiptAll(UpdateDetailParameters parameters, int employeeID) {
+        using var conn = Global.Connector;
         try {
             parameters.RemoveRows?.ForEach(row => {
-                UpdateLine(new UpdateLineParameter {
+                var updateParameters = new UpdateLineParameter {
                     ID            = parameters.ID,
                     LineID        = row,
                     InternalClose = true,
-                }, employeeID);
+                };
+                UpdateLine(conn, updateParameters, employeeID);
             });
         }
         catch (Exception e) {
+            conn.RollbackTransaction();
             throw new Exception("Remove Rows Error: " + e.Message);
         }
-        if (parameters.QuantityChanges == null) 
+
+        if (parameters.QuantityChanges == null) {
+            conn.CommitTransaction();
             return;
+        }
 
         try {
-            foreach (var pair in parameters.QuantityChanges) {
-                UpdateLine(new UpdateLineParameter {
-                    ID             = parameters.ID,
-                    LineID         = pair.Key,
-                    Quantity = pair.Value
-                }, employeeID);
+            foreach (var updateLineParameter in parameters.QuantityChanges.Select(pair => new UpdateLineParameter {
+                         ID       = parameters.ID,
+                         LineID   = pair.Key,
+                         Quantity = pair.Value
+                     })) {
+                UpdateLine(conn, updateLineParameter, employeeID);
             }
         }
         catch (Exception e) {
+            conn.RollbackTransaction();
             throw new Exception("Update Quantity Error: " + e.Message);
         }
+
+        conn.CommitTransaction();
     }
 
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
-        var data    = new List<GoodsReceiptVSExitReport>();
-        var control = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
-        Global.DataObject.ExecuteReader(GetQuery("GoodsReceiptVSExit"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
+        var data          = new List<GoodsReceiptVSExitReport>();
+        var control       = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("GoodsReceiptVSExit"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             int objectType = (int)dr["ObjType"];
             int docNum     = (int)dr["DocNum"];
             var tuple      = (objectType, docNum);

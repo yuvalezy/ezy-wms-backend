@@ -24,7 +24,8 @@ public class PickingData {
 
     private void GetPickingDetail(PickingDocument pick, int? type, int? entry, bool? availableBins, int? binEntry) {
         pick.Detail = [];
-        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetails"),
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("GetPickingDetails"),
             [
                 new Parameter("@AbsEntry", SqlDbType.Int, pick.Entry),
                 new Parameter("@Type", SqlDbType.Int, type.HasValue ? type.Value : DBNull.Value),
@@ -38,8 +39,9 @@ public class PickingData {
 
     private void GetPickingDetailItems(int absEntry, PickingDocumentDetail detail, bool? availableBins, int? binEntry) {
         detail.Items = [];
-        var control = new Dictionary<string, PickingDocumentDetailItem>();
-        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItems"),
+        var       control = new Dictionary<string, PickingDocumentDetailItem>();
+        using var conn    = Global.Connector;
+        conn.ExecuteReader(GetQuery("GetPickingDetailItems"),
             [
                 new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
                 new Parameter("@Type", SqlDbType.Int, detail.Type),
@@ -54,7 +56,7 @@ public class PickingData {
         if (availableBins == null || !availableBins.Value)
             return;
 
-        Global.DataObject.ExecuteReader(GetQuery("GetPickingDetailItemsAvailableBins"),
+        conn.ExecuteReader(GetQuery("GetPickingDetailItemsAvailableBins"),
             [
                 new Parameter("@AbsEntry", SqlDbType.Int, absEntry),
                 new Parameter("@Type", SqlDbType.Int, detail.Type),
@@ -62,8 +64,8 @@ public class PickingData {
                 new Parameter("@BinEntry", SqlDbType.Int, !binEntry.HasValue ? DBNull.Value : binEntry.Value)
             ],
             dr => {
-                string itemCode                  = (string)dr["ItemCode"];
-                var    detail = control[itemCode];
+                string itemCode = (string)dr["ItemCode"];
+                var    detail   = control[itemCode];
                 detail.BinQuantities ??= [];
                 var binLocationQuantity = new BinLocationQuantity {
                     Entry    = (int)dr["BinEntry"],
@@ -109,7 +111,8 @@ public class PickingData {
             sb.AppendLine(" and DATEDIFF(day,PICKS.\"U_StatusDate\",@Date) = 0 ");
         }
 
-        Global.DataObject.ExecuteReader(string.Format(GetQuery("GetPickings"), sb), queryParams, dr => values.Add(PickingDocument.Read(dr)));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(string.Format(GetQuery("GetPickings"), sb), queryParams, dr => values.Add(PickingDocument.Read(dr)));
         return values;
     }
 
@@ -128,32 +131,21 @@ public class PickingData {
         return reader.ReadToEnd();
     }
 
-    public AddItemResponse AddItem(AddItemParameter parameters, int empID) {
-        AddItemResponse returnValue;
-        try {
-            Global.DataObject.BeginTransaction();
-            Global.DataObject.Execute(GetQuery("AddItem"), [
-                new Parameter("@AbsEntry", SqlDbType.Int, parameters.ID),
-                new Parameter("@PickEntry", SqlDbType.Int, parameters.PickEntry),
-                new Parameter("@Quantity", SqlDbType.Int, parameters.ID, parameters.Quantity),
-                new Parameter("@empID", SqlDbType.Int, empID),
-                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
-                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry),
-            ]);
-            returnValue = AddItemResponse.OkResponse;
-            Global.DataObject.CommitTransaction();
-        }
-        catch {
-            Global.DataObject.RollbackTransaction();
-            throw;
-        }
-
-        return returnValue;
+    public AddItemResponse AddItem(DataConnector conn, AddItemParameter parameters, int empID) {
+        conn.Execute(GetQuery("AddItem"), [
+            new Parameter("@AbsEntry", SqlDbType.Int, parameters.ID),
+            new Parameter("@PickEntry", SqlDbType.Int, parameters.PickEntry),
+            new Parameter("@Quantity", SqlDbType.Int, parameters.ID, parameters.Quantity),
+            new Parameter("@empID", SqlDbType.Int, empID),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry),
+        ]);
+        return AddItemResponse.OkResponse;
     }
 
-    public int ValidateAddItem(AddItemParameter parameters, int empID, out int pickEntry) {
+    public int ValidateAddItem(DataConnector conn, AddItemParameter parameters, int empID, out int pickEntry) {
         int returnValue = -1, returnPickEntry = -1;
-        Global.DataObject.ExecuteReader(GetQuery("ValidateAddItemParameters"), [
+        conn.ExecuteReader(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@SourceType", SqlDbType.Int, parameters.Type),
             new Parameter("@SourceEntry", SqlDbType.Int, parameters.Entry),

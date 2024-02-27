@@ -38,9 +38,19 @@ public class PickingController : LWApiController {
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Picking))
             throw new UnauthorizedAccessException("You don't have access for picking item");
-        if (!parameters.Validate(Data, EmployeeID))
-            return new AddItemResponse { ClosedDocument = true };
-        return Data.Picking.AddItem(parameters, EmployeeID);
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            if (!parameters.Validate(conn, Data, EmployeeID))
+                return new AddItemResponse { ClosedDocument = true };
+            var addItemResponse = Data.Picking.AddItem(conn, parameters, EmployeeID);
+            conn.CommitTransaction();
+            return addItemResponse;
+        }
+        catch {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]

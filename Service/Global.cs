@@ -21,14 +21,13 @@ namespace Service;
 public static class Global {
     #region Variables & Properties
 
-    public static  string          Database        { get; set; }
-    public static  string          CompanyName     { get; set; }
-    public static  bool            IsMain          { get; private set; }
-    public static  int?            Port            { get; set; }
-    public static  Service         Service         { get; set; }
-    private static DataConnector   Data            { get; set; }
-    public static  RestAPISettings RestAPISettings { get; private set; }
-    public static  bool            Debug           { get; set; }
+    public static string          Database        { get; set; }
+    public static string          CompanyName     { get; set; }
+    public static bool            IsMain          { get; private set; }
+    public static int?            Port            { get; set; }
+    public static Service         Service         { get; set; }
+    public static RestAPISettings RestAPISettings { get; private set; }
+    public static bool            Debug           { get; set; }
 
     //Connection Settings
     public static BoDataServerTypes ServerType { get; internal set; }
@@ -118,10 +117,9 @@ public static class Global {
         Connection.DbServerUser     = ((string)key.GetValue("ServerUser")).DecryptString();
         Connection.DbServerPassword = ((string)key.GetValue("ServerPassword")).DecryptString();
         // LicenseServer               = (string)key.GetValue("LicenseServer");
-        Data = DataObject;
     }
 
-    public static DataConnector DataObject {
+    public static DataConnector Connector {
         get {
             string server     = Connection.Server;
             string dbUser     = Connection.DbServerUser;
@@ -135,11 +133,11 @@ public static class Global {
     }
 
 
-    public static void LoadDatabaseSettings() {
+    public static void LoadDatabaseSettings(DataConnector conn) {
         if (IsMain)
             Service.LogInfo("Loading database settings");
         string    sqlStr = Queries.DatabaseSettings;
-        using var dt     = Data.GetDataTable(sqlStr);
+        using var dt     = conn.GetDataTable(sqlStr);
         var       dr     = dt.Rows[0];
         DBServiceVersion                    = dr["Version"].ToString();
         User                                = dr["User"].ToString().DecryptString();
@@ -154,12 +152,12 @@ public static class Global {
         if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
             Debug = true;
 
-        LoadWarehousesEntryBins();
+        LoadWarehousesEntryBins(conn);
     }
 
-    private static void LoadWarehousesEntryBins() {
+    private static void LoadWarehousesEntryBins(DataConnector conn) {
         const string query = "select \"WhsCode\", \"AbsEntry\" from OBIN where \"U_LW_YUVAL08_ENTRY_BIN\" = 'Y'";
-        using var    dt    = Data.GetDataTable(query);
+        using var    dt    = conn.GetDataTable(query);
         foreach (DataRow dr in dt.Rows) {
             string whsCode = (string)dr["WhsCode"];
             if (!WarehouseEntryBins.ContainsKey(whsCode))
@@ -211,7 +209,8 @@ public static class Global {
         LogInfo("Loading roles");
         const string sqlStr = "select \"typeID\", \"name\" from OHTY";
 
-        var dt = Data.GetDataTable(sqlStr);
+        using var conn = Global.Connector;
+        var       dt   = conn.GetDataTable(sqlStr);
         foreach (DataRow dr in dt.Rows) {
             int id = (int)dr["typeID"];
             switch ((string)dr["name"]) {
@@ -255,9 +254,10 @@ public static class Global {
         var authorizations = UserAuthorizations[empID];
         authorizations.Clear();
 
-        string sqlStr = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
-        var    dt     = DataObject.GetDataTable(sqlStr);
-        var    data   = dt.Rows.Cast<DataRow>().Select(dr => (int)dr["roleID"]);
+        string    sqlStr        = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
+        using var dataConnector = Connector;
+        using var dt            = dataConnector.GetDataTable(sqlStr);
+        var       data          = dt.Rows.Cast<DataRow>().Select(dr => (int)dr["roleID"]);
         authorizations.AddRange(from roleID in data where RolesMap.ContainsKey(roleID) select RolesMap[roleID]);
     }
 }

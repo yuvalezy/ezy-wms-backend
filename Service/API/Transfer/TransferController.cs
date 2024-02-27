@@ -10,7 +10,6 @@ namespace Service.API.Transfer;
 
 [Authorize, RoutePrefix("api/Transfer")]
 public class TransferController : LWApiController {
-    
     [HttpPost]
     [ActionName("Create")]
     public Models.Transfer CreateTransfer([FromBody] CreateParameters parameters) {
@@ -20,7 +19,7 @@ public class TransferController : LWApiController {
         int id = Data.Transfer.CreateTransfer(parameters, EmployeeID);
         return Data.Transfer.GetTransfer(id);
     }
-    
+
     [HttpGet]
     [Route("IsComplete/{id:int}")]
     public bool IsComplete(int id) {
@@ -34,9 +33,19 @@ public class TransferController : LWApiController {
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
             throw new UnauthorizedAccessException("You don't have access for adding item to transfer");
-        if (!parameters.Validate(Data, EmployeeID))
-            return new AddItemResponse { ClosedTransfer = true };
-        return Data.Transfer.AddItem(parameters, EmployeeID);
+        using var conn = Global.Connector;
+        conn.BeginTransaction();
+        try {
+            if (!parameters.Validate(conn, Data, EmployeeID))
+                return new AddItemResponse { ClosedTransfer = true };
+            var addItemResponse = Data.Transfer.AddItem(conn, parameters, EmployeeID);
+            conn.CommitTransaction();
+            return addItemResponse;
+        }
+        catch (Exception e) {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     [HttpPost]
@@ -44,11 +53,20 @@ public class TransferController : LWApiController {
     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
             throw new UnauthorizedAccessException("You don't have access for updating line in transfer");
-        (UpdateLineReturnValue returnValue, int supervisorEmployeeID) = parameters.Validate(Data);
-        if (returnValue != UpdateLineReturnValue.Ok)
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            (UpdateLineReturnValue returnValue, int supervisorEmployeeID) = parameters.Validate(conn, Data);
+            if (returnValue != UpdateLineReturnValue.Ok)
+                return returnValue;
+            Data.Transfer.UpdateLine(conn, parameters);
+            conn.CommitTransaction();
             return returnValue;
-        Data.Transfer.UpdateLine(parameters);
-        return returnValue;
+        }
+        catch  {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]
@@ -67,7 +85,7 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for transfer cancellation");
         return Data.Transfer.ProcessTransfer(parameters.ID, EmployeeID, Data.General.AlertUsers);
     }
-    
+
     [HttpGet]
     [ActionName("CancelReasons")]
     public IEnumerable<ValueDescription<int>> GetCancelReasons() {
@@ -75,7 +93,7 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
         return Data.General.GetCancelReasons(ReasonType.Transfer);
     }
-    
+
     [HttpGet]
     [ActionName("Transfers")]
     public IEnumerable<Models.Transfer> GetTransfers([FromUri] FilterParameters parameters) {
@@ -100,6 +118,7 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get transfer content");
         return Data.Transfer.GetTransferContent(parameters);
     }
+
     [HttpPost]
     [ActionName("TransferContentTargetDetail")]
     public IEnumerable<TransferContentTargetItemDetail> TransferContentTargetDetail([FromBody] TransferContentTargetItemDetailParameters parameters) {
@@ -107,6 +126,7 @@ public class TransferController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get transfer content");
         return Data.Transfer.TransferContentTargetDetail(parameters);
     }
+
     [HttpPost]
     [ActionName("UpdateContentTargetDetail")]
     public void UpdateContentTargetDetail([FromBody] UpdateDetailParameters parameters) {

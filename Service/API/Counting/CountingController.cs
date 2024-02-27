@@ -29,9 +29,19 @@ public class CountingController : LWApiController {
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
             throw new UnauthorizedAccessException("You don't have access for adding item to counting");
-        if (!parameters.Validate(Data, EmployeeID))
-            return new AddItemResponse { ClosedCounting = true };
-        return Data.Counting.AddItem(parameters, EmployeeID);
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            if (!parameters.Validate(conn, Data, EmployeeID))
+                return new AddItemResponse { ClosedCounting = true };
+            var addItemResponse = Data.Counting.AddItem(conn, parameters, EmployeeID);
+            conn.CommitTransaction();
+            return addItemResponse;
+        }
+        catch {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]
@@ -39,11 +49,20 @@ public class CountingController : LWApiController {
     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
             throw new UnauthorizedAccessException("You don't have access for updating line in counting");
-        var returnValue = parameters.Validate(Data);
-        if (returnValue != UpdateLineReturnValue.Ok)
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            var returnValue = parameters.Validate(conn, Data);
+            if (returnValue != UpdateLineReturnValue.Ok)
+                return returnValue;
+            Data.Counting.UpdateLine(conn, parameters);
+            conn.CommitTransaction();
             return returnValue;
-        Data.Counting.UpdateLine(parameters);
-        return returnValue;
+        }
+        catch (Exception e) {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]

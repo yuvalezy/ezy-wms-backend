@@ -41,12 +41,13 @@ public class CountingData {
     }
 
     private static void UpdateCountingStatus(int id, int employeeID, DocumentStatus status) {
-        Global.DataObject.Execute(GetQuery("UpdateCountingStatus"), [
+        using var conn = Global.Connector;
+        conn.Execute(GetQuery("UpdateCountingStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
-        Global.DataObject.Execute(GetQuery("UpdateCountingLineStatus"), [
+        conn.Execute(GetQuery("UpdateCountingLineStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
@@ -73,11 +74,12 @@ public class CountingData {
             new Parameter("@Name", SqlDbType.NVarChar, 50, parameters.Name),
             new Parameter("@empID", SqlDbType.Int, employeeID),
         };
-        return Global.DataObject.GetValue<int>(GetQuery("CreateCounting"), @params);
+        using var conn = Global.Connector;
+        return conn.GetValue<int>(GetQuery("CreateCounting"), @params);
     }
 
-    public int ValidateAddItem(AddItemParameter parameters, int employeeID) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
+    public int ValidateAddItem(DataConnector conn, AddItemParameter parameters, int employeeID) =>
+        conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
@@ -85,32 +87,25 @@ public class CountingData {
             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
         ]);
 
-    public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
-        try {
-            var returnValue = new AddItemResponse();
-            Global.DataObject.BeginTransaction();
-            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
-                new Parameter("@ID", SqlDbType.Int, parameters.ID),
-                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
-                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
-                new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
-                new Parameter("@empID", SqlDbType.Int, employeeID),
-                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
-            ], dr => returnValue.LineID = (int)dr["LineID"]);
-            Global.DataObject.CommitTransaction();
-            return returnValue;
-        }
-        catch {
-            Global.DataObject.RollbackTransaction();
-            throw;
-        }
+    public AddItemResponse AddItem(DataConnector conn, AddItemParameter parameters, int employeeID) {
+        var returnValue = new AddItemResponse();
+        conn.ExecuteReader(GetQuery("AddItem"), [
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+            new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
+        ], dr => returnValue.LineID = (int)dr["LineID"]);
+        return returnValue;
     }
 
     public Models.Counting GetCounting(int id) {
         Models.Counting count = null;
         var             sb    = new StringBuilder(GetQuery("GetCountings"));
         sb.Append(" where COUNTS.\"Code\" = @ID");
-        Global.DataObject.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => count = ReadCounting(dr));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => count = ReadCounting(dr));
         return count;
     }
 
@@ -164,7 +159,8 @@ public class CountingData {
 
         string query = sb.ToString();
 
-        Global.DataObject.ExecuteReader(query, queryParams, dr => counts.Add(ReadCounting(dr)));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(query, queryParams, dr => counts.Add(ReadCounting(dr)));
         var documents = counts.ToArray();
         return documents;
     }
@@ -198,8 +194,9 @@ public class CountingData {
     }
 
     public IEnumerable<CountingContent> GetCountingContent(int id, int binEntry) {
-        var list = new List<CountingContent>();
-        Global.DataObject.ExecuteReader(GetQuery("CountingContent"), [
+        var list          = new List<CountingContent>();
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("CountingContent"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@BinEntry", SqlDbType.Int, binEntry > 0 ? binEntry : DBNull.Value)
         ], dr => {
@@ -212,15 +209,15 @@ public class CountingData {
         return list;
     }
 
-    public int ValidateUpdateLine(UpdateLineParameter parameters) {
-        return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
+    public int ValidateUpdateLine(DataConnector conn, UpdateLineParameter parameters) {
+        return conn.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
             new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value)
         ]);
     }
 
-    public void UpdateLine(UpdateLineParameter updateLineParameter) {
+    public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter) {
         var parameters = new Parameters {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
@@ -250,6 +247,6 @@ public class CountingData {
 
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
-        Global.DataObject.Execute(sb.ToString(), parameters);
+        conn.Execute(sb.ToString(), parameters);
     }
 }

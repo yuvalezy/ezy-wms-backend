@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Service.API.General.Models;
 using Service.Shared;
+using Service.Shared.Data;
 
 namespace Service.API.Transfer.Models;
 
@@ -14,7 +15,7 @@ public class UpdateLineParameter {
     public              string UserName       { get; set; }
     [JsonIgnore] public bool   InternalClose  { get; set; }
 
-    public (UpdateLineReturnValue, int) Validate(Data data) {
+    public (UpdateLineReturnValue, int) Validate(DataConnector conn, Data data) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (LineID < 0)
@@ -34,6 +35,6 @@ public class UpdateLineParameter {
                 return (UpdateLineReturnValue.NotSupervisor, -1);
         }
 
-        return ((UpdateLineReturnValue, int))(data.Transfer.ValidateUpdateLine(this), empID);
+        return ((UpdateLineReturnValue, int))(data.Transfer.ValidateUpdateLine(conn, this), empID);
     }
 }

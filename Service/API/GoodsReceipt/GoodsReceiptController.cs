@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using SAPbobsCOM;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
@@ -10,15 +11,15 @@ namespace Service.API.GoodsReceipt;
 
 [Authorize, RoutePrefix("api/GoodsReceipt")]
 public class GoodsReceiptController : LWApiController {
-
     [HttpPost]
     [ActionName("Create")]
     public Document CreateDocument([FromBody] CreateParameters parameters) {
-        var authorizations = new []{Authorization.GoodsReceiptSupervisor};
+        var authorizations = new[] { Authorization.GoodsReceiptSupervisor };
         if (!Global.GRPOCreateSupervisorRequired) {
             Array.Resize(ref authorizations, authorizations.Length + 1);
             authorizations[authorizations.Length - 1] = Authorization.GoodsReceipt;
         }
+
         if (!Global.ValidateAuthorization(EmployeeID, authorizations))
             throw new UnauthorizedAccessException("You don't have access for document creation");
 
@@ -35,9 +36,19 @@ public class GoodsReceiptController : LWApiController {
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for adding item to document");
-        if (!parameters.Validate(Data, EmployeeID))
-            return new AddItemResponse { ClosedDocument = true };
-        return Data.GoodsReceipt.AddItem(parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            if (!parameters.Validate(conn, Data, EmployeeID))
+                return new AddItemResponse { ClosedDocument = true };
+            var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+            conn.CommitTransaction();
+            return addItemResponse;
+        }
+        catch (Exception e) {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]
@@ -45,11 +56,20 @@ public class GoodsReceiptController : LWApiController {
     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
             throw new UnauthorizedAccessException("You don't have access for updating line in document");
-        (var returnValue, int empID) = parameters.Validate(Data);
-        if (returnValue != UpdateLineReturnValue.Ok)
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            (var returnValue, int empID) = parameters.Validate(conn, Data);
+            if (returnValue != UpdateLineReturnValue.Ok)
+                return returnValue;
+            Data.GoodsReceipt.UpdateLine(conn, parameters, empID);
+            conn.CommitTransaction();
             return returnValue;
-        Data.GoodsReceipt.UpdateLine(parameters, empID);
-        return returnValue;
+        }
+        catch {
+            conn.RollbackTransaction();
+            throw;
+        }
     }
 
     [HttpPost]
@@ -101,7 +121,7 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptAllReport(id);
     }
-    
+
     [HttpGet]
     [Route("GoodsReceiptAll/{id:int}/{item}")]
     public List<GoodsReceiptReportAllDetails> GetGoodsReceiptAllReportDetails(int id, string item) {
@@ -109,6 +129,7 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptAllReportDetails(id, item);
     }
+
     [HttpPost]
     [ActionName("UpdateGoodsReceiptAll")]
     public void UpdateGoodsReceiptAll([FromBody] UpdateDetailParameters parameters) {

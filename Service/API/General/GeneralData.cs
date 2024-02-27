@@ -18,23 +18,26 @@ public class GeneralData {
                         left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
                         where T0."empID" = @empID
                         """;
+        using var conn = Global.Connector;
         (string name, string whsCode, string whsName, bool enableBin) =
-            Global.DataObject.GetValue<string, string, string, bool>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
+            conn.GetValue<string, string, string, bool>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
         return new EmployeeData(name, whsCode, whsName, enableBin);
     }
 
     public IEnumerable<BusinessPartner> GetVendors() {
-        var    list  = new List<BusinessPartner>();
-        string query = """select "CardCode", "CardName" from OCRD where "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y' order by 2""";
-        Global.DataObject.ExecuteReader(query, dr => list.Add(new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString())));
+        var          list  = new List<BusinessPartner>();
+        const string query = """select "CardCode", "CardName" from OCRD where "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y' order by 2""";
+        using var    conn  = Global.Connector;
+        conn.ExecuteReader(query, dr => list.Add(new BusinessPartner((string)dr["CardCode"], dr["CardName"].ToString())));
         return list;
     }
 
     public bool ValidateVendor(string cardCode) {
         if (string.IsNullOrWhiteSpace(cardCode))
             return true;
-        string query = """select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y'""";
-        return Global.DataObject.GetValue<bool>(query, new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode));
+        const string query = """select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' and "U_LW_YUVAL08_ENABLE" = 'Y'""";
+        using var    conn  = Global.Connector;
+        return conn.GetValue<bool>(query, new Parameter("@CardCode", SqlDbType.NVarChar, 50, cardCode));
     }
 
     public static int GetSeries(ObjectTypes objectType) => GetSeries(((int)objectType).ToString());
@@ -48,7 +51,8 @@ public class GeneralData {
             where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
             and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
             """;
-        return Global.DataObject.GetValue<int>(query, [
+        using var conn = Global.Connector;
+        return conn.GetValue<int>(query, [
             new Parameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
             new Parameter("@Date", SqlDbType.DateTime, DateTime.Now)
         ]);
@@ -64,7 +68,8 @@ public class GeneralData {
             left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
             WHERE T0."BcdCode" = @ScanCode
             """;
-        Global.DataObject.ExecuteReader(query,
+        using var conn = Global.Connector;
+        conn.ExecuteReader(query,
             new Parameter("@ScanCode", SqlDbType.NVarChar, 50) { Value = scanCode },
             dr => {
                 var item = new Item((string)dr["ItemCode"]);
@@ -81,7 +86,8 @@ public class GeneralData {
         get {
             var          list  = new List<string>();
             const string query = "select USER_CODE from OUSR where U_LW_WMS_ALERTS = 'Y'";
-            Global.DataObject.ExecuteReader(query, dr => list.Add(dr.GetString(0)));
+            using var    conn  = Global.Connector;
+            conn.ExecuteReader(query, dr => list.Add(dr.GetString(0)));
             return list;
         }
     }
@@ -91,6 +97,7 @@ public class GeneralData {
         if (string.IsNullOrWhiteSpace(scanItemCode) && string.IsNullOrWhiteSpace(scanBarCode))
             return response;
 
+        using var conn = Global.Connector;
         if (!string.IsNullOrWhiteSpace(scanBarCode)) {
             const string query = """
                                  select T0."ItemCode", T1."ItemName", COALESCE(T1."PurPackUn", 1) "PurPackUn"
@@ -99,14 +106,14 @@ public class GeneralData {
                                  where T0."BcdCode" = @ScanCode
                                  """;
             var parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
-            var items     = Global.DataObject.GetDataTable(query, parameter);
+            var items     = conn.GetDataTable(query, parameter);
             foreach (DataRow row in items.Rows)
                 AddItem((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["PurPackUn"]));
         }
         else {
             const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"PurPackUn\", 1) \"PurPackUn\" from OITM where \"ItemCode\" = @ItemCode";
             var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
-            Global.DataObject.ExecuteReader(query, parameter, dr =>
+            conn.ExecuteReader(query, parameter, dr =>
                 AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"])));
         }
 
@@ -117,7 +124,7 @@ public class GeneralData {
                 PurPackUn = purPackUn
             };
             const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
-            Global.DataObject.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
+            conn.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 dr => responseValue.Barcodes.Add((string)dr[0]));
             response.Add(responseValue);
         }
@@ -145,8 +152,9 @@ public class GeneralData {
             ReasonType.GoodsReceipt => "GRPO",
             _                       => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
-        var values = new List<ValueDescription<int>>();
-        Global.DataObject.ExecuteReader($"select \"Code\", \"Name\" from \"@LW_YUVAL08_CR\" where \"U_{tableID}\" = 'Y' order by 2", dr => {
+        var       values = new List<ValueDescription<int>>();
+        using var conn   = Global.Connector;
+        conn.ExecuteReader($"select \"Code\", \"Name\" from \"@LW_YUVAL08_CR\" where \"U_{tableID}\" = 'Y' order by 2", dr => {
             var value = new ValueDescription<int>((int)dr["Code"], (string)dr["Name"]);
             values.Add(value);
         });
@@ -163,8 +171,9 @@ public class GeneralData {
                          and T0."OnHandQty" > 0
                        order by 1
                        """;
-        var values = new List<ItemStockResponse>();
-        Global.DataObject.ExecuteReader(query, [new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode), new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode)],
+        var       values = new List<ItemStockResponse>();
+        using var conn   = Global.Connector;
+        conn.ExecuteReader(query, [new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode), new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode)],
             dr => { values.Add(new ItemStockResponse { BinCode = (string)dr["BinCode"], Quantity = Convert.ToInt32(dr["OnHandQty"]) }); });
         return values;
     }

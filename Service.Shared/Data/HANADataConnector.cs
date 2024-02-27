@@ -182,6 +182,7 @@ public class HANADataConnector : DataConnector {
     public override void Dispose() {
         if (conn == null)
             return;
+        transaction?.Dispose();
         if (conn.State == ConnectionState.Open)
             conn.Close();
         conn.Dispose();

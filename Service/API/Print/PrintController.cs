@@ -20,7 +20,7 @@ public class PrintController : ApiController {
 
     internal static readonly Dictionary<(string title, int type, string printer, string item, string bp, string bp2, string sc, string sc2), Layout> Layouts = new();
 
-    public PrintController() => data = Global.DataObject;
+    public PrintController() => data = Global.Connector;
 
     [HttpGet]
     [ActionName("Printers")]

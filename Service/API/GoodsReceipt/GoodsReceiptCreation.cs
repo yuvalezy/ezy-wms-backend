@@ -105,9 +105,10 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
 
     private void LoadData() {
         const string query = """select "U_WhsCode" "WhsCode", "U_Type" "Type" from "@LW_YUVAL08_GRPO" where "Code" = @ID""";
-        (whsCode, char typeValue) = Global.DataObject.GetValue<string, char>(query, new Parameter("@ID", SqlDbType.Int, id));
+        using var    conn  = Global.Connector;
+        (whsCode, char typeValue) = conn.GetValue<string, char>(query, new Parameter("@ID", SqlDbType.Int, id));
         type                      = (GoodsReceiptType)typeValue;
-        using var dt = Global.DataObject.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), [
+        using var dt = conn.GetDataTable(GoodsReceiptData.GetQuery("ProcessGoodsReceiptLines"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID)
         ]);
@@ -141,6 +142,7 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
         if (string.IsNullOrWhiteSpace(sqlStr))
             return;
         sqlStr = $"update \"@LW_YUVAL08_GRPO1\" set \"U_LineStatus\" = 'F' where U_ID = {id} and ({sqlStr})";
-        Global.DataObject.Execute(sqlStr);
+        using var conn = Global.Connector;
+        conn.Execute(sqlStr);
     }
 }

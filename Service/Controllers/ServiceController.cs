@@ -32,9 +32,11 @@ public class ServiceController {
             view.LogError("Error loading registry settings: " + ex.Message);
             return false;
         }
+        
+        using var conn = Global.Connector;
 
         try {
-            Global.LoadDatabaseSettings();
+            Global.LoadDatabaseSettings(conn);
         }
         catch (Exception ex) {
             view.LogError($"Error loading database \"{ConnectionController.Database}\": {ex.Message}");
@@ -269,7 +271,8 @@ public class ServiceController {
         switch (command) {
             case Const.ReloadSettings:
                 try {
-                    Global.LoadDatabaseSettings();
+                    using var conn = Global.Connector;
+                    Global.LoadDatabaseSettings(conn);
                     StartComponents();
                 }
                 catch (Exception ex) {

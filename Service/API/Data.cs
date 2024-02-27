@@ -19,8 +19,9 @@ public class Data {
 
     public static bool ValidateAccess(string loginString, out int empID, out bool isValidBranch) {
         empID = -1;
-        string sqlStr = $"select empID, (select WhsCode from OWHS where WhsCode = OHEM.U_LW_Branch) Branch from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
-        (empID, string branch) = Global.DataObject.GetValue<int, string>(sqlStr);
+        string    sqlStr     = $"select empID, (select WhsCode from OWHS where WhsCode = OHEM.U_LW_Branch) Branch from OHEM where U_LW_Login = '{loginString.ToQuery()}'";
+        using var conn = Global.Connector;
+        (empID, string branch) = conn.GetValue<int, string>(sqlStr);
 
         isValidBranch = !string.IsNullOrWhiteSpace(branch);
         if (!isValidBranch)

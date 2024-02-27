@@ -5,7 +5,7 @@ using Service.Shared.Data;
 namespace Service.Controllers;
 
 public abstract class BaseBackgroundController : IDisposable {
-    internal readonly DataConnector Data = Global.DataObject;
+    internal readonly DataConnector Data = Global.Connector;
 
     internal readonly Timer Timer = new() {
         Interval = 1000 * 60,

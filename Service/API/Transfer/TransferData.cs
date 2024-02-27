@@ -21,21 +21,24 @@ public class TransferData {
         var @params = new Parameters {
             new Parameter("@empID", SqlDbType.Int, employeeID),
         };
-        return Global.DataObject.GetValue<int>(GetQuery("CreateTransfer"), @params);
+        using var conn = Global.Connector;
+        return conn.GetValue<int>(GetQuery("CreateTransfer"), @params);
     }
 
     public bool IsComplete(int id) {
         var @params = new Parameters {
             new Parameter("@id", SqlDbType.Int, id),
         };
-        return !Global.DataObject.GetValue<bool>(GetQuery("CheckIsCompleted"), @params);
+        using var conn = Global.Connector;
+        return !conn.GetValue<bool>(GetQuery("CheckIsCompleted"), @params);
     }
 
     public Models.Transfer GetTransfer(int id) {
         Models.Transfer count = null;
         var             sb    = new StringBuilder(GetQuery("GetTransfers"));
         sb.Append(" where TRANSFERS.\"Code\" = @ID");
-        Global.DataObject.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => count = ReadTransfer(dr));
+        using var conn = Global.Connector;
+        conn.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => count = ReadTransfer(dr));
         return count;
     }
 
@@ -104,7 +107,8 @@ public class TransferData {
         string query = sb.ToString();
         query = string.Format(query, additionalColumns);
 
-        Global.DataObject.ExecuteReader(query, queryParams, dr => {
+        using var conn = Global.Connector;
+        conn.ExecuteReader(query, queryParams, dr => {
             var transfer = ReadTransfer(dr);
             if (parameters.Progress) {
                 transfer.Progress = Convert.ToInt32(dr["Progress"]);
@@ -130,8 +134,8 @@ public class TransferData {
     }
 
 
-    public int ValidateAddItem(AddItemParameter parameters, int employeeID) =>
-        Global.DataObject.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
+    public int ValidateAddItem(DataConnector conn, AddItemParameter parameters, int employeeID) =>
+        conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
@@ -141,29 +145,21 @@ public class TransferData {
             new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
         ]);
 
-    public AddItemResponse AddItem(AddItemParameter parameters, int employeeID) {
-        try {
-            var returnValue = new AddItemResponse();
-            Global.DataObject.BeginTransaction();
-            Global.DataObject.ExecuteReader(GetQuery("AddItem"), [
-                new Parameter("@ID", SqlDbType.Int, parameters.ID),
-                new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
-                new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
-                new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
-                new Parameter("@empID", SqlDbType.Int, employeeID),
-                new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
-                new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
-            ], dr => returnValue.LineID = (int)dr["LineID"]);
-            Global.DataObject.CommitTransaction();
-            return returnValue;
-        }
-        catch {
-            Global.DataObject.RollbackTransaction();
-            throw;
-        }
+    public AddItemResponse AddItem(DataConnector conn, AddItemParameter parameters, int employeeID) {
+        var returnValue = new AddItemResponse();
+        conn.ExecuteReader(GetQuery("AddItem"), [
+            new Parameter("@ID", SqlDbType.Int, parameters.ID),
+            new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+            new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+            new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+            new Parameter("@empID", SqlDbType.Int, employeeID),
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
+        ], dr => returnValue.LineID = (int)dr["LineID"]);
+        return returnValue;
     }
 
-    public void UpdateLine(UpdateLineParameter updateLineParameter) {
+    public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter) {
         var parameters = new Parameters {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
@@ -200,7 +196,7 @@ public class TransferData {
 
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
-        Global.DataObject.Execute(sb.ToString(), parameters);
+        conn.Execute(sb.ToString(), parameters);
     }
 
     public bool CancelTransfer(int id, int employeeID) {
@@ -262,7 +258,8 @@ public class TransferData {
 
         Dictionary<string, TransferContent> control = new();
 
-        Global.DataObject.ExecuteReader(GetQuery(query), queryParams, dr => {
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery(query), queryParams, dr => {
             var content = new TransferContent {
                 Code     = (string)dr["ItemCode"],
                 Name     = dr["ItemName"].ToString(),
@@ -284,7 +281,8 @@ public class TransferData {
     }
 
     private static void GetTransferContentBins(Parameters queryParams, Dictionary<string, TransferContent> control) {
-        Global.DataObject.ExecuteReader(GetQuery("TransferContentTargetBins"), queryParams, dr => {
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("TransferContentTargetBins"), queryParams, dr => {
             string itemCode = (string)dr["ItemCode"];
             var bin = new TransferContentBin {
                 Entry    = (int)dr["Entry"],
@@ -297,8 +295,9 @@ public class TransferData {
     }
 
     public IEnumerable<TransferContentTargetItemDetail> TransferContentTargetDetail(TransferContentTargetItemDetailParameters queryParams) {
-        var data = new List<TransferContentTargetItemDetail>();
-        Global.DataObject.ExecuteReader(GetQuery("TransferContentTargetItemDetail"), [
+        var data          = new List<TransferContentTargetItemDetail>();
+        using var conn = Global.Connector;
+        conn.ExecuteReader(GetQuery("TransferContentTargetItemDetail"), [
                 new Parameter("@ID", SqlDbType.Int) { Value                = queryParams.ID },
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = queryParams.ItemCode },
                 new Parameter("@BinEntry", SqlDbType.Int) { Value          = queryParams.BinEntry }
@@ -320,8 +319,8 @@ public class TransferData {
         return data;
     }
 
-    public int ValidateUpdateLine(UpdateLineParameter parameters) {
-        return Global.DataObject.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
+    public int ValidateUpdateLine(DataConnector conn, UpdateLineParameter parameters) {
+        return conn.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
             new Parameter("@ID", SqlDbType.Int, parameters.ID),
             new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
             new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value),
@@ -330,6 +329,7 @@ public class TransferData {
     }
 
     public void UpdateContentTargetDetail(UpdateDetailParameters parameters) {
+        using var conn = Global.Connector;
         if (parameters.QuantityChanges != null) {
             try {
                 var control = new List<UpdateLineParameter>();
@@ -339,7 +339,7 @@ public class TransferData {
                         LineID   = pair.Key,
                         Quantity = pair.Value
                     };
-                    var isValid = (UpdateLineReturnValue)ValidateUpdateLine(updateLineParameter);
+                    var isValid = (UpdateLineReturnValue)ValidateUpdateLine(conn, updateLineParameter);
                     switch (isValid) {
                         case UpdateLineReturnValue.Status:
                             throw new Exception($"Transfer status is not In Progress");
@@ -352,16 +352,17 @@ public class TransferData {
                     control.Add(updateLineParameter);
                 }
 
-                control.ForEach(UpdateLine);
+                control.ForEach(updateLineParameter => UpdateLine(conn, updateLineParameter));
             }
             catch (Exception e) {
+                conn.RollbackTransaction();
                 throw new Exception($"Update Quantity Error: {e.Message}");
             }
         }
 
         try {
             parameters.RemoveRows?.ForEach(row => {
-                UpdateLine(new UpdateLineParameter {
+                UpdateLine(conn, new UpdateLineParameter {
                     ID            = parameters.ID,
                     LineID        = row,
                     InternalClose = true,
@@ -369,8 +370,11 @@ public class TransferData {
             });
         }
         catch (Exception e) {
+            conn.RollbackTransaction();
             throw new Exception("Remove Rows Error: " + e.Message);
         }
+        
+        conn.CommitTransaction();
     }
 
     public static string GetQuery(string id) {
@@ -388,12 +392,13 @@ public class TransferData {
     }
 
     private static void UpdateTransferStatus(int id, int employeeID, DocumentStatus status) {
-        Global.DataObject.Execute(GetQuery("UpdateTransferStatus"), [
+        using var conn = Global.Connector;
+        conn.Execute(GetQuery("UpdateTransferStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
-        Global.DataObject.Execute(GetQuery("UpdateTransferLineStatus"), [
+        conn.Execute(GetQuery("UpdateTransferLineStatus"), [
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
