@@ -70,7 +70,8 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
 
         var lines = doc.Lines;
 
-        int? binEntry = Global.WarehouseEntryBins[whsCode].FirstOrDefault();
+        Global.WarehouseEntryBins.TryGetValue(whsCode, out var entryBins);
+        int? binEntry = entryBins?.FirstOrDefault();
         if (!binEntry.HasValue)
             throw new Exception($"Warehouse ${whsCode} does not have bin locations enabled as Reception");
 
