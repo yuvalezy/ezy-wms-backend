@@ -19,7 +19,7 @@ namespace Service.API.Transfer;
 public class TransferData {
     public int CreateTransfer(CreateParameters createParameters, int employeeID) {
         object name     = !string.IsNullOrWhiteSpace(createParameters.Name) ? createParameters.Name : DBNull.Value;
-        object comments     = !string.IsNullOrWhiteSpace(createParameters.Comments) ? createParameters.Comments : DBNull.Value;
+        object comments = !string.IsNullOrWhiteSpace(createParameters.Comments) ? createParameters.Comments : DBNull.Value;
         var @params = new Parameters {
             new Parameter("@Name", SqlDbType.NVarChar, 50, name),
             new Parameter("@empID", SqlDbType.Int, employeeID),
@@ -79,6 +79,7 @@ public class TransferData {
 
         if (parameters.Progress) {
             sb.Append(@"Group By TRANSFERS.""Code"",
+         TRANSFERS.""Name"",
          TRANSFERS.""U_Date"",
          TRANSFERS.""U_empID"",
          T1.""firstName"",
@@ -88,7 +89,8 @@ public class TransferData {
          TRANSFERS.""U_StatusEmpID"",
          T2.""firstName"",
          T2.""lastName"",
-         TRANSFERS.""U_WhsCode"" ");
+         TRANSFERS.""U_WhsCode"",
+         Cast(TRANSFERS.""U_Comments"" as varchar(8000)) ");
         }
 
         if (parameters.OrderBy != null) {
@@ -127,12 +129,14 @@ public class TransferData {
     private Models.Transfer ReadTransfer(IDataReader dr) {
         var count = new Models.Transfer {
             ID             = (int)dr["ID"],
+            Name           = dr["Name"].ToString(),
             Date           = (DateTime)dr["Date"],
             Employee       = new UserInfo((int)dr["EmployeeID"], (string)dr["EmployeeName"]),
             Status         = (DocumentStatus)Convert.ToChar(dr["Status"]),
             StatusDate     = (DateTime)dr["StatusDate"],
             StatusEmployee = new UserInfo((int)dr["StatusEmployeeID"], (string)dr["StatusEmployeeName"]),
             WhsCode        = (string)dr["WhsCode"],
+            Comments       = dr["Comments"].ToString(),
         };
         return count;
     }
