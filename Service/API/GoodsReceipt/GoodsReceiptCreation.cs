@@ -12,7 +12,7 @@ using GeneralData = Service.API.General.GeneralData;
 
 namespace Service.API.GoodsReceipt;
 
-public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
+public class GoodsReceiptCreation(int id, int employeeID, bool enableBin) : IDisposable {
     private string           whsCode;
     private GoodsReceiptType type;
     private Documents        doc;
@@ -71,9 +71,13 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
         var lines = doc.Lines;
 
         Global.WarehouseEntryBins.TryGetValue(whsCode, out var entryBins);
-        int? binEntry = entryBins?.FirstOrDefault();
-        if (!binEntry.HasValue)
-            throw new Exception($"Warehouse ${whsCode} does not have bin locations enabled as Reception");
+        int? binEntry = null;
+
+        if (enableBin) {
+            binEntry = entryBins?.FirstOrDefault();
+            if (!binEntry.HasValue)
+                throw new Exception($"Warehouse ${whsCode} does not have bin locations enabled as Reception");
+        }
 
         for (int i = 0; i < values.Count; i++) {
             if (i > 0)
@@ -89,6 +93,9 @@ public class GoodsReceiptCreation(int id, int employeeID) : IDisposable {
 
             lines.Quantity = value.Quantity;
 
+            if (!enableBin) 
+                continue;
+            
             lines.BinAllocations.BinAbsEntry = binEntry.Value;
             lines.BinAllocations.Quantity    = value.Quantity;
         }

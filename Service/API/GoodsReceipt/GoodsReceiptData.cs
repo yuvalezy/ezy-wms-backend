@@ -25,13 +25,13 @@ public class GoodsReceiptData {
         return true;
     }
 
-    public bool ProcessDocument(int id, int employeeID, List<string> sendTo) {
+    public bool ProcessDocument(int id, int employeeID, bool enableBin, List<string> sendTo) {
         var doc = GetDocument(id);
         if (doc.Status != DocumentStatus.InProgress)
             throw new Exception("Cannot process document if the Status is not In Progress");
         UpdateDocumentStatus(id, employeeID, DocumentStatus.Processing);
         try {
-            using var creation = new GoodsReceiptCreation(id, employeeID);
+            using var creation = new GoodsReceiptCreation(id, employeeID, enableBin);
             creation.Execute();
             UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
             creation.SetFinishedLines();
@@ -180,7 +180,7 @@ public class GoodsReceiptData {
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
-                    PurPackUn   = (int)dr["PurPackUn"]
+                    Quantity   = (int)dr["PurPackUn"]
                 };
             });
             if (returnValue == null)
@@ -189,7 +189,6 @@ public class GoodsReceiptData {
         catch (Exception ex) {
             if (!ex.Message.Contains("No valid source found for item"))
                 throw;
-            conn.RollbackTransaction();
             returnValue = new AddItemResponse {
                 ErrorMessage = string.Format(ErrorMessages.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_, itemCode)
             };

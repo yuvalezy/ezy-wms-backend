@@ -42,7 +42,10 @@ public class GoodsReceiptController : LWApiController {
             if (!parameters.Validate(conn, Data, EmployeeID))
                 return new AddItemResponse { ClosedDocument = true };
             var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
-            conn.CommitTransaction();
+            if (string.IsNullOrWhiteSpace(addItemResponse.ErrorMessage))
+                conn.CommitTransaction();
+            else 
+                conn.RollbackTransaction();
             return addItemResponse;
         }
         catch (Exception e) {
@@ -86,7 +89,8 @@ public class GoodsReceiptController : LWApiController {
     public bool ProcessDocument([FromBody] IDParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
-        return Data.GoodsReceipt.ProcessDocument(parameters.ID, EmployeeID, Data.General.AlertUsers);
+        bool enableBin = Data.General.GetEmployeeData(EmployeeID).EnableBin;
+        return Data.GoodsReceipt.ProcessDocument(parameters.ID, EmployeeID, enableBin, Data.General.AlertUsers);
     }
 
     [HttpGet]
