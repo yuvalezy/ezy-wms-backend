@@ -15,7 +15,7 @@ namespace Service.API.Picking;
 
 public class PickingData {
     public PickingDocument GetPicking(int id, string whsCode, int? type, int? entry, bool? availableBins, int? binEntry) {
-        var pick = GetPickings(new PickingParameters { ID = id, WhsCode = whsCode, Statues = null }).FirstOrDefault();
+        var pick = GetPickings(new PickingParameters { ID = id, WhsCode = whsCode, Statuses = null }).FirstOrDefault();
         if (pick == null)
             return null;
         GetPickingDetail(pick, type, entry, availableBins, binEntry);
@@ -86,12 +86,12 @@ public class PickingData {
     public IEnumerable<PickingDocument> GetPickings(PickingParameters parameters) {
         List<PickingDocument> values = [];
         var                   sb     = new StringBuilder(Environment.NewLine);
-        if (parameters.Statues is { Length: > 0 }) {
+        if (parameters.Statuses is { Length: > 0 }) {
             sb.AppendLine("and PICKS.\"Status\" in (");
-            for (int i = 0; i < parameters.Statues.Length; i++) {
+            for (int i = 0; i < parameters.Statuses.Length; i++) {
                 if (i > 0)
                     sb.Append(", ");
-                sb.Append($"'{(char)parameters.Statues[i]}'");
+                sb.Append($"'{(char)parameters.Statuses[i]}'");
             }
 
             sb.Append(") ");

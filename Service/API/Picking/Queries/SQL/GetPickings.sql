@@ -28,7 +28,7 @@ from (select PICKS."AbsEntry",
                                 Group By "U_AbsEntry", "U_PickEntry") T6
                                on T6."AbsEntry" = T1."AbsEntry" and T6."PickEntry" = T1."PickEntry"
       where T2.LocCode = @WhsCode
-        and PICKS."Status" in ('R', 'P')
+        and PICKS."Status" in ('R', 'P', 'D')
 -- {0}
       GROUP BY PICKS."AbsEntry",
                PICKS."PickDate",

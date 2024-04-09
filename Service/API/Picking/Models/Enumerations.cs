@@ -1,13 +1,17 @@
 ﻿namespace Service.API.Picking.Models;
 
-public enum PickStatus {
+public enum PickStatus
+{
     Released = 'R',
-    Picked   = 'P',
-    Closed   = 'C'
+    Picked = 'P',
+    Closed = 'C',
+    PartiallyDelivered = 'D'
 }
-public enum PickingStatus {
-    Open       = 'O',
+
+public enum PickingStatus
+{
+    Open = 'O',
     Processing = 'P',
-    Finished   = 'F',
-    Error      = 'E'
+    Finished = 'F',
+    Error = 'E'
 }

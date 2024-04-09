@@ -6,5 +6,5 @@ public class PickingParameters {
     public int?         ID      { get; set; }
     public DateTime?    Date    { get; set; }
     internal string       WhsCode { get; set; }
-    public PickStatus[] Statues { get; set; } = [PickStatus.Released, PickStatus.Picked];
+    public PickStatus[] Statuses { get; set; } = [PickStatus.Released, PickStatus.Picked, PickStatus.PartiallyDelivered];
 }
