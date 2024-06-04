@@ -23,4 +23,5 @@ from Data T0
          left outer join POR1 T4 on T4.DocEntry = T1.DocEntry and T4.LineNum = T0.BaseLine and T4.ObjType = T1.ObjType
          left outer join PCH1 T5 on T5.DocEntry = T1.DocEntry and T5.LineNum = T0.BaseLine and T5.ObjType = T1.ObjType
 Group By T0."ItemCode", T0."BaseType", T0."BaseEntry", T0."BaseLine", T1."CardCode", T2."CardCode", T3."U_CardCode", T4.InvntSttus, T5.InvntSttus
+Having Sum(T0."Quantity") > 0
 order by T0."ItemCode"

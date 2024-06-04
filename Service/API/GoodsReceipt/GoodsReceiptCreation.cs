@@ -20,7 +20,7 @@ public class GoodsReceiptCreation(int id, int employeeID, bool enableBin) : IDis
 
     private Dictionary<(string CardCode, int Type, int Entry), List<GoodsReceiptCreationValue>> data;
 
-    public List<(int Entry, int Number)> NewEntries { get; } = new();
+    public List<(int Entry, int Number)> NewEntries { get; } = [];
 
     public void Execute() {
         bool releaseMutex = false;
