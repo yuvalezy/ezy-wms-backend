@@ -5,7 +5,13 @@ using SAPbobsCOM;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
+using Service.API.Transfer.Models;
 using Service.Shared;
+using AddItemParameter = Service.API.GoodsReceipt.Models.AddItemParameter;
+using AddItemResponse = Service.API.GoodsReceipt.Models.AddItemResponse;
+using CreateParameters = Service.API.GoodsReceipt.Models.CreateParameters;
+using FilterParameters = Service.API.GoodsReceipt.Models.FilterParameters;
+using UpdateLineParameter = Service.API.GoodsReceipt.Models.UpdateLineParameter;
 
 namespace Service.API.GoodsReceipt;
 
@@ -65,10 +71,7 @@ public class GoodsReceiptController : LWApiController {
             (var returnValue, int empID) = parameters.Validate(conn, Data);
             if (returnValue != UpdateLineReturnValue.Ok)
                 return returnValue;
-            if (!parameters.Quantity.HasValue)
-                Data.GoodsReceipt.UpdateLine(conn, parameters, empID);
-            else
-                Data.GoodsReceipt.UpdateLineQuantity(conn, parameters, empID);
+            Data.GoodsReceipt.UpdateLine(conn, parameters, empID);
             conn.CommitTransaction();
             return returnValue;
         }
@@ -77,31 +80,29 @@ public class GoodsReceiptController : LWApiController {
             throw;
         }
     }
-    // [HttpPost]
-    // [ActionName("UpdateLineQuantity")]
-    // public AddItemResponse UpdateLineQuantity([FromBody] UpdateLineParameter parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
-    //         throw new UnauthorizedAccessException("You don't have access for updating line in document");
-    //     using var conn = Global.Connector;
-    //     try {
-    //         conn.BeginTransaction();
-    //         (var returnValue, int empID) = parameters.Validate(conn, Data);
-    //         if (returnValue != UpdateLineReturnValue.Ok)
-    //             return returnValue;
-    //         if (!parameters.Validate(conn, Data, EmployeeID))
-    //             return new AddItemResponse { ClosedDocument = true };
-    //         var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
-    //         if (string.IsNullOrWhiteSpace(addItemResponse.ErrorMessage))
-    //             conn.CommitTransaction();
-    //         else 
-    //             conn.RollbackTransaction();
-    //         return addItemResponse;
-    //     }
-    //     catch (Exception e) {
-    //         conn.RollbackTransaction();
-    //         throw;
-    //     }
-    // }
+    [HttpPost]
+    [ActionName("UpdateLineQuantity")]
+    public UpdateItemResponse UpdateLineQuantity([FromBody] UpdateLineQuantityParameter parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+            throw new UnauthorizedAccessException("You don't have access for updating line in document");
+        using var conn = Global.Connector;
+        try {
+            conn.BeginTransaction();
+            (var returnValue, int empID) = parameters.Validate(conn, Data);
+            if (returnValue.ReturnValue != UpdateLineReturnValue.Ok)
+                return returnValue;
+            var updateItemResponse = Data.GoodsReceipt.UpdateLineQuantity(conn, parameters, EmployeeID);
+            if (string.IsNullOrWhiteSpace(updateItemResponse.ErrorMessage))
+                conn.CommitTransaction();
+            else 
+                conn.RollbackTransaction();
+            return updateItemResponse;
+        }
+        catch (Exception e) {
+            conn.RollbackTransaction();
+            throw;
+        }
+    }
 
     [HttpPost]
     [ActionName("Cancel")]

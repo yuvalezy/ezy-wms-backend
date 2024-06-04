@@ -9,10 +9,16 @@ using System.Web.Management;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
+using Service.API.Transfer.Models;
 using Service.Shared.Company;
 using Service.Shared.Data;
 using Service.Shared.Utils;
+using AddItemResponse = Service.API.GoodsReceipt.Models.AddItemResponse;
 using Alert = Service.API.General.Alert;
+using CreateParameters = Service.API.GoodsReceipt.Models.CreateParameters;
+using FilterParameters = Service.API.GoodsReceipt.Models.FilterParameters;
+using OrderBy = Service.API.GoodsReceipt.Models.OrderBy;
+using UpdateLineParameter = Service.API.GoodsReceipt.Models.UpdateLineParameter;
 
 namespace Service.API.GoodsReceipt;
 
@@ -94,11 +100,11 @@ public class GoodsReceiptData {
         return id;
     }
 
-    public int ValidateUpdateLine(DataConnector conn, UpdateLineParameter parameters) =>
+    public int ValidateUpdateLine(DataConnector conn, int id, int lineID, int? closeReason = null) =>
         conn.GetValue<int>(GetQuery("ValidateUpdateLineParameters"), [
-            new Parameter("@ID", SqlDbType.Int, parameters.ID),
-            new Parameter("@LineID", SqlDbType.Int, parameters.LineID),
-            new Parameter("@Reason", SqlDbType.Int, parameters.CloseReason.HasValue ? parameters.CloseReason.Value : DBNull.Value)
+            new Parameter("@ID", SqlDbType.Int, id),
+            new Parameter("@LineID", SqlDbType.Int, lineID),
+            new Parameter("@Reason", SqlDbType.Int, closeReason.HasValue ? closeReason.Value : DBNull.Value)
         ]);
 
     public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter, int empID) {
@@ -150,17 +156,28 @@ public class GoodsReceiptData {
         }
     }
 
-    public void UpdateLineQuantity(DataConnector conn, UpdateLineParameter updateLineParameter, int empID) {
-        int id     = updateLineParameter.ID;
-        int lineID = updateLineParameter.LineID;
-        conn.Execute(GetQuery("UpdateSourceLineQuantity"), [
+    public UpdateItemResponse UpdateLineQuantity(DataConnector conn, UpdateLineQuantityParameter updateLineParameter, int empID) {
+        UpdateItemResponse returnValue = null;
+        int                id          = updateLineParameter.ID;
+        int                lineID      = updateLineParameter.LineID;
+        conn.ExecuteReader(GetQuery("UpdateSourceLineQuantity"), [
             new Parameter("@ID", SqlDbType.Int) { Value       = id },
             new Parameter("@LineID", SqlDbType.Int) { Value   = lineID },
             new Parameter("@UserSign", SqlDbType.Int) { Value = empID },
-            new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value },
-        ]);
-    }
+            new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity },
+        ], dr => {
+            returnValue = new UpdateItemResponse {
+                Fulfillment = (int)dr["Fulfillment"] > 0,
+                Showroom    = (int)dr["Showroom"] > 0,
+                Warehouse   = (int)dr["Warehouse"] > 0,
+                Quantity    = (int)dr["PurPackUn"]
+            };
+        });
+        if (returnValue == null)
+            throw new Exception("Update Item Result Empty!");
 
+        return returnValue;
+    }
     public int ValidateAddItem(DataConnector conn, int id, string itemCode, string barCode, int empID) =>
         conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
@@ -421,12 +438,12 @@ public class GoodsReceiptData {
         }
 
         try {
-            foreach (var updateLineParameter in parameters.QuantityChanges.Select(pair => new UpdateLineParameter {
+            foreach (var updateLineParameter in parameters.QuantityChanges.Select(pair => new UpdateLineQuantityParameter {
                          ID       = parameters.ID,
                          LineID   = pair.Key,
                          Quantity = pair.Value
                      })) {
-                UpdateLine(conn, updateLineParameter, employeeID);
+                UpdateLineQuantity(conn, updateLineParameter, employeeID);
             }
         }
         catch (Exception e) {

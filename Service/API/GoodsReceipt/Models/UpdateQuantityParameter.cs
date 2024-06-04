@@ -1,20 +1,20 @@
 ﻿using System;
 using Newtonsoft.Json;
 using Service.API.General.Models;
+using Service.API.Transfer.Models;
 using Service.Shared;
 using Service.Shared.Data;
 
 namespace Service.API.GoodsReceipt.Models;
 
-public class UpdateLineParameter {
+public class UpdateLineQuantityParameter {
     public              int    ID            { get; set; }
     public              int    LineID        { get; set; }
-    public              string Comment       { get; set; }
-    public              int?   CloseReason   { get; set; }
+    public              int    Quantity      { get; set; }
     public              string UserName      { get; set; }
     [JsonIgnore] public bool   InternalClose { get; set; }
 
-    public (UpdateLineReturnValue, int) Validate(DataConnector conn, Data data) {
+    public (UpdateItemResponse, int) Validate(DataConnector conn, Data data) {
         if (ID <= 0)
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (LineID < 0)
@@ -22,15 +22,15 @@ public class UpdateLineParameter {
 
         int empID = -1;
 
-        if (CloseReason.HasValue && Global.GRPOModificationsRequiredSupervisor) {
+        if (Global.GRPOModificationsRequiredSupervisor) {
             if (string.IsNullOrWhiteSpace(UserName))
                 throw new Exception("A supervisor password is required to update line!");
             if (!Data.ValidateAccess(UserName, out empID, out _))
-                return (UpdateLineReturnValue.SupervisorPassword, -1);
+                return new ValueTuple<UpdateItemResponse, int>(new UpdateItemResponse(UpdateLineReturnValue.SupervisorPassword), -1);
             if (!Global.ValidateAuthorization(empID, Authorization.GoodsReceiptSupervisor))
-                return (UpdateLineReturnValue.NotSupervisor, -1);
+                return new ValueTuple<UpdateItemResponse, int>(new UpdateItemResponse(UpdateLineReturnValue.NotSupervisor), -1);
         }
 
-        return ((UpdateLineReturnValue)data.GoodsReceipt.ValidateUpdateLine(conn, ID, LineID, CloseReason), empID);
+        return new ValueTuple<UpdateItemResponse, int>(new UpdateItemResponse((UpdateLineReturnValue)data.GoodsReceipt.ValidateUpdateLine(conn, ID, LineID)), empID);
     }
 }

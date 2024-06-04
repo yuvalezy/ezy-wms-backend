@@ -143,6 +143,7 @@
     <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />
     <Compile Include="API\GoodsReceipt\Models\Document.cs" />
     <Compile Include="API\GoodsReceipt\Models\UpdateParameter.cs" />
+    <Compile Include="API\GoodsReceipt\Models\UpdateQuantityParameter.cs" />
     <Compile Include="API\LoadBalancingRouter.cs" />
     <Compile Include="API\Logging.cs" />
     <Compile Include="API\LWApiController.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="API\Transfer\Models\TransferContentParameters.cs" />
     <Compile Include="API\Transfer\Models\TransferContentTargetItemDetail.cs" />
     <Compile Include="API\Transfer\Models\TransferContentTargetItemDetailParameters.cs" />
+    <Compile Include="API\Transfer\Models\UpdateItemResponse.cs" />
     <Compile Include="API\Transfer\Models\UpdateParameter.cs" />
     <Compile Include="API\Transfer\TransferController.cs" />
     <Compile Include="API\Transfer\TransferCreation.cs" />

@@ -11,14 +11,13 @@ delete from "@LW_YUVAL08_GRPO2" where U_ID = @ID and U_LineID = @LineID
 delete from "@LW_YUVAL08_GRPO4" where U_ID = @ID and U_LineID = @LineID
 
 declare @ItemCode nvarchar(50);
-declare @Quantity numeric(19, 6);
-declare @PurPackUn numeric(19, 6);
+declare @PurPackUn int;
 declare @empID int;
 declare @CardCode nvarchar(50);
 declare @Type char(1);
 
 select @CardCode = T1.U_CardCode, @Type = T1.U_Type,
-       @ItemCode = T0.U_ItemCode, @Quantity = T0.U_Quantity, @empID = T0.U_empID,
+       @ItemCode = T0.U_ItemCode, @empID = T0.U_empID,
        @PurPackUn = T2.PurPackUn
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
