@@ -65,7 +65,10 @@ public class GoodsReceiptController : LWApiController {
             (var returnValue, int empID) = parameters.Validate(conn, Data);
             if (returnValue != UpdateLineReturnValue.Ok)
                 return returnValue;
-            Data.GoodsReceipt.UpdateLine(conn, parameters, empID);
+            if (!parameters.Quantity.HasValue)
+                Data.GoodsReceipt.UpdateLine(conn, parameters, empID);
+            else
+                Data.GoodsReceipt.UpdateLineQuantity(conn, parameters, empID);
             conn.CommitTransaction();
             return returnValue;
         }
@@ -74,6 +77,31 @@ public class GoodsReceiptController : LWApiController {
             throw;
         }
     }
+    // [HttpPost]
+    // [ActionName("UpdateLineQuantity")]
+    // public AddItemResponse UpdateLineQuantity([FromBody] UpdateLineParameter parameters) {
+    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+    //         throw new UnauthorizedAccessException("You don't have access for updating line in document");
+    //     using var conn = Global.Connector;
+    //     try {
+    //         conn.BeginTransaction();
+    //         (var returnValue, int empID) = parameters.Validate(conn, Data);
+    //         if (returnValue != UpdateLineReturnValue.Ok)
+    //             return returnValue;
+    //         if (!parameters.Validate(conn, Data, EmployeeID))
+    //             return new AddItemResponse { ClosedDocument = true };
+    //         var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+    //         if (string.IsNullOrWhiteSpace(addItemResponse.ErrorMessage))
+    //             conn.CommitTransaction();
+    //         else 
+    //             conn.RollbackTransaction();
+    //         return addItemResponse;
+    //     }
+    //     catch (Exception e) {
+    //         conn.RollbackTransaction();
+    //         throw;
+    //     }
+    // }
 
     [HttpPost]
     [ActionName("Cancel")]

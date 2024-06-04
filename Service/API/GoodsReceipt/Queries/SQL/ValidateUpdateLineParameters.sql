@@ -1,5 +1,6 @@
-﻿-- declare @ID int = 2015;
--- declare @LineID int = 35;
+﻿-- declare @ID int = 1042;
+-- declare @LineID int = 0;
+-- declare @Reason nvarchar(50) = null;
 select Case
            When T2."U_Status" <> 'I' Then -1
            When T3."U_LineStatus" <> 'O' Then -2

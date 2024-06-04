@@ -1,13 +1,16 @@
 ﻿--begin tran
 
--- declare @ID int = 31;
--- declare @BarCode nvarchar(254) = '34567890455555';
--- declare @ItemCode nvarchar(50) = 'SCUOM';
+-- declare @ID int = 1042;
+-- declare @BarCode nvarchar(254) = '93425162-TA1800-FG';
+-- declare @ItemCode nvarchar(50) = '93425162-TA1800-FG';
 -- declare @empID int = 1;
 SET NOCOUNT ON;
 
 --set default return value to Store in Warehouse
 drop table if exists #tmp_ScannedData;
+drop table if exists #tmp_SourceData;
+
+declare @tmp_ScannedDataSourceDocs table(ID int identity(1, 1), ObjType int, DocEntry int, LineNum int, OpenQuantity numeric(19, 6))
 
 declare @ReturnValue int = 1;
 declare @WhsCode nvarchar(8) = (select U_LW_Branch
@@ -21,112 +24,108 @@ where Code = @ID;
 
 declare @PurPackUn int = (select COALESCE("PurPackUn", 1) from OITM where "ItemCode" = @ItemCode);
 
-declare @SourceType int;
-declare @SourceEntry int;
-declare @SourceLine int;
-
 declare @TargetType int;
 declare @TargetEntry int;
 declare @TargetLine int;
 
+select T2.U_SourceType ObjType, T2.U_SourceEntry DocEntry, T2.U_SourceLine LineNum, Sum(T2."U_Quantity") Quantity
+into #tmp_SourceData
+from [@LW_YUVAL08_GRPO1] T0
+			inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
+			inner join [@LW_YUVAL08_GRPO4] T2 on T2.U_ID = T0.U_ID and T2.U_LineID = T0.U_LineID
+where T0.U_ItemCode = @ItemCode
+Group By T2.U_SourceType, T2.U_SourceEntry, T2.U_SourceLine
 
---get first open purchase order in the connected branch
 
---If @Type = 'A' Begin
---	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
---	from POR1 T0
---			 inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1.CardCode = @CardCode
---			 left outer join (
---				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
---				from [@LW_YUVAL08_GRPO1] T0
---						 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
---				where T0.U_ItemCode = @ItemCode
---				Group By T0.U_SourceType, T0.U_SourceEntry, T0.U_SourceLine
---			) T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
---	where T0."ItemCode" = @ItemCode
---	  and T0."LineStatus" = 'O'
---	  and T0."WhsCode" = @WhsCode
---	  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
---	order by T1."CreateDate";
---End Else If @Type = 'S' Begin
-	select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
-	from POR1 T0
-			 inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and (
-				@Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
-				or @Type = 'S'
-			 )
-			 left outer join (
-				select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
-				from [@LW_YUVAL08_GRPO1] T0
-						 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
-				where T0.U_ItemCode = @ItemCode
-				Group By T0.U_SourceType, T0.U_SourceEntry, T0.U_SourceLine
-			) T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
+insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
+select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty" - IsNull(T2.Quantity, 0) OpenQuantity
+from POR1 T0
+	inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and
+	(
+		@Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
+		or @Type = 'S'
+	)
+	left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
 	left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
-	where T0."ItemCode" = @ItemCode
-	  and T0."LineStatus" = 'O'
-	  and T0."WhsCode" = @WhsCode
-	  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
-	  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
-	order by T1."CreateDate", T1.CreateTS;
+where T0."ItemCode" = @ItemCode
+	and T0."LineStatus" = 'O'
+	and T0."WhsCode" = @WhsCode
+	and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
+	and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+order by T1."CreateDate", T1.CreateTS;
 
-	If @SourceType is null Begin
-		select top 1 @SourceType = T0."ObjType", @SourceEntry = T0."DocEntry", @SourceLine = T0."LineNum"
-		from PCH1 T0
-				 inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and (
-				@Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
-				or @Type = 'S'
-			 )
-				 left outer join (
-					select T0.U_SourceType ObjType, T0.U_SourceEntry DocEntry, T0.U_SourceLine LineNum, Sum("U_Quantity") Quantity
-					from [@LW_YUVAL08_GRPO1] T0
-							 inner join [@LW_YUVAL08_GRPO] T1 on T1.Code = T0.U_ID and T1.U_WhsCode = @WhsCode and T1.U_Status not in ('C', 'F')
-					where T0.U_ItemCode = @ItemCode
-					Group By T0.U_SourceType, T0.U_SourceEntry, T0.U_SourceLine
-				) T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
-		left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
-		where T0."ItemCode" = @ItemCode
-		  and T0."LineStatus" = 'O'
-		  and T0."WhsCode" = @WhsCode
-		  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
-		  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
-		order by T1."CreateDate", T1.CreateTS;
+insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
+select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty" - IsNull(T2.Quantity, 0) OpenQuantity
+from PCH1 T0
+	inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and 
+	(
+		@Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
+		or @Type = 'S'
+	)
+	left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
+	left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
+where T0."ItemCode" = @ItemCode
+	and T0."LineStatus" = 'O'
+	and T0."WhsCode" = @WhsCode
+	and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
+	and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+order by T1."CreateDate", T1.CreateTS;
+
+declare @i int = 1
+declare @Quantity numeric(19, 6) = @PurPackUn
+while @i is not null Begin
+	declare @iQty numeric(19, 6) = (select OpenQuantity from @tmp_ScannedDataSourceDocs where ID = @i)
+	If @iQty <= @Quantity Begin
+		set @Quantity = @Quantity - @iQty
+		If @Quantity = 0 Begin
+			delete @tmp_ScannedDataSourceDocs where ID > @i
+			Break
+		End
+	End Else Begin
+		update @tmp_ScannedDataSourceDocs set OpenQuantity = @Quantity where ID = @i
+		delete @tmp_ScannedDataSourceDocs where ID > @i
+		set @Quantity = 0
+		break
 	End
+	set @i = (select ID from @tmp_ScannedDataSourceDocs where ID = @i + 1)
+End
 
-	If @SourceType is null Begin
-		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry", @SourceLine = T0."U_SourceLine"
-		from "@LW_YUVAL08_GRPO1" T0
-		where T0.U_ID = @ID and T0."U_SourceType" = 22 and T0."U_ItemCode" = @ItemCode;
+If @Quantity > 0 Begin
+	If exists(select 1 from @tmp_ScannedDataSourceDocs) Begin
+		update @tmp_ScannedDataSourceDocs set OpenQuantity = OpenQuantity + @Quantity where ID = (select Max(ID) from @tmp_ScannedDataSourceDocs)
+	End Else Begin
+		insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
+		select top 1 T1."U_SourceType", T1."U_SourceEntry", T1."U_SourceLine", @Quantity
+			from "@LW_YUVAL08_GRPO1" T0
+			inner join "@LW_YUVAL08_GRPO4" T1 on T1.U_ID = T0.U_ID and T1.U_LineID = T0.U_LineID
+			where T0.U_ID = @ID and T1."U_SourceType" = 22 and T0."U_ItemCode" = @ItemCode
+		order by Case T1.U_SourceType When 22 Then 'A' Else 'B' End, T1.U_LineID desc;
 	End
+	set @Quantity = 0
+End
 
-	If @SourceType is null Begin
-		select top 1 @SourceType = T0."U_SourceType", @SourceEntry = T0."U_SourceEntry"
-		from "@LW_YUVAL08_GRPO1" T0
-		where T0.U_ID = @ID and T0."U_SourceType" = 18 and T0."U_ItemCode" = @ItemCode;
-	End
+If not exists(select 1 from @tmp_ScannedDataSourceDocs) Begin
+	declare @Error nvarchar(100) = 'No valid source found for item ' + @ItemCode
+	RAISERROR(@Error,16,1);
+End
 
-	If @SourceType is null Begin
-		declare @Error nvarchar(100) = 'No valid source found for item ' + @ItemCode
-		RAISERROR(@Error,16,1);
-	End
---End
 
-declare @Quantity int = @PurPackUn
+set @Quantity = @PurPackUn
 
---insert grpo line
+----insert grpo line
 declare @LineID int = IsNull((select Max("U_LineID") + 1
                               from "@LW_YUVAL08_GRPO1" where "U_ID" = @ID), 0);
-insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_SourceType", "U_SourceEntry", "U_SourceLine", "U_Quantity")
+insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_Quantity")
 select @ID,
        @LineID,
        @ItemCode,
        @BarCode,
        @empID,
        getdate(),
-       IsNull(@SourceType, -1),
-       IsNull(@SourceEntry, -1),
-       IsNull(@SourceLine, -1),
        @Quantity;
+
+insert into "@LW_YUVAL08_GRPO4"(U_ID, "U_LineID", "U_SourceType", "U_SourceEntry", "U_SourceLine", "U_Quantity")
+select @ID, @LineID, ObjType, DocEntry, LineNum, OpenQuantity from @tmp_ScannedDataSourceDocs
 
 --update status of grpo header to InProgress
 update "@LW_YUVAL08_GRPO" set "U_Status" = 'I' where Code = @ID;

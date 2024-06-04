@@ -252,6 +252,7 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceipt.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateSourceLineQuantity.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateUpdateLineParameters.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />

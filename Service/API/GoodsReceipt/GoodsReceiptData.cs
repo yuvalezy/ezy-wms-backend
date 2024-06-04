@@ -102,9 +102,11 @@ public class GoodsReceiptData {
         ]);
 
     public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter, int empID) {
+        int id     = updateLineParameter.ID;
+        int lineID = updateLineParameter.LineID;
         var parameters = new Parameters {
-            new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
-            new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
+            new Parameter("@ID", SqlDbType.Int) { Value     = id },
+            new Parameter("@LineID", SqlDbType.Int) { Value = lineID },
         };
         var  sb       = new StringBuilder("update \"@LW_YUVAL08_GRPO1\" set ");
         bool comma    = false;
@@ -128,16 +130,6 @@ public class GoodsReceiptData {
                 sb.AppendLine(", ");
             sb.AppendLine("\"U_StatusReason\" = @Reason ");
             parameters.Add(new Parameter("@Reason", SqlDbType.Int) { Value = updateLineParameter.CloseReason.Value });
-            comma    = true;
-            userSign = true;
-        }
-
-        if (updateLineParameter.Quantity.HasValue) {
-            if (comma)
-                sb.AppendLine(", ");
-            sb.AppendLine("\"U_Quantity\" = @Quantity ");
-            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
-            comma    = true;
             userSign = true;
         }
 
@@ -152,10 +144,21 @@ public class GoodsReceiptData {
 
         if (updateLineParameter.CloseReason.HasValue || updateLineParameter.InternalClose) {
             conn.Execute("update \"@LW_YUVAL08_GRPO2\" set \"U_TargetStatus\" = 'C' where U_ID = @ID and U_LineID = @LineID", [
-                new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
-                new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID }
+                new Parameter("@ID", SqlDbType.Int) { Value     = id },
+                new Parameter("@LineID", SqlDbType.Int) { Value = lineID }
             ]);
         }
+    }
+
+    public void UpdateLineQuantity(DataConnector conn, UpdateLineParameter updateLineParameter, int empID) {
+        int id     = updateLineParameter.ID;
+        int lineID = updateLineParameter.LineID;
+        conn.Execute(GetQuery("UpdateSourceLineQuantity"), [
+            new Parameter("@ID", SqlDbType.Int) { Value       = id },
+            new Parameter("@LineID", SqlDbType.Int) { Value   = lineID },
+            new Parameter("@UserSign", SqlDbType.Int) { Value = empID },
+            new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value },
+        ]);
     }
 
     public int ValidateAddItem(DataConnector conn, int id, string itemCode, string barCode, int empID) =>
@@ -180,7 +183,7 @@ public class GoodsReceiptData {
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
-                    Quantity   = (int)dr["PurPackUn"]
+                    Quantity    = (int)dr["PurPackUn"]
                 };
             });
             if (returnValue == null)
@@ -348,7 +351,7 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
-        var data          = new List<GoodsReceiptReportAll>();
+        var       data = new List<GoodsReceiptReportAll>();
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             string itemCode = (string)dr["ItemCode"];
@@ -372,7 +375,7 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptReportAllDetails> GetGoodsReceiptAllReportDetails(int id, string item) {
-        var data          = new List<GoodsReceiptReportAllDetails>();
+        var       data = new List<GoodsReceiptReportAllDetails>();
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery("GoodsReceiptAllDetails"), [
                 new Parameter("@ID", SqlDbType.Int) { Value                = id },
@@ -435,9 +438,9 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
-        var data          = new List<GoodsReceiptVSExitReport>();
-        var control       = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
-        using var conn = Global.Connector;
+        var       data    = new List<GoodsReceiptVSExitReport>();
+        var       control = new Dictionary<(int, int), GoodsReceiptVSExitReport>();
+        using var conn    = Global.Connector;
         conn.ExecuteReader(GetQuery("GoodsReceiptVSExit"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
             int objectType = (int)dr["ObjType"];
             int docNum     = (int)dr["DocNum"];
