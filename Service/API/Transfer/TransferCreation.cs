@@ -22,25 +22,28 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
     public int Number { get; private set; }
 
     public void Execute() {
-        bool releaseMutex = false;
         try {
-            LoadData();
-            int transferSeries = GeneralData.GetSeries("67");
-            Global.TransactionMutex.WaitOne();
-            releaseMutex = true;
-            ConnectionController.BeginTransaction();
-            Global.ConnectCompany();
-            CreateTransfer(transferSeries);
+            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) 
+                return;
+            try {
+                LoadData();
+                int transferSeries = GeneralData.GetSeries("67");
+                Global.ConnectCompany();
+                ConnectionController.BeginTransaction();
+                CreateTransfer(transferSeries);
 
-            ConnectionController.Commit();
+                ConnectionController.Commit();
+            }
+            finally {
+                Global.TransactionMutex.ReleaseMutex();
+            }
         }
         catch (Exception e) {
             ConnectionController.TryRollback();
             throw new Exception("Error generating GRPO: " + e.Message);
         }
         finally {
-            if (releaseMutex)
-                Global.TransactionMutex.ReleaseMutex();
+            Global.TransactionMutex.ReleaseMutex();
         }
     }
 

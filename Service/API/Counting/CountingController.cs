@@ -114,4 +114,12 @@ public class CountingController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get counting content");
         return Data.Counting.GetCountingContent(parameters.ID, parameters.BinEntry);
     }
+    
+    [HttpGet]
+    [Route("CountingSummaryReport/{id:int}")]
+    public CountingSummary GetCountingSummaryReport(int id) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
+            throw new UnauthorizedAccessException("You don't have access to get counting summary report");
+        return Data.Counting.GetCountingSummaryReport(id);
+    }
 }

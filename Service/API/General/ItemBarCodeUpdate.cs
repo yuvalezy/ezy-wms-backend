@@ -27,29 +27,35 @@ public class ItemBarCodeUpdate : IDisposable {
         var     response = new UpdateItemBarCodeResponse();
         Company company  = null;
         try {
-            Global.TransactionMutex.WaitOne();
-            Global.ConnectCompany();
-            company = ConnectionController.Company;
-            company.StartTransaction();
-            item = (Items)company.GetBusinessObject(BoObjectTypes.oItems);
-            if (!item.GetByKey(itemCode))
-                throw new ArgumentException($"Item Code {itemCode} not found!");
+            if (Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) {
+                try {
+                    Global.ConnectCompany();
+                    company = ConnectionController.Company;
+                    company.StartTransaction();
+                    item = (Items)company.GetBusinessObject(BoObjectTypes.oItems);
+                    if (!item.GetByKey(itemCode))
+                        throw new ArgumentException($"Item Code {itemCode} not found!");
 
-            RemoveBarcodes();
-            AddNewBarcodes();
-            
-            item.UserFields.Fields.Item("U_LW_UPDATE_USER").Value      = employeeID;
-            item.UserFields.Fields.Item("U_LW_UPDATE_TIMESTAMP").Value = DateTime.Now;
+                    RemoveBarcodes();
+                    AddNewBarcodes();
 
-            if (item.Update() == 0) {
-                response.Status = ResponseStatus.Ok;
+                    item.UserFields.Fields.Item("U_LW_UPDATE_USER").Value      = employeeID;
+                    item.UserFields.Fields.Item("U_LW_UPDATE_TIMESTAMP").Value = DateTime.Now;
+
+                    if (item.Update() == 0) {
+                        response.Status = ResponseStatus.Ok;
+                    }
+                    else {
+                        response.ErrorMessage = company.GetLastErrorDescription();
+                        response.Status       = ResponseStatus.Error;
+                    }
+
+                    company.EndTransaction(BoWfTransOpt.wf_Commit);
+                }
+                finally {
+                    Global.TransactionMutex.ReleaseMutex();
+                }
             }
-            else {
-                response.ErrorMessage = company.GetLastErrorDescription();
-                response.Status       = ResponseStatus.Error;
-            }
-
-            company.EndTransaction(BoWfTransOpt.wf_Commit);
         }
         catch {
             company?.EndTransaction(BoWfTransOpt.wf_RollBack);
@@ -73,6 +79,7 @@ public class ItemBarCodeUpdate : IDisposable {
             item.BarCodes.UoMEntry = -1;
         }
     }
+
     private void RemoveBarcodes() {
         if (removeBarcodes == null)
             return;

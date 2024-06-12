@@ -46,6 +46,7 @@ public class Tracer {
         Trace.Listeners.Add(listener);
         Trace.AutoFlush = true;
         Trace.WriteLine("Trace Initialized...");
+        Console.WriteLine($"Trace File Name: {FileName}");
     }
 
     /// <summary>

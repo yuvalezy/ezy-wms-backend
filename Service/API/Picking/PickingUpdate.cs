@@ -18,14 +18,21 @@ public class PickingUpdate(int id) : IDisposable {
     private bool      ready;
 
     public void Execute() {
-        Global.TransactionMutex.WaitOne();
-        ConnectionController.BeginTransaction();
         try {
-            LoadPickList();
-            UpdatePickingStatus(PickingStatus.Processing);
-            UpdatePickList();
-            UpdatePickingStatus(PickingStatus.Finished);
-            ConnectionController.Commit();
+            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30)))
+                return;
+            try {
+                Global.ConnectCompany();
+                ConnectionController.BeginTransaction();
+                LoadPickList();
+                UpdatePickingStatus(PickingStatus.Processing);
+                UpdatePickList();
+                UpdatePickingStatus(PickingStatus.Finished);
+                ConnectionController.Commit();
+            }
+            finally {
+                Global.TransactionMutex.ReleaseMutex();
+            }
         }
         catch (Exception e) {
             UpdatePickingStatus(PickingStatus.Open, e.Message);
@@ -56,7 +63,6 @@ public class PickingUpdate(int id) : IDisposable {
         }
 
         ready = pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value.ToString() == "Y";
-
     }
 
     private void UpdatePickList() {
@@ -79,7 +85,7 @@ public class PickingUpdate(int id) : IDisposable {
     }
 
     private void UpdatePickListBinLocations(PickingValue value) {
-        var bins    = pl.Lines.BinAllocations;
+        var bins = pl.Lines.BinAllocations;
 
         if (!ready) {
             for (int i = 0; i < bins.Count; i++) {
@@ -87,7 +93,7 @@ public class PickingUpdate(int id) : IDisposable {
                 bins.Quantity = 0;
             }
         }
-        
+
         var control = new Dictionary<int, int>();
         for (int i = 0; i < bins.Count; i++) {
             if (bins.BinAbsEntry == 0)

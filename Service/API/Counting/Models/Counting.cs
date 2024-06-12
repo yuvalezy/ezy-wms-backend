@@ -16,3 +16,4 @@ public class Counting {
     public int            ErrorCode       { get; set; }
     public object[]       ErrorParameters { get; set; }
 }
+

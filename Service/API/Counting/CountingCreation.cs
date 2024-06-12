@@ -12,7 +12,7 @@ using GeneralData = Service.API.General.GeneralData;
 
 namespace Service.API.Counting;
 
-internal class CountingCreation(int id, int employeeID) : IDisposable {
+internal class CountingCreation(int id, int employeeID, ServiceTracer tracer) : IDisposable {
     private string                       whsCode;
     private CompanyService               companyService;
     private InventoryCountingsService    service;
@@ -23,35 +23,51 @@ internal class CountingCreation(int id, int employeeID) : IDisposable {
     public (int Entry, int Number) NewEntry { get; private set; }
 
     public void Execute() {
-        bool releaseMutex = false;
         try {
-            LoadData();
-            int docSeries = GeneralData.GetSeries(ObjectTypes.oInventoryCounting);
-            Global.TransactionMutex.WaitOne();
-            releaseMutex = true;
-            ConnectionController.BeginTransaction();
-            Global.ConnectCompany();
-            CreateCounting(docSeries);
-            ConnectionController.Commit();
+            tracer?.Write("Wait Mutex");
+            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) 
+                return;
+            try {
+                tracer?.Write("Loading Data");
+                LoadData();
+                tracer?.Write("Getting Document Series");
+                int docSeries = GeneralData.GetSeries(ObjectTypes.oInventoryCounting);
+                tracer?.Write("Checking Company Connection");
+                Global.ConnectCompany();
+                tracer?.Write("Begin Transaction");
+                ConnectionController.BeginTransaction();
+                tracer?.Write("Creating Counting Object");
+                CreateCounting(docSeries);
+                tracer?.Write("Commiting");
+                ConnectionController.Commit();
+            }
+            finally {
+                tracer?.Write("Release Mutex");
+                Global.TransactionMutex.ReleaseMutex();
+            }
         }
         catch (Exception e) {
             ConnectionController.TryRollback();
-            throw new Exception("Error generating Counting: " + e.Message);
-        }
-        finally {
-            if (releaseMutex)
-                Global.TransactionMutex.ReleaseMutex();
+            string errorMessage = "Error generating Counting: " + e.Message;
+            tracer?.Write(errorMessage);
+            throw new Exception(errorMessage);
         }
     }
 
     private void CreateCounting(int series) {
         //todo lower default bin location quantity
+        tracer?.Write("Get Company Service");
         companyService  = ConnectionController.Company.GetCompanyService();
+        tracer?.Write("Get Service");
         service         = (InventoryCountingsService)companyService.GetBusinessService(ServiceTypes.InventoryCountingsService);
+        tracer?.Write("Get Counting Service");
         counting        = (InventoryCounting)service.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting);
+        tracer?.Write("Assigning Counting Series");
         counting.Series = series;
+        tracer?.Write($"Counted Data: {data.Count()}");
         foreach (var value in data) {
             var line = counting.InventoryCountingLines.Add();
+            tracer?.Write($"Processing Line {line.LineNumber}, Code: {value.Code}, Whs: {whsCode}, bin: {value.BinEntry}");
             line.ItemCode      = value.Code;
             line.WarehouseCode = whsCode;
             if (value.BinEntry > 0) {
@@ -61,7 +77,7 @@ internal class CountingCreation(int id, int employeeID) : IDisposable {
             line.Counted         = BoYesNoEnum.tYES;
             line.CountedQuantity = value.Quantity;
         }
-
+        tracer?.Write("Adding Counting through service");
         var @params = service.Add(counting);
         NewEntry = (@params.DocumentEntry, @params.DocumentNumber);
     }

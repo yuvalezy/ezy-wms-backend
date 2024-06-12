@@ -22,19 +22,33 @@ public class CountingData {
     }
 
     public bool ProcessCounting(int id, int employeeID, List<string> sendTo) {
+        var tracer = Global.Debug ? new ServiceTracer(MethodType.Post, "ProcessCounting") : null;
+        tracer?.Write($"Get Counting {id}");
         var doc = GetCounting(id);
-        if (doc.Status != DocumentStatus.InProgress)
-            throw new Exception("Cannot process counting if the Status is not In Progress");
+        if (doc.Status != DocumentStatus.InProgress) {
+            const string errorMessage = "Cannot process counting if the Status is not In Progress";
+            tracer?.Write($"Error: {errorMessage}");
+            throw new Exception(errorMessage);
+        }
+
+        tracer?.Write("Update Counting Status Processing");
         UpdateCountingStatus(id, employeeID, DocumentStatus.Processing);
         try {
-            using var creation = new CountingCreation(id, employeeID);
+            tracer?.Write("Create Inventory Counting");
+            using var creation = new CountingCreation(id, employeeID, tracer);
+            tracer?.Write("Executing Inventory Counting");
             creation.Execute();
+            tracer?.Write("Update Counting Status Finished");
             UpdateCountingStatus(id, employeeID, DocumentStatus.Finished);
+            tracer?.Write("Set Closed Lines");
             creation.SetClosedLines();
+            tracer?.Write("Process Counting Send Alert");
             ProcessCountingSendAlert(id, sendTo, creation);
             return true;
         }
         catch (Exception e) {
+            tracer?.Write("Error occured: " + e.Message);
+            tracer?.Write("Restoring In Progress Status");
             UpdateCountingStatus(id, employeeID, DocumentStatus.InProgress);
             throw;
         }
@@ -194,7 +208,7 @@ public class CountingData {
     }
 
     public IEnumerable<CountingContent> GetCountingContent(int id, int binEntry) {
-        var list          = new List<CountingContent>();
+        var       list = new List<CountingContent>();
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery("CountingContent"), [
             new Parameter("@ID", SqlDbType.Int, id),
@@ -248,5 +262,27 @@ public class CountingData {
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
         conn.Execute(sb.ToString(), parameters);
+    }
+
+    public CountingSummary GetCountingSummaryReport(int id) {
+        var          value     = new CountingSummary();
+        using var    conn      = Global.Connector;
+        const string headerStr = "select \"Name\" from \"@LW_YUVAL08_OINC\" where \"Code\" = @ID";
+        var          idParam   = new Parameter("@ID", SqlDbType.Int) { Value = id };
+        value.Name = conn.GetValue<string>(headerStr, idParam);
+
+        const string sqlStr = """
+                                SELECT c."BinCode", a."U_ItemCode" "ItemCode", b."ItemName", SUM(a."U_Quantity") "Quantity"
+                                FROM "@LW_YUVAL08_OINC1" a
+                                         inner join OITM b on b."ItemCode" = a."U_ItemCode"
+                                       inner join OBIN c on c."AbsEntry" = a."U_BinEntry"
+                                WHERE a.U_ID = @ID AND a."U_LineStatus" <> 'C'
+                                GROUP BY c."BinCode", a."U_ItemCode", b."ItemName"
+                                order by 1
+                              """;
+        conn.ExecuteReader(sqlStr, idParam, dr => {
+            value.Lines.Add(new CountingSummaryLine((string)dr["BinCode"], (string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToDouble(dr["Quantity"])));
+        });
+        return value;
     }
 }

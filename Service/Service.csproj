@@ -107,6 +107,7 @@
     <Compile Include="API\Counting\Models\Counting.cs" />
     <Compile Include="API\Counting\Models\CountingContent.cs" />
     <Compile Include="API\Counting\Models\CountingContentParameters.cs" />
+    <Compile Include="API\Counting\Models\CountingSummary.cs" />
     <Compile Include="API\Counting\Models\CreateParameters.cs" />
     <Compile Include="API\Counting\Models\Enumerations.cs" />
     <Compile Include="API\Counting\Models\FilterParameters.cs" />

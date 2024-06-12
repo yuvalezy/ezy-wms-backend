@@ -23,30 +23,33 @@ public class GoodsReceiptCreation(int id, int employeeID, bool enableBin) : IDis
     public List<(int Entry, int Number)> NewEntries { get; } = [];
 
     public void Execute() {
-        bool releaseMutex = false;
         try {
-            LoadData();
-            int docSeries = GeneralData.GetSeries("20");
-            Global.TransactionMutex.WaitOne();
-            releaseMutex = true;
-            ConnectionController.BeginTransaction();
-            Global.ConnectCompany();
-            foreach (var pair in data) {
-                var openValues = pair.Value.Where(v => v.LineStatus == "O").ToList();
-                if (openValues.Count > 0) {
-                    CreateDocument(pair.Key.CardCode, pair.Key.Type, pair.Key.Entry, docSeries, openValues);
+            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) 
+                return;
+            try {
+                LoadData();
+                int docSeries = GeneralData.GetSeries("20");
+                Global.ConnectCompany();
+                ConnectionController.BeginTransaction();
+                foreach (var pair in data) {
+                    var openValues = pair.Value.Where(v => v.LineStatus == "O").ToList();
+                    if (openValues.Count > 0) {
+                        CreateDocument(pair.Key.CardCode, pair.Key.Type, pair.Key.Entry, docSeries, openValues);
+                    }
                 }
-            }
 
-            ConnectionController.Commit();
+                ConnectionController.Commit();
+            }
+            finally {
+                Global.TransactionMutex.ReleaseMutex();
+            }
         }
         catch (Exception e) {
             ConnectionController.TryRollback();
             throw new Exception("Error generating GRPO: " + e.Message);
         }
         finally {
-            if (releaseMutex)
-                Global.TransactionMutex.ReleaseMutex();
+            Global.TransactionMutex.ReleaseMutex();
         }
     }
 
