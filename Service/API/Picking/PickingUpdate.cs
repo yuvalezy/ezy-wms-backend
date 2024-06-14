@@ -19,7 +19,7 @@ public class PickingUpdate(int id) : IDisposable {
 
     public void Execute() {
         try {
-            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30)))
+            if (!Global.TransactionMutex.WaitOne())
                 return;
             try {
                 Global.ConnectCompany();
@@ -38,9 +38,6 @@ public class PickingUpdate(int id) : IDisposable {
             UpdatePickingStatus(PickingStatus.Open, e.Message);
             ConnectionController.Rollback();
             throw;
-        }
-        finally {
-            Global.TransactionMutex.ReleaseMutex();
         }
     }
 

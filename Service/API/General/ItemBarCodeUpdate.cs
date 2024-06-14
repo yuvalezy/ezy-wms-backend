@@ -27,7 +27,7 @@ public class ItemBarCodeUpdate : IDisposable {
         var     response = new UpdateItemBarCodeResponse();
         Company company  = null;
         try {
-            if (Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) {
+            if (Global.TransactionMutex.WaitOne()) {
                 try {
                     Global.ConnectCompany();
                     company = ConnectionController.Company;
@@ -60,9 +60,6 @@ public class ItemBarCodeUpdate : IDisposable {
         catch {
             company?.EndTransaction(BoWfTransOpt.wf_RollBack);
             throw;
-        }
-        finally {
-            Global.TransactionMutex.ReleaseMutex();
         }
 
         return response;

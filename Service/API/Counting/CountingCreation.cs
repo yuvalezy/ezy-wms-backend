@@ -25,7 +25,7 @@ internal class CountingCreation(int id, int employeeID, ServiceTracer tracer) : 
     public void Execute() {
         try {
             tracer?.Write("Wait Mutex");
-            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) 
+            if (!Global.TransactionMutex.WaitOne()) 
                 return;
             try {
                 tracer?.Write("Loading Data");

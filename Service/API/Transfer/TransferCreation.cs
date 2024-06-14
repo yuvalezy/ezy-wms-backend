@@ -23,7 +23,7 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
 
     public void Execute() {
         try {
-            if (!Global.TransactionMutex.WaitOne(TimeSpan.FromSeconds(30))) 
+            if (!Global.TransactionMutex.WaitOne()) 
                 return;
             try {
                 LoadData();
@@ -41,9 +41,6 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
         catch (Exception e) {
             ConnectionController.TryRollback();
             throw new Exception("Error generating GRPO: " + e.Message);
-        }
-        finally {
-            Global.TransactionMutex.ReleaseMutex();
         }
     }
 
