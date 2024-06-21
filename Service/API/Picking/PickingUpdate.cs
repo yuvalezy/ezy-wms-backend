@@ -13,9 +13,7 @@ namespace Service.API.Picking;
 public class PickingUpdate(int id) : IDisposable {
     private List<PickingValue> data;
 
-    private Recordset rs = Shared.Utils.Shared.GetRecordset();
-    private PickLists pl = (PickLists)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPickLists);
-    private bool      ready;
+    private readonly Recordset rs = Shared.Utils.Shared.GetRecordset();
 
     public void Execute() {
         try {
@@ -23,12 +21,8 @@ public class PickingUpdate(int id) : IDisposable {
                 return;
             try {
                 Global.ConnectCompany();
-                ConnectionController.BeginTransaction();
-                LoadPickList();
-                UpdatePickingStatus(PickingStatus.Processing);
-                UpdatePickList();
-                UpdatePickingStatus(PickingStatus.Finished);
-                ConnectionController.Commit();
+                PreparePickList();
+                Process();
             }
             finally {
                 Global.TransactionMutex.ReleaseMutex();
@@ -36,13 +30,62 @@ public class PickingUpdate(int id) : IDisposable {
         }
         catch (Exception e) {
             UpdatePickingStatus(PickingStatus.Open, e.Message);
-            ConnectionController.Rollback();
+            if (ConnectionController.InTransaction)
+                ConnectionController.Rollback();
             throw;
         }
     }
 
+    private void Process() {
+        var pl = (PickLists)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPickLists);
+        try {
+            ConnectionController.BeginTransaction();
+            UpdatePickingStatus(PickingStatus.Processing);
+            LoadPickList(pl);
+            UpdatePickList(pl);
+            UpdatePickingStatus(PickingStatus.Finished);
+            ConnectionController.Commit();
+        }
+        finally {
+            Shared.Utils.Shared.ReleaseComObject(pl);
+            GC.Collect();
+        }
+    }
 
-    private void LoadPickList() {
+    private void PreparePickList() {
+        var pl = (PickLists)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oPickLists);
+        try {
+            if (!pl.GetByKey(id)) {
+                throw new Exception($"Could not find Pick List ${id}");
+            }
+
+            if (pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value.ToString() == "Y")
+                return;
+
+            if (pl.Status == BoPickStatus.ps_Closed) {
+                throw new Exception("Cannot process document if the Status is closed");
+            }
+
+            for (int i = 0; i < pl.Lines.Count; i++) {
+                pl.Lines.SetCurrentLine(i);
+                for (int j = 0; i < pl.Lines.BinAllocations.Count; i++) {
+                    pl.Lines.BinAllocations.SetCurrentLine(j);
+                    pl.Lines.BinAllocations.Quantity = 0;
+                }
+            }
+
+            pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value = "Y";
+            if (pl.UpdateReleasedAllocation() != 0) {
+                throw new Exception(ConnectionController.Company.GetLastErrorDescription());
+            }
+        }
+        finally {
+            Shared.Utils.Shared.ReleaseComObject(pl);
+        }
+    }
+
+
+    private void LoadPickList(PickLists pl) {
         string query = string.Format(PickingData.GetQuery("LoadPickValues"), id);
         data = query.ExecuteQueryReader<PickingValue>();
         var control = data.ToDictionary(v => v.PickEntry, v => v);
@@ -58,11 +101,9 @@ public class PickingUpdate(int id) : IDisposable {
         if (pl.Status == BoPickStatus.ps_Closed) {
             throw new Exception("Cannot process document if the Status is closed");
         }
-
-        ready = pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value.ToString() == "Y";
     }
 
-    private void UpdatePickList() {
+    private void UpdatePickList(PickLists pl) {
         for (int i = 0; i < pl.Lines.Count; i++) {
             pl.Lines.SetCurrentLine(i);
             var value = data.FirstOrDefault(v => v.PickEntry == pl.Lines.LineNumber);
@@ -70,27 +111,17 @@ public class PickingUpdate(int id) : IDisposable {
                 continue;
             }
 
-            pl.Lines.PickedQuantity += value.Quantity;
+            pl.Lines.PickedQuantity = value.Quantity;
 
-            UpdatePickListBinLocations(value);
+            UpdatePickListBinLocations(pl.Lines.BinAllocations, value);
         }
 
-        pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value = "Y";
         if (pl.Update() != 0) {
             throw new Exception($"Could not update Pick List: {ConnectionController.Company.GetLastErrorDescription()}");
         }
     }
 
-    private void UpdatePickListBinLocations(PickingValue value) {
-        var bins = pl.Lines.BinAllocations;
-
-        if (!ready) {
-            for (int i = 0; i < bins.Count; i++) {
-                bins.SetCurrentLine(i);
-                bins.Quantity = 0;
-            }
-        }
-
+    private void UpdatePickListBinLocations(DocumentLinesBinAllocations bins, PickingValue value) {
         var control = new Dictionary<int, int>();
         for (int i = 0; i < bins.Count; i++) {
             if (bins.BinAbsEntry == 0)
@@ -110,7 +141,7 @@ public class PickingUpdate(int id) : IDisposable {
                 control.Add(binValue.BinEntry, bins.Count - 1);
             }
 
-            bins.Quantity += binValue.Quantity;
+            bins.Quantity = binValue.Quantity;
         });
     }
 
@@ -121,13 +152,5 @@ public class PickingUpdate(int id) : IDisposable {
         rs.DoQuery(sb.ToString());
     }
 
-    public void Dispose() {
-        Marshal.ReleaseComObject(rs);
-        rs = null;
-
-        Marshal.ReleaseComObject(pl);
-        pl = null;
-
-        GC.Collect();
-    }
+    public void Dispose() => Shared.Utils.Shared.ReleaseComObject(rs);
 }
