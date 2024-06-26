@@ -66,10 +66,19 @@ public class GeneralController : LWApiController {
     [HttpPost]
     [ActionName("ItemCheck")]
     public IEnumerable<ItemCheckResponse> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor, Authorization.PickingSupervisor))
             throw new UnauthorizedAccessException("You don't have access for Item Check");
         return data.General.ItemCheck(parameters.ItemCode, parameters.Barcode);
     }
+    
+    [HttpGet]
+    [ActionName("BinCheck")]
+    public IEnumerable<BinContent> BinCheck([FromUri] int binEntry) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor, Authorization.PickingSupervisor))
+            throw new UnauthorizedAccessException("You don't have access for Bin Check");
+        return data.General.BinCheck(binEntry);
+    }
+    
     [HttpPost]
     [ActionName("ItemStock")]
     public IEnumerable<ItemStockResponse> ItemStock([FromBody] ItemBarCodeParameters parameters) {

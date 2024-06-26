@@ -149,6 +149,7 @@
     <Compile Include="API\Logging.cs" />
     <Compile Include="API\LWApiController.cs" />
     <Compile Include="API\Models\AlertColumn.cs" />
+    <Compile Include="API\Models\BinContent.cs" />
     <Compile Include="API\Models\BusinessPartner.cs" />
     <Compile Include="API\Models\DocumentStatus.cs" />
     <Compile Include="API\Models\Parameters.cs" />

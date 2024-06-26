@@ -119,7 +119,7 @@ public class GeneralData {
                 data.Add(value);
             });
         }
-        
+
         const string barcodeQuery = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
         data.ForEach(value => {
             conn.ExecuteReader(barcodeQuery, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, value.ItemCode),
@@ -173,6 +173,21 @@ public class GeneralData {
         using var conn   = Global.Connector;
         conn.ExecuteReader(query, [new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode), new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode)],
             dr => { values.Add(new ItemStockResponse { BinCode = (string)dr["BinCode"], Quantity = Convert.ToInt32(dr["OnHandQty"]) }); });
+        return values;
+    }
+
+    public IEnumerable<BinContent> BinCheck(int binEntry) {
+        string query = """
+                       select T1."ItemCode", T2."ItemName", T1."OnHandQty"
+                       from OIBQ T1 
+                       inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
+                       where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
+                       order by 1
+                       """;
+        var       values = new List<BinContent>();
+        using var conn   = Global.Connector;
+        conn.ExecuteReader(query, [new Parameter("@AbsEntry", SqlDbType.Int, binEntry)],
+            dr => { values.Add(new BinContent { ItemCode = (string)dr["ItemCode"], ItemName = dr["ItemName"].ToString(), OnHand = Convert.ToInt32(dr["OnHandQty"]) }); });
         return values;
     }
 }
