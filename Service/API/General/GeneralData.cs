@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using Service.API.General.Models;
 using Service.API.Models;
 using Service.Shared;
@@ -98,6 +99,7 @@ public class GeneralData {
             return response;
 
         using var conn = Global.Connector;
+        var       data = new List<ItemCheckResponse>();
         if (!string.IsNullOrWhiteSpace(scanBarCode)) {
             const string query = """
                                  select T0."ItemCode", T1."ItemName", COALESCE(T1."PurPackUn", 1) "PurPackUn"
@@ -105,29 +107,25 @@ public class GeneralData {
                                  inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
                                  where T0."BcdCode" = @ScanCode
                                  """;
-            var parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
-            var items     = conn.GetDataTable(query, parameter);
-            foreach (DataRow row in items.Rows)
-                AddItem((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["PurPackUn"]));
+            var       parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
+            using var rows      = conn.GetDataTable(query, parameter);
+            data.AddRange(rows.AsEnumerable().Select(row => new ItemCheckResponse((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["PurPackUn"]))));
         }
         else {
             const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"PurPackUn\", 1) \"PurPackUn\" from OITM where \"ItemCode\" = @ItemCode";
             var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
-            conn.ExecuteReader(query, parameter, dr =>
-                AddItem((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"])));
+            conn.ExecuteReader(query, parameter, dr => {
+                var value = new ItemCheckResponse((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"]));
+                data.Add(value);
+            });
         }
-
-        void AddItem(string itemCode, string itemName, int purPackUn) {
-            var responseValue = new ItemCheckResponse {
-                ItemCode  = itemCode,
-                ItemName  = itemName,
-                PurPackUn = purPackUn
-            };
-            const string query = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
-            conn.ExecuteReader(query, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
-                dr => responseValue.Barcodes.Add((string)dr[0]));
-            response.Add(responseValue);
-        }
+        
+        const string barcodeQuery = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
+        data.ForEach(value => {
+            conn.ExecuteReader(barcodeQuery, new Parameter("@ItemCode", SqlDbType.NVarChar, 50, value.ItemCode),
+                dr => value.Barcodes.Add((string)dr[0]));
+            response.Add(value);
+        });
 
         return response;
     }
