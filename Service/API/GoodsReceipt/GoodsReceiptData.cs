@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web.Management;
+using CrystalDecisions.ReportAppServer.DataDefModel;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
@@ -178,6 +179,7 @@ public class GoodsReceiptData {
 
         return returnValue;
     }
+
     public int ValidateAddItem(DataConnector conn, int id, string itemCode, string barCode, int empID) =>
         conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
             new Parameter("@ID", SqlDbType.Int, id),
@@ -474,6 +476,45 @@ public class GoodsReceiptData {
             }
 
             value.Lines.Add(new GoodsReceiptVSExitReportLine((string)dr["ItemCode"], dr["ItemName"].ToString(), (int)dr["OpenInvQty"], (int)dr["Quantity"]));
+        });
+        return data;
+    }
+
+    public List<GoodsReceiptValidateProcess> GetGoodsReceiptValidateProcess(int id) {
+        var       data    = new List<GoodsReceiptValidateProcess>();
+        var       control = new Dictionary<(int, int), GoodsReceiptValidateProcess>();
+        using var conn    = Global.Connector;
+        conn.ExecuteReader(GetQuery("ValidateProcessGoodsReceiptLines"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
+            int baseType  = (int)dr["BaseType"];
+            int baseEntry = (int)dr["BaseEntry"];
+            var tuple     = (baseType, baseEntry);
+            
+            GoodsReceiptValidateProcess value;
+            if (control.ContainsKey(tuple)) {
+                value = control[tuple];
+            }
+            else {
+                value = new GoodsReceiptValidateProcess {
+                    DocumentNumber = (int)dr["DocNum"],
+                    CardCode       = (string)dr["CardCode"],
+                    CardName       = dr["CardName"].ToString(),
+                    BaseType       = baseType,
+                    BaseEntry      = baseEntry,
+                };
+                data.Add(value);
+                control.Add(tuple, value);
+            }
+
+            var line = new GoodsReceiptValidateProcessLine {
+                LineNumber = (int)dr["Visorder"] + 1,
+                ItemCode   = (string)dr["ItemCode"],
+                ItemName   = dr["ItemName"].ToString(),
+                Quantity   = Convert.ToDecimal(dr["Quantity"]),
+                BaseLine   = (int)dr["BaseLine"],
+                OpenInvQty = Convert.ToDecimal(dr["OpenInvQty"]),
+                LineStatus = (GoodsReceiptValidateProcessLineStatus)dr["LineStatus"]
+            };
+            value.Lines.Add(line);
         });
         return data;
     }

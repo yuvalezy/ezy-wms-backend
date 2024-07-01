@@ -2,31 +2,17 @@
 
 namespace Service.API.GoodsReceipt.Models;
 
-public class GoodsReceiptVSExitReport {
-    public int                                ObjectType { get; }
-    public int                                Number     { get; }
-    public string                             CardName   { get; }
-    public string                             Address    { get; }
+public class GoodsReceiptVSExitReport(int objectType, int number, string cardName, string address) {
+    public int                                ObjectType { get; } = objectType;
+    public int                                Number     { get; } = number;
+    public string                             CardName   { get; } = cardName;
+    public string                             Address    { get; } = address;
     public List<GoodsReceiptVSExitReportLine> Lines      { get; } = new();
-
-    public GoodsReceiptVSExitReport(int objectType, int number, string cardName, string address) {
-        ObjectType = objectType;
-        Number     = number;
-        CardName   = cardName;
-        Address    = address;
-    }
 }
 
-public class GoodsReceiptVSExitReportLine {
-    public string ItemCode     { get; }
-    public string ItemName     { get; }
-    public double OpenQuantity { get; }
-    public double Quantity     { get; }
-
-    public GoodsReceiptVSExitReportLine(string itemCode, string itemName, double openQuantity, double quantity) {
-        ItemCode     = itemCode;
-        ItemName     = itemName;
-        OpenQuantity = openQuantity;
-        Quantity     = quantity;
-    }
+public class GoodsReceiptVSExitReportLine(string itemCode, string itemName, double openQuantity, double quantity) {
+    public string ItemCode     { get; } = itemCode;
+    public string ItemName     { get; } = itemName;
+    public double OpenQuantity { get; } = openQuantity;
+    public double Quantity     { get; } = quantity;
 }

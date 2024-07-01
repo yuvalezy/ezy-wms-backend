@@ -140,6 +140,7 @@
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptCreationValue.cs" />
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptReportAll.cs" />
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptReportAllDetails.cs" />
+    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptValidateProcess.cs" />
     <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
     <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />
     <Compile Include="API\GoodsReceipt\Models\Document.cs" />
@@ -258,6 +259,7 @@
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateSourceLineQuantity.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateProcessGoodsReceiptLines.sql" />
     <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateUpdateLineParameters.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItems.sql" />
