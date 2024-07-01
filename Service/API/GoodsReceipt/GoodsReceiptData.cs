@@ -488,7 +488,7 @@ public class GoodsReceiptData {
             int baseType  = (int)dr["BaseType"];
             int baseEntry = (int)dr["BaseEntry"];
             var tuple     = (baseType, baseEntry);
-            
+
             GoodsReceiptValidateProcess value;
             if (control.ContainsKey(tuple)) {
                 value = control[tuple];
@@ -515,6 +515,26 @@ public class GoodsReceiptData {
                 LineStatus = (GoodsReceiptValidateProcessLineStatus)dr["LineStatus"]
             };
             value.Lines.Add(line);
+        });
+        return data;
+    }
+
+    public List<GoodsReceiptValidateProcessLineDetails> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsParameters detailsParameters) {
+        var data = new List<GoodsReceiptValidateProcessLineDetails>();
+        using var conn = Global.Connector;
+        Parameters parameters = [
+            new Parameter("@ID", SqlDbType.Int, detailsParameters.ID),
+            new Parameter("@BaseType", SqlDbType.Int, detailsParameters.BaseType),
+            new Parameter("@BaseEntry", SqlDbType.Int, detailsParameters.BaseEntry),
+            new Parameter("@BaseLine", SqlDbType.Int, detailsParameters.BaseLine),
+        ];
+        conn.ExecuteReader(GetQuery("ValidateProcessGoodsReceiptLineDetails"), parameters, dr => {
+            var value = new GoodsReceiptValidateProcessLineDetails();
+            value.TimeStamp       = (DateTime)dr["TimeStamp"];
+            value.Employee        = dr["EmployeeName"].ToString();
+            value.Quantity        = Convert.ToDecimal(dr["Quantity"]);
+            value.ScannedQuantity = Convert.ToDecimal(dr["ScannedQuantity"]);
+            data.Add(value);
         });
         return data;
     }

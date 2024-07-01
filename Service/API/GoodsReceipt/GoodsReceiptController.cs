@@ -186,4 +186,11 @@ public class GoodsReceiptController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptValidateProcess(id);
     }
+    [HttpPost]
+    [Route("GoodsReceiptValidateProcessLineDetails")]
+    public List<GoodsReceiptValidateProcessLineDetails> GetGoodsReceiptValidateProcessDetails([FromBody] GoodsReceiptValidateProcessLineDetailsParameters parameters) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+            throw new UnauthorizedAccessException("You don't have access to get document report");
+        return Data.GoodsReceipt.GetGoodsReceiptValidateProcessLineDetails(parameters);
+    }
 }

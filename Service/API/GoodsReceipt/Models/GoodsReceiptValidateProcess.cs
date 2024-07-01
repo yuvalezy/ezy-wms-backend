@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Service.API.GoodsReceipt.Models;
 
@@ -21,6 +22,20 @@ public class GoodsReceiptValidateProcessLine {
     public decimal OpenInvQty { get; set; }
 
     public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
+}
+
+public class GoodsReceiptValidateProcessLineDetails {
+    public DateTime TimeStamp       { get; set; }
+    public string   Employee        { get; set; }
+    public decimal  Quantity        { get; set; }
+    public decimal  ScannedQuantity { get; set; }
+}
+
+public class GoodsReceiptValidateProcessLineDetailsParameters {
+    public int ID        { get; set; }
+    public int BaseType  { get; set; }
+    public int BaseEntry { get; set; }
+    public int BaseLine  { get; set; }
 }
 
 public enum GoodsReceiptValidateProcessLineStatus {
