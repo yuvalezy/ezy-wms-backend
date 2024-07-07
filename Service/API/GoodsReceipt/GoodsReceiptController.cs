@@ -130,9 +130,9 @@ public class GoodsReceiptController : LWApiController {
         return Data.General.GetCancelReasons(ReasonType.GoodsReceipt);
     }
 
-    [HttpGet]
+    [HttpPost]
     [ActionName("Documents")]
-    public IEnumerable<Document> GetDocuments([FromUri] FilterParameters parameters) {
+    public IEnumerable<Document> GetDocuments([FromBody] FilterParameters parameters) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document");
         parameters.WhsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;

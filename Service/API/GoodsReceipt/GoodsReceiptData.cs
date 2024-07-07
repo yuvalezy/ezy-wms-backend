@@ -5,8 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Web.Management;
-using CrystalDecisions.ReportAppServer.DataDefModel;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
@@ -261,31 +259,45 @@ public class GoodsReceiptData {
             queryParams.Add("@Date", SqlDbType.DateTime).Value = parameters.Date;
             sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@Date) = 0 ");
         }
+        if (parameters.DateFrom != null) {
+            queryParams.Add("@DateFrom", SqlDbType.DateTime).Value = parameters.DateFrom;
+            sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@DateFrom) <= 0 ");
+        }
+        if (parameters.DateTo != null) {
+            queryParams.Add("@DateTo", SqlDbType.DateTime).Value = parameters.DateTo;
+            sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@DateTo) >= 0 ");
+        }
 
         if (parameters.GRPO != null) {
             queryParams.Add("@GRPO", SqlDbType.Int).Value = parameters.GRPO;
             sb.Append(" and OPDN.\"DocNum\" = @GRPO ");
         }
-
-        if (parameters.OrderBy != null) {
-            sb.Append(" order by DOCS.");
-            switch (parameters.OrderBy) {
-                case OrderBy.ID:
-                    sb.Append("Code");
-                    break;
-                case OrderBy.Name:
-                    sb.Append("Name");
-                    break;
-                case OrderBy.Date:
-                    sb.Append("U_Date");
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            if (parameters.Desc)
-                sb.Append(" desc");
+        if (parameters.PurchaseOrder != null) {
+            queryParams.Add("@PurchaseOrder", SqlDbType.Int).Value = parameters.PurchaseOrder;
+            sb.Append(" and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPOR T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 22 and T1.\"DocNum\" = @PurchaseOrder) ");
         }
+        if (parameters.ReservedInvoice != null) {
+            queryParams.Add("@ReservedInvoice", SqlDbType.Int).Value = parameters.ReservedInvoice;
+            sb.Append(" and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPCH T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 18 and T1.\"DocNum\" = @ReservedInvoice) ");
+        }
+
+        sb.Append(" order by DOCS.");
+        switch (parameters.OrderBy ?? OrderBy.ID) {
+            case OrderBy.ID:
+                sb.Append("Code");
+                break;
+            case OrderBy.Name:
+                sb.Append("Name");
+                break;
+            case OrderBy.Date:
+                sb.Append("U_Date");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        if (parameters.OrderByDesc ?? true)
+            sb.Append(" desc");
 
         string query = sb.ToString();
 
@@ -520,7 +532,7 @@ public class GoodsReceiptData {
     }
 
     public List<GoodsReceiptValidateProcessLineDetails> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsParameters detailsParameters) {
-        var data = new List<GoodsReceiptValidateProcessLineDetails>();
+        var       data = new List<GoodsReceiptValidateProcessLineDetails>();
         using var conn = Global.Connector;
         Parameters parameters = [
             new Parameter("@ID", SqlDbType.Int, detailsParameters.ID),

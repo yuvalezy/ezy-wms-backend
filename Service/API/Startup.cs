@@ -25,6 +25,10 @@ public class Startup {
         var item          = new StringEnumConverter();
         jsonFormatter.SerializerSettings.Converters.Add(item);
         jsonFormatter.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+        jsonFormatter.SerializerSettings.Converters.Add(new IsoDateTimeConverter
+        {
+            DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fffZ"
+        });
 
         var options = new OAuthAuthorizationServerOptions {
             TokenEndpointPath = new PathString("/token"),

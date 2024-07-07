@@ -6,12 +6,16 @@ namespace Service.API.GoodsReceipt.Models;
 public class FilterParameters {
     internal string WhsCode { get; set; }
 
-    public DateTime?        Date              { get; set; }
-    public string           BusinessPartner   { get; set; }
-    public string           Name              { get; set; }
-    public DocumentStatus[] Status            { get; set; }
-    public OrderBy?         OrderBy           { get; set; }
-    public int?             ID                { get; set; }
-    public int?             GRPO              { get; set; }
-    public bool             Desc              { get; set; }
+    public DateTime?        Date            { get; set; }
+    public DateTime?        DateFrom        { get; set; }
+    public DateTime?        DateTo          { get; set; }
+    public string           BusinessPartner { get; set; }
+    public string           Name            { get; set; }
+    public DocumentStatus[] Status          { get; set; }
+    public OrderBy?         OrderBy         { get; set; }
+    public int?             ID              { get; set; }
+    public int?             GRPO            { get; set; }
+    public int?             PurchaseOrder   { get; set; }
+    public int?             ReservedInvoice { get; set; }
+    public bool?            OrderByDesc     { get; set; }
 }
