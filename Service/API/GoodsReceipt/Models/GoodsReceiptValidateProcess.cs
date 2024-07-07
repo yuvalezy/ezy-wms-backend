@@ -39,8 +39,9 @@ public class GoodsReceiptValidateProcessLineDetailsParameters {
 }
 
 public enum GoodsReceiptValidateProcessLineStatus {
-    OK         = 0,
-    LessScan   = 1,
-    MoreScan   = 2,
-    ClosedLine = 3
+    OK          = 0,
+    LessScan    = 1,
+    MoreScan    = 2,
+    ClosedLine  = 3,
+    NotReceived = 4
 }

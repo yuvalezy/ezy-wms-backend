@@ -16,4 +16,5 @@ where T0.U_ID = @ID
   and T0."U_SourceType" = @BaseType
   and T0."U_SourceEntry" = @BaseEntry
   and T0."U_SourceLine" = @BaseLine
+  and T1."U_LineStatus" <> 'C'
 order by 1

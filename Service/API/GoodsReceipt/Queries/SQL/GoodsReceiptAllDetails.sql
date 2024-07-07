@@ -1,5 +1,5 @@
-﻿-- declare @ID int = 1037;
--- declare @ItemCode nvarchar(50) = 'SCUOM';
+﻿-- declare @ID int = 1045;
+-- declare @ItemCode nvarchar(50) = 'SCS';
 -- 
 select T0."U_LineID"                        "LineID"
      , T2."firstName" + ' ' + T2."lastName" "EmployeeName"
@@ -11,3 +11,4 @@ from "@LW_YUVAL08_GRPO1" T0
          inner join OHEM T2 on T2."empID" = T0."U_empID"
 where T0.U_ID = @ID
   and T0."U_ItemCode" = @ItemCode
+and T0."U_LineStatus" <> 'C'
