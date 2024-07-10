@@ -18,4 +18,7 @@ public class FilterParameters {
     public int?             PurchaseOrder   { get; set; }
     public int?             ReservedInvoice { get; set; }
     public bool?            OrderByDesc     { get; set; }
+    public int?             LastID          { get; set; }
+    public int?             PageSize        { get; set; }
+    public int?             PageNumber      { get; set; }
 }

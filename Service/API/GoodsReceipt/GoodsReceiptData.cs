@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -244,6 +243,11 @@ public class GoodsReceiptData {
             queryParams.Add("@Code", SqlDbType.Int).Value = parameters.ID;
             sb.Append(" and DOCS.\"Code\" = @Code ");
         }
+        
+        if (parameters.LastID.HasValue && parameters.LastID != -1) {
+            queryParams.Add("@LastID", SqlDbType.Int).Value = parameters.LastID.Value;
+            sb.Append(" and DOCS.\"Code\" < @LastID ");
+        }
 
         if (parameters.Name != null) {
             queryParams.Add("@Name", SqlDbType.NVarChar, 50).Value = parameters.Name;
@@ -299,7 +303,23 @@ public class GoodsReceiptData {
         if (parameters.OrderByDesc ?? true)
             sb.Append(" desc");
 
+        if (parameters.PageSize.HasValue) {
+            if (parameters.PageNumber.HasValue) {
+                int pageSize   = parameters.PageSize.Value;
+                int pageNumber = parameters.PageNumber.Value;
+                int rowOffset  = (pageNumber - 1) & pageSize;
+                sb.Append($" OFFSET {rowOffset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
+            }
+        }
+
         string query = sb.ToString();
+        if (!parameters.PageSize.HasValue || !parameters.LastID.HasValue) {
+            query = query.Replace("{top}", "");
+        }
+
+        if (parameters.LastID.HasValue) {
+            query = query.Replace("{top}", $" top {parameters.PageSize} ");
+        }
 
         using var conn = Global.Connector;
         conn.ExecuteReader(query, queryParams, dr => docs.Add(ReadDocument(dr)));
