@@ -130,8 +130,18 @@ public class TransferController : LWApiController {
     [HttpPost]
     [ActionName("UpdateContentTargetDetail")]
     public void UpdateContentTargetDetail([FromBody] UpdateDetailParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         Data.Transfer.UpdateContentTargetDetail(parameters);
+    }
+
+    [HttpPost]
+    [ActionName("CreateTransferRequest")]
+    public int CreateTransferRequest([FromBody] TransferContent[] contents) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferRequest))
+            throw new UnauthorizedAccessException("You don't have access for transfer request creation");
+
+        var employeeData = Data.General.GetEmployeeData(EmployeeID);
+        return Data.Transfer.CreateTransferRequest(contents, employeeData);
     }
 }

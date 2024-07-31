@@ -260,7 +260,8 @@ public class TransferData {
                 queryParams.Add(new Parameter("@BinEntry", SqlDbType.Int, contentParameters.BinEntry > 0 ? contentParameters.BinEntry : DBNull.Value));
                 break;
             case SourceTarget.Target:
-                queryParams.Add(new Parameter("@ItemCode", SqlDbType.NVarChar, contentParameters.ItemCode != null ? contentParameters.ItemCode : DBNull.Value));
+                queryParams.Add(new Parameter("@ItemCode", SqlDbType.NVarChar, !contentParameters.TargetBinQuantity && contentParameters.ItemCode != null ? contentParameters.ItemCode : DBNull.Value));
+                queryParams.Add(new Parameter("@BinEntry", SqlDbType.Int, contentParameters.TargetBinQuantity ? contentParameters.BinEntry : DBNull.Value));
                 break;
         }
 
@@ -276,6 +277,9 @@ public class TransferData {
             if (contentParameters.Type == SourceTarget.Target) {
                 content.Progress     = Convert.ToInt32(dr["Progress"]);
                 content.OpenQuantity = Convert.ToInt32(dr["OpenQuantity"]);
+                if (contentParameters.TargetBinQuantity) {
+                    content.BinQuantity = Convert.ToInt32(dr["BinQuantity"]);
+                }
             }
 
             list.Add(content);
@@ -410,5 +414,11 @@ public class TransferData {
             new Parameter("@ID", SqlDbType.Int, id),
             new Parameter("@Status", SqlDbType.Char, 1, (char)status)
         ]);
+    }
+
+    public int CreateTransferRequest(TransferContent[] contents, EmployeeData employee) {
+        using var creation = new TransferRequestCreation(contents, employee);
+        creation.Execute();
+        return creation.Number;
     }
 }

@@ -1,15 +1,10 @@
 ﻿namespace Service.API.General.Models;
 
-public class EmployeeData {
-    public string Name      { get;  }
-    public string WhsCode   { get;  }
-    public string WhsName   { get;  }
-    public bool   EnableBin { get;  }
-
-    public EmployeeData(string name, string whsCode, string whsName, bool enableBin) {
-        Name           = name;
-        WhsCode        = whsCode;
-        WhsName        = whsName;
-        EnableBin = enableBin;
-    }
+public class EmployeeData(string name, string whsCode, string whsName, bool enableBin, string showroomWhsCode, string showroomWhsName) {
+    public string Name            { get;  } = name;
+    public string WhsCode         { get;  } = whsCode;
+    public string WhsName         { get;  } = whsName;
+    public bool   EnableBin       { get;  } = enableBin;
+    public string ShowroomWhsCode { get; }  = showroomWhsCode;
+    public string ShowroomWhsName { get; }  = showroomWhsName;
 }

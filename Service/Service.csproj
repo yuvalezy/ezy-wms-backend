@@ -191,6 +191,7 @@
     <Compile Include="API\Transfer\TransferController.cs" />
     <Compile Include="API\Transfer\TransferCreation.cs" />
     <Compile Include="API\Transfer\TransferData.cs" />
+    <Compile Include="API\Transfer\TransferRequestCreation.cs" />
     <Compile Include="Controllers\BaseBackgroundController.cs" />
     <Compile Include="Controllers\ServiceController.cs" />
     <Compile Include="DataCommands.cs" />

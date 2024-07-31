@@ -217,8 +217,10 @@ public class GoodsReceiptData {
     }
 
     public Document GetDocument(int id) {
-        Document doc = null;
-        var      sb  = new StringBuilder(GetQuery("GetGoodsReceipts"));
+        Document doc   = null;
+        string   query = GetQuery("GetGoodsReceipts");
+        query = query.Replace("{top}", "");
+        var sb = new StringBuilder(query);
         sb.Append(" where DOCS.\"Code\" = @ID");
         using var conn = Global.Connector;
         conn.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => doc = ReadDocument(dr));

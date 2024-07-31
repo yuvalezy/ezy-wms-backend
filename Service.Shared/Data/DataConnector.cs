@@ -97,6 +97,9 @@ public abstract class DataConnector : IDisposable {
     public Tuple<T1, T2, T3, T4, T5, T6> GetValue<T1, T2, T3, T4, T5, T6>(Procedure procedure) =>
         GetValue<T1, T2, T3, T4, T5, T6>(procedure.Name, procedure.Parameters, CommandType.StoredProcedure);
 
+    public Tuple<T1, T2, T3, T4, T5, T6> GetValue<T1, T2, T3, T4, T5, T6>(string query, Parameter parameter, CommandType commandType = CommandType.Text) {
+        return GetValue<T1, T2, T3, T4, T5, T6>(query, [parameter], commandType);
+    }
     public Tuple<T1, T2, T3, T4, T5, T6> GetValue<T1, T2, T3, T4, T5, T6>(string query, Parameters parameters = null, CommandType commandType = CommandType.Text) {
         var returnValue = new Tuple<T1, T2, T3, T4, T5, T6>(default, default, default, default, default, default);
         GetValuesExecution(query, parameters, commandType,

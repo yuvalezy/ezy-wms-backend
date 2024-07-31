@@ -238,6 +238,9 @@ public static class Global {
                 case Const.TransferSupervisor:
                     RolesMap.Add(id, Authorization.TransferSupervisor);
                     break;
+                case Const.TransferRequest:
+                    RolesMap.Add(id, Authorization.TransferRequest);
+                    break;
             }
         }
     }
@@ -250,7 +253,7 @@ public static class Global {
 
     public static void LoadAuthorization(int empID) {
         if (!UserAuthorizations.ContainsKey(empID))
-            UserAuthorizations.Add(empID, new List<Authorization>());
+            UserAuthorizations.Add(empID, []);
         var authorizations = UserAuthorizations[empID];
         authorizations.Clear();
 

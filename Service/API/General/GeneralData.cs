@@ -12,17 +12,22 @@ namespace Service.API.General;
 
 public class GeneralData {
     public EmployeeData GetEmployeeData(int employeeID) {
-        string query = $"""
-                        select COALESCE(T0."firstName", 'NO_NAME') {QueryHelper.Concat} ' ' {QueryHelper.Concat} COALESCE(T0."lastName", 'NO_LAST_NAME') "Name",
-                        T1."WhsCode", T1."WhsName", T1."BinActivat"
-                        from OHEM T0
-                        left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
-                        where T0."empID" = @empID
-                        """;
+        string query = """
+                       select COALESCE(T0."firstName", 'NO_NAME') + ' ' + COALESCE(T0."lastName", 'NO_LAST_NAME') "Name",
+                              T1."WhsCode",
+                              T1."WhsName",
+                              T1."BinActivat",
+                              T2."WhsCode" "SWWhsCode",
+                              T2."WhsName" "SWWhsName"
+                       from OHEM T0
+                                left outer join OWHS T1 on T1."WhsCode" = T0."U_LW_Branch"
+                                left outer join OWHS T2 on T2."WhsCode" = T1."U_LW_SW_WHS"
+                       where T0."empID" = @empID
+                       """;
         using var conn = Global.Connector;
-        (string name, string whsCode, string whsName, bool enableBin) =
-            conn.GetValue<string, string, string, bool>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
-        return new EmployeeData(name, whsCode, whsName, enableBin);
+        (string name, string whsCode, string whsName, bool enableBin, string swWhsCode, string swWhsName) =
+            conn.GetValue<string, string, string, bool, string, string>(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID });
+        return new EmployeeData(name, whsCode, whsName, enableBin, swWhsCode, swWhsName);
     }
 
     public IEnumerable<BusinessPartner> GetVendors() {
@@ -59,21 +64,35 @@ public class GeneralData {
         ]);
     }
 
-    public IEnumerable<Item> ScanItemBarCode(string scanCode) {
-        var list = new List<Item>();
-        string query =
-            """
-            SELECT T0."ItemCode", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
-            FROM OBCD T0
-                     INNER JOIN OITM T1 ON T0."ItemCode" = T1."ItemCode"
-            left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
-            WHERE T0."BcdCode" = @ScanCode
-            """;
+    public IEnumerable<Item> ScanItemBarCode(string scanCode, bool item = false) {
+        var    list = new List<Item>();
+        string query;
+        if (!item) {
+            query = """
+                    SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+                    FROM OBCD T0
+                             INNER JOIN OITM T1 ON T0."ItemCode" = T1."ItemCode"
+                    left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
+                    WHERE T0."BcdCode" = @ScanCode
+                    """;
+        }
+        else {
+            query = """
+                    SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+                    FROM OITM T1
+                             left outer JOIN OBCD T0 ON T0."ItemCode" = T1."ItemCode"
+                    left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
+                    WHERE T1."ItemCode" = @ScanCode or T0."BcdCode" = @ScanCode
+                    """;
+        }
+
         using var conn = Global.Connector;
         conn.ExecuteReader(query,
             new Parameter("@ScanCode", SqlDbType.NVarChar, 50) { Value = scanCode },
             dr => {
                 var item = new Item((string)dr["ItemCode"]);
+                if (dr["ItemName"] != DBNull.Value)
+                    item.Name = (string)dr["ItemName"];
                 if (dr["Father"] != DBNull.Value)
                     item.Father = (string)dr["Father"];
                 if (dr["BoxNumber"] != DBNull.Value)

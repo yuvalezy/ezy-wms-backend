@@ -14,4 +14,5 @@ public static class Const {
     public const string CountingSupervisor          = "Supervisor Inventari";
     public const string Transfer                    = "Transferencia";
     public const string TransferSupervisor          = "Supervisor Transfere";
+    public const string TransferRequest             = "Solicitud Transferen";
 }

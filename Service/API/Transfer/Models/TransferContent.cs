@@ -7,6 +7,7 @@ public class TransferContent {
     public string                   Name         { get; set; }
     public int                      Quantity     { get; set; }
     public int                      OpenQuantity { get; set; }
+    public int?                     BinQuantity  { get; set; }
     public int?                     Progress     { get; set; }
     public List<TransferContentBin> Bins         { get; set; }
 }

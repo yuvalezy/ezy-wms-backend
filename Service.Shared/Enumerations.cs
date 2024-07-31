@@ -421,6 +421,7 @@ public enum Authorization {
     CountingSupervisor     = 6,
     Transfer               = 7,
     TransferSupervisor     = 8,
+    TransferRequest        = 9
 }
 
 public enum SourceTarget {

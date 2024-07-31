@@ -57,10 +57,10 @@ public class GeneralController : LWApiController {
 
     [HttpGet]
     [ActionName("ItemByBarCode")]
-    public IEnumerable<Item> ScanItemBarCode([FromUri] string scanCode) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+    public IEnumerable<Item> ScanItemBarCode([FromUri] string scanCode, [FromUri] bool item = false) {
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.TransferRequest))
             throw new UnauthorizedAccessException("You don't have access for Scan Item BarCode");
-        return data.General.ScanItemBarCode(scanCode);
+        return data.General.ScanItemBarCode(scanCode, item);
     }
 
     [HttpPost]
