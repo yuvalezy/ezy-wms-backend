@@ -7,22 +7,22 @@ using System.Collections.Generic;
 namespace MetaData;
 
 public class ConnectionProperties {
-    public string            ServerName    { get; set; }
-    public string            DatabaseName  { get; set; }
-    public string            DbUsername    { get; set; }
-    public string            DbPassword    { get; set; }
-    public string            SapUsername   { get; set; }
-    public string            SapPassword   { get; set; }
-    public BoDataServerTypes DbServerType  { get; set; }
-    public string            LicenseServer { get; set; }
-
-    public string ConnectionId => $"{ServerName}_{DatabaseName}";
+    public string            ServerName        { get; set; }
+    public string            DatabaseName      { get; set; }
+    public string            DbUsername        { get; set; }
+    public string            DbPassword        { get; set; }
+    public string            SapUsername       { get; set; }
+    public string            SapPassword       { get; set; }
+    public BoDataServerTypes DbServerType      { get; set; }
+    public bool              TrustedConnection { get; set; }
+    public string            ConnectionId      => $"{ServerName}_{DatabaseName}";
 }
 
 public class Connection {
-    private       Company                                  company             = new();
-    private const string                                   ConnectionsFilePath = "connections.json";
-    private       Dictionary<string, ConnectionProperties> savedConnections;
+    private const string ConnectionsFilePath = "connections.json";
+
+    private Company                                  company = new();
+    private Dictionary<string, ConnectionProperties> savedConnections;
 
     public Connection() {
         LoadSavedConnections();
@@ -80,9 +80,8 @@ public class Connection {
                         Console.WriteLine("Connected successfully using saved connection.");
                         return true;
                     }
-                    else {
-                        Console.WriteLine("Failed to connect using saved connection. Please enter new details.");
-                    }
+
+                    Console.WriteLine("Failed to connect using saved connection. Please enter new details.");
                 }
             }
         }
@@ -110,11 +109,16 @@ public class Connection {
         Console.Write("Enter Database Name: ");
         props.DatabaseName = Console.ReadLine();
 
-        Console.Write("Enter Database Username: ");
-        props.DbUsername = Console.ReadLine();
+        Console.Write("Use trusted connection (Y)es, (N)o: ");
+        props.TrustedConnection = Console.ReadLine().Equals("Y");
 
-        Console.Write("Enter Database Password: ");
-        props.DbPassword = Console.ReadLine();
+        if (!props.TrustedConnection) {
+            Console.Write("Enter Server Username: ");
+            props.DbUsername = Console.ReadLine();
+
+            Console.Write("Enter Server Password: ");
+            props.DbPassword = Console.ReadLine();
+        }
 
         Console.Write("Enter SAP Username: ");
         props.SapUsername = Console.ReadLine();
@@ -155,32 +159,33 @@ public class Connection {
             }
         }
 
-        Console.Write("Enter License Server: ");
-        props.LicenseServer = Console.ReadLine();
-
         return props;
     }
 
     private bool ConnectToCompany(ConnectionProperties props) {
         try {
-            company.Server        = props.ServerName;
-            company.CompanyDB     = props.DatabaseName;
-            company.DbUserName    = props.DbUsername;
-            company.DbPassword    = props.DbPassword;
-            company.UserName      = props.SapUsername;
-            company.Password      = props.SapPassword;
-            company.DbServerType  = props.DbServerType;
-            company.LicenseServer = props.LicenseServer;
+            company.Server    = props.ServerName;
+            company.CompanyDB = props.DatabaseName;
+            if (props.TrustedConnection) {
+                company.UseTrusted = true;
+            }
+            else {
+                company.DbUserName = props.DbUsername;
+                company.DbPassword = props.DbPassword;
+            }
+
+            company.UserName     = props.SapUsername;
+            company.Password     = props.SapPassword;
+            company.DbServerType = props.DbServerType;
 
             if (company.Connect() == 0) {
                 return true;
             }
-            else {
-                int    errorCode    = company.GetLastErrorCode();
-                string errorMessage = company.GetLastErrorDescription();
-                Console.WriteLine($"Connection failed. Error code: {errorCode}, Message: {errorMessage}");
-                return false;
-            }
+
+            int    errorCode    = company.GetLastErrorCode();
+            string errorMessage = company.GetLastErrorDescription();
+            Console.WriteLine($"Connection failed. Error code: {errorCode}, Message: {errorMessage}");
+            return false;
         }
         catch (Exception ex) {
             Console.WriteLine($"Exception during connection: {ex.Message}");
