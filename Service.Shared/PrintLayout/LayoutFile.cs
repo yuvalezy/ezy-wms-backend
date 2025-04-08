@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Service.Crystal.Shared;
-using Service.Shared.PrintLayout.Models;
 
 namespace Service.Shared.PrintLayout; 
 

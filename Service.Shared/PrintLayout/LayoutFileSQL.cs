@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using Service.Crystal.Shared;
 using Service.Shared.Company;
-using Service.Shared.PrintLayout.Models;
 
 namespace Service.Shared.PrintLayout; 
 

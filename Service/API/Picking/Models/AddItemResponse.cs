@@ -4,5 +4,5 @@ public class AddItemResponse {
     public bool Ok             { get; set; }
     public bool ClosedDocument { get; set; }
 
-    public static AddItemResponse OkResponse => new AddItemResponse { Ok = true };
+    public static AddItemResponse OkResponse => new() { Ok = true };
 }

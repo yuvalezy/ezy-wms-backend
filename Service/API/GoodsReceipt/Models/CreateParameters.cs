@@ -64,13 +64,14 @@ public class CreateParameters {
                         left outer join PCH1 X4 on X4."DocEntry" = X2."DocEntry" and X4."WhsCode" = @WhsCode
                         group by X0."ObjType", X0."DocNum", X0."DocEntry", X1."DocStatus", X2."DocStatus", X2."isIns"
                         """;
-        Document returnValue   = null;
-        using var      conn = Global.Connector;
+        Document  returnValue = null;
+        using var conn        = Global.Connector;
         conn.ExecuteReader(query, new Parameter("@empID", SqlDbType.Int) { Value = employeeID }, dr => {
             string docStatus      = (string)dr["DocStatus"];
             int    objectType     = (int)dr["ObjType"];
             int    documentNumber = (int)dr["DocNum"];
-            int    documentEntry  = (int)dr["DocEntry"];
+            int    documentEntry  = dr["DocEntry"] != DBNull.Value ? (int)dr["DocEntry"] : -1;
+
             Documents.First(v => v.ObjectType == objectType && v.DocumentNumber == documentNumber).DocumentEntry = documentEntry;
             if (docStatus == "O")
                 return;

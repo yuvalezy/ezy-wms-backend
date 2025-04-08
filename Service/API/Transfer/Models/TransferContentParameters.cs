@@ -1,6 +1,6 @@
 ﻿using Service.Shared;
 
-namespace Service.API.Transfer;
+namespace Service.API.Transfer.Models;
 
 public class TransferContentParameters {
     public int          ID                { get; set; }

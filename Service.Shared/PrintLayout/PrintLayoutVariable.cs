@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Service.Shared.Data;
 
-namespace Service.Shared.PrintLayout.Models; 
+namespace Service.Shared.PrintLayout; 
 
 public class PrintLayoutVariable {
     // Required for DI API Data Reader

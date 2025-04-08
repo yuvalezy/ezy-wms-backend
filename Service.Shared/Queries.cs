@@ -1,8 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Service.Shared.Company;
 
-namespace Service.Shared.Company;
+namespace Service.Shared;
 
 public class Queries {
     private static Assembly assembly;

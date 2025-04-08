@@ -6,6 +6,7 @@ using System.ServiceProcess;
 using System.Threading;
 using Service.Shared;
 using Service.Shared.Data;
+using Service.Shared.Utils;
 using Console = System.Console;
 
 namespace Service; 
