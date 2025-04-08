@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using MetaData.Models;
 using SAPbobsCOM;
+using Service.Shared;
 using Service.Shared.Utils;
 
 namespace MetaData.Data;
@@ -41,6 +44,9 @@ public class Import {
 
             // Import system table fields
             ImportSystemTableFields();
+
+            // Create Human Resources Roles
+            CreateHumanResourcesRoles();
 
             LogMessage("Import completed successfully.");
         }
@@ -217,7 +223,7 @@ public class Import {
             }
 
             if (fieldInfo.Size != 0) {
-                userField.Size = fieldInfo.Size;
+                userField.Size     = fieldInfo.Size;
                 userField.EditSize = fieldInfo.Size;
             }
 
@@ -327,6 +333,51 @@ public class Import {
         };
     }
 
+
+    private void CreateHumanResourcesRoles() {
+        LogMessage("Starting import of user-defined tables...");
+
+        List<string> roles = [
+            Const.GoodsReceipt,
+            Const.GoodsReceiptSupervisor,
+            Const.Picking,
+            Const.PickingSupervisor,
+            Const.Counting,
+            Const.CountingSupervisor,
+            Const.Transfer,
+            Const.TransferSupervisor,
+            Const.TransferRequest
+        ];
+
+        var company        = connection.GetCompany();
+        var companyService = company.GetCompanyService();
+        var rolesService   = (EmployeeRolesSetupService)companyService.GetBusinessService(ServiceTypes.EmployeeRolesSetupService);
+
+        var existingRoles = rolesService.GetEmployeeRoleSetupList();
+        for (int i = 0; i < existingRoles.Count; i++) {
+            string roleName = existingRoles.Item(i).Name;
+            if (!roles.Contains(roleName))
+                continue;
+            LogMessage($"Role {roleName} already exists. Skipping creation.");
+            roles.Remove(roleName);
+        }
+
+        roles.ForEach(roleName => {
+            LogMessage($"Creating role {roleName}...");
+            try {
+                var newRole = (EmployeeRoleSetup)rolesService.GetDataInterface(EmployeeRolesSetupServiceDataInterfaces.erssEmployeeRoleSetup);
+                newRole.Name        = roleName;
+                newRole.Description = roleName;
+                rolesService.AddEmployeeRoleSetup(newRole);
+                LogMessage($"Role {roleName} created successfully.");
+            }
+            catch (Exception e) {
+                LogMessage($"ERROR creating role {roleName}: {e.Message}");
+            }
+        });
+
+        LogMessage("User-defined tables import completed.");
+    }
 
     private void LogMessage(string message) {
         string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}";

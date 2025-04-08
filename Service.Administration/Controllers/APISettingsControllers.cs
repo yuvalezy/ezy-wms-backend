@@ -86,8 +86,8 @@ public class APISettingsControllers {
         if (!view.EnableLoadBalancing)
             return true;
 
-        if (!CheckRedisConnection())
-            return false;
+        // if (!CheckRedisConnection())
+        //     return false;
 
         var     rows  = view.NodesTable.Rows;
         short[] ports = (from DataRow dr in rows select (short)dr["Port"]).ToArray();
@@ -112,12 +112,12 @@ public class APISettingsControllers {
         return MessageBox.Show(owner, message, view.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
     }
 
-    private bool CheckRedisConnection() {
-        if (!view.EnableRedisServer)
-            return true;
-        var validation = new ServerValidation(view.RedisServer, true, owner);
-        return validation.ValidateRedis();
-    }
+    // private bool CheckRedisConnection() {
+    //     if (!view.EnableRedisServer)
+    //         return true;
+    //     var validation = new ServerValidation(view.RedisServer, true, owner);
+    //     return validation.ValidateRedis();
+    // }
 
     private bool ValidatePort(int port) {
         if (!ports.IsAvailable(port, view.Database, out string usedBy)) {
