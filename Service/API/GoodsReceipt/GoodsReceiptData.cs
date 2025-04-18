@@ -199,7 +199,9 @@ public class GoodsReceiptData {
                     Fulfillment = (int)dr["Fulfillment"] > 0,
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
-                    Quantity    = (int)dr["PurPackUn"]
+                    Quantity    = 1,
+                    PackUnit    = (int)dr["PurPackUn"],
+                    BuyUnitMsr  = dr["BuyUnitMsr"].ToString()
                 };
             });
             if (returnValue == null)

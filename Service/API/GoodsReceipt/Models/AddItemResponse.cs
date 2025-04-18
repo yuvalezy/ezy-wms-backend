@@ -6,6 +6,8 @@ public class AddItemResponse {
     public bool   Fulfillment    { get; set; }
     public bool   Showroom       { get; set; }
     public bool   Warehouse      { get; set; }
-    public int    Quantity      { get; set; }
+    public int    Quantity       { get; set; }
+    public int    PackUnit       { get; set; }
+    public string BuyUnitMsr     { get; set; }
     public string ErrorMessage   { get; set; }
 }

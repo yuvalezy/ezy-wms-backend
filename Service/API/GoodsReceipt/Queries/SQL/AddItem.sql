@@ -22,7 +22,9 @@ select @CardCode = U_CardCode, @Type = U_Type
 from "@LW_YUVAL08_GRPO" 
 where Code = @ID;
 
-declare @PurPackUn int = (select COALESCE("PurPackUn", 1) from OITM where "ItemCode" = @ItemCode);
+declare @PurPackUn int;
+declare @BuyUnitMsr nvarchar(50);
+select @PurPackUn = COALESCE("PurPackUn", 1), @BuyUnitMsr = "BuyUnitMsr" from OITM where "ItemCode" = @ItemCode;
 
 declare @TargetType int;
 declare @TargetEntry int;
@@ -205,7 +207,8 @@ select T0."U_LineID" LineID
 , Sum(Case When U_TargetType in (13, 17) Then 1 Else 0 End) Fulfillment
 , Sum(Case When U_TargetType = 1250000001 Then 1 Else 0 End) Showroom
 , Case When IsNull(Sum(T1.U_TargetQty), 0) < @PurPackUn Then 1 Else 0 End Warehouse
-, @PurPackUn PurPackUn 
+, @PurPackUn PurPackUn
+, @BuyUnitMsr BuyUnitMsr
 from [@LW_YUVAL08_GRPO1] T0
 left outer join [@LW_YUVAL08_GRPO2] T1 on T1.U_ID = T0.U_ID and T1.U_LineID = T0.U_LineID
 where T0.U_ID = @ID and T0.U_LineID = @LineID
