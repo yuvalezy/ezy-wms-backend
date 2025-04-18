@@ -1,10 +1,12 @@
 ﻿-- declare @ID int = 1037;
-select T0."U_ItemCode"                 "ItemCode",
+select T0."U_ItemCode"                                       "ItemCode",
        T7."ItemName",
-       Sum(T0."U_Quantity")            "Quantity",
-       COALESCE(Sum(T9."Delivery"), 0) "Delivery",
-       COALESCE(Sum(T9."Showroom"), 0) "Showroom",
-       COALESCE(T8."OnHand", 0)        "OnHand"
+       Sum(T0."U_Quantity")                                  "Quantity",
+       COALESCE(Sum(T9."Delivery"), 0)                       "Delivery",
+       COALESCE(Sum(T9."Showroom"), 0)                       "Showroom",
+       COALESCE(T8."OnHand", 0) / COALESCE(T7."NumInBuy", 1) "OnHand",
+       COALESCE(T7."PurPackUn", 1)                           "PackUnit",
+       T7."BuyUnitMsr"
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1."Code" = T0."U_ID"
          inner join OITM T7 on T7."ItemCode" = T0."U_ItemCode"
@@ -15,6 +17,7 @@ from "@LW_YUVAL08_GRPO1" T0
                           from "@LW_YUVAL08_GRPO2"
                           where U_ID = @ID
                           Group By "U_LineID") T9 on T9.U_LineID = T0.U_LineID
-where T0.U_ID = @ID and T0."U_LineStatus" <> 'C'
-group by T7."ItemName", T0."U_ItemCode", T8."OnHand"
+where T0.U_ID = @ID
+  and T0."U_LineStatus" <> 'C'
+group by T7."ItemName", T0."U_ItemCode", T8."OnHand", T7."PurPackUn", T7."NumInBuy", T7."BuyUnitMsr"
 order by "ItemCode"

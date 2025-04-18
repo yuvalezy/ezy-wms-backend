@@ -245,7 +245,7 @@ public class GoodsReceiptData {
             queryParams.Add("@Code", SqlDbType.Int).Value = parameters.ID;
             sb.Append(" and DOCS.\"Code\" = @Code ");
         }
-        
+
         if (parameters.LastID.HasValue && parameters.LastID != -1) {
             queryParams.Add("@LastID", SqlDbType.Int).Value = parameters.LastID.Value;
             sb.Append(" and DOCS.\"Code\" < @LastID ");
@@ -265,10 +265,12 @@ public class GoodsReceiptData {
             queryParams.Add("@Date", SqlDbType.DateTime).Value = parameters.Date;
             sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@Date) = 0 ");
         }
+
         if (parameters.DateFrom != null) {
             queryParams.Add("@DateFrom", SqlDbType.DateTime).Value = parameters.DateFrom;
             sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@DateFrom) <= 0 ");
         }
+
         if (parameters.DateTo != null) {
             queryParams.Add("@DateTo", SqlDbType.DateTime).Value = parameters.DateTo;
             sb.Append(" and DATEDIFF(day,DOCS.\"U_StatusDate\",@DateTo) >= 0 ");
@@ -278,13 +280,17 @@ public class GoodsReceiptData {
             queryParams.Add("@GRPO", SqlDbType.Int).Value = parameters.GRPO;
             sb.Append(" and OPDN.\"DocNum\" = @GRPO ");
         }
+
         if (parameters.PurchaseOrder != null) {
             queryParams.Add("@PurchaseOrder", SqlDbType.Int).Value = parameters.PurchaseOrder;
-            sb.Append(" and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPOR T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 22 and T1.\"DocNum\" = @PurchaseOrder) ");
+            sb.Append(
+                " and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPOR T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 22 and T1.\"DocNum\" = @PurchaseOrder) ");
         }
+
         if (parameters.ReservedInvoice != null) {
             queryParams.Add("@ReservedInvoice", SqlDbType.Int).Value = parameters.ReservedInvoice;
-            sb.Append(" and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPCH T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 18 and T1.\"DocNum\" = @ReservedInvoice) ");
+            sb.Append(
+                " and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPCH T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 18 and T1.\"DocNum\" = @ReservedInvoice) ");
         }
 
         sb.Append(" order by DOCS.");
@@ -407,20 +413,24 @@ public class GoodsReceiptData {
         var       data = new List<GoodsReceiptReportAll>();
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
-            string itemCode = (string)dr["ItemCode"];
-            string itemName = dr["ItemName"].ToString();
-            int    quantity = Convert.ToInt32(dr["Quantity"]);
-            int    delivery = Convert.ToInt32(dr["Delivery"]);
-            int    showroom = Convert.ToInt32(dr["Showroom"]);
-            int    stock    = Convert.ToInt32(dr["OnHand"]);
+            string itemCode   = (string)dr["ItemCode"];
+            string itemName   = dr["ItemName"].ToString();
+            int    quantity   = Convert.ToInt32(dr["Quantity"]);
+            int    delivery   = Convert.ToInt32(dr["Delivery"]);
+            int    showroom   = Convert.ToInt32(dr["Showroom"]);
+            int    stock      = Convert.ToInt32(dr["OnHand"]);
+            int    packUnit   = Convert.ToInt32(dr["PackUnit"]);
+            string buyUnitMsr = dr["BuyUnitMsr"].ToString();
 
             var line = new GoodsReceiptReportAll {
-                ItemCode = itemCode,
-                ItemName = itemName,
-                Quantity = quantity,
-                Delivery = delivery,
-                Showroom = showroom,
-                Stock    = stock
+                ItemCode   = itemCode,
+                ItemName   = itemName,
+                Quantity   = quantity,
+                Delivery   = delivery,
+                Showroom   = showroom,
+                Stock      = stock,
+                PackUnit   = packUnit,
+                BuyUnitMsr = buyUnitMsr
             };
             data.Add(line);
         });
@@ -546,6 +556,8 @@ public class GoodsReceiptData {
                 Quantity   = Convert.ToDecimal(dr["Quantity"]),
                 BaseLine   = (int)dr["BaseLine"],
                 OpenInvQty = Convert.ToDecimal(dr["OpenInvQty"]),
+                PackUnit   = Convert.ToInt32(dr["PackUnit"]),
+                BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
                 LineStatus = (GoodsReceiptValidateProcessLineStatus)dr["LineStatus"]
             };
             value.Lines.Add(line);

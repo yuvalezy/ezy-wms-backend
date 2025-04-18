@@ -20,6 +20,8 @@ public class GoodsReceiptValidateProcessLine {
     public decimal Quantity   { get; set; }
     public int     BaseLine   { get; set; }
     public decimal OpenInvQty { get; set; }
+    public int     PackUnit   { get; set; }
+    public string  BuyUnitMsr { get; set; }
 
     public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
 }

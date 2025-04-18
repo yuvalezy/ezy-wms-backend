@@ -26,6 +26,8 @@ select COALESCE(T1.DocNum, T2.DocNum)                          "DocNum",
        COALESCE(T0."BaseEntry", -1)                            "BaseEntry",
        COALESCE(T6."BaseLine", -1)                             "BaseLine",
        COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0)               "OpenInvQty",
+       COALESCE(T8."PurPackUn", 1)                             "PackUnit",
+       T8."BuyUnitMsr",
        Case
            When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) = Sum(T6."Quantity") Then 0 --Line OK
            When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) < Sum(T6."Quantity") Then 1 --Open Quantity is less then scanned quantity
@@ -43,6 +45,6 @@ from Docs T0
          left outer join Data T6 on T6."BaseType" = T0."BaseType" and T6."BaseEntry" = T0."BaseEntry" and T6."BaseLine" = COALESCE(T4."LineNum", T5."LineNum")
          inner join OITM T8 on T8."ItemCode" = COALESCE(T4."ItemCode", T5."ItemCode")
 Group By T0."BaseType", T0."BaseEntry", T6."BaseLine", T1."CardCode", T2."CardCode", T3."U_CardCode", T4.InvntSttus, T5.InvntSttus, T4.OpenInvQty, T5.OpenInvQty, T4.VisOrder,
-         T5.VisOrder, T1.DocNum, T2.DocNum, T1."CardName", T2."CardName", T4."ItemCode", T5."ItemCode", T8."ItemName"
+         T5.VisOrder, T1.DocNum, T2.DocNum, T1."CardName", T2."CardName", T4."ItemCode", T5."ItemCode", T8."ItemName", T8."PurPackUn", T8."BuyUnitMsr"
 -- Having Sum(T6."Quantity") > 0
 order by 1, 2, 3
