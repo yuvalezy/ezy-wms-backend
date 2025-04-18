@@ -197,7 +197,8 @@ public class GeneralData {
 
     public IEnumerable<BinContent> BinCheck(int binEntry) {
         string query = """
-                       select T1."ItemCode", T2."ItemName", T1."OnHandQty"
+                       select T1."ItemCode", T2."ItemName", T1."OnHandQty" / COALESCE(T2."NumInBuy", 1) "OnHand", 
+                              COALESCE(T2."PurPackUn", 1) "PackUnit", T2."BuyUnitMsr"
                        from OIBQ T1 
                        inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
                        where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
@@ -206,7 +207,15 @@ public class GeneralData {
         var       values = new List<BinContent>();
         using var conn   = Global.Connector;
         conn.ExecuteReader(query, [new Parameter("@AbsEntry", SqlDbType.Int, binEntry)],
-            dr => { values.Add(new BinContent { ItemCode = (string)dr["ItemCode"], ItemName = dr["ItemName"].ToString(), OnHand = Convert.ToInt32(dr["OnHandQty"]) }); });
+            dr => {
+                values.Add(new BinContent {
+                    ItemCode   = (string)dr["ItemCode"],
+                    ItemName   = dr["ItemName"].ToString(),
+                    OnHand     = Convert.ToInt32(dr["OnHand"]),
+                    PackUnit   = Convert.ToInt32(dr["PackUnit"]),
+                    BuyUnitMsr = dr["BuyUnitMsr"].ToString()
+                });
+            });
         return values;
     }
 }

@@ -97,7 +97,7 @@ public class GoodsReceiptCreation(int id, int employeeID, bool enableBin) : IDis
                 continue;
             
             lines.BinAllocations.BinAbsEntry = binEntry.Value;
-            lines.BinAllocations.Quantity    = value.Quantity;
+            lines.BinAllocations.Quantity    = value.BinQuantity;
         }
 
         if (doc.Add() != 0) {
