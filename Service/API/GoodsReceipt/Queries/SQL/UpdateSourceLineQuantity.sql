@@ -2,8 +2,15 @@
 
 --declare @ID int = 1043;
 --declare @LineID int = 0
+declare @PurPackUn int;
+select @PurPackUn = COALESCE(T2.PurPackUn, 1),
+       @Quantity = @Quantity * COALESCE(T2.PurPackUn, 1)
+from "@LW_YUVAL08_GRPO1" T0
+         inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
+         inner join OITM T2 on T2.ItemCode = T0.U_ItemCode
+where T0.U_ID = @ID and T0.U_LineID = @LineID;
 
-update "@LW_YUVAL08_GRPO1" set "U_Quantity" = @Quantity
+update "@LW_YUVAL08_GRPO1" set "U_Quantity" = @Quantity 
                              , "U_StatusUserSign" = @UserSign, "U_StatusTimeStamp" = getdate()
 where U_ID = @ID and "U_LineID" = @LineID
 
@@ -11,14 +18,12 @@ delete from "@LW_YUVAL08_GRPO2" where U_ID = @ID and U_LineID = @LineID
 delete from "@LW_YUVAL08_GRPO4" where U_ID = @ID and U_LineID = @LineID
 
 declare @ItemCode nvarchar(50);
-declare @PurPackUn int;
 declare @empID int;
 declare @CardCode nvarchar(50);
 declare @Type char(1);
 
 select @CardCode = T1.U_CardCode, @Type = T1.U_Type,
-       @ItemCode = T0.U_ItemCode, @empID = T0.U_empID,
-       @PurPackUn = T2.PurPackUn
+       @ItemCode = T0.U_ItemCode, @empID = T0.U_empID
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
          inner join OITM T2 on T2.ItemCode = T0.U_ItemCode

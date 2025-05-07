@@ -29,9 +29,9 @@ select COALESCE(T1.DocNum, T2.DocNum)                                         "D
        COALESCE(T8."PurPackUn", 1)                                            "PackUnit",
        T8."BuyUnitMsr",
        Case
-           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) = Sum(T6."Quantity") Then 0 --Line OK
-           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) < Sum(T6."Quantity") Then 1 --Open Quantity is less then scanned quantity
-           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) > Sum(T6."Quantity") Then 2 --Open Quantity is more then scanned Quantity
+           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) = Sum(T6."Quantity" * COALESCE(T8."NumInBuy", 1)) Then 0 --Line OK
+           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) < Sum(T6."Quantity" * COALESCE(T8."NumInBuy", 1)) Then 1 --Open Quantity is less then scanned quantity
+           When COALESCE(T4.OpenInvQty, T5.OpenInvQty, 0) > Sum(T6."Quantity" * COALESCE(T8."NumInBuy", 1)) Then 2 --Open Quantity is more then scanned Quantity
            When COALESCE(T4.InvntSttus, T5.InvntSttus, 'O') = 'C' Then 3 --Line is closed
            When COALESCE(Sum(T6."Quantity"), 0) = 0 Then 4
            End                                                                "LineStatus"
