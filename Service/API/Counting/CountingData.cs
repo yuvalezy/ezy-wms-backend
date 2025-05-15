@@ -223,9 +223,11 @@ public class CountingData {
             new Parameter("@BinEntry", SqlDbType.Int, binEntry > 0 ? binEntry : DBNull.Value)
         ], dr => {
             list.Add(new() {
-                Code     = (string)dr["ItemCode"],
-                Name     = dr["ItemName"].ToString(),
-                Quantity = Convert.ToInt32(dr["Quantity"])
+                Code  = (string)dr["ItemCode"],
+                Name  = dr["ItemName"].ToString(),
+                Unit  = Convert.ToInt32(dr["Unit"]),
+                Dozen = Convert.ToInt32(dr["Dozen"]),
+                Pack  = Convert.ToInt32(dr["Pack"])
             });
         });
         return list;
@@ -244,7 +246,7 @@ public class CountingData {
             new Parameter("@ID", SqlDbType.Int) { Value     = updateLineParameter.ID },
             new Parameter("@LineID", SqlDbType.Int) { Value = updateLineParameter.LineID },
         };
-        var  sb    = new StringBuilder("update \"@LW_YUVAL08_OINC1\" set ");
+        var  sb    = new StringBuilder("update T0 set ");
         bool comma = false;
         if (updateLineParameter.Comment != null) {
             sb.AppendLine("\"U_Comments\" = @Comments ");
@@ -263,11 +265,19 @@ public class CountingData {
         if (updateLineParameter.Quantity.HasValue) {
             if (comma)
                 sb.AppendLine(", ");
-            sb.AppendLine("\"U_Quantity\" = @Quantity ");
+            sb.AppendLine("""
+                          "U_Quantity" = @Quantity 
+                          * Case When T0."U_Unit" <> 0 Then COALESCE(T1."NumInBuy", 1) Else 1 End
+                          * Case When T0."U_Unit" = 2 Then COALESCE(T1."PurPackUn", 1)Else 1 End
+                          """);
             parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
         }
 
-        sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
+        sb.AppendLine("""
+                      from "@LW_YUVAL08_OINC1" T0
+                      inner join OITM T1 on T1."ItemCode" = T0."U_ItemCode"
+                      where T0.U_ID = @ID and T0."U_LineID" = @LineID
+                      """);
 
         conn.Execute(sb.ToString(), parameters);
     }
