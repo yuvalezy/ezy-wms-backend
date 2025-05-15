@@ -294,6 +294,15 @@ namespace Service {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to UnitType is a required parameter.
+        /// </summary>
+        internal static string UnitType_is_a_required_parameter {
+            get {
+                return ResourceManager.GetString("UnitType_is_a_required_parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to WMS Transaction.
         /// </summary>
         internal static string WMSTransaction {

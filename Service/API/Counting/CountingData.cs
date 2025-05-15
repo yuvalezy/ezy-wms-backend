@@ -109,8 +109,16 @@ public class CountingData {
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
             new Parameter("@empID", SqlDbType.Int, employeeID),
-            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity)
-        ], dr => returnValue.LineID = (int)dr["LineID"]);
+            new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+            new Parameter("@Unit", SqlDbType.SmallInt, parameters.Unit)
+        ], dr => {
+            returnValue.LineID   = (int)dr["LineID"];
+            returnValue.Unit     = parameters.Unit;
+            returnValue.NumIn    = Convert.ToInt32(dr["NumInBuy"]);
+            returnValue.UnitMsr  = dr["BuyUnitMsr"].ToString();
+            returnValue.PackUnit = Convert.ToInt32(dr["PurPackUn"]);
+            returnValue.PackMsr  = dr["PurPackMsr"].ToString();
+        });
         return returnValue;
     }
 
@@ -280,9 +288,8 @@ public class CountingData {
                                 GROUP BY c."BinCode", a."U_ItemCode", b."ItemName"
                                 order by 1
                               """;
-        conn.ExecuteReader(sqlStr, idParam, dr => {
-            value.Lines.Add(new CountingSummaryLine((string)dr["BinCode"], (string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToDouble(dr["Quantity"])));
-        });
+        conn.ExecuteReader(sqlStr, idParam,
+            dr => { value.Lines.Add(new CountingSummaryLine((string)dr["BinCode"], (string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToDouble(dr["Quantity"]))); });
         return value;
     }
 }

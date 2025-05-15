@@ -19,11 +19,18 @@ public enum AddItemReturnValueType {
     QuantityMoreAvailable                         = -13,
 }
 
+public enum UnitType {
+    Unit  = 0,
+    Dozen = 1,
+    Pack  = 2
+}
+
 public abstract class AddItemParameterBase {
-    public int    ID       { get; set; }
-    public string ItemCode { get; set; }
-    public string BarCode  { get; set; }
-    public int?   BinEntry { get; set; }
+    public int       ID       { get; set; }
+    public string    ItemCode { get; set; }
+    public string    BarCode  { get; set; }
+    public int?      BinEntry { get; set; }
+    public UnitType? Unit     { get; set; }
 }
 
 public static class AddItemReturnValueTypeDescription {
@@ -50,7 +57,7 @@ public static class AddItemReturnValueTypeDescription {
                         itemCode,
                         barCode),
                     AddItemReturnValueType.QuantityMoreThenReleased => string.Format(ErrorMessages.ReleasedQuantityFromItemIsless, itemCode),
-                    AddItemReturnValueType.QuantityMoreAvailable => string.Format(ErrorMessages.QuantityMoreThenAvailable, itemCode),
+                    AddItemReturnValueType.QuantityMoreAvailable    => string.Format(ErrorMessages.QuantityMoreThenAvailable, itemCode),
                     _                                               => throw new ArgumentOutOfRangeException(nameof(type))
                 });
         }

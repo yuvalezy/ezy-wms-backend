@@ -24,6 +24,9 @@
     <data name="Quantity_is_a_required_parameter" xml:space="preserve">
         <value>Quantity is a required parameter</value>
     </data>
+    <data name="UnitType_is_a_required_parameter" xml:space="preserve">
+        <value>UnitType is a required parameter</value>
+    </data>
     <data name="ID_is_a_required_parameter" xml:space="preserve">
         <value>ID is a required parameter</value>
     </data>
