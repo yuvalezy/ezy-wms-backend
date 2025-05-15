@@ -289,17 +289,8 @@ public class CountingData {
         var          idParam   = new Parameter("@ID", SqlDbType.Int) { Value = id };
         value.Name = conn.GetValue<string>(headerStr, idParam);
 
-        const string sqlStr = """
-                                SELECT c."BinCode", a."U_ItemCode" "ItemCode", b."ItemName", SUM(a."U_Quantity") "Quantity"
-                                FROM "@LW_YUVAL08_OINC1" a
-                                         inner join OITM b on b."ItemCode" = a."U_ItemCode"
-                                       inner join OBIN c on c."AbsEntry" = a."U_BinEntry"
-                                WHERE a.U_ID = @ID AND a."U_LineStatus" <> 'C'
-                                GROUP BY c."BinCode", a."U_ItemCode", b."ItemName"
-                                order by 1
-                              """;
-        conn.ExecuteReader(sqlStr, idParam,
-            dr => { value.Lines.Add(new CountingSummaryLine((string)dr["BinCode"], (string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToDouble(dr["Quantity"]))); });
+        conn.ExecuteReader(GetQuery("CountingSummaryReport"), idParam,
+            dr => { value.Lines.Add(new CountingSummaryLine(dr)); });
         return value;
     }
 }

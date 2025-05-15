@@ -242,6 +242,7 @@
   <ItemGroup>
     <EmbeddedResource Include="API\Counting\Queries\SQL\AddItem.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\CountingContent.sql" />
+    <EmbeddedResource Include="API\Counting\Queries\SQL\CountingSummaryReport.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\CreateCounting.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\GetCountings.sql" />
     <EmbeddedResource Include="API\Counting\Queries\SQL\ProcessCountingLines.sql" />
