@@ -14,6 +14,7 @@ namespace Service.API.Transfer;
 
 public class TransferCreation(int id, int employeeID) : IDisposable {
     private string                                 whsCode;
+    private string                                 comments;
     private StockTransfer                          transfer;
     private Recordset                              rs;
     private Dictionary<string, CreateTransferLine> data;
@@ -23,7 +24,7 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
 
     public void Execute() {
         try {
-            if (!Global.TransactionMutex.WaitOne()) 
+            if (!Global.TransactionMutex.WaitOne())
                 return;
             try {
                 LoadData();
@@ -48,6 +49,8 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
         transfer         = (StockTransfer)ConnectionController.Company.GetBusinessObject(BoObjectTypes.oStockTransfer);
         transfer.DocDate = DateTime.Now;
         transfer.Series  = transferSeries;
+        if (!string.IsNullOrWhiteSpace(comments))
+            transfer.Comments = comments;
 
         transfer.UserFields.Fields.Item("U_LW_GRPO").Value = id;
 
@@ -87,9 +90,12 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
     }
 
     private void LoadData() {
-        const string query = """select "U_WhsCode" "WhsCode" from "@LW_YUVAL08_TRANS" where "Code" = @ID""";
+        const string query = """select "U_WhsCode" "WhsCode", "U_Comments" "Comments" from "@LW_YUVAL08_TRANS" where "Code" = @ID""";
         using var    conn  = Global.Connector;
-        whsCode = conn.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
+        conn.ExecuteReader(query, new Parameter("@ID", SqlDbType.Int, id), dr => {
+            whsCode  = (string)dr["WhsCode"];
+            comments = dr["Comments"].ToString();
+        });
 
         using (var dt = conn.GetDataTable(TransferData.GetQuery("ProcessTransferLines"), [new Parameter("@ID", SqlDbType.Int, id)])) {
             data = dt.Rows.Cast<DataRow>()
