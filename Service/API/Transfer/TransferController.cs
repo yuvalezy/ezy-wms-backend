@@ -21,11 +21,11 @@ public class TransferController : LWApiController {
     }
 
     [HttpGet]
-    [Route("IsComplete/{id:int}")]
-    public bool IsComplete(int id) {
+    [Route("ProcessInfo/{id:int}")]
+    public ProcessInfoResponse ProcessInfo(int id) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
             throw new UnauthorizedAccessException("You don't have access for transfer completion check");
-        return Data.Transfer.IsComplete(id);
+        return Data.Transfer.ProcessInfo(id);
     }
 
     [HttpPost]

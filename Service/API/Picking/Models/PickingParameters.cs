@@ -3,8 +3,8 @@
 namespace Service.API.Picking.Models;
 
 public class PickingParameters {
-    public int?         ID      { get; set; }
-    public DateTime?    Date    { get; set; }
-    internal string       WhsCode { get; set; }
-    public PickStatus[] Statuses { get; set; } = [PickStatus.Released, PickStatus.Picked, PickStatus.PartiallyDelivered];
+    public   int?         ID       { get; set; }
+    public   DateTime?    Date     { get; set; }
+    internal string       WhsCode  { get; set; }
+    public   PickStatus[] Statuses { get; set; } = [PickStatus.Released, PickStatus.Picked, PickStatus.PartiallyDelivered];
 }

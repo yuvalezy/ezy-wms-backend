@@ -61,24 +61,24 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CrystalReports.Engine" Version="13.0.4001" />
+    <PackageReference Include="CrystalReports.Engine" Version="13.0.4003" />
     <PackageReference Include="CrystalReports.FlashControlV71" Version="13.0.3501" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ClientDoc" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommLayer" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommonControls" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommonObjectModel" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.Controllers" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CubeDefModel" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.DataDefModel" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.DataSetConversion" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ObjectFactory" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.Prompting" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ReportDefModel" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportAppServer.XmlSerialize" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.ReportSource" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.Shared" Version="13.0.4001" />
-    <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.4001" />
-    <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ClientDoc" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommLayer" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonControls" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CommonObjectModel" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Controllers" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.CubeDefModel" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataDefModel" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.DataSetConversion" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ObjectFactory" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.Prompting" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.ReportDefModel" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportAppServer.XmlSerialize" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.ReportSource" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.Shared" Version="13.0.4003" />
+    <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.4003" />
+    <PackageReference Include="log4net" Version="3.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Service.Crystal.Shared\Service.Crystal.Shared.csproj">

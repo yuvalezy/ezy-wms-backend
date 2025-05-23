@@ -14,8 +14,8 @@ public class CreateParameters {
     public List<DocumentParameter> Documents { get; set; }
 
     public Document Validate(Data data, int employeeID) {
-        if (string.IsNullOrWhiteSpace(Name))
-            throw new ArgumentException("Name cannot be empty", nameof(Name));
+        // if (string.IsNullOrWhiteSpace(Name))
+        //     throw new ArgumentException("Name cannot be empty", nameof(Name));
         switch (Type) {
             case GoodsReceiptType.AutoConfirm:
                 ValidateAutoConfirm(data);

@@ -29,12 +29,17 @@ public class TransferData {
         return conn.GetValue<int>(GetQuery("CreateTransfer"), @params);
     }
 
-    public bool IsComplete(int id) {
+    public ProcessInfoResponse ProcessInfo(int id) {
         var @params = new Parameters {
             new Parameter("@id", SqlDbType.Int, id),
         };
         using var conn = Global.Connector;
-        return !conn.GetValue<bool>(GetQuery("CheckIsCompleted"), @params);
+        var       info = new ProcessInfoResponse();
+        conn.ExecuteReader(GetQuery("ProcessInfo"), @params, dr => {
+            info.IsComplete = !Convert.ToBoolean(dr["IsComplete"]);
+            info.Comments = dr["Comments"].ToString();
+        });
+        return info;
     }
 
     public Models.Transfer GetTransfer(int id) {
