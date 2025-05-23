@@ -8,6 +8,7 @@
        T0."U_GRPODraft"                                                         "GRPODraft",
        T0."U_GRPOModSup"                                                        "GRPOModSup",
        T0."U_GRPOCreateSup"                                                     "GRPOCreateSup",
+       T0."U_TransferTargetItems"                                               "TransferTargetItems",
        T1."CompnyName"                                                          "CompanyName"
 from "@LW_YUVAL08_COMMON" T0
          cross join OADM T1

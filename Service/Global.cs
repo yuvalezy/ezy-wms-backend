@@ -40,6 +40,7 @@ public static class Global {
     public static bool                                 GRPODraft                           { get; private set; }
     public static bool                                 GRPOModificationsRequiredSupervisor { get; private set; }
     public static bool                                 GRPOCreateSupervisorRequired        { get; private set; }
+    public static bool                                 TransferTargetItems                 { get; private set; }
     public static bool                                 PrintThread                         { get; private set; }
     public static bool                                 Background                          { get; set; }
     public static bool                                 Interactive                         { get; set; }
@@ -146,6 +147,7 @@ public static class Global {
         GRPODraft                           = dr["GRPODraft"].ToString() == "Y";
         GRPOModificationsRequiredSupervisor = dr["GRPOModSup"].ToString().Equals("Y");
         GRPOCreateSupervisorRequired        = dr["GRPOCreateSup"].ToString().Equals("Y");
+        TransferTargetItems                 = dr["TransferTargetItems"].ToString().Equals("Y");
         CompanySettings.CrystalLegacy       = Convert.ToBoolean(dr["CrystalLegacy"]);
         CompanyName                         = (string)dr["CompanyName"];
 

@@ -34,7 +34,8 @@ public class GeneralController : LWApiController {
             Authorizations = Global.UserAuthorizations[EmployeeID],
             Settings = new ApplicationSettings {
                 GRPOModificationSupervisor   = Global.GRPOModificationsRequiredSupervisor,
-                GRPOCreateSupervisorRequired = Global.GRPOCreateSupervisorRequired
+                GRPOCreateSupervisorRequired = Global.GRPOCreateSupervisorRequired,
+                TransferTargetItems          = Global.TransferTargetItems
             }
         };
     }
@@ -70,7 +71,7 @@ public class GeneralController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for Item Check");
         return data.General.ItemCheck(parameters.ItemCode, parameters.Barcode);
     }
-    
+
     [HttpGet]
     [ActionName("BinCheck")]
     public IEnumerable<BinContent> BinCheck([FromUri] int binEntry) {
@@ -78,7 +79,7 @@ public class GeneralController : LWApiController {
             throw new UnauthorizedAccessException("You don't have access for Bin Check");
         return data.General.BinCheck(binEntry);
     }
-    
+
     [HttpPost]
     [ActionName("ItemStock")]
     public IEnumerable<ItemStockResponse> ItemStock([FromBody] ItemBarCodeParameters parameters) {
