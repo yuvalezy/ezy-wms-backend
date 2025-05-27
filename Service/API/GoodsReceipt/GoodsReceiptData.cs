@@ -4,6 +4,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Service.API.General;
 using Service.API.General.Models;
 using Service.API.GoodsReceipt.Models;
 using Service.API.Models;
@@ -185,14 +186,15 @@ public class GoodsReceiptData {
             new Parameter("@empID", SqlDbType.Int, empID)
         ]);
 
-    public AddItemResponse AddItem(DataConnector conn, int id, string itemCode, string barcode, int employeeID) {
+    public AddItemResponse AddItem(DataConnector conn, int id, string itemCode, string barcode, int employeeID, UnitType unit) {
         AddItemResponse returnValue = null;
         try {
             conn.ExecuteReader(GetQuery("AddItem"), [
                 new Parameter("@ID", SqlDbType.Int, id),
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
-                new Parameter("@empID", SqlDbType.Int, employeeID)
+                new Parameter("@empID", SqlDbType.Int, employeeID),
+                new Parameter("@Unit", SqlDbType.SmallInt, unit)
             ], dr => {
                 returnValue = new AddItemResponse {
                     LineID      = (int)dr["LineID"],
@@ -200,14 +202,17 @@ public class GoodsReceiptData {
                     Showroom    = (int)dr["Showroom"] > 0,
                     Warehouse   = (int)dr["Warehouse"] > 0,
                     Quantity    = 1,
-                    PackUnit    = (int)dr["PurPackUn"],
-                    BuyUnitMsr  = dr["BuyUnitMsr"].ToString()
+                    NumInBuy    = (int)dr["NumInBuy"],
+                    BuyUnitMsr  = dr["BuyUnitMsr"].ToString(),
+                    PurPackUn   = (int)dr["PurPackUn"],
+                    PurPackMsr  = dr["PurPackMsr"].ToString()
                 };
             });
             if (returnValue == null)
                 throw new Exception("Add Item Result Empty!");
         }
         catch (Exception ex) {
+            Console.WriteLine("Add Item Error GRPO: " + ex.Message);
             if (!ex.Message.Contains("No valid source found for item"))
                 throw;
             returnValue = new AddItemResponse {
@@ -415,26 +420,31 @@ public class GoodsReceiptData {
         var       data = new List<GoodsReceiptReportAll>();
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery("GoodsReceiptAll"), new Parameter("@ID", SqlDbType.Int) { Value = id }, dr => {
-            string itemCode   = (string)dr["ItemCode"];
-            string itemName   = dr["ItemName"].ToString();
-            int    quantity   = Convert.ToInt32(dr["Quantity"]);
-            int    delivery   = Convert.ToInt32(dr["Delivery"]);
-            int    showroom   = Convert.ToInt32(dr["Showroom"]);
-            int    stock      = Convert.ToInt32(dr["OnHand"]);
-            int    packUnit   = Convert.ToInt32(dr["PackUnit"]);
-            string buyUnitMsr = dr["BuyUnitMsr"].ToString();
-
             var line = new GoodsReceiptReportAll {
-                ItemCode   = itemCode,
-                ItemName   = itemName,
-                Quantity   = quantity,
-                Delivery   = delivery,
-                Showroom   = showroom,
-                Stock      = stock,
-                PackUnit   = packUnit,
-                BuyUnitMsr = buyUnitMsr
+                ItemCode   = (string)dr["ItemCode"],
+                ItemName   = dr["ItemName"].ToString(),
+                Quantity   = Convert.ToInt32(dr["Quantity"]),
+                Delivery   = Convert.ToInt32(dr["Delivery"]),
+                Showroom   = Convert.ToInt32(dr["Showroom"]),
+                Stock      = Convert.ToInt32(dr["OnHand"]),
+                NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
+                BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
+                PurPackUn   = Convert.ToInt32(dr["PurPackUn"]),
+                PurPackMsr = dr["PurPackMsr"].ToString(),
             };
             data.Add(line);
+        });
+        data.Add(new GoodsReceiptReportAll {
+            ItemCode   = "MockCode",
+            ItemName   = "MockDesc",
+            Delivery   = 120,
+            Showroom   = 250,
+            Stock      = 1200,
+            Quantity   = 2,
+            NumInBuy   = 12,
+            BuyUnitMsr = "Doz",
+            PurPackUn  = 4,
+            PurPackMsr = "Pack"
         });
         return data;
     }

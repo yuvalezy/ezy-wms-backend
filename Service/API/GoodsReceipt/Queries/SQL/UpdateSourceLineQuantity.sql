@@ -3,8 +3,10 @@
 --declare @ID int = 1043;
 --declare @LineID int = 0
 declare @PurPackUn int;
+declare @NumInBuy int;
 select @PurPackUn = COALESCE(T2.PurPackUn, 1),
-       @Quantity = @Quantity * COALESCE(T2.PurPackUn, 1)
+       @NumInBuy = COALESCE(T2.NumInBuy, 1),
+       @Quantity = @Quantity * Case When T0."U_Unit" >= 1 Then COALESCE(T2."NumInBuy", 1) Else 1 End * Case When T0."U_Unit" = 2 Then COALESCE(T2."PurPackUn", 1) Else 1 End
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
          inner join OITM T2 on T2.ItemCode = T0.U_ItemCode

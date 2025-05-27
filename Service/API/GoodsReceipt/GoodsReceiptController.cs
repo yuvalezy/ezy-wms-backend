@@ -46,7 +46,7 @@ public class GoodsReceiptController : LWApiController {
             conn.BeginTransaction();
             if (!parameters.Validate(conn, Data, EmployeeID))
                 return new AddItemResponse { ClosedDocument = true };
-            var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID);
+            var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID, parameters.Unit!.Value);
             if (string.IsNullOrWhiteSpace(addItemResponse.ErrorMessage))
                 conn.CommitTransaction();
             else 

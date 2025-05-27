@@ -14,6 +14,9 @@ public class AddItemParameter : AddItemParameterBase {
             throw new ArgumentException(ErrorMessages.ItemCode_is_a_required_parameter);
         if (string.IsNullOrWhiteSpace(BarCode))
             throw new ArgumentException(ErrorMessages.BarCode_is_a_required_parameter);
+        if (!Unit.HasValue) {
+            throw new ArgumentException("Unit is a required parameter");
+        }
         var value = (AddItemReturnValueType)data.GoodsReceipt.ValidateAddItem(conn, ID, ItemCode, BarCode, empID);
         return value.Value(this);
     }

@@ -7,7 +7,9 @@ public class AddItemResponse {
     public bool   Showroom       { get; set; }
     public bool   Warehouse      { get; set; }
     public int    Quantity       { get; set; }
-    public int    PackUnit       { get; set; }
+    public int    NumInBuy       { get; set; }
     public string BuyUnitMsr     { get; set; }
+    public int    PurPackUn      { get; set; }
+    public string PurPackMsr     { get; set; }
     public string ErrorMessage   { get; set; }
 }

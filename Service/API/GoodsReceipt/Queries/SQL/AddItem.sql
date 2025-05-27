@@ -22,9 +22,15 @@ select @CardCode = U_CardCode, @Type = U_Type
 from "@LW_YUVAL08_GRPO" 
 where Code = @ID;
 
-declare @PurPackUn int;
+declare @NumInBuy int;
 declare @BuyUnitMsr nvarchar(50);
-select @PurPackUn = COALESCE("PurPackUn", 1), @BuyUnitMsr = "BuyUnitMsr" from OITM where "ItemCode" = @ItemCode;
+declare @PurPackUn int;
+declare @PurPackMsr nvarchar(50);
+select @NumInBuy = COALESCE("NumInBuy", 1), 
+       @BuyUnitMsr = "BuyUnitMsr" ,
+       @PurPackUn = COALESCE("PurPackUn", 1),
+       @PurPackMsr = "PurPackMsr"
+from OITM where "ItemCode" = @ItemCode;
 
 declare @TargetType int;
 declare @TargetEntry int;
@@ -74,7 +80,7 @@ where T0."ItemCode" = @ItemCode
 order by T1."CreateDate", T1.CreateTS;
 
 declare @i int = 1
-declare @Quantity numeric(19, 6) = @PurPackUn
+declare @Quantity numeric(19, 6) = Case @Unit When 0 Then 1 When 1 Then @NumInBuy When 2 Then @NumInBuy * @PurPackUn End
 while @i is not null Begin
 	declare @iQty numeric(19, 6) = (select OpenQuantity from @tmp_ScannedDataSourceDocs where ID = @i)
 	If @iQty <= @Quantity Begin
@@ -112,19 +118,20 @@ If not exists(select 1 from @tmp_ScannedDataSourceDocs) Begin
 End
 
 
-set @Quantity = @PurPackUn
+set @Quantity = Case @Unit When 0 Then 1 When 1 Then @NumInBuy When 2 Then @NumInBuy * @PurPackUn End
 
 ----insert grpo line
 declare @LineID int = IsNull((select Max("U_LineID") + 1
                               from "@LW_YUVAL08_GRPO1" where "U_ID" = @ID), 0);
-insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_Quantity")
+insert into "@LW_YUVAL08_GRPO1"(U_ID, "U_LineID", "U_ItemCode", "U_BarCode", "U_empID", "U_Date", "U_Quantity", "U_Unit")
 select @ID,
        @LineID,
        @ItemCode,
        @BarCode,
        @empID,
        getdate(),
-       @Quantity;
+       @Quantity,
+        @Unit;
 
 insert into "@LW_YUVAL08_GRPO4"(U_ID, "U_LineID", "U_SourceType", "U_SourceEntry", "U_SourceLine", "U_Quantity")
 select @ID, @LineID, ObjType, DocEntry, LineNum, OpenQuantity from @tmp_ScannedDataSourceDocs
@@ -207,8 +214,10 @@ select T0."U_LineID" LineID
 , Sum(Case When U_TargetType in (13, 17) Then 1 Else 0 End) Fulfillment
 , Sum(Case When U_TargetType = 1250000001 Then 1 Else 0 End) Showroom
 , Case When IsNull(Sum(T1.U_TargetQty), 0) < @PurPackUn Then 1 Else 0 End Warehouse
-, @PurPackUn PurPackUn
-, @BuyUnitMsr BuyUnitMsr
+, @NumInBuy "NumInBuy"
+, @BuyUnitMsr "BuyUnitMsr"
+, @PurPackUn "PurPackUn"
+, @PurPackMsr "PurPackMsr"
 from [@LW_YUVAL08_GRPO1] T0
 left outer join [@LW_YUVAL08_GRPO2] T1 on T1.U_ID = T0.U_ID and T1.U_LineID = T0.U_LineID
 where T0.U_ID = @ID and T0.U_LineID = @LineID

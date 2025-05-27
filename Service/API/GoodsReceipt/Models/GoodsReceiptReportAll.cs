@@ -7,6 +7,8 @@ public class GoodsReceiptReportAll {
     public int    Showroom   { get; set; }
     public int    Stock      { get; set; }
     public int    Quantity   { get; set; }
-    public int    PackUnit   { get; set; }
+    public int    NumInBuy   { get; set; }
     public string BuyUnitMsr { get; set; }
+    public int    PurPackUn  { get; set; }
+    public string PurPackMsr { get; set; }
 }
