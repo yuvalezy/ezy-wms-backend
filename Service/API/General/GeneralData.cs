@@ -120,21 +120,41 @@ public class GeneralData {
         using var conn = Global.Connector;
         var       data = new List<ItemCheckResponse>();
         if (!string.IsNullOrWhiteSpace(scanBarCode)) {
-            const string query = """
-                                 select T0."ItemCode", T1."ItemName", COALESCE(T1."PurPackUn", 1) "PurPackUn"
-                                 from OBCD T0
-                                 inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
-                                 where T0."BcdCode" = @ScanCode
-                                 """;
+            const string query =
+                """
+                select T0."ItemCode"
+                     , T1."ItemName"
+                     , T1."BuyUnitMsr"
+                     , COALESCE(T1."NumInBuy", 1)  "NumInBuy"
+                     , T1."PurPackMsr"
+                     , COALESCE(T1."PurPackUn", 1) "PurPackUn"
+                from OBCD T0
+                         inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
+                where T0."BcdCode" = @ScanCode
+                """;
             var       parameter = new Parameter("@ScanCode", SqlDbType.NVarChar, 255, scanBarCode);
             using var rows      = conn.GetDataTable(query, parameter);
-            data.AddRange(rows.AsEnumerable().Select(row => new ItemCheckResponse((string)row["ItemCode"], row["ItemName"].ToString(), Convert.ToInt32(row["PurPackUn"]))));
+            data.AddRange(rows.AsEnumerable().Select(row => new ItemCheckResponse {
+                ItemCode   = (string)row["ItemCode"],
+                ItemName   = row["ItemName"].ToString(),
+                NumInBuy   = Convert.ToInt32(row["NumInBuy"]),
+                BuyUnitMsr = row["BuyUnitMsr"].ToString(),
+                PurPackUn  = Convert.ToInt32(row["PurPackUn"]),
+                PurPackMsr = row["PurPackMsr"].ToString(),
+            }));
         }
         else {
             const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"PurPackUn\", 1) \"PurPackUn\" from OITM where \"ItemCode\" = @ItemCode";
             var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
             conn.ExecuteReader(query, parameter, dr => {
-                var value = new ItemCheckResponse((string)dr["ItemCode"], dr["ItemName"].ToString(), Convert.ToInt32(dr["PurPackUn"]));
+                var value = new ItemCheckResponse {
+                    ItemCode   = (string)dr["ItemCode"],
+                    ItemName   = dr["ItemName"].ToString(),
+                    NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
+                    BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
+                    PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
+                    PurPackMsr = dr["PurPackMsr"].ToString(),
+                };
                 data.Add(value);
             });
         }
@@ -179,15 +199,16 @@ public class GeneralData {
     }
 
     public IEnumerable<ItemStockResponse> ItemStock(string itemCode, string whsCode) {
-        string query = """
-                       select T1."BinCode", T0."OnHandQty"
-                       from OIBQ T0
-                                inner join OBIN T1 on T1."AbsEntry" = T0."BinAbs"
-                       where T0."ItemCode" = @ItemCode
-                         and T0."WhsCode" = @WhsCode
-                         and T0."OnHandQty" > 0
-                       order by 1
-                       """;
+        string query =
+            """
+            select T1."BinCode", T0."OnHandQty"
+            from OIBQ T0
+                     inner join OBIN T1 on T1."AbsEntry" = T0."BinAbs"
+            where T0."ItemCode" = @ItemCode
+              and T0."WhsCode" = @WhsCode
+              and T0."OnHandQty" > 0
+            order by 1
+            """;
         var       values = new List<ItemStockResponse>();
         using var conn   = Global.Connector;
         conn.ExecuteReader(query, [new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode), new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode)],
@@ -196,14 +217,16 @@ public class GeneralData {
     }
 
     public IEnumerable<BinContent> BinCheck(int binEntry) {
-        string query = """
-                       select T1."ItemCode", T2."ItemName", T1."OnHandQty" / COALESCE(T2."NumInBuy", 1) "OnHand", 
-                              COALESCE(T2."PurPackUn", 1) "PackUnit", T2."BuyUnitMsr"
-                       from OIBQ T1 
-                       inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
-                       where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
-                       order by 1
-                       """;
+        string query =
+            """
+            select T1."ItemCode", T2."ItemName", T1."OnHandQty" "OnHand", 
+            COALESCE(T2."NumInBuy", 1) "NumInBuy", T2."BuyUnitMsr",
+            COALESCE(T2."PurPackUn", 1) "PurPackUn", T2."PurPackMsr"
+            from OIBQ T1 
+            inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
+            where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
+            order by 1
+            """;
         var       values = new List<BinContent>();
         using var conn   = Global.Connector;
         conn.ExecuteReader(query, [new Parameter("@AbsEntry", SqlDbType.Int, binEntry)],
@@ -212,8 +235,10 @@ public class GeneralData {
                     ItemCode   = (string)dr["ItemCode"],
                     ItemName   = dr["ItemName"].ToString(),
                     OnHand     = Convert.ToInt32(dr["OnHand"]),
-                    PackUnit   = Convert.ToInt32(dr["PackUnit"]),
-                    BuyUnitMsr = dr["BuyUnitMsr"].ToString()
+                    NumInBuy  = Convert.ToInt32(dr["NumInBuy"]),
+                    BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
+                    PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
+                    PurPackMsr = dr["PurPackMsr"].ToString()
                 });
             });
         return values;

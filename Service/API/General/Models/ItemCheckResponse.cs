@@ -1,12 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
 
 namespace Service.API.General.Models;
 
-public class ItemCheckResponse(string itemCode, string itemName, int purPackUn) {
-    public string ItemCode  { get; set; } = itemCode;
-    public string ItemName  { get; set; } = itemName;
-    public int    PurPackUn { get; set; } = purPackUn;
-    public List<string> Barcodes { get; set; } = [];
+public class ItemCheckResponse {
+    public string       ItemCode   { get; set; }
+    public string       ItemName   { get; set; }
+    public int          NumInBuy   { get; set; }
+    public string       BuyUnitMsr { get; set; }
+    public int          PurPackUn  { get; set; }
+    public string       PurPackMsr { get; set; }
+    public List<string> Barcodes   { get; set; } = [];
 }
 
 public class UpdateItemBarCodeResponse : ResponseBase {
