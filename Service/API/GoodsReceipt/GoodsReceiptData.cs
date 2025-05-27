@@ -434,18 +434,6 @@ public class GoodsReceiptData {
             };
             data.Add(line);
         });
-        data.Add(new GoodsReceiptReportAll {
-            ItemCode   = "MockCode",
-            ItemName   = "MockDesc",
-            Delivery   = 120,
-            Showroom   = 250,
-            Stock      = 1200,
-            Quantity   = 2,
-            NumInBuy   = 12,
-            BuyUnitMsr = "Doz",
-            PurPackUn  = 4,
-            PurPackMsr = "Pack"
-        });
         return data;
     }
 
@@ -467,6 +455,7 @@ public class GoodsReceiptData {
                     EmployeeName = employeeName,
                     TimeStamp    = timestamp,
                     Quantity     = quantity,
+                    Unit = (UnitType)Convert.ToInt16(dr["Unit"])
                 };
                 data.Add(line);
             });

@@ -1,7 +1,14 @@
 ﻿--begin tran
 
---declare @ID int = 1043;
---declare @LineID int = 0
+-- declare @ID int = 1060;
+-- declare @LineID int = 0
+-- declare @Quantity int = 2
+-- declare @UserSign int = 1
+
+-- stop test variables
+
+drop table if exists #tmp_ScannedData;
+
 declare @PurPackUn int;
 declare @NumInBuy int;
 select @PurPackUn = COALESCE(T2.PurPackUn, 1),
