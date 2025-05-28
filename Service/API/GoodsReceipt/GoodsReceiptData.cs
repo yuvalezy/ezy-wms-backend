@@ -81,9 +81,8 @@ public class GoodsReceiptData {
         using var conn = Global.Connector;
         int       id   = conn.GetValue<int>(GetQuery("CreateGoodsReceipt"), @params);
 
-        if (createParameters.Type != GoodsReceiptType.SpecificOrders)
+        if (createParameters.Type is not (GoodsReceiptType.SpecificOrders or GoodsReceiptType.SpecificReceipts))
             return id;
-
         string query = GetQuery("CreateGoodsReceiptDocument");
         @params = [
             new Parameter("@ID", SqlDbType.Int, id),
@@ -234,6 +233,11 @@ public class GoodsReceiptData {
         GetDocumentsSpecificDocuments(doc);
         return doc;
     }
+    
+    public GoodsReceiptType GetDocumentType(int id) {
+        using var conn = Global.Connector;
+        return conn.GetValue<GoodsReceiptType>("select \"U_Type\" from \"@LW_YUVAL08_GRPO\" where \"Code\" = @ID", new Parameter("@ID", SqlDbType.Int, id));
+    }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {
         List<Document> docs = [];
@@ -288,16 +292,17 @@ public class GoodsReceiptData {
             sb.Append(" and OPDN.\"DocNum\" = @GRPO ");
         }
 
-        if (parameters.PurchaseOrder != null) {
-            queryParams.Add("@PurchaseOrder", SqlDbType.Int).Value = parameters.PurchaseOrder;
-            sb.Append(
-                " and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPOR T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 22 and T1.\"DocNum\" = @PurchaseOrder) ");
-        }
+        if (parameters.Confirm != true) {
+            sb.Append(" and DOCS.\"U_Type\" <> 'R' ");
 
-        if (parameters.ReservedInvoice != null) {
-            queryParams.Add("@ReservedInvoice", SqlDbType.Int).Value = parameters.ReservedInvoice;
-            sb.Append(
-                " and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join OPCH T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = 18 and T1.\"DocNum\" = @ReservedInvoice) ");
+            AppendSourceDocumentQuery("PurchaseOrder", 22, "OPOR", parameters.PurchaseOrder);
+            AppendSourceDocumentQuery("ReservedInvoice", 18, "OPCH", parameters.ReservedInvoice);
+        }
+        else {
+            sb.Append(" and DOCS.\"U_Type\" = 'R' ");
+
+            AppendSourceDocumentQuery("GoodsReceipt", 20, "OPDN", parameters.GoodsReceipt);
+            AppendSourceDocumentQuery("PurchaseInvoice", 18, "OPCH", parameters.PurchaseInvoice);
         }
 
         sb.Append(" order by DOCS.");
@@ -341,6 +346,14 @@ public class GoodsReceiptData {
         var documents = docs.ToArray();
         GetDocumentsSpecificDocuments(documents);
         return documents;
+
+        void AppendSourceDocumentQuery(string paramName, int sourceType, string tableName, int? paramValue) {
+            if (paramValue == null)
+                return;
+            queryParams.Add($"@{paramName}", SqlDbType.Int).Value = paramValue;
+            sb.Append(
+                $" and DOCS.Code in (select T0.U_ID from \"@LW_YUVAL08_GRPO4\" T0 inner join {tableName} T1 on T1.\"DocEntry\" = T0.\"U_SourceEntry\" where T0.\"U_SourceType\" = {sourceType} and T1.\"DocNum\" = @{paramName}) ");
+        }
     }
 
     private static Document ReadDocument(IDataRecord dr) {

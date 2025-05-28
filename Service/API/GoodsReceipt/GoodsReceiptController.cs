@@ -19,10 +19,10 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("Create")]
     public Document CreateDocument([FromBody] CreateParameters parameters) {
-        var authorizations = new[] { Authorization.GoodsReceiptSupervisor };
+        var authorizations = parameters.Type != GoodsReceiptType.SpecificReceipts ? new[] { Authorization.GoodsReceiptSupervisor } : new[] { Authorization.GoodsReceiptConfirmationSupervisor };
         if (!Global.GRPOCreateSupervisorRequired) {
             Array.Resize(ref authorizations, authorizations.Length + 1);
-            authorizations[authorizations.Length - 1] = Authorization.GoodsReceipt;
+            authorizations[authorizations.Length - 1] = parameters.Type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceipt : Authorization.GoodsReceiptConfirmation;
         }
 
         if (!Global.ValidateAuthorization(EmployeeID, authorizations))
@@ -39,7 +39,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("AddItem")]
     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceipt : Authorization.GoodsReceiptConfirmation))
             throw new UnauthorizedAccessException("You don't have access for adding item to document");
         using var conn = Global.Connector;
         try {
@@ -49,7 +50,7 @@ public class GoodsReceiptController : LWApiController {
             var addItemResponse = Data.GoodsReceipt.AddItem(conn, parameters.ID, parameters.ItemCode, parameters.BarCode, EmployeeID, parameters.Unit!.Value);
             if (string.IsNullOrWhiteSpace(addItemResponse.ErrorMessage))
                 conn.CommitTransaction();
-            else 
+            else
                 conn.RollbackTransaction();
             return addItemResponse;
         }
@@ -62,7 +63,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("UpdateLine")]
     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceipt : Authorization.GoodsReceiptConfirmation))
             throw new UnauthorizedAccessException("You don't have access for updating line in document");
         using var conn = Global.Connector;
         try {
@@ -79,10 +81,12 @@ public class GoodsReceiptController : LWApiController {
             throw;
         }
     }
+
     [HttpPost]
     [ActionName("UpdateLineQuantity")]
     public UpdateItemResponse UpdateLineQuantity([FromBody] UpdateLineQuantityParameter parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceipt : Authorization.GoodsReceiptConfirmation))
             throw new UnauthorizedAccessException("You don't have access for updating line in document");
         using var conn = Global.Connector;
         try {
@@ -93,7 +97,7 @@ public class GoodsReceiptController : LWApiController {
             var updateItemResponse = Data.GoodsReceipt.UpdateLineQuantity(conn, parameters, EmployeeID);
             if (string.IsNullOrWhiteSpace(updateItemResponse.ErrorMessage))
                 conn.CommitTransaction();
-            else 
+            else
                 conn.RollbackTransaction();
             return updateItemResponse;
         }
@@ -106,7 +110,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("Cancel")]
     public bool CancelDocument([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
 
         return Data.GoodsReceipt.CancelDocument(parameters.ID, EmployeeID);
@@ -115,7 +120,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("Process")]
     public bool ProcessDocument([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         bool enableBin = Data.General.GetEmployeeData(EmployeeID).EnableBin;
         return Data.GoodsReceipt.ProcessDocument(parameters.ID, EmployeeID, enableBin, Data.General.AlertUsers);
@@ -124,7 +130,7 @@ public class GoodsReceiptController : LWApiController {
     [HttpGet]
     [ActionName("CancelReasons")]
     public IEnumerable<ValueDescription<int>> GetCancelReasons() {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt))
+        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptConfirmation))
             throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
         return Data.General.GetCancelReasons(ReasonType.GoodsReceipt);
     }
@@ -132,7 +138,10 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("Documents")]
     public IEnumerable<Document> GetDocuments([FromBody] FilterParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
+        var authorizations = parameters.Confirm != true
+            ? new[] { Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor }
+            : new[] { Authorization.GoodsReceiptConfirmation, Authorization.GoodsReceiptConfirmationSupervisor };
+        if (!Global.ValidateAuthorization(EmployeeID, authorizations))
             throw new UnauthorizedAccessException("You don't have access to get document");
         parameters.WhsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
         return Data.GoodsReceipt.GetDocuments(parameters);
@@ -141,15 +150,24 @@ public class GoodsReceiptController : LWApiController {
     [HttpGet]
     [Route("Document/{id:int}")]
     public Document GetDocument(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
-            throw new UnauthorizedAccessException("You don't have access to get document");
-        return Data.GoodsReceipt.GetDocument(id);
+        var document = Data.GoodsReceipt.GetDocument(id);
+        if (document.Type != GoodsReceiptType.SpecificReceipts) {
+            if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor))
+                throw new UnauthorizedAccessException("You don't have access to get document");
+        }
+        else {
+            if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptConfirmation, Authorization.GoodsReceiptConfirmationSupervisor))
+                throw new UnauthorizedAccessException("You don't have access to get document");
+        }
+
+        return document;
     }
 
     [HttpGet]
     [Route("GoodsReceiptAll/{id:int}")]
     public List<GoodsReceiptReportAll> GetGoodsReceiptAllReport(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(id);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptAllReport(id);
     }
@@ -157,7 +175,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpGet]
     [Route("GoodsReceiptAll/{id:int}/{item}")]
     public List<GoodsReceiptReportAllDetails> GetGoodsReceiptAllReportDetails(int id, string item) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(id);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptAllReportDetails(id, item);
     }
@@ -165,7 +184,8 @@ public class GoodsReceiptController : LWApiController {
     [HttpPost]
     [ActionName("UpdateGoodsReceiptAll")]
     public void UpdateGoodsReceiptAll([FromBody] UpdateDetailParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access for document cancellation");
         Data.GoodsReceipt.UpdateGoodsReceiptAll(parameters, EmployeeID);
     }
@@ -173,22 +193,26 @@ public class GoodsReceiptController : LWApiController {
     [HttpGet]
     [Route("GoodsReceiptVSExitReport/{id:int}")]
     public List<GoodsReceiptVSExitReport> GetGoodsReceiptVSExitReport(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(id);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptVSExitReport(id);
     }
-    
+
     [HttpGet]
     [Route("GoodsReceiptValidateProcess/{id:int}")]
     public List<GoodsReceiptValidateProcess> GetGoodsReceiptValidateProcess(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(id);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptValidateProcess(id);
     }
+
     [HttpPost]
     [Route("GoodsReceiptValidateProcessLineDetails")]
     public List<GoodsReceiptValidateProcessLineDetails> GetGoodsReceiptValidateProcessDetails([FromBody] GoodsReceiptValidateProcessLineDetailsParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor))
+        var type = Data.GoodsReceipt.GetDocumentType(parameters.ID);
+        if (!Global.ValidateAuthorization(EmployeeID, type != GoodsReceiptType.SpecificReceipts ? Authorization.GoodsReceiptSupervisor : Authorization.GoodsReceiptConfirmationSupervisor))
             throw new UnauthorizedAccessException("You don't have access to get document report");
         return Data.GoodsReceipt.GetGoodsReceiptValidateProcessLineDetails(parameters);
     }

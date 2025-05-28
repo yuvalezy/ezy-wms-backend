@@ -27,7 +27,7 @@ public class UpdateLineQuantityParameter {
                 throw new Exception("A supervisor password is required to update line!");
             if (!Data.ValidateAccess(UserName, out empID, out _))
                 return new ValueTuple<UpdateItemResponse, int>(new UpdateItemResponse(UpdateLineReturnValue.SupervisorPassword), -1);
-            if (!Global.ValidateAuthorization(empID, Authorization.GoodsReceiptSupervisor))
+            if (!Global.ValidateAuthorization(empID, Authorization.GoodsReceiptSupervisor, Authorization.GoodsReceiptConfirmationSupervisor))
                 return new ValueTuple<UpdateItemResponse, int>(new UpdateItemResponse(UpdateLineReturnValue.NotSupervisor), -1);
         }
 

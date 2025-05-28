@@ -31,7 +31,7 @@ public class UpdateLineParameter {
                 throw new Exception("A supervisor password is required to update line!");
             if (!Data.ValidateAccess(UserName, out empID, out _))
                 return (UpdateLineReturnValue.SupervisorPassword, -1);
-            if (!Global.ValidateAuthorization(empID, Authorization.GoodsReceiptSupervisor))
+            if (!Global.ValidateAuthorization(empID, Authorization.TransferSupervisor))
                 return (UpdateLineReturnValue.NotSupervisor, -1);
         }
 

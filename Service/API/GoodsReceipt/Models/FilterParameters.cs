@@ -17,8 +17,11 @@ public class FilterParameters {
     public int?             GRPO            { get; set; }
     public int?             PurchaseOrder   { get; set; }
     public int?             ReservedInvoice { get; set; }
+    public int?             GoodsReceipt    { get; set; }
+    public int?             PurchaseInvoice { get; set; }
     public bool?            OrderByDesc     { get; set; }
     public int?             LastID          { get; set; }
     public int?             PageSize        { get; set; }
     public int?             PageNumber      { get; set; }
+    public bool?            Confirm         { get; set; }
 }

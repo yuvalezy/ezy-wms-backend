@@ -340,6 +340,8 @@ public class Import {
         List<string> roles = [
             Const.GoodsReceipt,
             Const.GoodsReceiptSupervisor,
+            Const.GoodsReceiptConfirmation,
+            Const.GoodsReceiptConfirmationSupervisor,
             Const.Picking,
             Const.PickingSupervisor,
             Const.Counting,

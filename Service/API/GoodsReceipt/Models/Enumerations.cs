@@ -8,5 +8,6 @@ public enum OrderBy {
 
 public enum GoodsReceiptType {
     AutoConfirm = 'A',
-    SpecificOrders = 'S'
+    SpecificOrders = 'S',
+    SpecificReceipts = 'R'
 }

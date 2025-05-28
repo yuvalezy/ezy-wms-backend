@@ -222,6 +222,12 @@ public static class Global {
                 case Const.GoodsReceiptSupervisor:
                     RolesMap.Add(id, Authorization.GoodsReceiptSupervisor);
                     break;
+                case Const.GoodsReceiptConfirmation:
+                    RolesMap.Add(id, Authorization.GoodsReceiptConfirmation);
+                    break;
+                case Const.GoodsReceiptConfirmationSupervisor:
+                    RolesMap.Add(id, Authorization.GoodsReceiptConfirmationSupervisor);
+                    break;
                 case Const.Picking:
                     RolesMap.Add(id, Authorization.Picking);
                     break;
