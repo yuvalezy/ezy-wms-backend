@@ -34,6 +34,10 @@ public class GoodsReceiptData {
         var doc = GetDocument(id);
         if (doc.Status != DocumentStatus.InProgress)
             throw new Exception("Cannot process document if the Status is not In Progress");
+        if (doc.Type == GoodsReceiptType.SpecificReceipts) {
+            UpdateDocumentStatus(id, employeeID, DocumentStatus.Finished);
+            return true;
+        }
         UpdateDocumentStatus(id, employeeID, DocumentStatus.Processing);
         try {
             using var creation = new GoodsReceiptCreation(id, employeeID, enableBin);
