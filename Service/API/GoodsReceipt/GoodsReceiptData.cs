@@ -193,7 +193,7 @@ public class GoodsReceiptData {
                 new Parameter("@ItemCode", SqlDbType.NVarChar, 50, itemCode),
                 new Parameter("@BarCode", SqlDbType.NVarChar, 254, barcode),
                 new Parameter("@empID", SqlDbType.Int, employeeID),
-                new Parameter("@Unit", SqlDbType.SmallInt, unit)
+                new Parameter("@Unit", SqlDbType.SmallInt, unit),
             ], dr => {
                 returnValue = new AddItemResponse {
                     LineID      = (int)dr["LineID"],
@@ -236,7 +236,7 @@ public class GoodsReceiptData {
     
     public GoodsReceiptType GetDocumentType(int id) {
         using var conn = Global.Connector;
-        return conn.GetValue<GoodsReceiptType>("select \"U_Type\" from \"@LW_YUVAL08_GRPO\" where \"Code\" = @ID", new Parameter("@ID", SqlDbType.Int, id));
+        return (GoodsReceiptType)conn.GetValue<char>("select \"U_Type\" from \"@LW_YUVAL08_GRPO\" where \"Code\" = @ID", new Parameter("@ID", SqlDbType.Int, id));
     }
 
     public IEnumerable<Document> GetDocuments(FilterParameters parameters) {

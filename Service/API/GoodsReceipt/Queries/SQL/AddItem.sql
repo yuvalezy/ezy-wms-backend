@@ -49,39 +49,57 @@ where T0.U_ItemCode = @ItemCode
 Group By T2.U_SourceType, T2.U_SourceEntry, T2.U_SourceLine
 
 
-insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
-select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty" - IsNull(T2.Quantity, 0) OpenQuantity
-from POR1 T0
-         inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and
-                               (
-                                   @Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
-                                       or @Type = 'S'
-                                   )
-         left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
-         left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
-where T0."ItemCode" = @ItemCode
-  and T0."LineStatus" = 'O'
-  and T0."WhsCode" = @WhsCode
-  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
-  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
-  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
-order by T1."CreateDate", T1.CreateTS;
+If @Type <> 'R' BEGIN
+    insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
+    select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty" - IsNull(T2.Quantity, 0) OpenQuantity
+    from POR1 T0
+             inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and
+                                   (
+                                       @Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
+                                           or @Type = 'S'
+                                       )
+             left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
+             left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
+    where T0."ItemCode" = @ItemCode
+      and T0."LineStatus" = 'O'
+      and T0."WhsCode" = @WhsCode
+      and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
+      and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+      and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
+    order by T1."CreateDate", T1.CreateTS;
+END Else Begin
+    insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
+    select T0."ObjType", T0."DocEntry", T0."LineNum", T0."InvQty" - IsNull(T2.Quantity, 0) OpenQuantity
+    from PDN1 T0
+             inner join OPDN T1 on T1."DocEntry" = T0."DocEntry" and T1."CANCELED" not in ('C', 'Y')
+             left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
+             left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
+    where T0."ItemCode" = @ItemCode
+      and T0."WhsCode" = @WhsCode
+      and T0."InvQty" - IsNull(T2.Quantity, 0) > 0
+      and T3.Code is not null
+      and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
+    order by T1."CreateDate", T1.CreateTS;
+end
 
 insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
-select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty" - IsNull(T2.Quantity, 0) OpenQuantity
+select T0."ObjType", T0."DocEntry", T0."LineNum", Case When @Type <> 'R' Then T0."OpenInvQty" Else T0."InvQty" End - IsNull(T2.Quantity, 0) OpenQuantity
 from PCH1 T0
-         inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and
+         inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and (
+             @Type <> 'R' and T1."DocStatus" = 'O' and T1."isIns" = 'Y'
+             or @Type = 'R' and T1."CANCELED" not in ('C', 'Y') and T1."isIns" = 'N'
+    ) and
                                (
                                    @Type = 'A' and (T1.CardCode = @CardCode or @CardCode is null)
-                                       or @Type = 'S'
+                                       or @Type in ('S', 'R')
                                    )
          left outer join #tmp_SourceData T2 on T2.ObjType = T0.ObjType and T2.DocEntry = T0.DocEntry and T2.LineNum = T0.LineNum
          left outer join "@LW_YUVAL08_GRPO3" T3 on T3.U_ID = @ID and T3."U_DocEntry" = T0."DocEntry" and T3."U_ObjType" = T0."ObjType"
 where T0."ItemCode" = @ItemCode
-  and T0."LineStatus" = 'O'
+  and (@Type <> 'R' and T0."LineStatus" = 'O' or @Type = 'R')
   and T0."WhsCode" = @WhsCode
-  and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
-  and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+  and Case When @Type <> 'R' Then T0."OpenInvQty" Else T0."InvQty" End - IsNull(T2.Quantity, 0) > 0
+  and (@Type = 'A' or @Type in ('S', 'R') and T3.Code is not null)
   and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
 order by T1."CreateDate", T1.CreateTS;
 
@@ -121,9 +139,9 @@ If @Quantity > 0
                 from "@LW_YUVAL08_GRPO1" T0
                          inner join "@LW_YUVAL08_GRPO4" T1 on T1.U_ID = T0.U_ID and T1.U_LineID = T0.U_LineID
                 where T0.U_ID = @ID
-                  and T1."U_SourceType" = 22
+                  and T1."U_SourceType" in (20, 22)
                   and T0."U_ItemCode" = @ItemCode
-                order by Case T1.U_SourceType When 22 Then 'A' Else 'B' End, T1.U_LineID desc;
+                order by Case T1.U_SourceType When 20 Then 'A' When 22 Then 'B' Else 'C' End, T1.U_LineID desc;
             End
         set @Quantity = 0
     End
