@@ -429,7 +429,7 @@ public class GoodsReceiptData {
                 Stock      = Convert.ToInt32(dr["OnHand"]),
                 NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
                 BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
-                PurPackUn   = Convert.ToInt32(dr["PurPackUn"]),
+                PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
                 PurPackMsr = dr["PurPackMsr"].ToString(),
             };
             data.Add(line);
@@ -455,7 +455,7 @@ public class GoodsReceiptData {
                     EmployeeName = employeeName,
                     TimeStamp    = timestamp,
                     Quantity     = quantity,
-                    Unit = (UnitType)Convert.ToInt16(dr["Unit"])
+                    Unit         = (UnitType)Convert.ToInt16(dr["Unit"])
                 };
                 data.Add(line);
             });
@@ -520,7 +520,17 @@ public class GoodsReceiptData {
                 value = control[tuple];
             }
 
-            value.Lines.Add(new GoodsReceiptVSExitReportLine((string)dr["ItemCode"], dr["ItemName"].ToString(), (int)dr["OpenInvQty"], (int)dr["Quantity"]));
+            value.Lines.Add(new GoodsReceiptVSExitReportLine {
+                ItemCode     = (string)dr["ItemCode"],
+                ItemName     = dr["ItemName"].ToString(),
+                OpenQuantity = (int)dr["OpenInvQty"],
+                Quantity     = (int)dr["Quantity"],
+                NumInBuy     = Convert.ToInt32(dr["NumInBuy"]),
+                BuyUnitMsr   = dr["BuyUnitMsr"].ToString(),
+                PurPackUn    = Convert.ToInt32(dr["PurPackUn"]),
+                PurPackMsr   = dr["PurPackMsr"].ToString(),
+                Unit         = (UnitType)Convert.ToInt16(dr["Unit"])
+            });
         });
         return data;
     }
@@ -557,8 +567,11 @@ public class GoodsReceiptData {
                 Quantity   = Convert.ToDecimal(dr["Quantity"]),
                 BaseLine   = (int)dr["BaseLine"],
                 OpenInvQty = Convert.ToDecimal(dr["OpenInvQty"]),
-                PackUnit   = Convert.ToInt32(dr["PackUnit"]),
+                NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
                 BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
+                PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
+                PurPackMsr = dr["PurPackMsr"].ToString(),
+                UnitType   = (UnitType)Convert.ToInt16(dr["Unit"]),
                 LineStatus = (GoodsReceiptValidateProcessLineStatus)dr["LineStatus"]
             };
             value.Lines.Add(line);
@@ -581,6 +594,7 @@ public class GoodsReceiptData {
             value.Employee        = dr["EmployeeName"].ToString();
             value.Quantity        = Convert.ToDecimal(dr["Quantity"]);
             value.ScannedQuantity = Convert.ToDecimal(dr["ScannedQuantity"]);
+            value.Unit            = (UnitType)Convert.ToInt16(dr["Unit"]);
             data.Add(value);
         });
         return data;

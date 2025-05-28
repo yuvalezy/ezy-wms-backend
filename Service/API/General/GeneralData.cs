@@ -144,8 +144,10 @@ public class GeneralData {
             }));
         }
         else {
-            const string query     = "select \"ItemCode\", \"ItemName\", COALESCE(\"PurPackUn\", 1) \"PurPackUn\" from OITM where \"ItemCode\" = @ItemCode";
-            var          parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
+            const string query =
+                """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
+
+            var parameter = new Parameter("@ItemCode", SqlDbType.NVarChar, 50, scanItemCode);
             conn.ExecuteReader(query, parameter, dr => {
                 var value = new ItemCheckResponse {
                     ItemCode   = (string)dr["ItemCode"],
@@ -235,7 +237,7 @@ public class GeneralData {
                     ItemCode   = (string)dr["ItemCode"],
                     ItemName   = dr["ItemName"].ToString(),
                     OnHand     = Convert.ToInt32(dr["OnHand"]),
-                    NumInBuy  = Convert.ToInt32(dr["NumInBuy"]),
+                    NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
                     BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
                     PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
                     PurPackMsr = dr["PurPackMsr"].ToString()

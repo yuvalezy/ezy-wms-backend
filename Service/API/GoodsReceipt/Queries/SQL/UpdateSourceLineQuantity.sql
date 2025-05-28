@@ -11,9 +11,17 @@ drop table if exists #tmp_ScannedData;
 
 declare @PurPackUn int;
 declare @NumInBuy int;
+declare @ItemCode nvarchar(50);
+declare @empID int;
+declare @CardCode nvarchar(50);
+declare @Type char(1);
+declare @Unit smallint
 select @PurPackUn = COALESCE(T2.PurPackUn, 1),
        @NumInBuy = COALESCE(T2.NumInBuy, 1),
-       @Quantity = @Quantity * Case When T0."U_Unit" >= 1 Then COALESCE(T2."NumInBuy", 1) Else 1 End * Case When T0."U_Unit" = 2 Then COALESCE(T2."PurPackUn", 1) Else 1 End
+       @Quantity = @Quantity * Case When T0."U_Unit" >= 1 Then COALESCE(T2."NumInBuy", 1) Else 1 End * Case When T0."U_Unit" = 2 Then COALESCE(T2."PurPackUn", 1) Else 1 End,
+       @CardCode = T1.U_CardCode, @Type = T1.U_Type,
+       @ItemCode = T0.U_ItemCode, @empID = T0.U_empID,
+       @Unit = COALESCE(T0."U_Unit", 0)
 from "@LW_YUVAL08_GRPO1" T0
          inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
          inner join OITM T2 on T2.ItemCode = T0.U_ItemCode
@@ -25,18 +33,6 @@ where U_ID = @ID and "U_LineID" = @LineID
 
 delete from "@LW_YUVAL08_GRPO2" where U_ID = @ID and U_LineID = @LineID
 delete from "@LW_YUVAL08_GRPO4" where U_ID = @ID and U_LineID = @LineID
-
-declare @ItemCode nvarchar(50);
-declare @empID int;
-declare @CardCode nvarchar(50);
-declare @Type char(1);
-
-select @CardCode = T1.U_CardCode, @Type = T1.U_Type,
-       @ItemCode = T0.U_ItemCode, @empID = T0.U_empID
-from "@LW_YUVAL08_GRPO1" T0
-         inner join "@LW_YUVAL08_GRPO" T1 on T1.Code = @ID
-         inner join OITM T2 on T2.ItemCode = T0.U_ItemCode
-where T0.U_ID = @ID and T0.U_LineID = @LineID;
 
 SET NOCOUNT ON;
 
@@ -73,6 +69,7 @@ where T0."ItemCode" = @ItemCode
   and T0."WhsCode" = @WhsCode
   and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
   and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
 order by T1."CreateDate", T1.CreateTS;
 
 insert into @tmp_ScannedDataSourceDocs(ObjType, DocEntry, LineNum, OpenQuantity)
@@ -90,6 +87,7 @@ where T0."ItemCode" = @ItemCode
   and T0."WhsCode" = @WhsCode
   and T0."OpenInvQty" - IsNull(T2.Quantity, 0) > 0
   and (@Type = 'A' or @Type = 'S' and T3.Code is not null)
+  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
 order by T1."CreateDate", T1.CreateTS;
 
 declare @i int = 1

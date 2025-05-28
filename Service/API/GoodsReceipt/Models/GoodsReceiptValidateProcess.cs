@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Service.API.General;
 
 namespace Service.API.GoodsReceipt.Models;
 
@@ -14,14 +15,17 @@ public class GoodsReceiptValidateProcess {
 }
 
 public class GoodsReceiptValidateProcessLine {
-    public int     LineNumber { get; set; }
-    public string  ItemCode   { get; set; }
-    public string  ItemName   { get; set; }
-    public decimal Quantity   { get; set; }
-    public int     BaseLine   { get; set; }
-    public decimal OpenInvQty { get; set; }
-    public int     PackUnit   { get; set; }
-    public string  BuyUnitMsr { get; set; }
+    public int      LineNumber { get; set; }
+    public string   ItemCode   { get; set; }
+    public string   ItemName   { get; set; }
+    public decimal  Quantity   { get; set; }
+    public int      BaseLine   { get; set; }
+    public decimal  OpenInvQty { get; set; }
+    public int      NumInBuy   { get; set; }
+    public string   BuyUnitMsr { get; set; }
+    public int      PurPackUn  { get; set; }
+    public string   PurPackMsr { get; set; }
+    public UnitType UnitType   { get; set; }
 
     public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
 }
@@ -31,6 +35,7 @@ public class GoodsReceiptValidateProcessLineDetails {
     public string   Employee        { get; set; }
     public decimal  Quantity        { get; set; }
     public decimal  ScannedQuantity { get; set; }
+    public UnitType Unit            { get; set; }
 }
 
 public class GoodsReceiptValidateProcessLineDetailsParameters {

@@ -8,7 +8,8 @@
 select T1."U_Date"                          "TimeStamp",
        T2."firstName" + ' ' + T2."lastName" "EmployeeName",
        T0."U_Quantity"                      "Quantity",
-       T1."U_Quantity"                      "ScannedQuantity"
+       T1."U_Quantity"                      "ScannedQuantity",
+       T1."U_Unit"                          "Unit"
 from "@LW_YUVAL08_GRPO4" T0
          inner join "@LW_YUVAL08_GRPO1" T1 on T1.U_ID = T0.U_ID and T1."U_LineID" = T0."U_LineID"
          inner join OHEM T2 on T2."empID" = T1."U_EmpID"
