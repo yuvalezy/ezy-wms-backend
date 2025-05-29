@@ -159,6 +159,10 @@ public class Import {
     }
 
     private bool FieldExists(string tableName, string fieldName) {
+        if (tableName.StartsWith("LW_YUVAL08")) {
+            // For user-defined tables, check CUFD
+            tableName = $"@{tableName}";
+        }
         var company = connection.GetCompany();
         var rs      = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
 
@@ -253,57 +257,6 @@ public class Import {
             Shared.ReleaseComObject(userField);
         }
     }
-
-    // private void ProcessUserTableIndex(string tableName, TableIndexInfo indexInfo) {
-    //     var company = connection.GetCompany();
-    //
-    //     try {
-    //         // Check if index already exists
-    //         var rs = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
-    //         rs.DoQuery($"SELECT 1 FROM OUDI WHERE TableName = '{tableName}' AND IndexName = '{indexInfo.Name}'");
-    //         bool indexExists = !rs.EoF;
-    //         Shared.ReleaseComObject(rs);
-    //
-    //         if (indexExists) {
-    //             LogMessage($"Index {indexInfo.Name} already exists in table {tableName}. Skipping creation.");
-    //             return;
-    //         }
-    //
-    //         LogMessage($"Creating index {indexInfo.Name} on table {tableName}");
-    //
-    //         // We need to use SQL to create the index since SAP B1 DI API doesn't provide a way to create indexes
-    //         StringBuilder indexSql = new StringBuilder();
-    //         indexSql.Append($"CREATE ");
-    //
-    //         if (indexInfo.IsUnique) {
-    //             indexSql.Append("UNIQUE ");
-    //         }
-    //
-    //         indexSql.Append($"INDEX {indexInfo.Name} ON [@{tableName}] (");
-    //
-    //         for (int i = 0; i < indexInfo.Fields.Count; i++) {
-    //             if (i > 0) indexSql.Append(", ");
-    //             indexSql.Append($"[{indexInfo.Fields[i]}]");
-    //         }
-    //
-    //         indexSql.Append(")");
-    //
-    //         rs = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
-    //         try {
-    //             rs.DoQuery(indexSql.ToString());
-    //             LogMessage($"Index {indexInfo.Name} created successfully.");
-    //         }
-    //         catch (Exception ex) {
-    //             LogMessage($"ERROR creating index {indexInfo.Name}: {ex.Message}");
-    //         }
-    //         finally {
-    //             Shared.ReleaseComObject(rs);
-    //         }
-    //     }
-    //     catch (Exception ex) {
-    //         LogMessage($"ERROR processing index {indexInfo.Name}: {ex.Message}");
-    //     }
-    // }
 
     private BoFieldTypes GetFieldType(string typeName) =>
         typeName switch {
