@@ -36,8 +36,8 @@ public class TransferData {
         using var conn = Global.Connector;
         var       info = new ProcessInfoResponse();
         conn.ExecuteReader(GetQuery("ProcessInfo"), @params, dr => {
-            info.IsComplete = !Convert.ToBoolean(dr["IsComplete"]);
-            info.Comments = dr["Comments"].ToString();
+            info.IsComplete = !Convert.ToBoolean(dr["IsComplete"]) && Convert.ToBoolean(dr["HasItems"]);
+            info.Comments   = dr["Comments"].ToString();
         });
         return info;
     }
