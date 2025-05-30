@@ -34,18 +34,27 @@ public class TransferData {
             new Parameter("@id", SqlDbType.Int, id),
         };
         using var conn     = Global.Connector;
-        var       response = GetTransfer(id);
+        var       response = GetTransfer(id, true);
         conn.ExecuteReader(GetQuery("ProcessInfo"), @params, dr => response.IsComplete = !Convert.ToBoolean(dr["IsComplete"]) && Convert.ToBoolean(dr["HasItems"]));
         return response;
     }
 
-    public Models.Transfer GetTransfer(int id) {
-        Models.Transfer count = null;
-        var             sb    = new StringBuilder(GetQuery("GetTransfers"));
-        sb.Append(" where TRANSFERS.\"Code\" = @ID");
-        using var conn = Global.Connector;
-        conn.ExecuteReader(sb, new Parameter("@ID", SqlDbType.Int, id), dr => count = ReadTransfer(dr));
-        return count;
+    public Models.Transfer GetTransfer(int id, bool progress = false) {
+        Models.Transfer response             = null;
+        string          additionalColumns = string.Empty;
+        var             sb                = new StringBuilder(GetQuery("GetTransfers"));
+        additionalColumns = GetTransfersAppendProgress(progress, additionalColumns, sb);
+        sb.Append(" where TRANSFERS.\"Code\" = @ID ");
+        GetTransfersAppendProgressGroups(progress, sb);
+        string    query =  string.Format(sb.ToString(), additionalColumns);
+        using var conn  = Global.Connector;
+        conn.ExecuteReader(query, new Parameter("@ID", SqlDbType.Int, id), dr => {
+            response = ReadTransfer(dr);
+            if (progress) {
+                response.Progress = Convert.ToInt32(dr["Progress"]);
+            }
+        });
+        return response;
     }
 
     public IEnumerable<Models.Transfer> GetTransfers(FilterParameters parameters) {
@@ -56,11 +65,7 @@ public class TransferData {
             new Parameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = parameters.WhsCode }
         };
 
-        if (parameters.Progress) {
-            additionalColumns = $@"{Environment.NewLine}, IIF(Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)) > 0,
-                    Sum(IIF(TRANS1.""U_Type"" = 'T', TRANS1.""U_Quantity"", 0)) * 100 / Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)), 0) ""Progress"" ";
-            sb.Append("left outer join \"@LW_YUVAL08_TRANS1\" TRANS1 on TRANS1.\"U_ID\" = TRANSFERS.\"Code\" and TRANS1.\"U_LineStatus\" <> 'C' ");
-        }
+        additionalColumns = GetTransfersAppendProgress(parameters.Progress, additionalColumns, sb);
 
         sb.Append($" where TRANSFERS.\"U_WhsCode\" = @WhsCode ");
         if (parameters.Status is { Length: > 0 }) {
@@ -79,21 +84,7 @@ public class TransferData {
             sb.Append(" and DATEDIFF(day,TRANSFERS.\"U_StatusDate\",@Date) = 0 ");
         }
 
-        if (parameters.Progress) {
-            sb.Append(@"Group By TRANSFERS.""Code"",
-         TRANSFERS.""Name"",
-         TRANSFERS.""U_Date"",
-         TRANSFERS.""U_empID"",
-         T1.""firstName"",
-         T1.""lastName"",
-         TRANSFERS.""U_Status"",
-         TRANSFERS.""U_StatusDate"",
-         TRANSFERS.""U_StatusEmpID"",
-         T2.""firstName"",
-         T2.""lastName"",
-         TRANSFERS.""U_WhsCode"",
-         Cast(TRANSFERS.""U_Comments"" as varchar(8000)) ");
-        }
+        GetTransfersAppendProgressGroups(parameters.Progress, sb);
 
         if (parameters.OrderBy != null) {
             sb.Append(" order by TRANSFERS.");
@@ -112,8 +103,7 @@ public class TransferData {
                 sb.Append(" desc");
         }
 
-        string query = sb.ToString();
-        query = string.Format(query, additionalColumns);
+        string query =  string.Format(sb.ToString(), additionalColumns);
 
         using var conn = Global.Connector;
         conn.ExecuteReader(query, queryParams, dr => {
@@ -126,6 +116,34 @@ public class TransferData {
         });
         var documents = counts.ToArray();
         return documents;
+    }
+
+
+    private static string GetTransfersAppendProgress(bool progress, string additionalColumns, StringBuilder sb) {
+        if (!progress) 
+            return additionalColumns;
+        additionalColumns = $@"{Environment.NewLine}, IIF(Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)) > 0,
+                    Sum(IIF(TRANS1.""U_Type"" = 'T', TRANS1.""U_Quantity"", 0)) * 100 / Sum(IIF(TRANS1.""U_Type"" = 'S', TRANS1.""U_Quantity"", 0)), 0) ""Progress"" ";
+        sb.Append("left outer join \"@LW_YUVAL08_TRANS1\" TRANS1 on TRANS1.\"U_ID\" = TRANSFERS.\"Code\" and TRANS1.\"U_LineStatus\" <> 'C' ");
+
+        return additionalColumns;
+    }
+    private static void GetTransfersAppendProgressGroups(bool progress, StringBuilder sb) {
+        if (!progress) 
+            return;
+        sb.Append(@"Group By TRANSFERS.""Code"",
+         TRANSFERS.""Name"",
+         TRANSFERS.""U_Date"",
+         TRANSFERS.""U_empID"",
+         T1.""firstName"",
+         T1.""lastName"",
+         TRANSFERS.""U_Status"",
+         TRANSFERS.""U_StatusDate"",
+         TRANSFERS.""U_StatusEmpID"",
+         T2.""firstName"",
+         T2.""lastName"",
+         TRANSFERS.""U_WhsCode"",
+         Cast(TRANSFERS.""U_Comments"" as varchar(8000)) ");
     }
 
     private Models.Transfer ReadTransfer(IDataReader dr) {

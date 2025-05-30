@@ -64,6 +64,7 @@ public class TransferCreation(int id, int employeeID) : IDisposable {
             lines.FromWarehouseCode = whsCode;
             lines.WarehouseCode     = whsCode;
             lines.Quantity          = value.Quantity;
+            lines.UseBaseUnits      = BoYesNoEnum.tYES;
 
             value.SourceBins.ForEach(source => {
                 if (lines.BinAllocations.BinAbsEntry > 0) lines.BinAllocations.Add();
