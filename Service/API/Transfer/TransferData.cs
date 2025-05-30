@@ -283,16 +283,16 @@ public class TransferData {
         using var conn = Global.Connector;
         conn.ExecuteReader(GetQuery(query), queryParams, dr => {
             var content = new TransferContent {
-                Code     = (string)dr["ItemCode"],
-                Name     = dr["ItemName"].ToString(),
-                Quantity = Convert.ToInt32(dr["Quantity"])
+                Code       = (string)dr["ItemCode"],
+                Name       = dr["ItemName"].ToString(),
+                Quantity   = Convert.ToInt32(dr["Quantity"]),
+                NumInBuy   = Convert.ToInt32(dr["NumInBuy"]),
+                BuyUnitMsr = dr["BuyUnitMsr"].ToString(),
+                PurPackUn  = Convert.ToInt32(dr["PurPackUn"]),
+                PurPackMsr = dr["PurPackMsr"].ToString()
             };
             switch (contentParameters.Type) {
                 case SourceTarget.Source:
-                    content.NumInBuy   = Convert.ToInt32(dr["NumInBuy"]);
-                    content.BuyUnitMsr = dr["BuyUnitMsr"].ToString();
-                    content.PurPackUn  = Convert.ToInt32(dr["PurPackUn"]);
-                    content.PurPackMsr = dr["PurPackMsr"].ToString();
                     content.Unit       = (UnitType)Convert.ToInt16(dr["Unit"]);
                     break;
                 case SourceTarget.Target: {
