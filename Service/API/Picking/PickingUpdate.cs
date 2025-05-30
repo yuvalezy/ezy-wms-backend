@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using SAPbobsCOM;
+using Service.API.General;
 using Service.API.Picking.Models;
 using Service.Shared.Company;
 using Service.Shared.Utils;
@@ -111,7 +112,7 @@ public class PickingUpdate(int id) : IDisposable {
                 continue;
             }
 
-            pl.Lines.PickedQuantity = value.Quantity;
+            pl.Lines.PickedQuantity = (double)value.Quantity / (value.Unit != UnitType.Unit ? value.NumInBuy : 1);
 
             UpdatePickListBinLocations(pl.Lines.BinAllocations, value);
         }

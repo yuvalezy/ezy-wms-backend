@@ -153,6 +153,7 @@
     <Compile Include="API\Models\BinContent.cs" />
     <Compile Include="API\Models\BusinessPartner.cs" />
     <Compile Include="API\Models\DocumentStatus.cs" />
+    <Compile Include="API\Models\HomeInfo.cs" />
     <Compile Include="API\Models\Parameters.cs" />
     <Compile Include="API\Models\PickValueCheckData.cs" />
     <Compile Include="API\Models\Response.cs" />

@@ -23,6 +23,13 @@ public class GeneralController : LWApiController {
     private readonly Data data = new();
 
     [HttpGet]
+    [ActionName("HomeInfo")]
+    public HomeInfo GetHomeInfo() {
+        var employeeData = data.General.GetEmployeeData(EmployeeID);
+        return data.General.GetHomeInfo(employeeData);
+    }
+
+    [HttpGet]
     [ActionName("UserInfo")]
     public UserInfo GetUserInfo() {
         var employeeData = data.General.GetEmployeeData(EmployeeID);

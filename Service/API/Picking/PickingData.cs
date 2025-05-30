@@ -111,8 +111,9 @@ public class PickingData {
             sb.AppendLine(" and DATEDIFF(day,PICKS.\"U_StatusDate\",@Date) = 0 ");
         }
 
-        using var conn = Global.Connector;
-        conn.ExecuteReader(string.Format(GetQuery("GetPickings"), sb), queryParams, dr => values.Add(PickingDocument.Read(dr)));
+        using var conn   = Global.Connector;
+        string    query = string.Format(GetQuery("GetPickings"), sb);
+        conn.ExecuteReader(query, queryParams, dr => values.Add(PickingDocument.Read(dr)));
         return values;
     }
 

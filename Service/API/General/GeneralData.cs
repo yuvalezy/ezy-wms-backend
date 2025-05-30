@@ -245,4 +245,35 @@ public class GeneralData {
             });
         return values;
     }
+
+    public HomeInfo GetHomeInfo(EmployeeData data) {
+
+        const string query =
+            """
+            select (select Count(1) from OITW where "WhsCode" = @WhsCode and "OnHand" > 0)                                                 "ItemCheck",
+                   (select Count(1) from OBIN where "WhsCode" = @WhsCode)                                                                  "BinCheck",
+                   (select Count(1) from "@LW_YUVAL08_GRPO" where "U_WhsCode" = @WhsCode and "U_Status" in ('O', 'I') and "U_Type" <> 'R') "GoodsReceipt",
+                   (select Count(1) from "@LW_YUVAL08_GRPO" where "U_WhsCode" = @WhsCode and "U_Status" in ('O', 'I') and "U_Type" = 'R')  "ReceiptConfirmation",
+                   (select Count(distinct PICKS."AbsEntry")
+                    from OPKL PICKS
+                             inner join PKL1 T1 on T1."AbsEntry" = PICKS."AbsEntry"
+                             inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
+                    where T2.LocCode = @WhsCode
+                      and PICKS."Status" in ('R', 'P', 'D'))                                                                               "Picking",
+                   (select Count(1) from "@LW_YUVAL08_OINC" where "U_WhsCode" = @WhsCode and "U_Status" in ('O', 'I'))                     "Counting",
+                   (select Count(1) from "@LW_YUVAL08_TRANS" where "U_WhsCode" = @WhsCode and "U_Status" in ('O', 'I'))                    "Transfers"
+            """;
+        using var conn = Global.Connector;
+        var       info = new HomeInfo();
+        conn.ExecuteReader(query, new Parameter("@WhsCode", SqlDbType.NVarChar, 50) { Value = data.WhsCode }, dr => {
+            info.ItemCheck           = Convert.ToInt32(dr["ItemCheck"]);
+            info.BinCheck            = Convert.ToInt32(dr["BinCheck"]);
+            info.GoodsReceipt        = Convert.ToInt32(dr["GoodsReceipt"]);
+            info.ReceiptConfirmation = Convert.ToInt32(dr["ReceiptConfirmation"]);
+            info.Picking             = Convert.ToInt32(dr["Picking"]);
+            info.Counting            = Convert.ToInt32(dr["Counting"]);
+            info.Transfers           = Convert.ToInt32(dr["Transfers"]);
+        });
+        return info;
+    }
 }
