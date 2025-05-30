@@ -181,7 +181,6 @@
     <Compile Include="API\Transfer\Models\CreateTransferLine.cs" />
     <Compile Include="API\Transfer\Models\Enumerations.cs" />
     <Compile Include="API\Transfer\Models\FilterParameters.cs" />
-    <Compile Include="API\Transfer\Models\ProcessInfoResponse.cs" />
     <Compile Include="API\Transfer\Models\Transfer.cs" />
     <Compile Include="API\Transfer\Models\TransferContent.cs" />
     <Compile Include="API\Transfer\Models\TransferContentParameters.cs" />

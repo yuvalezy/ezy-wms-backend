@@ -14,4 +14,5 @@ public class Transfer {
     public string         WhsCode        { get; set; }
     public int?           Progress       { get; set; }
     public string         Comments       { get; set; }
+    public bool?          IsComplete     { get; set; }
 }

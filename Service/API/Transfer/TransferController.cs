@@ -22,7 +22,7 @@ public class TransferController : LWApiController {
 
     [HttpGet]
     [Route("ProcessInfo/{id:int}")]
-    public ProcessInfoResponse ProcessInfo(int id) {
+    public Models.Transfer ProcessInfo(int id) {
         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
             throw new UnauthorizedAccessException("You don't have access for transfer completion check");
         return Data.Transfer.ProcessInfo(id);
