@@ -14,6 +14,9 @@ public class AddItemParameter : AddItemParameterBase {
             throw new ArgumentException(ErrorMessages.ID_is_a_required_parameter);
         if (Quantity <= 0)
             throw new ArgumentException(ErrorMessages.Quantity_is_a_required_parameter);
+        if (!Unit.HasValue) {
+            throw new ArgumentException(ErrorMessages.UnitType_is_a_required_parameter);
+        }
         //todo validate Bin Entry only if current session warehouse managed bin location
         // if (BinEntry <= 0)
         //     throw new ArgumentException(ErrorMessages.Bin_is_a_required_parameter);

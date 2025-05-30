@@ -152,7 +152,8 @@ public class TransferData {
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
-            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
+            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString()),
+            new Parameter("@Unit", SqlDbType.SmallInt, 1, parameters.Unit)
         ]);
 
     public AddItemResponse AddItem(DataConnector conn, AddItemParameter parameters, int employeeID) {
@@ -164,7 +165,8 @@ public class TransferData {
             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
             new Parameter("@empID", SqlDbType.Int, employeeID),
             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
-            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString())
+            new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString()),
+            new Parameter("@Unit", SqlDbType.SmallInt, 1, parameters.Unit)
         ], dr => returnValue.LineID = (int)dr["LineID"]);
         return returnValue;
     }
@@ -242,7 +244,7 @@ public class TransferData {
             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
-            alert.Columns.AddRange(new[] { transactionColumn, transferColumn });
+            alert.Columns.AddRange([transactionColumn, transferColumn]);
             transactionColumn.Values.Add(new AlertValue(id.ToString()));
             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
 
@@ -276,11 +278,22 @@ public class TransferData {
                 Name     = dr["ItemName"].ToString(),
                 Quantity = Convert.ToInt32(dr["Quantity"])
             };
-            if (contentParameters.Type == SourceTarget.Target) {
-                content.Progress     = Convert.ToInt32(dr["Progress"]);
-                content.OpenQuantity = Convert.ToInt32(dr["OpenQuantity"]);
-                if (contentParameters.TargetBinQuantity) {
-                    content.BinQuantity = Convert.ToInt32(dr["BinQuantity"]);
+            switch (contentParameters.Type) {
+                case SourceTarget.Source:
+                    content.NumInBuy   = Convert.ToInt32(dr["NumInBuy"]);
+                    content.BuyUnitMsr = dr["BuyUnitMsr"].ToString();
+                    content.PurPackUn  = Convert.ToInt32(dr["PurPackUn"]);
+                    content.PurPackMsr = dr["PurPackMsr"].ToString();
+                    content.Unit       = (UnitType)Convert.ToInt16(dr["Unit"]);
+                    break;
+                case SourceTarget.Target: {
+                    content.Progress     = Convert.ToInt32(dr["Progress"]);
+                    content.OpenQuantity = Convert.ToInt32(dr["OpenQuantity"]);
+                    if (contentParameters.TargetBinQuantity) {
+                        content.BinQuantity = Convert.ToInt32(dr["BinQuantity"]);
+                    }
+
+                    break;
                 }
             }
 

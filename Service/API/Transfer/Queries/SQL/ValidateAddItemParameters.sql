@@ -1,14 +1,22 @@
-﻿-- DECLARE @ID INT = 2,
---     @ItemCode NVARCHAR(50) = N'0000002',
---     @BarCode NVARCHAR(254) = NULL,
---     @empID INT = 1,
---     @BinEntry INT = 3430,
---     @Quantity INT = 1,
---     @Type char(1) = 'T';
+﻿-- declare @ID int = 3012,
+--     @ItemCode nvarchar(50) = N'BOX',
+--     @BarCode nvarchar(254) = N'box',
+--     @empID int = 1,
+--     @BinEntry int = 3412,
+--     @Quantity int = 1,
+--     @Type char(1) = 'S',
+--     @Unit char(1) = '';
+
 
 declare @WhsCode nvarchar(8) = (select U_LW_Branch
                                 from OHEM
                                 where empID = @empID);
+If @Unit > 0
+    Begin
+        select @Quantity = @Quantity * COALESCE("NumInBuy", 1) * Case When @Unit = 2 Then COALESCE("PurPackUn", 1) Else 1 End
+        from OITM
+        where "ItemCode" = @ItemCode;
+    end
 select Case
            When T1.ItemCode is null Then -1
            When T0.BarCode <> T1.CodeBars and T3.BcdCode is null Then -2

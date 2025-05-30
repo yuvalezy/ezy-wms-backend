@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Service.API.General;
 
 namespace Service.API.Transfer.Models;
 
@@ -10,6 +11,11 @@ public class TransferContent {
     public int?                     BinQuantity  { get; set; }
     public int?                     Progress     { get; set; }
     public List<TransferContentBin> Bins         { get; set; }
+    public int                      NumInBuy     { get; set; }
+    public string                   BuyUnitMsr   { get; set; }
+    public int                      PurPackUn    { get; set; }
+    public string                   PurPackMsr   { get; set; }
+    public UnitType                 Unit         { get; set; }
 }
 
 public class TransferContentBin {
