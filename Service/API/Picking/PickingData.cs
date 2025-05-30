@@ -139,6 +139,7 @@ public class PickingData {
             new Parameter("@empID", SqlDbType.Int, empID),
             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry),
+            new Parameter("@Unit", SqlDbType.SmallInt, parameters.Unit),
         ]);
         return AddItemResponse.OkResponse;
     }
@@ -153,6 +154,7 @@ public class PickingData {
             new Parameter("@empID", SqlDbType.Int, empID),
             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry),
+            new Parameter("@Unit", SqlDbType.SmallInt, parameters.Unit),
         ], dr => {
             returnPickEntry = (int)dr[0];
             returnValue     = (int)dr[1];

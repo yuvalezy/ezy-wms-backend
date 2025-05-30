@@ -69,6 +69,10 @@ public class PickingDocumentDetailItem {
     public int                       OpenQuantity  { get; set; }
     public List<BinLocationQuantity> BinQuantities { get; set; }
     public int?                      Available     { get; set; }
+    public int                       NumInBuy      { get; set; }
+    public string                    BuyUnitMsr    { get; set; }
+    public int                       PurPackUn     { get; set; }
+    public string                    PurPackMsr    { get; set; }
 
     public static PickingDocumentDetailItem Read(IDataReader dr) {
         var item = new PickingDocumentDetailItem();
@@ -77,6 +81,10 @@ public class PickingDocumentDetailItem {
         item.Quantity     = Convert.ToInt32(dr["Quantity"]);
         item.Picked       = Convert.ToInt32(dr["Picked"]);
         item.OpenQuantity = Convert.ToInt32(dr["OpenQuantity"]);
+        item.NumInBuy     = Convert.ToInt32(dr["NumInBuy"]);
+        item.BuyUnitMsr   = dr["BuyUnitMsr"].ToString();
+        item.PurPackUn    = Convert.ToInt32(dr["PurPackUn"]);
+        item.PurPackMsr   = dr["PurPackMsr"].ToString();
         return item;
     }
 }

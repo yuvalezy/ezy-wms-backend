@@ -1,10 +1,9 @@
-﻿-- declare @AbsEntry int = 27;
+﻿-- declare @AbsEntry int = 29;
 -- declare @Type int = 17;
--- declare @Entry int = (select Max(DocEntry)
---                       from ORDR
---                       where DocNum = 57);
--- declare @BinEntry int = null;
-WITH Items as (select T2."ItemCode",
+-- declare @Entry int =542;
+-- declare @BinEntry int = null; -- Optional parameter to filter by BinEntry
+
+WITH Items as (select DISTINCT T2."ItemCode",
                       T2."LocCode" "WhsCode"
                from PKL1 T1
                         inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
@@ -30,7 +29,7 @@ WITH Items as (select T2."ItemCode",
                         and T0."Status" in ('Y', 'P')
                       group by T3."ItemCode", T1."BinAbs")
 select T0."ItemCode",
-       T3."BinAbs"                                 "BinEntry",
+       T3."BinAbs"                                                             "BinEntry",
        T4."BinCode",
        T3."OnHandQty" - COALESCE(T5."Quantity", 0) - COALESCE(T6."PickQty", 0) "Quantity"
 from Items T0
