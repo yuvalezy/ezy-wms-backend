@@ -6,10 +6,22 @@
 declare @ItemCode nvarchar(50),
     @BinEntry int,
     @Type char(1);
-select @ItemCode = "U_ItemCode", @BinEntry = "U_BinEntry", @Type = "U_Type"
-from "@LW_YUVAL08_TRANS1"
-where U_ID = @ID
-  and "U_LineID" = @LineID;
+select @ItemCode = T0."U_ItemCode",
+       @BinEntry = T0."U_BinEntry",
+       @Type = T0."U_Type",
+       @Quantity = @Quantity
+           * Case When t0."U_Unit" > 0 Then T1."NumInBuy" Else 1 End
+           * Case When t0."U_Unit" = 2 Then T1."PurPackUn" Else 1 End
+from "@LW_YUVAL08_TRANS1" T0
+         inner join OITM T1 on T1."ItemCode" = T0."U_ItemCode"
+where T0.U_ID = @ID
+  and T0."U_LineID" = @LineID;
+-- If @Unit > 0
+--     Begin
+--         select @Quantity = @Quantity * COALESCE("NumInBuy", 1) * Case When @Unit = 2 Then COALESCE("PurPackUn", 1) Else 1 End
+--         from OITM
+--         where "ItemCode" = @ItemCode;
+--     end
 
 select Case
            When T2."U_Status" <> 'I' Then -1

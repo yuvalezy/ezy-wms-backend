@@ -199,16 +199,25 @@ public class TransferData {
             comma = true;
         }
 
-        if (updateLineParameter.Quantity.HasValue) {
-            if (comma)
-                sb.AppendLine(", ");
-            sb.AppendLine("\"U_Quantity\" = @Quantity ");
-            parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
-        }
+        // if (updateLineParameter.Quantity.HasValue) {
+        //     if (comma)
+        //         sb.AppendLine(", ");
+        //     sb.AppendLine("\"U_Quantity\" = @Quantity ");
+        //     parameters.Add(new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value });
+        // }
 
         sb.AppendLine("where U_ID = @ID and \"U_LineID\" = @LineID");
 
         conn.Execute(sb.ToString(), parameters);
+    }
+
+    public void UpdateLineQuantity(DataConnector conn, UpdateLineParameter updateLineParameter) {
+        var parameters = new Parameters {
+            new Parameter("@ID", SqlDbType.Int) { Value       = updateLineParameter.ID },
+            new Parameter("@LineID", SqlDbType.Int) { Value   = updateLineParameter.LineID },
+            new Parameter("@Quantity", SqlDbType.Int) { Value = updateLineParameter.Quantity.Value }
+        };
+        conn.Execute(GetQuery("UpdateSourceLineQuantity"), parameters);
     }
 
     public bool CancelTransfer(int id, int employeeID) {
@@ -298,7 +307,8 @@ public class TransferData {
             }
 
             list.Add(content);
-            control.Add(content.Code, content);
+            if (contentParameters.Type == SourceTarget.Target && contentParameters.TargetBins)
+                control.Add(content.Code, content);
         });
 
         if (contentParameters.Type == SourceTarget.Target && contentParameters.TargetBins)

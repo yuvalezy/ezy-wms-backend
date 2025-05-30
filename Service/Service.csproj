@@ -281,6 +281,7 @@
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTarget.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetBins.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetItemDetail.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateSourceLineQuantity.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateTransferLineStatus.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateTransferStatus.sql" />
     <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateAddItemParameters.sql" />
