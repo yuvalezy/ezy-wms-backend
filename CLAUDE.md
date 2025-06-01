@@ -156,3 +156,39 @@ This solution has been migrated from .NET Framework 4.8 to .NET 9. Key changes:
 - App.config replaced with appsettings.json
 - Windows Service support via hosted services
 - JWT authentication instead of OAuth2
+
+## Authentication System
+
+The application uses a hybrid authentication approach that combines JWT tokens with HTTP-only session cookies:
+
+### Authentication Flow
+1. **Login** (`POST /api/authentication/login`)
+   - Accepts password-only authentication (no username required)
+   - Generates JWT token with user claims
+   - Stores SessionInfo in memory via ISessionManager using token as key
+   - Sets HTTP-only cookie with the token for session management
+   - Returns SessionInfo with token for API clients
+
+2. **Session Management**
+   - JWT token is stored in HTTP-only cookie (`ezywms_session`)
+   - SessionInfo is cached in memory for fast access
+   - TokenSessionMiddleware validates sessions from cookies
+   - Supports both cookie-based sessions and Bearer token authentication
+
+3. **Password Management**
+   - Passwords are hashed using PBKDF2 with SHA256
+   - 32-byte salt + 10,000 iterations
+   - Change password endpoint requires current password verification
+
+### Using the API
+- **Web Applications**: Automatically use HTTP-only cookies after login
+- **API Clients (Postman, etc.)**: Use Bearer token from login response
+  ```
+  Authorization: Bearer <token>
+  ```
+
+### Security Features
+- HTTP-only cookies prevent XSS attacks
+- Secure flag should be enabled in production (currently false for development)
+- Tokens expire at midnight UTC
+- Session data stored in memory for performance
