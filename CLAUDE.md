@@ -3,6 +3,99 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Coding Style Guidelines
+# Code Formatting Style Guide
+
+## C# Formatting Rules
+
+### Constructor Parameters
+- Align constructor parameters vertically with consistent spacing
+- Add spaces to align parameter names in columns
+
+**Format:**
+```csharp
+public class AuthenticationService(
+    SystemDbContext                dbContext,
+    IJwtAuthenticationService      jwtService,
+    ISessionManager                sessionManager,
+    ILogger<AuthenticationService> logger) : IAuthenticationService {
+```
+
+### Braces and Spacing
+- Opening braces `{` on same line as declaration
+- No empty lines after opening braces in try blocks
+- Consistent brace placement for all code blocks
+
+**Format:**
+```csharp
+public async Task<SessionInfo?> LoginAsync(string password) {
+    try {
+        // code here
+    }
+}
+```
+
+### General Rules
+- Keep using statements as-is (no formatting changes needed)
+- Maintain namespace declaration format
+- Apply consistent spacing and alignment throughout all C# code
+- Always use same-line brace style for classes, methods, and control structures
+
+## Apply These Rules
+- When generating C# code, always use this formatting style
+- When updating existing code, convert to this format
+- Maintain consistency across all code artifacts
+
+### SOLID Principles (REQUIRED)
+All new code MUST follow SOLID principles:
+
+1. **Single Responsibility Principle (SRP)**
+   - Each class should have only one reason to change
+   - Controllers should only handle HTTP concerns
+   - Business logic belongs in service classes
+   - Data access belongs in repository classes
+
+2. **Open/Closed Principle (OCP)**
+   - Classes should be open for extension but closed for modification
+   - Use interfaces and dependency injection
+   - Prefer composition over inheritance
+
+3. **Liskov Substitution Principle (LSP)**
+   - Derived classes must be substitutable for their base classes
+   - Interface implementations must fulfill the contract completely
+
+4. **Interface Segregation Principle (ISP)**
+   - Clients should not be forced to depend on interfaces they don't use
+   - Keep interfaces small and focused
+
+5. **Dependency Inversion Principle (DIP)**
+   - Depend on abstractions (interfaces), not concretions
+   - High-level modules should not depend on low-level modules
+   - Both should depend on abstractions
+
+### Implementation Pattern
+```csharp
+// Interface in Core project
+public interface IUserService {
+    Task<UserResponse> GetUserAsync(Guid id);
+    Task<UserResponse> CreateUserAsync(CreateUserRequest request);
+}
+
+// Implementation in Infrastructure project
+public class UserService(SystemDbContext dbContext, ILogger<UserService> logger) : IUserService {
+    public async Task<UserResponse> GetUserAsync(Guid id) {
+        // Implementation
+    }
+}
+
+// Controller uses interface
+public class UserController(IUserService userService) : ControllerBase {
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(Guid id) {
+        var user = await userService.GetUserAsync(id);
+        return Ok(user);
+    }
+}
+```
 
 ### Primary Constructors
 Always use C# 12 primary constructors for classes when possible. This provides cleaner, more concise code.
@@ -192,3 +285,40 @@ The application uses a hybrid authentication approach that combines JWT tokens w
 - Secure flag should be enabled in production (currently false for development)
 - Tokens expire at midnight UTC
 - Session data stored in memory for performance
+
+## Database Patterns
+
+### Soft Delete Policy
+**IMPORTANT**: We NEVER physically delete records from the database. All entities that inherit from `BaseEntity` use soft deletes.
+
+#### Implementation
+```csharp
+// BaseEntity includes:
+public bool Deleted { get; set; }
+public DateTime? DeletedAt { get; set; }
+
+// When "deleting" an entity:
+entity.Deleted = true;
+entity.DeletedAt = DateTime.UtcNow;
+await dbContext.SaveChangesAsync();
+```
+
+#### Query Patterns
+When querying data, always filter out soft-deleted records unless specifically including them:
+```csharp
+// Get active (non-deleted) users
+var activeUsers = await dbContext.Users
+    .Where(u => !u.Deleted)
+    .ToListAsync();
+
+// Include deleted records when needed
+var allUsersIncludingDeleted = await dbContext.Users
+    .ToListAsync();
+```
+
+#### Best Practices
+1. All delete operations should set `Deleted = true` and `DeletedAt = DateTime.UtcNow`
+2. Consider also setting `Active = false` for entities with an Active flag
+3. Update any related business logic (e.g., prevent login for deleted users)
+4. Use global query filters in DbContext for automatic filtering of deleted records
+5. Deleted records should be excluded from all normal business operations

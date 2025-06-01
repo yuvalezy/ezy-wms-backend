@@ -34,11 +34,13 @@ public class SystemDbContext : DbContext {
             entity.Property(e => e.Password).HasColumnType("nvarchar(255)");
             entity.Property(e => e.Email).HasColumnType("nvarchar(100)");
             entity.Property(e => e.Position).HasColumnType("nvarchar(100)");
+            entity.HasQueryFilter(e => !e.Deleted);
         });
         
         modelBuilder.Entity<AuthorizationGroup>(entity => {
             entity.Property(e => e.Name).HasColumnType("nvarchar(50)");
             entity.Property(e => e.Description).HasColumnType("nvarchar(200)");
+            entity.HasQueryFilter(e => !e.Deleted);
         });
     }
 }
