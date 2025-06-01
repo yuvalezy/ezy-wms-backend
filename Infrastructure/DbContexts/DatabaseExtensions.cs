@@ -37,6 +37,7 @@ public static class DatabaseExtensions {
             Email                = "admin@localhost",
             Position             = "System Administrator",
             SuperUser            = true,
+            Active               = true,
             AuthorizationGroupId = null,
             CreatedAt            = DateTime.UtcNow,
             UpdatedAt            = DateTime.UtcNow

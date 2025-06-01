@@ -64,6 +64,9 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
                     b.Property<Guid?>("AuthorizationGroupId")
                         .HasColumnType("uniqueidentifier");
 

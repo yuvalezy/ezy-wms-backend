@@ -22,6 +22,8 @@ public class User : BaseEntity {
     
     [Required]
     public bool SuperUser { get; set; }
+    [Required]
+    public bool Active { get; set; }
 
     [ForeignKey("AuthorizationGroup")]
     public Guid? AuthorizationGroupId { get; set; }

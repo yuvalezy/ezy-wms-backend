@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250601202855_init")]
+    [Migration("20250601210913_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -66,6 +66,9 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("AuthorizationGroupId")
                         .HasColumnType("uniqueidentifier");
