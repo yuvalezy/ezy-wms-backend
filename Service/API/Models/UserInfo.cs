@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Core.Enums;
 using Newtonsoft.Json;
 using Service.API.General.Models;
 using Service.Shared;

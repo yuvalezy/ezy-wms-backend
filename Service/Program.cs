@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Core.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -159,6 +160,29 @@ if (allowedOrigins is { Length: > 0 }) {
 
 app.UseAuthentication();
 
+// Apply migrations and seed data
+using (var scope = app.Services.CreateScope()) {
+    try {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+#if RELEASE
+        var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+        logger.LogInformation("Applying database migrations...");
+        await dbContext.Database.MigrateAsync();
+        logger.LogInformation("Migrations applied successfully");
+#endif
+
+        // Seed data
+        logger.LogInformation("Starting database seeding...");
+        // await DatabaseSeeder.SeedAsync(app.Services);
+        logger.LogInformation("Database seeding completed successfully");
+    }
+    catch (Exception ex) {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database");
+        throw; // Re-throw to stop application startup if seeding fails
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {
@@ -193,29 +217,6 @@ namespace WebApi {
     public class Program;
 }
 
-// // Apply migrations and seed data
-// using (var scope = app.Services.CreateScope()) {
-//     try {
-//         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//
-// #if RELEASE
-//         var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
-//         logger.LogInformation("Applying database migrations...");
-//         await dbContext.Database.MigrateAsync();
-//         logger.LogInformation("Migrations applied successfully");
-// #endif
-//
-//         // Seed data
-//         logger.LogInformation("Starting database seeding...");
-//         await DatabaseSeeder.SeedAsync(app.Services);
-//         logger.LogInformation("Database seeding completed successfully");
-//     }
-//     catch (Exception ex) {
-//         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//         logger.LogError(ex, "An error occurred while migrating or seeding the database");
-//         throw; // Re-throw to stop application startup if seeding fails
-//     }
-// }
 
 // using Microsoft.AspNetCore.Authentication.JwtBearer;
 // using Microsoft.AspNetCore.Builder;

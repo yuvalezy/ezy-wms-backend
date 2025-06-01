@@ -53,5 +53,8 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="MetaData.csproj.backup" />
+  </ItemGroup>
 
 </Project>
