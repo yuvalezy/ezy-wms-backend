@@ -8,7 +8,7 @@ public class User : BaseEntity {
     [Required]
     [MaxLength(50)]
     public required string FullName { get; set; }
-    
+
     [Required]
     [MaxLength(500)]
     public required string Password { get; set; }
@@ -16,14 +16,18 @@ public class User : BaseEntity {
     [MaxLength(100)]
     [EmailAddress]
     public string? Email { get; set; }
-    
+
     [MaxLength(100)]
     public string? Position { get; set; }
-    
+
     [Required]
     public bool SuperUser { get; set; }
+
     [Required]
     public bool Active { get; set; }
+
+    [MaxLength(50)]
+    public string? ExternalId { get; set; }
 
     [ForeignKey("AuthorizationGroup")]
     public Guid? AuthorizationGroupId { get; set; }

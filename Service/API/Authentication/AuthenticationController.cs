@@ -36,6 +36,11 @@ public class AuthenticationController(ISessionManager sessionManager, IJwtAuthen
             if (authenticatedUser == null) {
                 return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password." });
             }
+            
+            // Check if user is active
+            if (!authenticatedUser.Active) {
+                return Unauthorized(new { error = "account_disabled", error_description = "This account has been disabled." });
+            }
 
             // Generate token
             var expiresAt = DateTime.UtcNow.Date.AddDays(1); // Expires at midnight
