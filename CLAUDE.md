@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding Style Guidelines
+
+### Primary Constructors
+Always use C# 12 primary constructors for classes when possible. This provides cleaner, more concise code.
+
+```csharp
+// Preferred
+public class MyService(IConfiguration configuration, ILogger<MyService> logger) : IMyService {
+    private readonly string setting = configuration["MySetting"] ?? "default";
+    
+    public void DoWork() {
+        logger.LogInformation("Working...");
+    }
+}
+
+// Avoid
+public class MyService : IMyService {
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<MyService> _logger;
+    
+    public MyService(IConfiguration configuration, ILogger<MyService> logger) {
+        _configuration = configuration;
+        _logger = logger;
+    }
+}
+```
+
 ## Build Commands
 
 This is a .NET 9 solution that uses the dotnet CLI. The solution has three build configurations: Debug, Release, and Test.

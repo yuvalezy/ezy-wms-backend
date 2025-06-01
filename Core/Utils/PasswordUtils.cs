@@ -9,18 +9,42 @@ public static class PasswordUtils {
         using (var rng = RandomNumberGenerator.Create()) {
             rng.GetBytes(salt);
         }
-        
+
         // Hash the password with salt using PBKDF2
         using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA256)) {
             byte[] hash = pbkdf2.GetBytes(32); // 256 bits
-            
+
             // Combine salt and hash
             byte[] hashBytes = new byte[64]; // 32 bytes salt + 32 bytes hash
             Array.Copy(salt, 0, hashBytes, 0, 32);
             Array.Copy(hash, 0, hashBytes, 32, 32);
-            
+
             // Convert to base64 for storage
             return Convert.ToBase64String(hashBytes);
+        }
+    }
+
+    public static bool VerifyPassword(string password, string storedHash) {
+        try {
+            // Convert the stored hash from base64
+            byte[] hashBytes = Convert.FromBase64String(storedHash);
+
+            // Extract salt and hash
+            byte[] salt = new byte[32];
+            byte[] hash = new byte[32];
+            Array.Copy(hashBytes, 0, salt, 0, 32);
+            Array.Copy(hashBytes, 32, hash, 0, 32);
+
+            // Hash the input password with the same salt
+            using var pbkdf2       = new Rfc2898DeriveBytes(password, salt, 10000, HashAlgorithmName.SHA256);
+            byte[]    computedHash = pbkdf2.GetBytes(32);
+
+            // Compare the computed hash with the stored hash
+            return CryptographicOperations.FixedTimeEquals(computedHash, hash);
+        }
+        catch {
+            // Return false if there's any error (e.g., invalid base64)
+            return false;
         }
     }
 }

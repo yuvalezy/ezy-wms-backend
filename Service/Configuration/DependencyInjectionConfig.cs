@@ -2,6 +2,7 @@ using System;
 using Core.Interfaces;
 using Core.Models.Settings;
 using Infrastructure;
+using Infrastructure.Auth;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,8 @@ public static class DependencyInjectionConfig {
             options.UseSqlServer(connString));
         
         services.AddSingleton<ISessionManager>(_ => new InMemorySessionManager());
+        services.AddSingleton<IJwtAuthenticationService, JwtAuthenticationService>();
+        
         return services;
     }
 }
