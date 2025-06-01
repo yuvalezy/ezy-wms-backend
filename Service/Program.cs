@@ -3,7 +3,12 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Core;
 using Core.Enums;
+using Core.Interfaces;
+using Core.Models;
+using Core.Models.Settings;
+using Infrastructure.Auth;
 using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +23,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using SAPbobsCOM;
 using Service;
+using Service.Configuration;
+using Service.Middlewares;
 using Service.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -132,7 +139,7 @@ services.AddRateLimiter(opts => {
 
     // Set the authenticated policy as the default/global policy
     opts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context => {
-        string key = context.Request.Cookies[SessionInfo.SessionCookieName] ??
+        string key = context.Request.Cookies[Const.SessionCookieName] ??
                      (context.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
 

@@ -1,10 +1,14 @@
 using System;
+using Core.Interfaces;
+using Core.Models.Settings;
+using Infrastructure;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Service.Middlewares;
 
-namespace Service;
+namespace Service.Configuration;
 
 public static class DependencyInjectionConfig {
     public static IServiceCollection ConfigureServices(this IServiceCollection services, Settings settings, IConfiguration configuration) {
