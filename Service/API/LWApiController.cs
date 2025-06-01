@@ -1,19 +1,25 @@
-using System.Security.Claims;
-using System.Web.Http;
-
-namespace Service.API;
-
-public class LWApiController : ApiController {
-    protected readonly Data Data = new();
-    protected int EmployeeID {
-        get {
-            int empID      = -1;
-            var identity   = (ClaimsIdentity)User.Identity;
-            var empIDClaim = identity.FindFirst("EmployeeID");
-            if (empIDClaim == null) 
-                return empID;
-            int.TryParse(empIDClaim.Value, out empID);
-            return empID;
-        }
-    }
-}
+// using Microsoft.AspNetCore.Mvc;
+// using System.Security.Claims;
+//
+// namespace Service.API
+// {
+//     [ApiController]
+//     [Route("api/[controller]")]
+//     public class LWApiController : ControllerBase
+//     {
+//         protected readonly Data Data = new();
+//         
+//         protected int EmployeeID
+//         {
+//             get
+//             {
+//                 int empID = -1;
+//                 var empIDClaim = User.FindFirst("EmployeeID");
+//                 if (empIDClaim == null) 
+//                     return empID;
+//                 int.TryParse(empIDClaim.Value, out empID);
+//                 return empID;
+//             }
+//         }
+//     }
+// }

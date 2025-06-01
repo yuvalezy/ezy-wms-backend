@@ -1,13 +1,7 @@
 namespace Service.Shared; 
 
-public class AccessToken {
-    public string ID       { get; set; }
-    public string Name     { get; set; }
-    public string Password { get; set; }
-
-    public AccessToken(string id, string name, string password) {
-        ID       = id;
-        Name     = name;
-        Password = password;
-    }
+public class AccessToken(string id, string name, string password) {
+    public string ID       { get; set; } = id;
+    public string Name     { get; set; } = name;
+    public string Password { get; set; } = password;
 }

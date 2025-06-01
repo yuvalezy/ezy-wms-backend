@@ -1,274 +1,204 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using Service.Models;
-using Microsoft.Win32;
-using SAPbobsCOM;
-using Service.Shared;
-using Service.Shared.Company;
-using Service.Shared.Data;
-using Service.Shared.Utils;
-using Connection = Service.Shared.Company.ConnectionController;
-using Path = System.IO.Path;
-using Version = Service.Shared.Utils.Version;
-
-namespace Service;
-
-public static class Global {
-    #region Variables & Properties
-
-    public static string          Database        { get; set; }
-    public static string          CompanyName     { get; set; }
-    public static bool            IsMain          { get; private set; }
-    public static int?            Port            { get; set; }
-    public static Service         Service         { get; set; }
-    public static RestAPISettings RestAPISettings { get; private set; }
-    public static bool            Debug           { get; set; }
-
-    //Connection Settings
-    public static BoDataServerTypes ServerType { get; internal set; }
-
-    //Database Settings
-    public static string                               DBServiceVersion                    { get; set; }
-    public static string                               User                                { get; set; }
-    public static string                               Password                            { get; set; }
-    public static bool                                 TestHelloWorld                      { get; private set; }
-    public static bool                                 GRPODraft                           { get; private set; }
-    public static bool                                 GRPOModificationsRequiredSupervisor { get; private set; }
-    public static bool                                 GRPOCreateSupervisorRequired        { get; private set; }
-    public static bool                                 TransferTargetItems                 { get; private set; }
-    public static bool                                 PrintThread                         { get; private set; }
-    public static bool                                 Background                          { get; set; }
-    public static bool                                 Interactive                         { get; set; }
-    public static bool                                 LoadBalancing                       { get; set; }
-    public static ServiceNodes                         Nodes                               { get; set; }
-    public static Dictionary<int, Authorization>       RolesMap                            { get; } = new();
-    public static Dictionary<int, List<Authorization>> UserAuthorizations                  { get; } = new();
-    public static Dictionary<string, List<int>>        WarehouseEntryBins                  { get; } = new();
-
-    #endregion
-
-    #region Methods & Functions
-
-    private static readonly  Mutex ConnectionMutex  = new(false, "connection");
-    internal static readonly Mutex TransactionMutex = new(false, "transaction");
-
-    public static void LoadArguments() {
-        string[] args = Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length; i++) {
-            switch (args[i]) {
-                case "db:":
-                    Connection.Database = args[++i];
-                    break;
-                case "port:":
-                    Port = int.Parse(args[++i]);
-                    break;
-                case "background":
-                    Background = true;
-                    break;
-                case "interactive":
-                    Interactive = true;
-                    break;
-            }
-        }
-
-        IsMain = !Background && !Port.HasValue;
-    }
-
-
-    public static bool ConnectCompany() {
-        ConnectionMutex.WaitOne();
-        try {
-            try {
-                if (Connection.Company is { Connected: true })
-                    return true;
-            }
-            catch (Exception) {
-                // ignored
-            }
-
-            try {
-                Connection.ConnectCompany(Connection.Server, ServerType, Connection.Database, User, Password, Connection.Server);
-            }
-            catch (Exception ex) {
-                LogError("DI API connection error: " + ex.Message);
-                return false;
-            }
-        }
-        finally {
-            ConnectionMutex.ReleaseMutex();
-        }
-
-        return true;
-    }
-
-    public static void LoadRegistrySettings() {
-        var key = Registry.LocalMachine.OpenSubKey(Const.RegistryPath, false);
-        if (key == null)
-            throw new Exception($"Could not find Connection Parameters in the Windows Registry {Const.RegistryPath}");
-        Connection.Server           = (string)key.GetValue("Server");
-        Connection.Database         = Connection.Database;
-        ServerType                  = (BoDataServerTypes)(int)key.GetValue("ServerType");
-        Connection.DatabaseType     = ServerType == BoDataServerTypes.dst_HANADB ? DatabaseType.HANA : DatabaseType.SQL;
-        Connection.DatabaseType     = ServerType == BoDataServerTypes.dst_HANADB ? DatabaseType.HANA : DatabaseType.SQL;
-        Connection.DbServerUser     = ((string)key.GetValue("ServerUser")).DecryptString();
-        Connection.DbServerPassword = ((string)key.GetValue("ServerPassword")).DecryptString();
-        // LicenseServer               = (string)key.GetValue("LicenseServer");
-    }
-
-    public static DataConnector Connector {
-        get {
-            string server     = Connection.Server;
-            string dbUser     = Connection.DbServerUser;
-            string dbPassword = Connection.DbServerPassword;
-            string dbName     = Connection.Database;
-            return ServerType switch {
-                BoDataServerTypes.dst_HANADB => new HANADataConnector(ConnectionString.HanaConnectionString(server, dbUser, dbPassword, dbName)),
-                _                            => new SQLDataConnector(ConnectionString.SqlConnectionString(server, dbUser, dbPassword, dbName))
-            };
-        }
-    }
-
-
-    public static void LoadDatabaseSettings(DataConnector conn) {
-        if (IsMain)
-            Service.LogInfo("Loading database settings");
-        string    sqlStr = Queries.DatabaseSettings;
-        using var dt     = conn.GetDataTable(sqlStr);
-        var       dr     = dt.Rows[0];
-        DBServiceVersion                    = dr["Version"].ToString();
-        User                                = dr["User"].ToString().DecryptString();
-        Password                            = dr["Password"].ToString().DecryptString();
-        TestHelloWorld                      = dr["TestHelloWorld"].ToString() == "Y";
-        GRPODraft                           = dr["GRPODraft"].ToString() == "Y";
-        GRPOModificationsRequiredSupervisor = dr["GRPOModSup"].ToString().Equals("Y");
-        GRPOCreateSupervisorRequired        = dr["GRPOCreateSup"].ToString().Equals("Y");
-        TransferTargetItems                 = dr["TransferTargetItems"].ToString().Equals("Y");
-        CompanySettings.CrystalLegacy       = Convert.ToBoolean(dr["CrystalLegacy"]);
-        CompanyName                         = (string)dr["CompanyName"];
-
-        if (new BooleanSwitch("EnableTrace", "Enable Trace").Enabled || dr["DEBUG"].ToString() == "Y")
-            Debug = true;
-
-        LoadWarehousesEntryBins(conn);
-    }
-
-    private static void LoadWarehousesEntryBins(DataConnector conn) {
-        const string query = "select \"WhsCode\", \"AbsEntry\" from OBIN where \"U_LW_YUVAL08_ENTRY_BIN\" = 'Y'";
-        using var    dt    = conn.GetDataTable(query);
-        foreach (DataRow dr in dt.Rows) {
-            string whsCode = (string)dr["WhsCode"];
-            if (!WarehouseEntryBins.ContainsKey(whsCode))
-                WarehouseEntryBins.Add(whsCode, []);
-            WarehouseEntryBins[whsCode].Add((int)dr["AbsEntry"]);
-        }
-    }
-
-    public static void LoadRestAPISettings() {
-        string fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings", $"{Connection.Database}.json");
-        RestAPISettings = RestAPISettings.Load(fileName);
-        LoadBalancing   = RestAPISettings.Enabled && RestAPISettings.LoadBalancing;
-    }
-
-
-    public static bool CheckVersion() {
-        if (IsMain)
-            LogInfo("Checking service version");
-        try {
-            var    version        = Assembly.GetExecutingAssembly().GetName().Version;
-            string currentVersion = $"{version.Major}.{version.Minor}.{version.Build}";
-            if (Version.CheckVersion(DBServiceVersion, currentVersion) != VersionCheck.Current) {
-                LogError(
-                    $"Cannot activate service for database \"{Connection.Database}\".\nDatabase version is {Connection.Database} and service version is {currentVersion}.");
-                return false;
-            }
-        }
-        catch (Exception ex) {
-            LogError($"Error checking LW version in database \"{Connection.Database}\":\n{ex.Message}");
-            return false;
-        }
-
-        return true;
-    }
-
-    public static void LogInfo(string message) => Service.LogInfo(message);
-
-    // public static void   LogWarning(string message) => Service.LogWarning(message);
-    public static void   LogError(string  message) => Service.LogError(message);
-    public static Tracer GetTracer(string id)      => !Debug ? null : new Tracer($"lw_service_{id}", 10, true);
-
-    #endregion
-
-    public static void Load() {
-        LoadRoles();
-    }
-
-    private static void LoadRoles() {
-        LogInfo("Loading roles");
-        const string sqlStr = "select \"typeID\", \"name\" from OHTY";
-
-        using var conn = Global.Connector;
-        var       dt   = conn.GetDataTable(sqlStr);
-        foreach (DataRow dr in dt.Rows) {
-            int id = (int)dr["typeID"];
-            switch ((string)dr["name"]) {
-                case Const.GoodsReceipt:
-                    RolesMap.Add(id, Authorization.GoodsReceipt);
-                    break;
-                case Const.GoodsReceiptSupervisor:
-                    RolesMap.Add(id, Authorization.GoodsReceiptSupervisor);
-                    break;
-                case Const.GoodsReceiptConfirmation:
-                    RolesMap.Add(id, Authorization.GoodsReceiptConfirmation);
-                    break;
-                case Const.GoodsReceiptConfirmationSupervisor:
-                    RolesMap.Add(id, Authorization.GoodsReceiptConfirmationSupervisor);
-                    break;
-                case Const.Picking:
-                    RolesMap.Add(id, Authorization.Picking);
-                    break;
-                case Const.PickingSupervisor:
-                    RolesMap.Add(id, Authorization.PickingSupervisor);
-                    break;
-                case Const.Counting:
-                    RolesMap.Add(id, Authorization.Counting);
-                    break;
-                case Const.CountingSupervisor:
-                    RolesMap.Add(id, Authorization.CountingSupervisor);
-                    break;
-                case Const.Transfer:
-                    RolesMap.Add(id, Authorization.Transfer);
-                    break;
-                case Const.TransferSupervisor:
-                    RolesMap.Add(id, Authorization.TransferSupervisor);
-                    break;
-                case Const.TransferRequest:
-                    RolesMap.Add(id, Authorization.TransferRequest);
-                    break;
-            }
-        }
-    }
-
-    public static bool ValidateAuthorization(int employeeID, params Authorization[] roles) {
-        if (!UserAuthorizations.ContainsKey(employeeID))
-            LoadAuthorization(employeeID);
-        return UserAuthorizations[employeeID].Intersect(roles).Any();
-    }
-
-    public static void LoadAuthorization(int empID) {
-        if (!UserAuthorizations.ContainsKey(empID))
-            UserAuthorizations.Add(empID, []);
-        var authorizations = UserAuthorizations[empID];
-        authorizations.Clear();
-
-        string    sqlStr        = $"select \"roleID\" from HEM6 where \"empID\" = {empID}";
-        using var dataConnector = Connector;
-        using var dt            = dataConnector.GetDataTable(sqlStr);
-        var       data          = dt.Rows.Cast<DataRow>().Select(dr => (int)dr["roleID"]);
-        authorizations.AddRange(from roleID in data where RolesMap.ContainsKey(roleID) select RolesMap[roleID]);
-    }
-}
+// using System;
+// using System.Collections.Generic;
+// using System.Data;
+// using System.Diagnostics;
+// using System.Linq;
+// using System.Reflection;
+// using System.Threading;
+// using Microsoft.Extensions.Configuration;
+// using Microsoft.Extensions.Logging;
+// using SAPbobsCOM;
+// using Service.Models;
+// using Service.Shared;
+// using Service.Shared.Company;
+// using Service.Shared.Data;
+// using Service.Shared.Utils;
+// using Connection = Service.Shared.Company.ConnectionController;
+// using Path = System.IO.Path;
+// using Version = Service.Shared.Utils.Version;
+//
+// namespace Service
+// {
+//     public class GlobalService : IGlobalService
+//     {
+//         private readonly IConfiguration _configuration;
+//         private readonly ILogger<GlobalService> _logger;
+//         private readonly Mutex _connectionMutex = new(false, "connection");
+//         internal readonly Mutex TransactionMutex = new(false, "transaction");
+//
+//         public GlobalService(IConfiguration configuration, ILogger<GlobalService> logger)
+//         {
+//             _configuration = configuration;
+//             _logger = logger;
+//             LoadConfiguration();
+//         }
+//
+//         #region Properties
+//
+//         public string Database { get; private set; }
+//         public string CompanyName { get; private set; }
+//         public bool IsMain { get; private set; }
+//         public int? Port { get; private set; }
+//         public RestAPISettings RestAPISettings { get; private set; }
+//         public bool Debug { get; private set; }
+//         public BoDataServerTypes ServerType { get; private set; }
+//         public string DBServiceVersion { get; private set; }
+//         public string User { get; private set; }
+//         public string Password { get; private set; }
+//         public bool TestHelloWorld { get; private set; }
+//         public bool GRPODraft { get; private set; }
+//         public bool GRPOModificationsRequiredSupervisor { get; private set; }
+//         public bool GRPOCreateSupervisorRequired { get; private set; }
+//         public bool TransferTargetItems { get; private set; }
+//         public bool PrintThread { get; private set; }
+//         public bool Background { get; private set; }
+//         public bool Interactive { get; private set; }
+//         public bool LoadBalancing { get; private set; }
+//         public ServiceNodes Nodes { get; private set; }
+//         public Dictionary<int, Authorization> RolesMap { get; } = new();
+//         public Dictionary<int, List<Authorization>> UserAuthorizations { get; } = new();
+//         public Dictionary<string, List<int>> WarehouseEntryBins { get; } = new();
+//         public DataConnector Connector { get; private set; }
+//
+//         #endregion
+//
+//         private void LoadConfiguration()
+//         {
+//             // Load from configuration
+//             Port = _configuration.GetValue<int?>("Service:Port");
+//             Debug = _configuration.GetValue<bool>("Service:Debug", false);
+//             Background = _configuration.GetValue<bool>("Service:Background", false);
+//             Interactive = _configuration.GetValue<bool>("Service:Interactive", false);
+//             LoadBalancing = _configuration.GetValue<bool>("LoadBalancing:Enabled", false);
+//             
+//             IsMain = !Background && !Port.HasValue;
+//             
+//             // Load database configuration
+//             Database = _configuration.GetValue<string>("Database:Name");
+//             User = _configuration.GetValue<string>("Database:User");
+//             Password = _configuration.GetValue<string>("Database:Password");
+//             
+//             // Load connection from registry or configuration
+//             LoadConnectionSettings();
+//         }
+//
+//         private void LoadConnectionSettings()
+//         {
+//             // This would need to be adapted to load from configuration instead of registry
+//             // For now, keeping the structure but would need refactoring
+//             Connection.Database = Database;
+//             ServerType = Connection.GetServerType();
+//         }
+//
+//         public bool ConnectCompany()
+//         {
+//             _connectionMutex.WaitOne();
+//             try
+//             {
+//                 try
+//                 {
+//                     if (Connection.Company is { Connected: true })
+//                         return true;
+//                 }
+//                 catch (Exception)
+//                 {
+//                     // ignored
+//                 }
+//
+//                 try
+//                 {
+//                     Connection.ConnectCompany(Connection.Server, ServerType, Connection.Database, User, Password, Connection.Server);
+//                 }
+//                 catch (Exception ex)
+//                 {
+//                     _logger.LogError(ex, "DI API connection error");
+//                     return false;
+//                 }
+//
+//                 return Connection.Company?.Connected ?? false;
+//             }
+//             finally
+//             {
+//                 _connectionMutex.ReleaseMutex();
+//             }
+//         }
+//
+//         public void DisconnectCompany()
+//         {
+//             _connectionMutex.WaitOne();
+//             try
+//             {
+//                 Connection.DisconnectCompany();
+//             }
+//             finally
+//             {
+//                 _connectionMutex.ReleaseMutex();
+//             }
+//         }
+//
+//         public void LoadDatabaseSettings()
+//         {
+//             // Implementation would load settings from database
+//             // This is a placeholder for the migration
+//             _logger.LogInformation("Loading database settings");
+//         }
+//
+//         public void ReloadAPISettings()
+//         {
+//             // Implementation would reload API settings
+//             _logger.LogInformation("Reloading API settings");
+//         }
+//
+//         public bool ValidateAuthorization(int employeeID, params Authorization[] authorizations)
+//         {
+//             if (!UserAuthorizations.ContainsKey(employeeID))
+//                 return false;
+//
+//             var userAuth = UserAuthorizations[employeeID];
+//             return authorizations.Any(a => userAuth.Contains(a) || userAuth.Contains(Authorization.All));
+//         }
+//     }
+//
+//     // Static wrapper for backward compatibility during migration
+//     public static class Global
+//     {
+//         private static IGlobalService _service;
+//
+//         public static void Initialize(IGlobalService service)
+//         {
+//             _service = service;
+//         }
+//
+//         public static string Database => _service?.Database;
+//         public static string CompanyName => _service?.CompanyName;
+//         public static bool IsMain => _service?.IsMain ?? false;
+//         public static int? Port => _service?.Port;
+//         public static RestAPISettings RestAPISettings => _service?.RestAPISettings;
+//         public static bool Debug => _service?.Debug ?? false;
+//         public static BoDataServerTypes ServerType => _service?.ServerType ?? BoDataServerTypes.dst_MSSQL2019;
+//         public static string DBServiceVersion => _service?.DBServiceVersion;
+//         public static string User => _service?.User;
+//         public static string Password => _service?.Password;
+//         public static bool TestHelloWorld => _service?.TestHelloWorld ?? false;
+//         public static bool GRPODraft => _service?.GRPODraft ?? false;
+//         public static bool GRPOModificationsRequiredSupervisor => _service?.GRPOModificationsRequiredSupervisor ?? false;
+//         public static bool GRPOCreateSupervisorRequired => _service?.GRPOCreateSupervisorRequired ?? false;
+//         public static bool TransferTargetItems => _service?.TransferTargetItems ?? false;
+//         public static bool PrintThread => _service?.PrintThread ?? false;
+//         public static bool Background => _service?.Background ?? false;
+//         public static bool Interactive => _service?.Interactive ?? false;
+//         public static bool LoadBalancing => _service?.LoadBalancing ?? false;
+//         public static ServiceNodes Nodes => _service?.Nodes;
+//         public static Dictionary<int, Authorization> RolesMap => _service?.RolesMap ?? new();
+//         public static Dictionary<int, List<Authorization>> UserAuthorizations => _service?.UserAuthorizations ?? new();
+//         public static Dictionary<string, List<int>> WarehouseEntryBins => _service?.WarehouseEntryBins ?? new();
+//         public static DataConnector Connector => _service?.Connector;
+//
+//         public static bool ConnectCompany() => _service?.ConnectCompany() ?? false;
+//         public static void DisconnectCompany() => _service?.DisconnectCompany();
+//         public static void LoadDatabaseSettings() => _service?.LoadDatabaseSettings();
+//         public static void ReloadAPISettings() => _service?.ReloadAPISettings();
+//         public static bool ValidateAuthorization(int employeeID, params Authorization[] authorizations) => 
+//             _service?.ValidateAuthorization(employeeID, authorizations) ?? false;
+//     }
+// }

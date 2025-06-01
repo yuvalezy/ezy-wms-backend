@@ -1,125 +1,126 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Web.Http;
-using Service.API.Counting.Models;
-using Service.API.General.Models;
-using Service.API.Models;
-using Service.Shared;
-
-namespace Service.API.Counting;
-
-[Authorize, RoutePrefix("api/Counting")]
-public class CountingController : LWApiController {
-    [HttpPost]
-    [ActionName("Create")]
-    public Models.Counting CreateCounting([FromBody] CreateParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access for counting creation");
-
-        var validateReturnValue = parameters.Validate(Data, EmployeeID);
-        if (validateReturnValue != null)
-            return validateReturnValue;
-
-        int id = Data.Counting.CreateCounting(parameters, EmployeeID);
-        return Data.Counting.GetCounting(id);
-    }
-
-    [HttpPost]
-    [ActionName("AddItem")]
-    public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
-            throw new UnauthorizedAccessException("You don't have access for adding item to counting");
-        using var conn = Global.Connector;
-        try {
-            conn.BeginTransaction();
-            if (!parameters.Validate(conn, Data, EmployeeID))
-                return new AddItemResponse { ClosedCounting = true };
-            var addItemResponse = Data.Counting.AddItem(conn, parameters, EmployeeID);
-            conn.CommitTransaction();
-            return addItemResponse;
-        }
-        catch {
-            conn.RollbackTransaction();
-            throw;
-        }
-    }
-
-    [HttpPost]
-    [ActionName("UpdateLine")]
-    public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
-            throw new UnauthorizedAccessException("You don't have access for updating line in counting");
-        using var conn = Global.Connector;
-        try {
-            conn.BeginTransaction();
-            var returnValue = parameters.Validate(conn, Data);
-            if (returnValue != UpdateLineReturnValue.Ok)
-                return returnValue;
-            Data.Counting.UpdateLine(conn, parameters);
-            conn.CommitTransaction();
-            return returnValue;
-        }
-        catch (Exception e) {
-            conn.RollbackTransaction();
-            throw;
-        }
-    }
-
-    [HttpPost]
-    [ActionName("Cancel")]
-    public bool CancelCounting([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access for counting cancellation");
-
-        return Data.Counting.CancelCounting(parameters.ID, EmployeeID);
-    }
-
-    [HttpPost]
-    [ActionName("Process")]
-    public bool ProcessCounting([FromBody] IDParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access for counting cancellation");
-        return Data.Counting.ProcessCounting(parameters.ID, EmployeeID, Data.General.AlertUsers);
-    }
-
-    [HttpGet]
-    [ActionName("CancelReasons")]
-    public IEnumerable<ValueDescription<int>> GetCancelReasons() {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
-            throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
-        return Data.General.GetCancelReasons(ReasonType.Counting);
-    }
-
-    [HttpGet]
-    [ActionName("Countings")]
-    public IEnumerable<Models.Counting> GetCountings([FromUri] FilterParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access to get counting");
-        parameters.WhsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
-        return Data.Counting.GetCountings(parameters);
-    }
-
-    [HttpGet]
-    [Route("Counting/{id:int}")]
-    public Models.Counting GetCounting(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access to get counting");
-        return Data.Counting.GetCounting(id);
-    }
-
-    [HttpPost]
-    [ActionName("CountingContent")]
-    public IEnumerable<CountingContent> CountingContent([FromBody] CountingContentParameters parameters) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access to get counting content");
-        return Data.Counting.GetCountingContent(parameters.ID, parameters.BinEntry);
-    }
-    
-    [HttpGet]
-    [Route("CountingSummaryReport/{id:int}")]
-    public CountingSummary GetCountingSummaryReport(int id) {
-        if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
-            throw new UnauthorizedAccessException("You don't have access to get counting summary report");
-        return Data.Counting.GetCountingSummaryReport(id);
-    }
-}
+﻿// using System;
+// using System.Collections.Generic;
+// using Microsoft.AspNetCore.Authorization;
+// using Microsoft.AspNetCore.Mvc;
+// using Service.API.Counting.Models;
+// using Service.API.General.Models;
+// using Service.API.Models;
+// using Service.Shared;
+//
+// namespace Service.API.Counting;
+//
+// [Authorize, Route("api/[controller]")]
+// public class CountingController : LWApiController {
+//     [HttpPost]
+//     [ActionName("Create")]
+//     public Models.Counting CreateCounting([FromBody] CreateParameters parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access for counting creation");
+//
+//         var validateReturnValue = parameters.Validate(Data, EmployeeID);
+//         if (validateReturnValue != null)
+//             return validateReturnValue;
+//
+//         int id = Data.Counting.CreateCounting(parameters, EmployeeID);
+//         return Data.Counting.GetCounting(id);
+//     }
+//
+//     [HttpPost]
+//     [ActionName("AddItem")]
+//     public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
+//             throw new UnauthorizedAccessException("You don't have access for adding item to counting");
+//         using var conn = Global.Connector;
+//         try {
+//             conn.BeginTransaction();
+//             if (!parameters.Validate(conn, Data, EmployeeID))
+//                 return new AddItemResponse { ClosedCounting = true };
+//             var addItemResponse = Data.Counting.AddItem(conn, parameters, EmployeeID);
+//             conn.CommitTransaction();
+//             return addItemResponse;
+//         }
+//         catch {
+//             conn.RollbackTransaction();
+//             throw;
+//         }
+//     }
+//
+//     [HttpPost]
+//     [ActionName("UpdateLine")]
+//     public UpdateLineReturnValue UpdateLine([FromBody] UpdateLineParameter parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
+//             throw new UnauthorizedAccessException("You don't have access for updating line in counting");
+//         using var conn = Global.Connector;
+//         try {
+//             conn.BeginTransaction();
+//             var returnValue = parameters.Validate(conn, Data);
+//             if (returnValue != UpdateLineReturnValue.Ok)
+//                 return returnValue;
+//             Data.Counting.UpdateLine(conn, parameters);
+//             conn.CommitTransaction();
+//             return returnValue;
+//         }
+//         catch (Exception e) {
+//             conn.RollbackTransaction();
+//             throw;
+//         }
+//     }
+//
+//     [HttpPost]
+//     [ActionName("Cancel")]
+//     public bool CancelCounting([FromBody] IDParameters parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access for counting cancellation");
+//
+//         return Data.Counting.CancelCounting(parameters.ID, EmployeeID);
+//     }
+//
+//     [HttpPost]
+//     [ActionName("Process")]
+//     public bool ProcessCounting([FromBody] IDParameters parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access for counting cancellation");
+//         return Data.Counting.ProcessCounting(parameters.ID, EmployeeID, Data.General.AlertUsers);
+//     }
+//
+//     [HttpGet]
+//     [ActionName("CancelReasons")]
+//     public IEnumerable<ValueDescription<int>> GetCancelReasons() {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting))
+//             throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
+//         return Data.General.GetCancelReasons(ReasonType.Counting);
+//     }
+//
+//     [HttpGet]
+//     [ActionName("Countings")]
+//     public IEnumerable<Models.Counting> GetCountings([FromQuery] FilterParameters parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access to get counting");
+//         parameters.WhsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
+//         return Data.Counting.GetCountings(parameters);
+//     }
+//
+//     [HttpGet]
+//     [Route("Counting/{id:int}")]
+//     public Models.Counting GetCounting(int id) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access to get counting");
+//         return Data.Counting.GetCounting(id);
+//     }
+//
+//     [HttpPost]
+//     [ActionName("CountingContent")]
+//     public IEnumerable<CountingContent> CountingContent([FromBody] CountingContentParameters parameters) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.Counting, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access to get counting content");
+//         return Data.Counting.GetCountingContent(parameters.ID, parameters.BinEntry);
+//     }
+//     
+//     [HttpGet]
+//     [Route("CountingSummaryReport/{id:int}")]
+//     public CountingSummary GetCountingSummaryReport(int id) {
+//         if (!Global.ValidateAuthorization(EmployeeID, Authorization.CountingSupervisor))
+//             throw new UnauthorizedAccessException("You don't have access to get counting summary report");
+//         return Data.Counting.GetCountingSummaryReport(id);
+//     }
+// }

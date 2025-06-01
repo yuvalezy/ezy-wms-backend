@@ -1,46 +1,37 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{69A3DDA5-3F30-489C-94D0-152B04196317}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <RootNamespace>Service.Shared</RootNamespace>
     <AssemblyName>Service.Shared</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
     <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <Configurations>Debug;Release;Test</Configurations>
+    <UseWindowsForms>false</UseWindowsForms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Test\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Test'">
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
+
   <ItemGroup>
+    <!-- SAP COM Interop - Windows only -->
     <Reference Include="Interop.SAPbobsCOM">
       <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
     </Reference>
@@ -48,80 +39,26 @@
       <HintPath>..\..\dependencies\Interop.SAPbouiCOM_100.dll</HintPath>
     </Reference>
     <Reference Include="Sap.Data.Hana.v4.5">
-      <HintPath>..\..\..\Core\lm.main\dependencies\Sap.Data.Hana.v4.5.dll</HintPath>
+      <HintPath>..\..\..\Core\Dependencies\Sap.Data.Hana.v4.5.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.IdentityModel" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="AccessToken.cs" />
-    <Compile Include="AccountInfo.cs" />
-    <Compile Include="Company\CompanySettings.cs" />
-    <Compile Include="Company\ConnectionController.cs" />
-    <Compile Include="Const.cs" />
-    <Compile Include="Data\BaseReader.cs" />
-    <Compile Include="Data\ConnectionString.cs" />
-    <Compile Include="Data\DataConnector.cs" />
-    <Compile Include="Data\HANADataConnector.cs" />
-    <Compile Include="Data\Parameter.cs" />
-    <Compile Include="Data\Procedure.cs" />
-    <Compile Include="Data\Query.cs" />
-    <Compile Include="Data\QueryHelper.cs" />
-    <Compile Include="Data\RecordsetReader.cs" />
-    <Compile Include="Data\RecordsetReaderColumn.cs" />
-    <Compile Include="Data\SBOAssembly.cs" />
-    <Compile Include="Data\SQLDataConnector.cs" />
-    <Compile Include="Enumerations.cs" />
-    <Compile Include="LayoutDefinition.cs" />
-    <Compile Include="Node.cs" />
-    <Compile Include="Object.cs" />
-    <Compile Include="PortsManager.cs" />
-    <Compile Include="PrintObjects.cs" />
-    <Compile Include="Queries.cs" />
-    <Compile Include="RestAPISettings.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Token.cs" />
-    <Compile Include="Utils\Extensions.cs" />
-    <Compile Include="Utils\Numeric.cs" />
-    <Compile Include="Utils\Remoting.cs" />
-    <Compile Include="Utils\Shared.cs" />
-    <Compile Include="Utils\StringUtils.cs" />
-    <Compile Include="Utils\TraceObject.cs" />
-    <Compile Include="Utils\Tracer.cs" />
-    <Compile Include="Utils\Version.cs" />
-    <Compile Include="Utils\VersionInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <!-- NuGet Packages -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Portable.Licensing" Version="1.1.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.11.0" />
   </ItemGroup>
+
   <ItemGroup>
+    <!-- Embedded Resources -->
     <EmbeddedResource Include="Queries\LoadCompanyDetails.sql" />
+    <EmbeddedResource Include="Queries\Queries\HANA\*.sql" />
+    <EmbeddedResource Include="Queries\Queries\SQL\*.sql" />
   </ItemGroup>
+
   <ItemGroup>
-    <Content Include="Queries\Queries\HANA\HasActiveLayout.sql" />
-    <Content Include="Queries\Queries\HANA\LayoutFiles.sql" />
-    <Content Include="Queries\Queries\HANA\PrintLayoutVariables.sql" />
-    <Content Include="Queries\Queries\HANA\SaveLayoutSpecificFilter.sql" />
-    <Content Include="Queries\Queries\HANA\SaveLayoutVariable.sql" />
-    <Content Include="Queries\Queries\HANA\UserDefaultPrinter.sql" />
-    <Content Include="Queries\Queries\SQL\HasActiveLayout.sql" />
-    <Content Include="Queries\Queries\SQL\LayoutFiles.sql" />
-    <Content Include="Queries\Queries\SQL\PrintLayoutVariables.sql" />
-    <Content Include="Queries\Queries\SQL\SaveLayoutSpecificFilter.sql" />
-    <Content Include="Queries\Queries\SQL\SaveLayoutVariable.sql" />
-    <Content Include="Queries\Queries\SQL\UserDefaultPrinter.sql" />
+    <Folder Include="Properties\" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-         Other similar extension points exist, see Microsoft.Common.targets.
-    <Target Name="BeforeBuild">
-    </Target>
-    <Target Name="AfterBuild">
-    </Target>
-    -->
+
 </Project>

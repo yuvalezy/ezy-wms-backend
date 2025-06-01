@@ -1,362 +1,86 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2624F7A0-0A12-4012-A42C-214A3B640B36}</ProjectGuid>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>Service</RootNamespace>
     <AssemblyName>Service</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
     <LangVersion>latest</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Configurations>Debug;Release;Test</Configurations>
     <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Test\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Test'">
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Test|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Test\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
+
   <ItemGroup>
+    <!-- SAP COM Interop - Windows only -->
     <Reference Include="Interop.SAPbobsCOM">
       <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
     </Reference>
     <Reference Include="LicenseConnect">
       <HintPath>..\..\..\Dependencies\LicenseConnect.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration.Install" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IdentityModel" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Web">
-      <HintPath>..\..\..\..\..\..\Windows\Microsoft.NET\assembly\GAC_32\System.Web\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Web.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="API\Counting\CountingController.cs" />
-    <Compile Include="API\Counting\CountingCreation.cs" />
-    <Compile Include="API\Counting\CountingData.cs" />
-    <Compile Include="API\Counting\Models\AddItemParameter.cs" />
-    <Compile Include="API\Counting\Models\AddItemResponse.cs" />
-    <Compile Include="API\Counting\Models\Counting.cs" />
-    <Compile Include="API\Counting\Models\CountingContent.cs" />
-    <Compile Include="API\Counting\Models\CountingContentParameters.cs" />
-    <Compile Include="API\Counting\Models\CountingSummary.cs" />
-    <Compile Include="API\Counting\Models\CreateParameters.cs" />
-    <Compile Include="API\Counting\Models\Enumerations.cs" />
-    <Compile Include="API\Counting\Models\FilterParameters.cs" />
-    <Compile Include="API\Counting\Models\UpdateParameter.cs" />
-    <Compile Include="API\Data.cs" />
-    <Compile Include="API\General\AddItemReturnValueType.cs" />
-    <Compile Include="API\General\Alert.cs" />
-    <Compile Include="API\General\GeneralController.cs" />
-    <Compile Include="API\General\GeneralData.cs" />
-    <Compile Include="API\General\ItemBarCodeUpdate.cs" />
-    <Compile Include="API\General\Models\ApplicationSettings.cs" />
-    <Compile Include="API\General\Models\BinLocation.cs" />
-    <Compile Include="API\General\Models\CompanyInfo.cs" />
-    <Compile Include="API\General\Models\EmployeeData.cs" />
-    <Compile Include="API\General\Models\ItemBarCodeParameters.cs" />
-    <Compile Include="API\General\Models\ItemCheckResponse.cs" />
-    <Compile Include="API\General\Models\ItemStockResponse.cs" />
-    <Compile Include="API\General\Models\ProcessDocument.cs" />
-    <Compile Include="API\General\Models\ResponseBase.cs" />
-    <Compile Include="API\General\Models\UpdateBarCodeParameters.cs" />
-    <Compile Include="API\General\Models\UpdateDetailParameters.cs" />
-    <Compile Include="API\General\Models\UpdateLineResponse.cs" />
-    <Compile Include="API\GoodsReceipt\GoodsReceiptController.cs" />
-    <Compile Include="API\GoodsReceipt\GoodsReceiptCreation.cs" />
-    <Compile Include="API\GoodsReceipt\GoodsReceiptData.cs" />
-    <Compile Include="API\GoodsReceipt\Models\AddItemParameter.cs" />
-    <Compile Include="API\GoodsReceipt\Models\AddItemResponse.cs" />
-    <Compile Include="API\GoodsReceipt\Models\CreateParameters.cs" />
-    <Compile Include="API\GoodsReceipt\Models\FilterParameters.cs" />
-    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptCreationValue.cs" />
-    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptReportAll.cs" />
-    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptReportAllDetails.cs" />
-    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptValidateProcess.cs" />
-    <Compile Include="API\GoodsReceipt\Models\GoodsReceiptVSExitReport.cs" />
-    <Compile Include="API\GoodsReceipt\Models\Enumerations.cs" />
-    <Compile Include="API\GoodsReceipt\Models\Document.cs" />
-    <Compile Include="API\GoodsReceipt\Models\UpdateParameter.cs" />
-    <Compile Include="API\GoodsReceipt\Models\UpdateQuantityParameter.cs" />
-    <Compile Include="API\LoadBalancingRouter.cs" />
-    <Compile Include="API\Logging.cs" />
-    <Compile Include="API\LWApiController.cs" />
-    <Compile Include="API\Models\AlertColumn.cs" />
-    <Compile Include="API\Models\BinContent.cs" />
-    <Compile Include="API\Models\BusinessPartner.cs" />
-    <Compile Include="API\Models\DocumentStatus.cs" />
-    <Compile Include="API\Models\HomeInfo.cs" />
-    <Compile Include="API\Models\Parameters.cs" />
-    <Compile Include="API\Models\PickValueCheckData.cs" />
-    <Compile Include="API\Models\Response.cs" />
-    <Compile Include="API\Models\Item.cs" />
-    <Compile Include="API\Models\UserInfo.cs" />
-    <Compile Include="API\Models\ValueDescription.cs" />
-    <Compile Include="API\Picking\Models\AddItemParameter.cs" />
-    <Compile Include="API\Picking\Models\AddItemResponse.cs" />
-    <Compile Include="API\Picking\Models\Enumerations.cs" />
-    <Compile Include="API\Picking\Models\PickingDocument.cs" />
-    <Compile Include="API\Picking\Models\PickingParameters.cs" />
-    <Compile Include="API\Picking\Models\PickingValue.cs" />
-    <Compile Include="API\Picking\PickingController.cs" />
-    <Compile Include="API\Picking\PickingData.cs" />
-    <Compile Include="API\Picking\PickingUpdate.cs" />
-    <Compile Include="API\RefreshTokenProvider.cs" />
-    <Compile Include="API\ServiceTracer.cs" />
-    <Compile Include="API\Transfer\Models\AddItemParameter.cs" />
-    <Compile Include="API\Transfer\Models\AddItemResponse.cs" />
-    <Compile Include="API\Transfer\Models\CreateParameters.cs" />
-    <Compile Include="API\Transfer\Models\CreateTransferLine.cs" />
-    <Compile Include="API\Transfer\Models\Enumerations.cs" />
-    <Compile Include="API\Transfer\Models\FilterParameters.cs" />
-    <Compile Include="API\Transfer\Models\Transfer.cs" />
-    <Compile Include="API\Transfer\Models\TransferContent.cs" />
-    <Compile Include="API\Transfer\Models\TransferContentParameters.cs" />
-    <Compile Include="API\Transfer\Models\TransferContentTargetItemDetail.cs" />
-    <Compile Include="API\Transfer\Models\TransferContentTargetItemDetailParameters.cs" />
-    <Compile Include="API\Transfer\Models\UpdateItemResponse.cs" />
-    <Compile Include="API\Transfer\Models\UpdateParameter.cs" />
-    <Compile Include="API\Transfer\TransferController.cs" />
-    <Compile Include="API\Transfer\TransferCreation.cs" />
-    <Compile Include="API\Transfer\TransferData.cs" />
-    <Compile Include="API\Transfer\TransferRequestCreation.cs" />
-    <Compile Include="Controllers\BaseBackgroundController.cs" />
-    <Compile Include="Controllers\ServiceController.cs" />
-    <Compile Include="DataCommands.cs" />
-    <Compile Include="Controllers\HelloWorldController.cs" />
-    <Compile Include="ErrorMessages.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>ErrorMessages.resx</DependentUpon>
-    </Compile>
-    <Compile Include="ErrorMessages.es-PA.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>ErrorMessages.es-PA.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Models\CustomDateTimeConverter.cs" />
-    <Compile Include="Models\CustomServiceController.cs" />
-    <Compile Include="Models\InteractiveServiceController.cs" />
-    <Compile Include="Models\ServiceNode.cs" />
-    <Compile Include="API\ApplicationAuthProvider.cs" />
-    <Compile Include="API\Service.cs" />
-    <Compile Include="API\Startup.cs" />
-    <Compile Include="Models\ServiceNodes.cs" />
-    <Compile Include="Models\WindowsServiceController.cs" />
-    <Compile Include="ProjectInstaller.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="ProjectInstaller.Designer.cs">
-      <DependentUpon>ProjectInstaller.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Queries.cs" />
-    <Compile Include="Service.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Service.Designer.cs">
-      <DependentUpon>Service.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Global.cs" />
-    <Compile Include="StaticFiles\FileHandler.cs" />
-    <Compile Include="StaticFiles\RootHandler.cs" />
-    <Compile Include="Views\IService.cs" />
+    <!-- ASP.NET Core and Web API packages -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    
+    <!-- Crystal Reports - Note: Limited .NET Core support -->
+    
+    <!-- Other packages -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.10" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="Web.config.old" />
+    <ProjectReference Include="..\Service.Shared\Service.Shared.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="API\Counting\Queries\SQL\AddItem.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\CountingContent.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\CountingSummaryReport.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\CreateCounting.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\GetCountings.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\ProcessCountingLines.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingLineStatus.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\UpdateCountingStatus.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateAddItemParameters.sql" />
-    <EmbeddedResource Include="API\Counting\Queries\SQL\ValidateUpdateLineParameters.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\AddItem.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceiptDocument.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptAll.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptAllDetails.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateGoodsReceiptLineStatus.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateGoodsReceiptStatus.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\CreateGoodsReceipt.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GetGoodsReceipts.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ProcessGoodsReceiptLines.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\UpdateSourceLineQuantity.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateAddItemParameters.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateProcessGoodsReceiptLineDetails.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateProcessGoodsReceiptLines.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\ValidateUpdateLineParameters.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\AddItem.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItems.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetailItemsAvailableBins.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickingDetails.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValues.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\LoadPickValuesBins.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\ValidateAddItemParameters.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\AddItem.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\ProcessInfo.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\ProcessTransferLines.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\ProcessTransferLinesBins.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentSource.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\CreateTransfer.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\GetTransfers.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTarget.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetBins.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\TransferContentTargetItemDetail.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateSourceLineQuantity.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateTransferLineStatus.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\UpdateTransferStatus.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateAddItemParameters.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\ValidateUpdateLineParameters.sql" />
-    <EmbeddedResource Include="ErrorMessages.es-PA.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ErrorMessages.resx">
+    <!-- Embedded Resources for SQL queries -->
+    <EmbeddedResource Include="API\Counting\Queries\SQL\*.sql" />
+    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\*.sql" />
+    <EmbeddedResource Include="API\Picking\Queries\SQL\*.sql" />
+    <EmbeddedResource Include="API\Transfer\Queries\SQL\*.sql" />
+    <EmbeddedResource Include="Queries\DatabaseSettings.sql" />
+    <EmbeddedResource Include="Queries\HANA\*.sql" />
+    <EmbeddedResource Include="Queries\SQL\*.sql" />
+    
+    <!-- Resx files -->
+    <EmbeddedResource Update="ErrorMessages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="ProjectInstaller.resx">
-      <DependentUpon>ProjectInstaller.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Queries\DatabaseSettings.sql" />
-    <EmbeddedResource Include="Service.resx">
-      <DependentUpon>Service.cs</DependentUpon>
-      <SubType>Designer</SubType>
+    <EmbeddedResource Update="ErrorMessages.es-PA.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Service.Shared\Service.Shared.csproj">
-      <Project>{69a3dda5-3f30-489c-94d0-152b04196317}</Project>
-      <Name>Service.Shared</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Queries\HANA\UpdateLastExecution.sql" />
-    <EmbeddedResource Include="Queries\SQL\UpdateLastExecution.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CrystalReports.Engine" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.FlashControlV71" Version="13.0.3501" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ClientDoc" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommLayer" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommonControls" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CommonObjectModel" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.Controllers" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.CubeDefModel" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.DataDefModel" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.DataSetConversion" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ObjectFactory" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.Prompting" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.ReportDefModel" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportAppServer.XmlSerialize" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.ReportSource" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.Shared" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.Web" Version="13.0.4003" />
-    <PackageReference Include="CrystalReports.Windows.Forms" Version="13.0.4003" />
-    <PackageReference Include="Microsoft.AspNet.Cors" Version="5.3.0" />
-    <PackageReference Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
-    <PackageReference Include="Microsoft.AspNet.Identity.Owin" Version="2.2.4" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.3.0" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Cors" Version="5.3.0" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.Owin" Version="5.3.0" />
-    <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.3.0" />
-    <PackageReference Include="Microsoft.Owin" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Cors" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Host.HttpListener" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Host.SystemWeb" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Hosting" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Security" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Security.Cookies" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.Security.OAuth" Version="4.2.2" />
-    <PackageReference Include="Microsoft.Owin.StaticFiles" Version="4.2.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Owin" Version="1.0.0" />
-    <PackageReference Include="Owin.Security.RedisTokenProviders" Version="0.4.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="API\GoodsReceipt\Queries\HANA\" />
-    <Folder Include="API\Picking\Queries\HANA\" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\GoodsReceiptVSExit.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\GetPickings.sql" />
-    <Content Include="wwwroot\index.html" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+
 </Project>
