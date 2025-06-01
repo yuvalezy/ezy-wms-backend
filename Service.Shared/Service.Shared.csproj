@@ -80,16 +80,6 @@
     <Compile Include="Node.cs" />
     <Compile Include="Object.cs" />
     <Compile Include="PortsManager.cs" />
-    <Compile Include="PrintLayout\Common.cs" />
-    <Compile Include="PrintLayout\Layout.cs" />
-    <Compile Include="PrintLayout\LayoutData.cs" />
-    <Compile Include="PrintLayout\LayoutDefinition.cs" />
-    <Compile Include="PrintLayout\LayoutFile.cs" />
-    <Compile Include="PrintLayout\LayoutFileHANA.cs" />
-    <Compile Include="PrintLayout\LayoutFileSQL.cs" />
-    <Compile Include="PrintLayout\PrintLayoutVariable.cs" />
-    <Compile Include="PrintLayout\SelectionDoneEventArgs.cs" />
-    <Compile Include="PrintLayout\SpecificFilter.cs" />
     <Compile Include="PrintObjects.cs" />
     <Compile Include="Queries.cs" />
     <Compile Include="RestAPISettings.cs" />
@@ -108,20 +98,6 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Portable.Licensing" Version="1.1.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Service.Crystal.Legacy\Service.Crystal.Legacy.csproj">
-      <Project>{46b9091b-c1f5-4398-adad-359921e02d3c}</Project>
-      <Name>Service.Crystal.Legacy</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Service.Crystal.Shared\Service.Crystal.Shared.csproj">
-      <Project>{15ec9e97-e2cd-4767-a4c5-b0aa0da298c6}</Project>
-      <Name>Service.Crystal.Shared</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Service.Crystal\Service.Crystal.csproj">
-      <Project>{e0ab2bd6-29a5-4f5d-8971-2f27cde659a2}</Project>
-      <Name>Service.Crystal</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Queries\LoadCompanyDetails.sql" />

@@ -169,11 +169,6 @@
     <Compile Include="API\Picking\PickingController.cs" />
     <Compile Include="API\Picking\PickingData.cs" />
     <Compile Include="API\Picking\PickingUpdate.cs" />
-    <Compile Include="API\Print\Initializer.cs" />
-    <Compile Include="API\Print\PrintController.cs" />
-    <Compile Include="API\Print\PrintParameters.cs" />
-    <Compile Include="API\Print\PrintResponse.cs" />
-    <Compile Include="API\Print\PrintResponseLayout.cs" />
     <Compile Include="API\RefreshTokenProvider.cs" />
     <Compile Include="API\ServiceTracer.cs" />
     <Compile Include="API\Transfer\Models\AddItemParameter.cs" />

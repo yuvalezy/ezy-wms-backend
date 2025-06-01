@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using Service.API.Print;
 using Microsoft.Owin.Hosting;
 
 namespace Service.API;
@@ -12,7 +11,6 @@ public class Service : IDisposable {
     private IDisposable service;
 
     public void Start() {
-        Initializer.Initialize();
 #if DEBUG
         if (!Global.Interactive)
             Console.WriteLine("Starting Rest API Service");
@@ -47,8 +45,6 @@ public class Service : IDisposable {
     public void Stop() => Console.WriteLine("Stop Rest API Service");
 
     public void Dispose() {
-        foreach (var layout in PrintController.Layouts.Values)
-            layout.Dispose();
         service.Dispose();
         GC.SuppressFinalize(this);
     }
