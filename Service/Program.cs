@@ -32,8 +32,11 @@ var builder = WebApplication.CreateBuilder(args);
 var settings = new Settings();
 builder.Configuration.Bind(settings);
 
+
 var services = builder.Services;
 services.AddSingleton<ISettings>(settings);
+services.AddRouting(options => options.LowercaseUrls = true);
+
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
         options.TokenValidationParameters = new TokenValidationParameters {

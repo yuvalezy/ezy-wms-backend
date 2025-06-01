@@ -25,7 +25,7 @@ public static class DatabaseExtensions {
 
     private static void SeedDefaultAdminUser(SystemDbContext context) {
         // Check if default admin user already exists
-        if (context.Users.Any(u => u.Id == Const.DefaultUserId)) {
+        if (context.Users.Any()) {
             return;
         }
 
