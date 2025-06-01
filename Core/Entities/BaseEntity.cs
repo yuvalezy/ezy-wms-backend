@@ -10,10 +10,10 @@ public abstract class BaseEntity {
 
     // Timestamps
     [Required]
-    public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public DateTime? UpdateDate { get; set; }
-    public bool      Deleted    { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public bool      Deleted   { get; set; }
 
     public DateTime? DeletedAt { get; set; }
 }

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using Core;
 using MetaData.Models;
 using SAPbobsCOM;
 using Service.Shared;
