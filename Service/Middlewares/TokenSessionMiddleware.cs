@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Core;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
 namespace Service.Middlewares;
@@ -13,7 +14,7 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
 #endif
     public async Task InvokeAsync(HttpContext context) {
         var  endpoint     = context.GetEndpoint();
-        bool requiresAuth = endpoint?.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>() != null;
+        bool requiresAuth = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>() != null;
 
         // Skip session check on public endpoints
         if (!requiresAuth) {
@@ -22,7 +23,7 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
         }
 
         // Check if this is the logout endpoint
-        bool isLogoutEndpoint = context.Request.Path.StartsWithSegments("/api/PublicAccount/logout", StringComparison.OrdinalIgnoreCase);
+        bool isLogoutEndpoint = context.Request.Path.StartsWithSegments("/api/Authentication/logout", StringComparison.OrdinalIgnoreCase);
 
         // Grab the session token from the cookie
         string? sessionToken = context.Request.Cookies[Const.SessionCookieName];
