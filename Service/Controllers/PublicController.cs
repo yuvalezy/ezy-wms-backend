@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +22,12 @@ public class PublicController(IExternalSystemAdapter externalSystemAdapter, ISes
         companyName = await externalSystemAdapter.GetCompanyNameAsync();
         await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
         return Ok(companyName);
+    }
+    
+    [HttpGet("Warehouses")]
+    public async Task<ActionResult<IEnumerable<ExternalValue>>> GetWarehouses([FromQuery] string[]? filter = null) {
+        var warehouses = await externalSystemAdapter.GetWarehousesAsync(filter);
+        return Ok(warehouses);
     }
 
     // [HttpGet("HomeInfo")]
