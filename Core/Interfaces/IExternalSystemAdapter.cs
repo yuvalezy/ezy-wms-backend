@@ -13,4 +13,7 @@ public interface IExternalSystemAdapter {
     Task<bool>                          ValidateVendorsAsync(string id);
     Task<BinLocation?>                  ScanBinLocationAsync(string bin);
     Task<IEnumerable<Item>>             ScanItemBarCodeAsync(string scanCode, bool item = false);
+    Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string itemCode, string barcode);
+    Task<IEnumerable<BinContent>>       BinCheckAsync(int binEntry);
+    Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode);
 }

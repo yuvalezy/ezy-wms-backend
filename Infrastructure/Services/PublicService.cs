@@ -54,4 +54,10 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
     public async Task<BinLocation?> ScanBinLocationAsync(string bin) => await externalSystemAdapter.ScanBinLocationAsync(bin);
 
     public async Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await externalSystemAdapter.ScanItemBarCodeAsync(scanCode, item);
+
+    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string itemCode, string barcode) => await externalSystemAdapter.ItemCheckAsync(itemCode, barcode);
+
+    public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) => await externalSystemAdapter.BinCheckAsync(binEntry);
+
+    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await externalSystemAdapter.ItemStockAsync(itemCode, whsCode);
 }

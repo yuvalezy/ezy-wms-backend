@@ -56,43 +56,28 @@ public class PublicController(
         HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest);
         return Ok(await publicService.ScanItemBarCodeAsync(scanCode, item));
     }
-//
-//         [HttpGet("ItemByBarCode")]
-//         public ActionResult<IEnumerable<Item>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptConfirmation, Authorization.TransferRequest))
-//                 throw new UnauthorizedAccessException("You don't have access for Scan Item BarCode");
-//             return Ok(data.General.ScanItemBarCode(scanCode, item));
-//         }
-//
-//         [HttpPost("ItemCheck")]
-//         public ActionResult<IEnumerable<ItemCheckResponse>> ItemCheck([FromBody] ItemBarCodeParameters parameters)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor, Authorization.PickingSupervisor,
-//                     Authorization.GoodsReceiptConfirmation, Authorization.GoodsReceiptConfirmationSupervisor))
-//                 throw new UnauthorizedAccessException("You don't have access for Item Check");
-//             return Ok(data.General.ItemCheck(parameters.ItemCode, parameters.Barcode));
-//         }
-//
-//         [HttpGet("BinCheck")]
-//         public ActionResult<IEnumerable<BinContent>> BinCheck([FromQuery] int binEntry)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor, Authorization.PickingSupervisor,
-//                     Authorization.GoodsReceiptConfirmation, Authorization.GoodsReceiptConfirmationSupervisor))
-//                 throw new UnauthorizedAccessException("You don't have access for Bin Check");
-//             return Ok(data.General.BinCheck(binEntry));
-//         }
-//
-//         [HttpPost("ItemStock")]
-//         public ActionResult<IEnumerable<ItemStockResponse>> ItemStock([FromBody] ItemBarCodeParameters parameters)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor, Authorization.GoodsReceiptConfirmation,
-//                     Authorization.GoodsReceiptConfirmationSupervisor))
-//                 throw new UnauthorizedAccessException("You don't have access for Item Stock");
-//             string whsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
-//             return Ok(data.General.ItemStock(parameters.ItemCode, whsCode));
-//         }
-//
+
+    [HttpPost("ItemCheck")]
+    public async Task<ActionResult<IEnumerable<ItemCheckResponse>>> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
+        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
+            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
+        return Ok(await publicService.ItemCheckAsync(parameters.ItemCode, parameters.Barcode));
+    }
+
+    [HttpGet("BinCheck")]
+    public async Task<ActionResult<IEnumerable<BinContent>>> BinCheck([FromQuery] int binEntry) {
+        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
+            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
+        return Ok(await publicService.BinCheckAsync(binEntry));
+    }
+
+    [HttpPost("ItemStock")]
+    public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeParameters parameters) {
+        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, 
+            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
+        string warehouse = HttpContext.SessionInfo().Warehouse;
+        return Ok(await publicService.ItemStockAsync(parameters.ItemCode, warehouse));
+    }
 //         [HttpPost("UpdateItemBarCode")]
 //         public ActionResult UpdateItemBarCode([FromBody] UpdateBarCodeParameters parameters)
 //         {
@@ -121,5 +106,4 @@ public class PublicController(
 //             return data.General.ProcessDocument(docEntry, type);
 //         }
 //     }
-// }
 }

@@ -125,4 +125,110 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             return item;
         });
     }
+
+    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string itemCode, string barcode) {
+        var response = new List<ItemCheckResponse>();
+        if (string.IsNullOrWhiteSpace(itemCode) && string.IsNullOrWhiteSpace(barcode))
+            return response;
+
+        var data = new List<ItemCheckResponse>();
+        if (!string.IsNullOrWhiteSpace(barcode)) {
+            const string query = """
+                                 select T0."ItemCode"
+                                      , T1."ItemName"
+                                      , T1."BuyUnitMsr"
+                                      , COALESCE(T1."NumInBuy", 1)  "NumInBuy"
+                                      , T1."PurPackMsr"
+                                      , COALESCE(T1."PurPackUn", 1) "PurPackUn"
+                                 from OBCD T0
+                                          inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
+                                 where T0."BcdCode" = @ScanCode
+                                 """;
+            var parameters = new[] {
+                new SqlParameter("@ScanCode", SqlDbType.NVarChar, 255) { Value = barcode }
+            };
+            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
+                ItemCode   = reader.GetString(0),
+                ItemName   = reader.GetString(1),
+                BuyUnitMsr = reader.GetString(2),
+                NumInBuy   = reader.GetInt32(3),
+                PurPackMsr = reader.GetString(4),
+                PurPackUn  = reader.GetInt32(5)
+            });
+            data.AddRange(items);
+        }
+        else {
+            const string query = """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
+            var parameters = new[] {
+                new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
+            };
+            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
+                ItemCode   = reader.GetString(0),
+                ItemName   = reader.GetString(1),
+                BuyUnitMsr = reader.GetString(2),
+                NumInBuy   = reader.GetInt32(3),
+                PurPackMsr = reader.GetString(4),
+                PurPackUn  = reader.GetInt32(5)
+            });
+            data.AddRange(items);
+        }
+
+        const string barcodeQuery = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
+        foreach (var item in data) {
+            var barcodeParameters = new[] {
+                new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = item.ItemCode }
+            };
+            var barcodes = await dbService.QueryAsync(barcodeQuery, barcodeParameters, reader => reader.GetString(0));
+            item.Barcodes.AddRange(barcodes);
+            response.Add(item);
+        }
+
+        return response;
+    }
+
+    public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) {
+        const string query = """
+                             select T1."ItemCode", T2."ItemName", T1."OnHandQty" "OnHand", 
+                             COALESCE(T2."NumInBuy", 1) "NumInBuy", T2."BuyUnitMsr",
+                             COALESCE(T2."PurPackUn", 1) "PurPackUn", T2."PurPackMsr"
+                             from OIBQ T1 
+                             inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
+                             where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
+                             order by 1
+                             """;
+        var parameters = new[] {
+            new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = binEntry }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => new BinContent {
+            ItemCode   = reader.GetString(0),
+            ItemName   = reader.GetString(1),
+            OnHand     = reader.GetDouble(2),
+            NumInBuy   = reader.GetInt32(3),
+            BuyUnitMsr = reader.GetString(4),
+            PurPackUn  = reader.GetInt32(5),
+            PurPackMsr = reader.GetString(6)
+        });
+    }
+
+    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
+        const string query = """
+                             select T1."BinCode", T0."OnHandQty"
+                             from OIBQ T0
+                                      inner join OBIN T1 on T1."AbsEntry" = T0."BinAbs"
+                             where T0."ItemCode" = @ItemCode
+                               and T0."WhsCode" = @WhsCode
+                               and T0."OnHandQty" > 0
+                             order by 1
+                             """;
+        var parameters = new[] {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = whsCode }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => new ItemStockResponse {
+            BinCode  = reader.GetString(0),
+            Quantity = reader.GetInt32(1)
+        });
+    }
 }
