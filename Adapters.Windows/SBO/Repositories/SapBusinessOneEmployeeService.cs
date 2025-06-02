@@ -11,7 +11,7 @@ public class SapEmployeeRepository(SapBusinessOneDatabaseService dbService) {
             query,
             new { id },
             reader => new ExternalUserResponse {
-                Id       = reader.GetString(0),
+                Id       = reader.GetInt32(0).ToString(),
                 FullName = $"{reader.GetString(1)} {reader.GetString(2)}"
             });
     }
@@ -23,7 +23,7 @@ public class SapEmployeeRepository(SapBusinessOneDatabaseService dbService) {
             query,
             new { },
             reader => new ExternalUserResponse {
-                Id       = reader.GetString(0),
+                Id       = reader.GetInt32(0).ToString(),
                 FullName = $"{reader.GetString(1)} {reader.GetString(2)}"
             });
     }

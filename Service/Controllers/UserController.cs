@@ -14,7 +14,7 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [RequireSuperUser]
-public class UserController(IUserService userService, ILogger<UserController> logger) : ControllerBase {
+public class UserController(IUserService userService, IExternalSystemAdapter externalSystemAdapter, ILogger<UserController> logger) : ControllerBase {
     private Guid? GetCurrentUserId() {
         string? userIdClaim = User.FindFirst("UserId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
@@ -155,6 +155,35 @@ public class UserController(IUserService userService, ILogger<UserController> lo
         catch (Exception ex) {
             logger.LogError(ex, "Error enabling user {UserId}", id);
             return StatusCode(500, new { error = "server_error", error_description = "An error occurred while enabling the user." });
+        }
+    }
+
+    [HttpGet("external")]
+    public async Task<IActionResult> GetExternalUsers() {
+        try {
+            var externalUsers = await externalSystemAdapter.GetUsersAsync();
+            return Ok(externalUsers);
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error retrieving external users");
+            return StatusCode(500, new { error = "server_error", error_description = "An error occurred while retrieving external users." });
+        }
+    }
+
+    [HttpGet("external/{id}")]
+    public async Task<IActionResult> GetExternalUser(string id) {
+        try {
+            var externalUser = await externalSystemAdapter.GetUserInfoAsync(id);
+            
+            if (externalUser == null) {
+                return NotFound(new { error = "external_user_not_found", error_description = "External user not found." });
+            }
+
+            return Ok(externalUser);
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error retrieving external user {ExternalUserId}", id);
+            return StatusCode(500, new { error = "server_error", error_description = "An error occurred while retrieving the external user." });
         }
     }
 }

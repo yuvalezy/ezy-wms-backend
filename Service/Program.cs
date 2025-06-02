@@ -74,7 +74,7 @@ if (settings.SessionManagement.Type == SessionManagementType.Redis) {
     // Add Redis distributed cache
     services.AddStackExchangeRedisCache(options => {
         options.Configuration = $"{settings.SessionManagement.Redis.Host ?? "localhost"}:{settings.SessionManagement.Redis.Port ?? 6379}";
-        options.InstanceName  = "EzyProp:";
+        options.InstanceName  = "EzyWms:";
     });
 }
 else {
