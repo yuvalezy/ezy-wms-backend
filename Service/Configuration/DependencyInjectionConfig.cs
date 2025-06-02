@@ -2,6 +2,7 @@ using System;
 using Adapters.Windows.SBO;
 using Adapters.Windows.SBO.Repositories;
 using Adapters.Windows.SBO.Services;
+using Adapters.Windows.SBO.Utils;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models.Settings;
@@ -40,8 +41,8 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPublicService, PublicService>();
 
-        // External System Adapters
-        services.AddSingleton<SboAssemblyRegistry>();
+        // External System Adapters for SBO 9.0
+        SboAssembly.RedirectAssembly();
         services.AddSingleton<SboCompany>();
         services.AddScoped<SboDatabaseService>();
         services.AddScoped<SboEmployeeRepository>();
