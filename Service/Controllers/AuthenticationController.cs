@@ -18,7 +18,7 @@ public class AuthenticationController(IAuthenticationService authenticationServi
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request) {
         try {
-            var sessionInfo = await authenticationService.LoginAsync(request.Password);
+            var sessionInfo = await authenticationService.LoginAsync(request);
 
             if (sessionInfo == null) {
                 return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password or account disabled." });

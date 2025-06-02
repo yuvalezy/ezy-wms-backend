@@ -12,15 +12,16 @@ public class AuthenticationService(
     SystemDbContext                dbContext,
     IJwtAuthenticationService      jwtService,
     ISessionManager                sessionManager,
+    IExternalSystemAdapter         externalSystemAdapter,
     ILogger<AuthenticationService> logger) : IAuthenticationService {
-    public async Task<SessionInfo?> LoginAsync(string password) {
+    public async Task<SessionInfo?> LoginAsync(LoginRequest request) {
         try {
             // Find all users and check password
             var users = await dbContext.Users
                 .Include(u => u.AuthorizationGroup)
                 .ToListAsync();
 
-            var authenticatedUser = users.FirstOrDefault(user => PasswordUtils.VerifyPassword(password, user.Password));
+            var authenticatedUser = users.FirstOrDefault(user => PasswordUtils.VerifyPassword(request.Password, user.Password));
 
             if (authenticatedUser == null) {
                 logger.LogWarning("Login failed: Invalid password");
@@ -32,11 +33,21 @@ public class AuthenticationService(
                 logger.LogWarning("Login failed: User {UserId} is deleted", authenticatedUser.Id);
                 return null;
             }
-            
+
             // Check if user is active
             if (!authenticatedUser.Active) {
                 logger.LogWarning("Login failed: User {UserId} is disabled", authenticatedUser.Id);
                 return null;
+            }
+
+            if (!authenticatedUser.SuperUser && authenticatedUser.Warehouses.Count == 0) {
+                logger.LogWarning("Login failed: User {UserId} has no warehouses assigned", authenticatedUser.Id);
+                return null;
+            }
+
+            if ((authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) && request.Warehouse == null) {
+                //need to return error to the browser with list of warehouses as the user must select a warehouse for login parameter
+                var warehouses = externalSystemAdapter.GetWarehousesAsync(authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null);
             }
 
             // Generate token
