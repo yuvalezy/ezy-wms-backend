@@ -14,4 +14,5 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public async Task<IEnumerable<ExternalValue>>    GetVendorsAsync()                           => await generalRepository.GetVendorsAsync();
     public async Task<bool>                          ValidateVendorsAsync(string id)             => await generalRepository.ValidateVendorsAsync(id);
     public async Task<BinLocation?>                  ScanBinLocationAsync(string bin)            => await generalRepository.ScanBinLocationAsync(bin);
+    public async Task<IEnumerable<Item>>             ScanItemBarCodeAsync(string scanCode, bool item = false) => await generalRepository.ScanItemBarCodeAsync(scanCode, item);
 }

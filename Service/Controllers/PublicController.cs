@@ -50,6 +50,12 @@ public class PublicController(
         HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.Counting);
         return await publicService.ScanBinLocationAsync(bin);
     }
+
+    [HttpGet("ItemByBarCode")]
+    public async Task<ActionResult<IEnumerable<Item>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
+        HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest);
+        return Ok(await publicService.ScanItemBarCodeAsync(scanCode, item));
+    }
 //
 //         [HttpGet("ItemByBarCode")]
 //         public ActionResult<IEnumerable<Item>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false)

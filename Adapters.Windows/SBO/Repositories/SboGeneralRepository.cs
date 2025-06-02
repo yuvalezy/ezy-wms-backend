@@ -88,4 +88,41 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             Code  = reader.GetString(1)
         });
     }
+
+    public async Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
+        string query;
+        if (!item) {
+            query = """
+                    SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+                    FROM OBCD T0
+                             INNER JOIN OITM T1 ON T0."ItemCode" = T1."ItemCode"
+                    left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
+                    WHERE T0."BcdCode" = @ScanCode
+                    """;
+        }
+        else {
+            query = """
+                    SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+                    FROM OITM T1
+                             left outer JOIN OBCD T0 ON T0."ItemCode" = T1."ItemCode"
+                    left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
+                    WHERE T1."ItemCode" = @ScanCode or T0."BcdCode" = @ScanCode
+                    """;
+        }
+
+        var parameters = new[] {
+            new SqlParameter("@ScanCode", SqlDbType.NVarChar, 50) { Value = scanCode }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => {
+            var item = new Item(reader.GetString(0));
+            if (!reader.IsDBNull(1))
+                item.Name = reader.GetString(1);
+            if (!reader.IsDBNull(2))
+                item.Father = reader.GetString(2);
+            if (!reader.IsDBNull(3))
+                item.BoxNumber = reader.GetInt32(3);
+            return item;
+        });
+    }
 }
