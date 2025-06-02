@@ -378,15 +378,16 @@ public class GoodsReceiptData {
     }
 
     private void GetDocumentsSpecificDocuments(params Document[] documents) {
-        var filtered = documents.Where(v => v.Type == GoodsReceiptType.SpecificOrders).ToArray();
+        var filtered = documents.Where(v => v.Type is GoodsReceiptType.SpecificOrders or GoodsReceiptType.SpecificReceipts).ToArray();
         if (filtered.Length == 0)
             return;
         string query = filtered.Aggregate("", (a, b) => a + a.AggregateQuery() + b.ID);
         query = $"""
-                 select X0."U_ID" ID, X0."U_ObjType" "ObjType", X0."U_DocEntry" "DocEntry", COALESCE(X1."DocNum", X2."DocNum") "DocNum"
+                 select X0."U_ID" ID, X0."U_ObjType" "ObjType", X0."U_DocEntry" "DocEntry", COALESCE(X1."DocNum", X2."DocNum", X3."DocNum") "DocNum"
                  from "@LW_YUVAL08_GRPO3" X0
                  left outer join OPOR X1 on X1."DocEntry" = X0."U_DocEntry" and X1."ObjType" = X0."U_ObjType"
                  left outer join OPCH X2 on X2."DocEntry" = X0."U_DocEntry" and X2."ObjType" = X0."U_ObjType"
+                 left outer join OPDN X3 on X3."DocEntry" = X0."U_DocEntry" and X3."ObjType" = X0."U_ObjType"
                  where X0."U_ID" in ({query})
                  """;
         using var conn = Global.Connector;
