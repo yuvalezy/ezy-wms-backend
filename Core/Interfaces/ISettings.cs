@@ -10,4 +10,5 @@ public interface ISettings {
     public Options                   Options           { get; set; }
     public Filters                   Filters           { get; set; }
     public SessionManagementSettings SessionManagement { get; set; }
+    public SboSettings?              SboSettings       { get; set; }
 }

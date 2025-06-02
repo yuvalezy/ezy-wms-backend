@@ -60,4 +60,24 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
     public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) => await externalSystemAdapter.BinCheckAsync(binEntry);
 
     public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await externalSystemAdapter.ItemStockAsync(itemCode, whsCode);
+
+    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(string userId, UpdateBarCodeRequest request) {
+        if (request.AddBarcodes != null) {
+            foreach (string barcode in request.AddBarcodes) {
+                var check = (await externalSystemAdapter.ScanItemBarCodeAsync(barcode)).FirstOrDefault();
+                if (check != null) {
+                    return new UpdateItemBarCodeResponse() {
+                        ExistItem = check.Code, Status = ResponseStatus.Error
+                    };
+                }
+            }
+        }
+
+        var response = await externalSystemAdapter.UpdateItemBarCode(request);
+        //todo create logs for the user id
+        // item.UserFields.Fields.Item("U_LW_UPDATE_USER").Value      = employeeID;
+        // item.UserFields.Fields.Item("U_LW_UPDATE_TIMESTAMP").Value = DateTime.Now;
+
+        return response;
+    }
 }

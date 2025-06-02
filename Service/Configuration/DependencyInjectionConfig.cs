@@ -41,9 +41,12 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPublicService, PublicService>();
 
         // External System Adapters
+        services.AddSingleton<SboAssemblyRegistry>();
+        services.AddSingleton<SboCompany>();
         services.AddScoped<SboDatabaseService>();
         services.AddScoped<SboEmployeeRepository>();
         services.AddScoped<SboGeneralRepository>();
+        services.AddScoped<SboItemRepository>();
         services.AddScoped<IExternalSystemAdapter, SboAdapter>();
 
         return services;

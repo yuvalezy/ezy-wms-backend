@@ -73,37 +73,16 @@ public class PublicController(
 
     [HttpPost("ItemStock")]
     public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeParameters parameters) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, 
+        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
             RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
         string warehouse = HttpContext.SessionInfo().Warehouse;
         return Ok(await publicService.ItemStockAsync(parameters.ItemCode, warehouse));
     }
-//         [HttpPost("UpdateItemBarCode")]
-//         public ActionResult UpdateItemBarCode([FromBody] UpdateBarCodeParameters parameters)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceiptSupervisor, Authorization.CountingSupervisor, Authorization.TransferSupervisor,
-//                     Authorization.GoodsReceiptConfirmationSupervisor))
-//                 throw new UnauthorizedAccessException("You don't have access for Update Item BarCode");
-//             data.General.UpdateItemBarCode(parameters.ItemCode, parameters.Barcode, parameters.ID, parameters.Type);
-//             return Ok();
-//         }
-//
-//         [HttpPost("UpdateDetails")]
-//         public ActionResult<UpdateLineResponse> UpdateDetails([FromBody] UpdateDetailParameters parameters)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.All))
-//                 throw new UnauthorizedAccessException("You don't have access for Update Details");
-//             return data.General.UpdateDetails(parameters.Bin, parameters.ID, parameters.Type, parameters.Table, parameters.SupplierRef, parameters.Quantity);
-//         }
-//
-//         [HttpGet("ProcessDocument")]
-//         public ActionResult<ProcessDocument> ProcessDocument([FromQuery] int docEntry, [FromQuery] ProcessType type)
-//         {
-//             if (!Global.ValidateAuthorization(EmployeeID, Authorization.GoodsReceipt, Authorization.GoodsReceiptSupervisor, Authorization.GoodsReceiptConfirmation,
-//                     Authorization.GoodsReceiptConfirmationSupervisor, Authorization.Counting, Authorization.CountingSupervisor, Authorization.Transfer, Authorization.TransferSupervisor,
-//                     Authorization.Picking, Authorization.PickingSupervisor))
-//                 throw new UnauthorizedAccessException("You don't have access for Process Document");
-//             return data.General.ProcessDocument(docEntry, type);
-//         }
-//     }
+
+    [HttpPost("UpdateItemBarCode")]
+    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode([FromBody] UpdateBarCodeRequest request) {
+        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
+                RoleType.GoodsReceiptConfirmationSupervisor);
+        return await publicService.UpdateItemBarCode(HttpContext.SessionInfo().UserId, request);
+    }
 }

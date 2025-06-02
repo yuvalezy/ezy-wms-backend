@@ -1,10 +1,10 @@
-﻿using Service.API.General.Models;
+﻿using Core.Enums;
 
-namespace Service.API.Transfer.Models;
+namespace Core.Models;
 
 public class UpdateItemResponse(UpdateLineReturnValue? returnValue = null) {
     public bool                  ClosedDocument { get; set; }
-    public string                ErrorMessage   { get; set; }
+    public string?               ErrorMessage   { get; set; }
     public UpdateLineReturnValue ReturnValue    { get; set; } = returnValue ?? UpdateLineReturnValue.Ok;
     public bool                  Fulfillment    { get; set; }
     public bool                  Showroom       { get; set; }
