@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Core;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +15,23 @@ namespace Service.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthenticationController(IAuthenticationService authenticationService, ILogger<AuthenticationController> logger) : ControllerBase {
+public class AuthenticationController(
+    IAuthenticationService            authenticationService,
+    ILogger<AuthenticationController> logger,
+    ISessionManager                   sessionManager,
+    IExternalSystemAdapter            externalSystemAdapter) : ControllerBase {
+    [HttpGet("CompanyName"), AllowAnonymous]
+    public async Task<ActionResult<string>> GetCompanyInfo() {
+        string? companyName = await sessionManager.GetStringAsync("CompanyName");
+        if (!string.IsNullOrEmpty(companyName)) {
+            return Ok(companyName);
+        }
+
+        companyName = await externalSystemAdapter.GetCompanyNameAsync();
+        await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
+        return Ok(companyName);
+    }
+
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request) {
@@ -33,6 +51,16 @@ public class AuthenticationController(IAuthenticationService authenticationServi
             });
 
             return Ok(sessionInfo);
+        }
+        catch (WarehouseSelectionRequiredException ex) {
+            logger.LogInformation("Warehouse selection required for login");
+            return BadRequest(new {
+                error             = "WAREHOUSE_SELECTION_REQUIRED",
+                error_description = ex.Message,
+                data = new {
+                    warehouses = ex.AvailableWarehouses.Select(w => new { id = w.Id, name = w.Name })
+                }
+            });
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error during login");
@@ -70,7 +98,7 @@ public class AuthenticationController(IAuthenticationService authenticationServi
         try {
             // Get the session token from the cookie
             string? sessionToken = Request.Cookies[Const.SessionCookieName];
-            
+
             if (!string.IsNullOrEmpty(sessionToken)) {
                 // Remove the session from the session manager
                 await authenticationService.LogoutAsync(sessionToken);

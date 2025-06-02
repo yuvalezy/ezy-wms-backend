@@ -1,4 +1,5 @@
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Core.Utils;
@@ -45,14 +46,46 @@ public class AuthenticationService(
                 return null;
             }
 
-            if ((authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) && request.Warehouse == null) {
-                //need to return error to the browser with list of warehouses as the user must select a warehouse for login parameter
-                var warehouses = externalSystemAdapter.GetWarehousesAsync(authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null);
+            // Handle warehouse selection
+            string? selectedWarehouse = null;
+
+            if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
+                if (string.IsNullOrEmpty(request.Warehouse)) {
+                    // Fetch available warehouses
+                    string[]? filter     = authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null;
+                    var       warehouses = await externalSystemAdapter.GetWarehousesAsync(filter);
+                    throw new WarehouseSelectionRequiredException(warehouses);
+                }
+
+                // Validate the provided warehouse
+                if (!authenticatedUser.SuperUser && !authenticatedUser.Warehouses.Contains(request.Warehouse)) {
+                    logger.LogWarning("Login failed: User {UserId} does not have access to warehouse {Warehouse}",
+                        authenticatedUser.Id, request.Warehouse);
+                    return null;
+                }
+
+                selectedWarehouse = request.Warehouse;
+                //Validate that the warehouse exists in the system
+                var warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                if (warehouse == null) {
+                    logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
+                    return null;
+                }
+            }
+            else if (authenticatedUser.Warehouses.Count == 1) {
+                selectedWarehouse = authenticatedUser.Warehouses.First();
+
+                //Validate that the warehouse exists in the system
+                var warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                if (warehouse == null) {
+                    logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
+                    return null;
+                }
             }
 
             // Generate token
             var expiresAt = DateTime.UtcNow.Date.AddDays(1); // Expires at midnight
-            var token     = jwtService.GenerateToken(authenticatedUser, expiresAt);
+            string token     = jwtService.GenerateToken(authenticatedUser, expiresAt);
 
             var authorizations = authenticatedUser.AuthorizationGroup?.Authorizations ?? new List<Authorization>();
 
@@ -60,6 +93,7 @@ public class AuthenticationService(
                 UserId         = authenticatedUser.Id.ToString(),
                 SuperUser      = authenticatedUser.SuperUser,
                 Authorizations = authorizations,
+                Warehouse      = selectedWarehouse!,
                 Token          = token,
                 ExpiresAt      = expiresAt
             };

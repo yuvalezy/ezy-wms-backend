@@ -1,5 +1,6 @@
 ﻿using Adapters.Windows.SBO.Services;
 using Core.Models;
+using Microsoft.Data.SqlClient;
 
 namespace Adapters.Windows.SBO.Repositories;
 
@@ -9,7 +10,7 @@ public class SboEmployeeRepository(SboDatabaseService dbService) {
 
         return await dbService.QuerySingleAsync(
             query,
-            new { id },
+            [new SqlParameter("@id", id)],
             reader => new ExternalValue {
                 Id       = reader.GetInt32(0).ToString(),
                 Name = $"{reader.GetString(1)} {reader.GetString(2)}"
@@ -21,7 +22,7 @@ public class SboEmployeeRepository(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(
             query,
-            new { },
+            null,
             reader => new ExternalValue {
                 Id       = reader.GetInt32(0).ToString(),
                 Name = $"{reader.GetString(1)} {reader.GetString(2)}"

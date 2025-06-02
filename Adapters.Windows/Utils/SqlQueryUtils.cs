@@ -1,4 +1,6 @@
-﻿namespace Adapters.Windows.Utils;
+﻿using Microsoft.Data.SqlClient;
+
+namespace Adapters.Windows.Utils;
 
 public static class SqlQueryUtils {
     public static string BuildInClause(string columnName, string parameterPrefix, int valueCount) {
@@ -9,10 +11,14 @@ public static class SqlQueryUtils {
         return $" where \"{columnName}\" in ({string.Join(", ", paramNames)})";
     }
 
-    public static object BuildInParameters(string parameterPrefix, string[] values) {
-        var parameters = new Dictionary<string, object>();
+    public static SqlParameter[]? BuildInParameters(string parameterPrefix, string[] values, SqlParameter[]? parameters) {
+        if (parameters == null) {
+            parameters = new SqlParameter[values.Length];
+        } else {
+            Array.Resize(ref parameters, parameters.Length + values.Length);
+        }
         for (int i = 0; i < values.Length; i++) {
-            parameters[$"{parameterPrefix}{i + 1}"] = values[i];
+            parameters[i + (parameters.Length - values.Length)] = new SqlParameter($"@{parameterPrefix}{i + 1}", values[i]);
         }
 
         return parameters;

@@ -12,17 +12,6 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class PublicController(IExternalSystemAdapter externalSystemAdapter, ISessionManager sessionManager) : ControllerBase {
-    [HttpGet("CompanyName")]
-    public async Task<ActionResult<string>> GetCompanyInfo() {
-        string? companyName = await sessionManager.GetStringAsync("CompanyName");
-        if (!string.IsNullOrEmpty(companyName)) {
-            return Ok(companyName);
-        }
-
-        companyName = await externalSystemAdapter.GetCompanyNameAsync();
-        await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
-        return Ok(companyName);
-    }
     
     [HttpGet("Warehouses")]
     public async Task<ActionResult<IEnumerable<ExternalValue>>> GetWarehouses([FromQuery] string[]? filter = null) {

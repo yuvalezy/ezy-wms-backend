@@ -7,7 +7,7 @@ namespace Adapters.Windows.SBO.Services;
 public class SboDatabaseService(ISettings settings) {
     private string ConnectionString => settings.ConnectionStrings.ExternalAdapterConnection;
 
-    public async Task<T?> QuerySingleAsync<T>(string query, object parameters, Func<SqlDataReader, T> mapper) {
+    public async Task<T?> QuerySingleAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
@@ -18,7 +18,7 @@ public class SboDatabaseService(ISettings settings) {
         return await reader.ReadAsync() ? mapper(reader) : default;
     }
 
-    public async Task<IEnumerable<T>> QueryAsync<T>(string query, object parameters, Func<SqlDataReader, T> mapper) {
+    public async Task<IEnumerable<T>> QueryAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         var results = new List<T>();
         
         await using var connection = new SqlConnection(ConnectionString);
@@ -35,7 +35,7 @@ public class SboDatabaseService(ISettings settings) {
         return results;
     }
 
-    public async Task<T?> ExecuteScalarAsync<T>(string query, object parameters) {
+    public async Task<T?> ExecuteScalarAsync<T>(string query, SqlParameter[]? parameters) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
@@ -46,7 +46,7 @@ public class SboDatabaseService(ISettings settings) {
         return result == null || result == DBNull.Value ? default : (T)result;
     }
 
-    public async Task<int> ExecuteAsync(string query, object parameters) {
+    public async Task<int> ExecuteAsync(string query, SqlParameter[]? parameters) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
@@ -87,14 +87,9 @@ public class SboDatabaseService(ISettings settings) {
         }
     }
 
-    private void AddParameters(SqlCommand command, object parameters) {
+    private void AddParameters(SqlCommand command, SqlParameter[]? parameters) {
         if (parameters == null) return;
-
-        var properties = parameters.GetType().GetProperties();
-        foreach (var property in properties) {
-            var value = property.GetValue(parameters) ?? DBNull.Value;
-            command.Parameters.AddWithValue($"@{property.Name}", value);
-        }
+        command.Parameters.AddRange(parameters);
     }
 
     // Helper methods for common SAP B1 queries
@@ -104,11 +99,11 @@ public class SboDatabaseService(ISettings settings) {
             FROM INFORMATION_SCHEMA.TABLES 
             WHERE TABLE_NAME = @tableName";
 
-        var count = await ExecuteScalarAsync<int>(query, new { tableName });
+        var count = await ExecuteScalarAsync<int>(query, [new SqlParameter("@tableName", tableName)]);
         return count > 0;
     }
 
-    public async Task<DataTable> GetDataTableAsync(string query, object parameters) {
+    public async Task<DataTable> GetDataTableAsync(string query, SqlParameter[]? parameters) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
