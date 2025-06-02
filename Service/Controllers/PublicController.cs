@@ -1,40 +1,32 @@
-// using System;
-// using System.Collections.Generic;
-// using Microsoft.AspNetCore.Mvc;
-// using Microsoft.AspNetCore.Authorization;
-// using Service.API.General.Models;
-// using Service.API.Models;
-// using Service.Shared;
-//
-// namespace Service.API.General
-// {
-//     [ApiController]
-//     [Route("api/[controller]")]
-//     public class PublicController : LWApiController
-//     {
-//         private readonly Data data = new();
-//
-//         [HttpGet("CompanyInfo")]
-//         public ActionResult<CompanyInfo> GetCompanyInfo() =>
-//             new CompanyInfo
-//             {
-//                 Name = Global.CompanyName,
-//             };
-//     }
-//
-//     [Authorize]
-//     [ApiController]
-//     [Route("api/[controller]")]
-//     public class GeneralController : LWApiController
-//     {
-//         private readonly Data data = new();
-//
-//         [HttpGet("HomeInfo")]
-//         public ActionResult<HomeInfo> GetHomeInfo()
-//         {
-//             var employeeData = data.General.GetEmployeeData(EmployeeID);
-//             return data.General.GetHomeInfo(employeeData);
-//         }
+using System;
+using System.Threading.Tasks;
+using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Service.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class PublicController(IExternalSystemAdapter externalSystemAdapter, ISessionManager sessionManager) : ControllerBase {
+    [HttpGet("CompanyName")]
+    public async Task<ActionResult<string>> GetCompanyInfo() {
+        string? companyName = await sessionManager.GetStringAsync("CompanyName");
+        if (!string.IsNullOrEmpty(companyName)) {
+            return Ok(companyName);
+        }
+
+        companyName = await externalSystemAdapter.GetCompanyNameAsync();
+        await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
+        return Ok(companyName);
+    }
+
+    // [HttpGet("HomeInfo")]
+    // public ActionResult<HomeInfo> GetHomeInfo() {
+        // var employeeData = data.General.GetEmployeeData(EmployeeID);
+        // return data.General.GetHomeInfo(employeeData);
+    // }
 //
 //         [HttpGet("UserInfo")]
 //         public ActionResult<UserInfo> GetUserInfo()
@@ -138,3 +130,4 @@
 //         }
 //     }
 // }
+}

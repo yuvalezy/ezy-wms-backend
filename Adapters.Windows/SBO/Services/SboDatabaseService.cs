@@ -4,7 +4,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Adapters.Windows.SBO.Services;
 
-public class SapBusinessOneDatabaseService(ISettings settings) {
+public class SboDatabaseService(ISettings settings) {
     private string ConnectionString => settings.ConnectionStrings.ExternalAdapterConnection;
 
     public async Task<T?> QuerySingleAsync<T>(string query, object parameters, Func<SqlDataReader, T> mapper) {

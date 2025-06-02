@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Service.API.Counting.Models;
+﻿namespace Service.API.Counting.Models;
 
 // public class CreateParameters {
 //     public string Name { get; set; }

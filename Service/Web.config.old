@@ -1,8 +1,0 @@
-﻿<system.web>
-    <httpHandlers>
-        <add verb="*" path="*.js" type="Service.StaticFiles.FileHandler, Service" />
-        <add verb="*" path="*.css" type="Service.StaticFiles.FileHandler, Service" />
-        <add verb="*" path="*.html" type="Service.StaticFiles.FileHandler, Service" />
-        <add verb="*" path="/" type="Service.StaticFiles.RootHandler, Service" />
-    </httpHandlers>
-</system.web>

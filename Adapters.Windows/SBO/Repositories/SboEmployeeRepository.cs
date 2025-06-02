@@ -3,7 +3,7 @@ using Core.Models;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SapEmployeeRepository(SapBusinessOneDatabaseService dbService) {
+public class SboEmployeeRepository(SboDatabaseService dbService) {
     public async Task<ExternalUserResponse?> GetByIdAsync(string id) {
         const string query = "select \"empID\", \"firstName\", \"lastName\" from \"OHEM\" where \"empID\" = @id";
 

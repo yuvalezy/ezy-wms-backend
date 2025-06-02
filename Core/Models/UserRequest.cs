@@ -16,8 +16,11 @@ public class UserRequest {
 
     public bool SuperUser { get; set; }
 
-    public Guid? AuthorizationGroupId { get; set; }
+    [Required]
+    public ICollection<string> Warehouses { get; set; } = [];
 
     [MaxLength(50)]
     public string? ExternalId { get; set; }
+
+    public Guid? AuthorizationGroupId { get; set; }
 }

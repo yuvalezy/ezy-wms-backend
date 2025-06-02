@@ -1,100 +1,99 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Service</RootNamespace>
-    <AssemblyName>Service</AssemblyName>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Configurations>Debug;Release;Test</Configurations>
-    <PlatformTarget>x64</PlatformTarget>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0-windows</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <RootNamespace>Service</RootNamespace>
+        <AssemblyName>Service</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Configurations>Debug;Release;Test</Configurations>
+        <PlatformTarget>x64</PlatformTarget>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DefineConstants>TRACE</DefineConstants>
+        <Optimize>true</Optimize>
+        <DebugType>pdbonly</DebugType>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Test'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Test'">
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <!-- SAP COM Interop - Windows only -->
-    <Reference Include="Interop.SAPbobsCOM">
-      <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
-    </Reference>
-    <Reference Include="LicenseConnect">
-      <HintPath>..\..\..\Dependencies\LicenseConnect.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <!-- SAP COM Interop - Windows only -->
+        <Reference Include="Interop.SAPbobsCOM">
+            <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
+        </Reference>
+        <Reference Include="LicenseConnect">
+            <HintPath>..\..\..\Dependencies\LicenseConnect.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <!-- ASP.NET Core and Web API packages -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    
-    <!-- Crystal Reports - Note: Limited .NET Core support -->
-    
-    <!-- Other packages -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
-    <PackageReference Include="System.Management" Version="9.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <!-- ASP.NET Core and Web API packages -->
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Adapters.Windows\Adapters.Windows.csproj" />
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-    <ProjectReference Include="..\Service.Shared\Service.Shared.csproj" />
-  </ItemGroup>
+        <!-- Crystal Reports - Note: Limited .NET Core support -->
 
-  <ItemGroup>
-    <!-- Embedded Resources for SQL queries -->
-    <EmbeddedResource Include="API\Counting\Queries\SQL\*.sql" />
-    <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\*.sql" />
-    <EmbeddedResource Include="API\Picking\Queries\SQL\*.sql" />
-    <EmbeddedResource Include="API\Transfer\Queries\SQL\*.sql" />
-    <EmbeddedResource Include="Queries\DatabaseSettings.sql" />
-    <EmbeddedResource Include="Queries\HANA\*.sql" />
-    <EmbeddedResource Include="Queries\SQL\*.sql" />
-    
-    <!-- Resx files -->
-    <EmbeddedResource Update="Resources\ErrorMessages.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Resources\ErrorMessages.es-PA.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+        <!-- Other packages -->
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="StackExchange.Redis" Version="2.8.37"/>
+        <PackageReference Include="System.Drawing.Common" Version="9.0.0"/>
+        <PackageReference Include="System.Management" Version="9.0.0"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="API\Authentication\" />
-    <Folder Include="API\Users\" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Adapters.Windows\Adapters.Windows.csproj"/>
+        <ProjectReference Include="..\Core\Core.csproj"/>
+        <ProjectReference Include="..\Infrastructure\Infrastructure.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Embedded Resources for SQL queries -->
+        <EmbeddedResource Include="API\Counting\Queries\SQL\*.sql"/>
+        <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\*.sql"/>
+        <EmbeddedResource Include="API\Picking\Queries\SQL\*.sql"/>
+        <EmbeddedResource Include="API\Transfer\Queries\SQL\*.sql"/>
+        <EmbeddedResource Include="Queries\DatabaseSettings.sql"/>
+        <EmbeddedResource Include="Queries\HANA\*.sql"/>
+        <EmbeddedResource Include="Queries\SQL\*.sql"/>
+
+        <!-- Resx files -->
+        <EmbeddedResource Update="Resources\ErrorMessages.resx">
+            <Generator>ResXFileCodeGenerator</Generator>
+            <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Resources\ErrorMessages.es-PA.resx">
+            <Generator>ResXFileCodeGenerator</Generator>
+            <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="API\Authentication\"/>
+        <Folder Include="API\Users\"/>
+    </ItemGroup>
 
 
 </Project>

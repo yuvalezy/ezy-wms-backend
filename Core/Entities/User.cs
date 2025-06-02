@@ -26,6 +26,9 @@ public class User : BaseEntity {
     [Required]
     public bool Active { get; set; }
 
+    [Required]
+    public ICollection<string> Warehouses { get; set; } = [];
+
     [MaxLength(50)]
     public string? ExternalId { get; set; }
 
