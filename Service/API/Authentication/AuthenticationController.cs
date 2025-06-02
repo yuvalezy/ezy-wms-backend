@@ -63,4 +63,31 @@ public class AuthenticationController(IAuthenticationService authenticationServi
             return StatusCode(500, new { error = "server_error", error_description = "An error occurred while changing the password." });
         }
     }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout() {
+        try {
+            // Get the session token from the cookie
+            string? sessionToken = Request.Cookies[Const.SessionCookieName];
+            
+            if (!string.IsNullOrEmpty(sessionToken)) {
+                // Remove the session from the session manager
+                await authenticationService.LogoutAsync(sessionToken);
+            }
+
+            // Clear the session cookie
+            Response.Cookies.Delete(Const.SessionCookieName, new CookieOptions {
+                HttpOnly = true,
+                Secure   = false, // Set to true in production
+                SameSite = SameSiteMode.Lax
+            });
+
+            return Ok(new { message = "Logged out successfully." });
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error during logout");
+            return StatusCode(500, new { error = "server_error", error_description = "An error occurred during logout." });
+        }
+    }
 }

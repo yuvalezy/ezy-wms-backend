@@ -92,4 +92,16 @@ public class AuthenticationService(
             throw;
         }
     }
+
+    public async Task LogoutAsync(string sessionToken) {
+        try {
+            // Remove the session from the session manager
+            await sessionManager.RemoveAsync(sessionToken);
+            logger.LogInformation("Session removed successfully for token");
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error during logout");
+            throw;
+        }
+    }
 }
