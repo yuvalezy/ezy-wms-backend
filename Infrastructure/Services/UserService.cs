@@ -42,6 +42,7 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
             if (user != null) {
                 user.Password = "*********"; // Mask password for security
             }
+
             return user;
         }
         catch (Exception ex) {
@@ -52,13 +53,7 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
 
     public async Task<User> CreateUserAsync(CreateUserRequest request) {
         try {
-            // Validate authorization group if provided
-            if (request.AuthorizationGroupId.HasValue) {
-                bool groupExists = await dbContext.AuthorizationGroups.AnyAsync(g => g.Id == request.AuthorizationGroupId.Value);
-                if (!groupExists) {
-                    throw new InvalidOperationException("Authorization group not found.");
-                }
-            }
+            await ValidateUserRequest(request);
 
             var newUser = new User {
                 Id                   = Guid.NewGuid(),
@@ -69,6 +64,7 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
                 SuperUser            = request.SuperUser,
                 Active               = true,
                 AuthorizationGroupId = request.AuthorizationGroupId,
+                ExternalId           = request.ExternalId,
                 CreatedAt            = DateTime.UtcNow,
                 UpdatedAt            = DateTime.UtcNow
             };
@@ -77,7 +73,7 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
             await dbContext.SaveChangesAsync();
 
             logger.LogInformation("Created new user {UserId}", newUser.Id);
-            
+
             newUser.Password = "*********"; // Mask password for security
 
             return newUser;
@@ -101,32 +97,19 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
                 throw new InvalidOperationException("Cannot remove your own super user status.");
             }
 
-            // Validate authorization group if provided
-            if (request.AuthorizationGroupId.HasValue) {
-                var groupExists = await dbContext.AuthorizationGroups.AnyAsync(g => g.Id == request.AuthorizationGroupId.Value);
-                if (!groupExists) {
-                    throw new InvalidOperationException("Authorization group not found.");
-                }
-            }
+            await ValidateUserRequest(request);
 
-            // Update fields only if provided
-            if (!string.IsNullOrWhiteSpace(request.FullName))
-                user.FullName = request.FullName;
+            // Update user properties
+            user.FullName             = request.FullName;
+            user.Email                = request.Email;
+            user.Position             = request.Position;
+            user.SuperUser            = request.SuperUser;
+            user.AuthorizationGroupId = request.AuthorizationGroupId;
+            user.ExternalId           = request.ExternalId;
 
+            // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))
                 user.Password = PasswordUtils.HashPasswordWithSalt(request.Password);
-
-            if (request.Email != null)
-                user.Email = request.Email;
-
-            if (request.Position != null)
-                user.Position = request.Position;
-
-            if (request.SuperUser.HasValue)
-                user.SuperUser = request.SuperUser.Value;
-
-            if (request.AuthorizationGroupId != null)
-                user.AuthorizationGroupId = request.AuthorizationGroupId;
 
             user.UpdatedAt = DateTime.UtcNow;
 
@@ -140,6 +123,21 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
             throw;
         }
     }
+
+    private async Task ValidateUserRequest(UserRequest request) {
+        // Validate authorization group if provided
+        if (request.AuthorizationGroupId.HasValue) {
+            bool groupExists = await dbContext.AuthorizationGroups.AnyAsync(g => g.Id == request.AuthorizationGroupId.Value);
+            if (!groupExists) {
+                throw new InvalidOperationException("Authorization group not found.");
+            }
+        }
+
+        if (request.ExternalId != null) {
+            
+        }
+    }
+
 
     public async Task<bool> DeleteUserAsync(Guid id, Guid currentUserId) {
         try {

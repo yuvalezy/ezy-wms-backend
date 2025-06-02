@@ -70,7 +70,17 @@ services.ConfigureServices(settings, builder.Configuration);
 
 services.AddControllers()
     .AddJsonOptions(options => { options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
-services.AddDistributedMemoryCache();
+if (settings.SessionManagement.Type == SessionManagementType.Redis) {
+    // Add Redis distributed cache
+    services.AddStackExchangeRedisCache(options => {
+        options.Configuration = $"{settings.SessionManagement.Redis.Host ?? "localhost"}:{settings.SessionManagement.Redis.Port ?? 6379}";
+        options.InstanceName  = "EzyProp:";
+    });
+}
+else {
+    // Add in-memory distributed cache when not using Redis
+    services.AddDistributedMemoryCache();
+}
 
 // Read allowed origins from appsettings.json
 string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();

@@ -8,4 +8,5 @@ public class ISettings {
     public ConnectionStringsSettings ConnectionStrings { get; set; }
     public JwtSettings               Jwt               { get; set; }
     public Options                   Options           { get; set; }
+    public SessionManagementSettings SessionManagement { get; set; }
 }
