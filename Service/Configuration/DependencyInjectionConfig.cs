@@ -1,4 +1,7 @@
 using System;
+using Adapters.Windows.SBO;
+using Adapters.Windows.SBO.Repositories;
+using Adapters.Windows.SBO.Services;
 using Core.Interfaces;
 using Core.Models.Settings;
 using Infrastructure;
@@ -29,6 +32,11 @@ public static class DependencyInjectionConfig {
         // Services
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
+        
+        // External System Adapters
+        services.AddScoped<SapBusinessOneDatabaseService>();
+        services.AddScoped<SapEmployeeRepository>();
+        services.AddScoped<IExternalSystemAdapter, SapBusinessOneAdapter>();
         
         return services;
     }

@@ -47,7 +47,7 @@ public class UserController(IUserService userService, ILogger<UserController> lo
             return StatusCode(500, new { error = "server_error", error_description = "An error occurred while retrieving the user." });
         }
     }
-
+    
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request) {
         try {

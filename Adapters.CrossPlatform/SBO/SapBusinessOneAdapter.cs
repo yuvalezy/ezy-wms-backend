@@ -1,10 +1,10 @@
 ﻿using Core.Interfaces;
 using Core.Models;
 
-namespace Adapters.Windows;
+namespace Adapters.CrossPlatform.SBO;
 
 public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
-    public Task<ExternalUserResponse> GetUserInfoAsync(string id) {
+    public Task<ExternalUserResponse?> GetUserInfoAsync(string id) {
         throw new NotImplementedException();
     }
 

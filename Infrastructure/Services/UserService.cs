@@ -4,12 +4,13 @@ using Core.Interfaces;
 using Core.Models;
 using Core.Utils;
 using Infrastructure.DbContexts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class UserService(SystemDbContext dbContext, ILogger<UserService> logger) : IUserService {
+public class UserService(SystemDbContext dbContext, IExternalSystemAdapter externalSystem, ILogger<UserService> logger) : IUserService {
     public async Task<IEnumerable<UserResponse>> GetUsersAsync() {
         try {
             return await dbContext.Users
@@ -134,7 +135,10 @@ public class UserService(SystemDbContext dbContext, ILogger<UserService> logger)
         }
 
         if (request.ExternalId != null) {
-            
+            var employee = await externalSystem.GetUserInfoAsync(request.ExternalId);
+            if (employee == null) {
+                throw new InvalidOperationException("External user not found.");
+            }
         }
     }
 
