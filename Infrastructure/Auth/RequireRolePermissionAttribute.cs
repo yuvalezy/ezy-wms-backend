@@ -5,10 +5,10 @@ namespace Infrastructure.Auth;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public class RequireRolePermissionAttribute : AuthorizeAttribute {
-    public RequireRolePermissionAttribute(Authorization role) {
+    public RequireRolePermissionAttribute(RoleType role) {
         Role   = role;
         Policy = $"{role}";
     }
 
-    public Authorization        Role          { get; }
+    public RoleType        Role          { get; }
 }

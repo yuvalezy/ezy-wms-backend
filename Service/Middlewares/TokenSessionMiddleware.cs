@@ -1,9 +1,14 @@
 using System;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Core;
+using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Identity.Client;
 
 namespace Service.Middlewares;
 
@@ -56,5 +61,20 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
         context.Items["SessionData"] = sessionData;
 
         await next(context);
+    }
+}
+
+public static class SessionManagerExtensions {
+    public static SessionInfo SessionInfo(this HttpContext httpContext) {
+        var info = httpContext.Items["SessionData"] as SessionInfo ??
+                   throw new UnauthorizedAccessException("Session information not found");
+        return info;
+    }
+
+    public static void HasAnyRole(this HttpContext httpContext, params RoleType[] roles) {
+        var sessionInfo = httpContext.SessionInfo();
+        if (roles.Any(v => sessionInfo.SuperUser || sessionInfo.Roles.Contains(v)))
+            return;
+        throw new UnauthorizedAccessException("You don't have access for vendors list");
     }
 }

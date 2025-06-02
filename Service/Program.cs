@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -52,7 +52,7 @@ services.AddAuthorization(options => {
         policy.Requirements.Add(new SuperUserRequirement()));
 
     // Register policies for each role and access level combination
-    foreach (var role in Enum.GetValues<Authorization>()) {
+    foreach (var role in Enum.GetValues<RoleType>()) {
         options.AddPolicy($"{role}", policy =>
             policy.Requirements.Add(new RolePermissionRequirement(role)));
     }

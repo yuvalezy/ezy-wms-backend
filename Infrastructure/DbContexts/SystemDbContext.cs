@@ -62,7 +62,7 @@ public class AuthorizationGroupConfiguration: IEntityTypeConfiguration<Authoriza
             .HasConversion(
                 v => string.Join(',', v.Select(a => (int)a)),
                 v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                     .Select(s => (Authorization)int.Parse(s))
+                     .Select(s => (RoleType)int.Parse(s))
                      .ToList()
             );
     }

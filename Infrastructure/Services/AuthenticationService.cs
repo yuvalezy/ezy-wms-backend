@@ -47,8 +47,8 @@ public class AuthenticationService(
             }
 
             // Handle warehouse selection
-            string? selectedWarehouse = null;
-
+            string?    selectedWarehouse = null;
+            Warehouse? warehouse         = null;
             if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
                 if (string.IsNullOrEmpty(request.Warehouse)) {
                     // Fetch available warehouses
@@ -66,7 +66,7 @@ public class AuthenticationService(
 
                 selectedWarehouse = request.Warehouse;
                 //Validate that the warehouse exists in the system
-                var warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
                 if (warehouse == null) {
                     logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
                     return null;
@@ -76,7 +76,7 @@ public class AuthenticationService(
                 selectedWarehouse = authenticatedUser.Warehouses.First();
 
                 //Validate that the warehouse exists in the system
-                var warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
                 if (warehouse == null) {
                     logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
                     return null;
@@ -84,18 +84,20 @@ public class AuthenticationService(
             }
 
             // Generate token
-            var expiresAt = DateTime.UtcNow.Date.AddDays(1); // Expires at midnight
+            var    expiresAt = DateTime.UtcNow.Date.AddDays(1); // Expires at midnight
             string token     = jwtService.GenerateToken(authenticatedUser, expiresAt);
 
-            var authorizations = authenticatedUser.AuthorizationGroup?.Authorizations ?? new List<Authorization>();
+            var authorizations = authenticatedUser.AuthorizationGroup?.Authorizations ?? new List<RoleType>();
 
             var sessionInfo = new SessionInfo {
-                UserId         = authenticatedUser.Id.ToString(),
-                SuperUser      = authenticatedUser.SuperUser,
-                Authorizations = authorizations,
-                Warehouse      = selectedWarehouse!,
-                Token          = token,
-                ExpiresAt      = expiresAt
+                UserId             = authenticatedUser.Id.ToString(),
+                Name               = authenticatedUser.FullName,
+                SuperUser          = authenticatedUser.SuperUser,
+                Roles     = authorizations,
+                Warehouse          = selectedWarehouse!,
+                EnableBinLocations = warehouse!.EnableBinLocations,
+                Token              = token,
+                ExpiresAt          = expiresAt
             };
 
             // Store session in memory

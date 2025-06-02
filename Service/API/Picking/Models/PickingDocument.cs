@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using Core.Models;
 using Service.API.General.Models;
 
 namespace Service.API.Picking.Models;

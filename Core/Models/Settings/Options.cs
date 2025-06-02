@@ -1,8 +1,8 @@
 namespace Core.Models.Settings;
 
-public class Options {
-    bool GRPODraft                           { get; }
-    bool GRPOModificationsRequiredSupervisor { get; }
-    bool GRPOCreateSupervisorRequired        { get; }
-    bool TransferTargetItems                 { get; }
+public record Options {
+    public bool GoodsReceiptDraft                           { get; init; }
+    public bool GoodsReceiptModificationsRequiredSupervisor { get; init; } 
+    public bool GoodsReceiptCreateSupervisorRequired        { get; init; }
+    public bool TransferTargetItems                         { get; init; }
 }

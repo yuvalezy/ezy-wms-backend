@@ -387,7 +387,7 @@
 //                  from "@LW_YUVAL08_GRPO3" X0
 //                  left outer join OPOR X1 on X1."DocEntry" = X0."U_DocEntry" and X1."ObjType" = X0."U_ObjType"
 //                  left outer join OPCH X2 on X2."DocEntry" = X0."U_DocEntry" and X2."ObjType" = X0."U_ObjType"
-                 left outer join OPDN X3 on X3."DocEntry" = X0."U_DocEntry" and X3."ObjType" = X0."U_ObjType"
+                 //left outer join OPDN X3 on X3."DocEntry" = X0."U_DocEntry" and X3."ObjType" = X0."U_ObjType"
 //                  where X0."U_ID" in ({query})
 //                  """;
 //         using var conn = Global.Connector;

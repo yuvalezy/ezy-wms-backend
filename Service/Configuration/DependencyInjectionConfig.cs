@@ -38,6 +38,7 @@ public static class DependencyInjectionConfig {
         // Services
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IPublicService, PublicService>();
 
         // External System Adapters
         services.AddScoped<SboDatabaseService>();

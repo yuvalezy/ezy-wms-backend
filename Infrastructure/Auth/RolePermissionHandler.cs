@@ -24,7 +24,7 @@ public class RolePermissionHandler(IHttpContextAccessor httpContextAccessor) : A
         }
 
         // Check if the user has the required permission
-        if (sessionInfo.Authorizations.Any(p => p == requirement.Role)) {
+        if (sessionInfo.Roles.Any(p => p == requirement.Role)) {
             context.Succeed(requirement);
         }
 

@@ -5,6 +5,6 @@ namespace Core.Interfaces;
 
 public interface IJwtAuthenticationService
 {
-    string GenerateToken(User user, DateTime expiresAt);
-    ClaimsPrincipal? ValidateToken(string token);
+    string           GenerateToken(User          user, DateTime expiresAt);
+    ClaimsPrincipal? ValidateToken(string        token);
 }

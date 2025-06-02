@@ -14,5 +14,5 @@ public class AuthorizationGroup : BaseEntity {
     public string? Description { get; set; }
 
     [Required]
-    public required ICollection<Authorization> Authorizations { get; set; }
+    public required ICollection<RoleType> Authorizations { get; set; }
 }
