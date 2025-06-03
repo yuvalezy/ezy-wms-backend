@@ -12,36 +12,35 @@ public class SystemDbContext : DbContext {
 
     public DbSet<AuthorizationGroup> AuthorizationGroups { get; set; }
     public DbSet<User>               Users               { get; set; }
+    
+    // Objects Entities
+    public DbSet<GoodsReceipt>       GoodsReceipts       { get; set; }
+    public DbSet<InventoryCounting>  InventoryCountings  { get; set; }
+    public DbSet<Transfer>           Transfers           { get; set; }
+    public DbSet<PickList>           PickLists           { get; set; }
+    
+    // Object Lines Entites
+    public DbSet<GoodsReceiptLine>      GoodsReceiptLines      { get; set; }
+    public DbSet<GoodsReceiptTarget>    GoodsReceiptTargets    { get; set; }
+    public DbSet<GoodsReceiptDocument>  GoodsReceiptDocuments  { get; set; }
+    public DbSet<GoodsReceiptSource>    GoodsReceiptSources    { get; set; }
+    public DbSet<InventoryCountingLine> InventoryCountingLines { get; set; }
+    public DbSet<TransferLine>          TransferLines          { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new AuthorizationGroupConfiguration());
         
+        
         // Apply database-specific configurations
         if (Database.IsSqlServer()) {
-            ConfigureForSqlServer(modelBuilder);
+            SqlConfigurations.ConfigureForSqlServer(modelBuilder);
         }
         // Future: Add SAP HANA configuration
         // else if (Database.IsHana()) {
         //     ConfigureForHana(modelBuilder);
         // }
-    }
-    
-    private void ConfigureForSqlServer(ModelBuilder modelBuilder) {
-        // Configure string columns for SQL Server
-        modelBuilder.Entity<User>(entity => {
-            entity.Property(e => e.FullName).HasColumnType("nvarchar(50)");
-            entity.Property(e => e.Password).HasColumnType("nvarchar(255)");
-            entity.Property(e => e.Email).HasColumnType("nvarchar(100)");
-            entity.Property(e => e.Position).HasColumnType("nvarchar(100)");
-            entity.HasQueryFilter(e => !e.Deleted);
-        });
-        
-        modelBuilder.Entity<AuthorizationGroup>(entity => {
-            entity.Property(e => e.Name).HasColumnType("nvarchar(50)");
-            entity.Property(e => e.Description).HasColumnType("nvarchar(200)");
-            entity.HasQueryFilter(e => !e.Deleted);
-        });
     }
 }
 
