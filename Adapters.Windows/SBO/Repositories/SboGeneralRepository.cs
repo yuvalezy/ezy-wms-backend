@@ -1,7 +1,9 @@
 ﻿using System.Data;
 using System.Text;
+using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.Utils;
+using Core.DTOs;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
@@ -9,7 +11,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings) {
+public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings, SboCompany sboCompany) {
     private readonly Filters filters = settings.Filters;
 
     public async Task<string?> GetCompanyNameAsync() {
@@ -113,5 +115,10 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             PurPackUn   = Convert.ToInt32(reader[5]),
             PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6)
         });
+    }
+
+    public ProcessTransferResponse ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+        using var transferCreation = new TransferCreation(dbService, sboCompany, transferId, whsCode, comments, data);
+        return transferCreation.Execute();
     }
 }

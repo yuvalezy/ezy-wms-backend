@@ -9,4 +9,5 @@ public interface ITransferService {
     Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest        request, string      warehouse);
     Task<TransferResponse>              GetProcessInfo(Guid                  id);
     Task<bool>                          CancelTransfer(Guid                  id,      SessionInfo sessionInfo);
+    Task<ProcessTransferResponse>       ProcessTransfer(Guid                 id,      SessionInfo sessionInfo);
 }

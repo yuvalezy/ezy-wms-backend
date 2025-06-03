@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class TransferService(SystemDbContext db) : ITransferService {
+public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter) : ITransferService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
@@ -157,5 +157,119 @@ public class TransferService(SystemDbContext db) : ITransferService {
 
         await db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<ProcessTransferResponse> ProcessTransfer(Guid id, SessionInfo sessionInfo) {
+        var transfer = await db.Transfers
+            .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (transfer == null) {
+            throw new KeyNotFoundException($"Transfer with ID {id} not found.");
+        }
+
+        if (transfer.Status != ObjectStatus.InProgress) {
+            throw new InvalidOperationException("Cannot process transfer if the Status is not In Progress");
+        }
+
+        // Update transfer status to Processing
+        transfer.Status = ObjectStatus.Processing;
+        transfer.UpdatedAt = DateTime.UtcNow;
+        transfer.UpdatedByUserId = sessionInfo.Guid;
+        await db.SaveChangesAsync();
+
+        try {
+            // Prepare data for SAP B1 transfer creation
+            var transferData = await PrepareTransferData(id);
+            
+            // Call external system to create the transfer in SAP B1
+            var result = await adapter.ProcessTransfer(id, transfer.WhsCode, transfer.Comments, transferData);
+
+            if (result.Success) {
+                // Update transfer status to Finished
+                transfer.Status = ObjectStatus.Finished;
+                transfer.UpdatedAt = DateTime.UtcNow;
+                transfer.UpdatedByUserId = sessionInfo.Guid;
+
+                // Update all open lines to Finished
+                var openLines = await db.TransferLines
+                    .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
+                    .ToListAsync();
+
+                foreach (var line in openLines) {
+                    line.LineStatus = LineStatus.Finished;
+                    line.UpdatedAt = DateTime.UtcNow;
+                    line.UpdatedByUserId = sessionInfo.Guid;
+                }
+
+                await db.SaveChangesAsync();
+            } else {
+                // Rollback to InProgress if SAP B1 creation failed
+                transfer.Status = ObjectStatus.InProgress;
+                transfer.UpdatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+
+            return result;
+        }
+        catch (Exception ex) {
+            // Rollback to InProgress on any error
+            transfer.Status = ObjectStatus.InProgress;
+            transfer.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            
+            return new ProcessTransferResponse {
+                Success = false,
+                ErrorMessage = $"Error processing transfer: {ex.Message}",
+                Status = ResponseStatus.Error
+            };
+        }
+    }
+
+    private async Task<Dictionary<string, TransferCreationData>> PrepareTransferData(Guid transferId) {
+        var lines = await db.TransferLines
+            .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
+            .GroupBy(tl => tl.ItemCode)
+            .Select(g => new {
+                ItemCode = g.Key,
+                Lines = g.ToList()
+            })
+            .ToListAsync();
+
+        var transferData = new Dictionary<string, TransferCreationData>();
+
+        foreach (var itemGroup in lines) {
+            var data = new TransferCreationData {
+                ItemCode = itemGroup.ItemCode,
+                Quantity = itemGroup.Lines.Sum(l => l.Quantity)
+            };
+
+            // Group source bins
+            var sourceBins = itemGroup.Lines
+                .Where(l => l.Type == SourceTarget.Source && l.BinEntry.HasValue)
+                .GroupBy(l => l.BinEntry.Value)
+                .Select(g => new TransferCreationBin {
+                    BinEntry = g.Key,
+                    Quantity = g.Sum(l => l.Quantity)
+                })
+                .ToList();
+
+            // Group target bins
+            var targetBins = itemGroup.Lines
+                .Where(l => l.Type == SourceTarget.Target && l.BinEntry.HasValue)
+                .GroupBy(l => l.BinEntry.Value)
+                .Select(g => new TransferCreationBin {
+                    BinEntry = g.Key,
+                    Quantity = g.Sum(l => l.Quantity)
+                })
+                .ToList();
+
+            data.SourceBins = sourceBins;
+            data.TargetBins = targetBins;
+
+            transferData[itemGroup.ItemCode] = data;
+        }
+
+        return transferData;
     }
 }

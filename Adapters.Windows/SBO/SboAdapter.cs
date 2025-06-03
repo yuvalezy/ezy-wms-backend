@@ -24,4 +24,7 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
+
+    public Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) =>
+        Task.FromResult(generalRepository.ProcessTransfer(transferId, whsCode, comments, data));
 }

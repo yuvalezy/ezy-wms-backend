@@ -61,7 +61,11 @@ public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
         throw new NotImplementedException();
     }
 
-    public Task<ValidateAddItemTransferResult> ValidateAddItemTransfer(string itemCode, string barCode, string warehouse, int? binEntry) {
+    public Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
+        throw new NotImplementedException();
+    }
+
+    public Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
         throw new NotImplementedException();
     }
 }
