@@ -38,27 +38,13 @@ public class TransferController(ITransferService transferService, ITransferLineS
         return await transferLineService.UpdateLine(sessionInfo, request);
     }
 
-    //
-    // [HttpPost]
-    // [ActionName("UpdateLineQuantity")]
-    // public UpdateLineReturnValue UpdateLineQuantity([FromBody] UpdateLineParameter parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
-    //         throw new UnauthorizedAccessException("You don't have access for updating line in transfer");
-    //     using var conn = Global.Connector;
-    //     try {
-    //         conn.BeginTransaction();
-    //         (UpdateLineReturnValue returnValue, int supervisorEmployeeID) = parameters.Validate(conn, Data);
-    //         if (returnValue != UpdateLineReturnValue.Ok)
-    //             return returnValue;
-    //         Data.Transfer.UpdateLineQuantity(conn, parameters);
-    //         conn.CommitTransaction();
-    //         return returnValue;
-    //     }
-    //     catch {
-    //         conn.RollbackTransaction();
-    //         throw;
-    //     }
-    // }
+    [HttpPost("updateLineQuantity")]
+    [RequireRolePermission(RoleType.Transfer)]
+    public async Task<UpdateLineResponse> UpdateLineQuantity([FromBody] UpdateLineQuantityRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        return await transferLineService.UpdateLineQuantity(sessionInfo, request);
+    }
+
     //
     // [HttpPost]
     // [ActionName("Cancel")]

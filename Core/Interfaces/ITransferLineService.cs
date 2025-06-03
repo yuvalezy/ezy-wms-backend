@@ -6,4 +6,5 @@ namespace Core.Interfaces;
 public interface ITransferLineService {
     Task<TransferAddItemResponse> AddItem(SessionInfo info, TransferAddItemRequest request);
     Task<UpdateLineResponse> UpdateLine(SessionInfo info, UpdateLineRequest request);
+    Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo info, UpdateLineQuantityRequest request);
 }

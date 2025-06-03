@@ -238,29 +238,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
 
             // Handle quantity update if provided
             if (request.Quantity.HasValue) {
-                // Validate quantity availability for source lines
-                if (line is { Type: SourceTarget.Source, BinEntry: not null }) {
-                    var validationResult = await adapter.GetItemValidationInfo(line.ItemCode, line.BarCode, info.Warehouse, line.BinEntry, info.EnableBinLocations);
-
-                    // Calculate existing quantities for this item/bin excluding current line
-                    var existingSourceQuantity = await db.TransferLines
-                        .Where(tl => tl.TransferId == request.ID &&
-                                     tl.ItemCode == line.ItemCode &&
-                                     tl.BinEntry == line.BinEntry.Value &&
-                                     tl.Type == SourceTarget.Source &&
-                                     tl.LineStatus != LineStatus.Closed &&
-                                     tl.Id != line.Id)
-                        .SumAsync(tl => tl.Quantity);
-
-                    decimal availableInBin = validationResult.AvailableQuantity - existingSourceQuantity;
-                    if (availableInBin < request.Quantity.Value) {
-                        response.ReturnValue  = UpdateLineReturnValue.QuantityMoreThenAvailable;
-                        response.ErrorMessage = "Quantity more than available in bin";
-                        return response;
-                    }
-                }
-
-                line.Quantity = request.Quantity.Value;
+                throw new InvalidOperationException("use /api/transfer/updateLineQuantity endpoint to update quantity");
             }
 
             // Handle line closure
@@ -277,6 +255,89 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            return response;
+        }
+        catch {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo info, UpdateLineQuantityRequest request) {
+        var response = new UpdateLineResponse();
+        
+        var transaction = await db.Database.BeginTransactionAsync();
+        try {
+            // Find the line to update
+            var line = await db.TransferLines
+                .Include(tl => tl.Transfer)
+                .Where(tl => tl.Id == request.LineID && tl.TransferId == request.ID)
+                .FirstOrDefaultAsync();
+                
+            if (line == null) {
+                response.ReturnValue = UpdateLineReturnValue.LineStatus;
+                response.ErrorMessage = "Transfer line not found";
+                return response;
+            }
+            
+            if (line.Transfer.Status != ObjectStatus.Open && line.Transfer.Status != ObjectStatus.InProgress) {
+                response.ReturnValue = UpdateLineReturnValue.Status;
+                response.ErrorMessage = "Transfer status is not Open or In Progress";
+                return response;
+            }
+            
+            if (line.LineStatus == LineStatus.Closed) {
+                response.ReturnValue = UpdateLineReturnValue.LineStatus;
+                response.ErrorMessage = "Line is already closed";
+                return response;
+            }
+            
+            // Calculate the new quantity based on unit type
+            int newQuantity = request.Quantity;
+            if (line.UnitType != UnitType.Unit) {
+                var items = await adapter.ItemCheckAsync(line.ItemCode, null);
+                var item = items.FirstOrDefault();
+                if (item != null) {
+                    newQuantity *= item.NumInBuy;
+                    if (line.UnitType == UnitType.Pack) {
+                        newQuantity *= item.PurPackUn;
+                    }
+                }
+            }
+            
+            // Validate quantity availability for source lines
+            if (line is { Type: SourceTarget.Source, BinEntry: not null }) {
+                var validationResult = await adapter.GetItemValidationInfo(line.ItemCode, line.BarCode, info.Warehouse, line.BinEntry, info.EnableBinLocations);
+                
+                // Calculate existing quantities for this item/bin excluding current line
+                int existingSourceQuantity = await db.TransferLines
+                    .Where(tl => tl.TransferId == request.ID &&
+                                 tl.ItemCode == line.ItemCode &&
+                                 tl.BinEntry == line.BinEntry.Value &&
+                                 tl.Type == SourceTarget.Source &&
+                                 tl.LineStatus != LineStatus.Closed &&
+                                 tl.Id != line.Id)
+                    .SumAsync(tl => tl.Quantity);
+                
+                decimal availableInBin = validationResult.AvailableQuantity - existingSourceQuantity;
+                if (availableInBin < newQuantity) {
+                    response.ReturnValue = UpdateLineReturnValue.QuantityMoreThenAvailable;
+                    response.ErrorMessage = "Quantity more than available in bin";
+                    return response;
+                }
+            }
+            
+            // Update the quantity
+            line.Quantity = newQuantity;
+            
+            // Update modification tracking
+            line.UpdatedAt = DateTime.UtcNow;
+            line.UpdatedByUserId = info.Guid;
+            
+            db.Update(line);
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            
             return response;
         }
         catch {
