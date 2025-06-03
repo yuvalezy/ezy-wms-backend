@@ -6,6 +6,10 @@ namespace Infrastructure.DbContexts;
 
 public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
     public void Configure(EntityTypeBuilder<Transfer> builder) {
+        // Configure auto-incrementing Number property
+        builder.Property(e => e.Number)
+            .UseIdentityColumn();
+
         // Configure Lines relationship with cascade delete
         builder
             .HasMany(t => t.Lines)

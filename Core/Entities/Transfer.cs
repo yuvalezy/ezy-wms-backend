@@ -5,6 +5,10 @@ using Core.Enums;
 namespace Core.Entities;
 
 public class Transfer : BaseEntity {
+    [Required]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Number { get; set; }
+
     [MaxLength(100)]
     public string? Name { get; set; }
     

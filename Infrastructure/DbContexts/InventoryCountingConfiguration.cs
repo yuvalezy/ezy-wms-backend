@@ -6,6 +6,10 @@ namespace Infrastructure.DbContexts;
 
 public class InventoryCountingConfiguration : IEntityTypeConfiguration<InventoryCounting> {
     public void Configure(EntityTypeBuilder<InventoryCounting> builder) {
+        // Configure auto-incrementing Number property
+        builder.Property(e => e.Number)
+            .UseIdentityColumn();
+
         // Configure Lines relationship with cascade delete
         builder
             .HasMany(ic => ic.Lines)

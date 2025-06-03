@@ -5,6 +5,10 @@ using Core.Enums;
 namespace Core.Entities;
 
 public class GoodsReceipt : BaseEntity {
+    [Required]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Number { get; set; }
+
     [StringLength(15)]
     public string? CardCode { get; set; }
 

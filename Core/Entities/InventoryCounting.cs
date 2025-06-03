@@ -6,6 +6,10 @@ namespace Core.Entities;
 
 public class InventoryCounting : BaseEntity {
     [Required]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Number { get; set; }
+
+    [Required]
     public DateTime Date { get; set; }
 
     [Required]

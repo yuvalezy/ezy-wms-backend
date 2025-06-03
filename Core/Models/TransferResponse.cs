@@ -9,6 +9,7 @@ public class TransferResponse : Transfer {
     public static TransferResponse FromTransfer(Transfer transfer) {
         return new TransferResponse {
             Id              = transfer.Id,
+            Number          = transfer.Number,
             CreatedAt       = transfer.CreatedAt,
             CreatedByUserId = transfer.CreatedByUserId,
             CreatedByUser   = transfer.CreatedByUser,

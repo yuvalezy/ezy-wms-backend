@@ -6,6 +6,10 @@ namespace Infrastructure.DbContexts;
 
 public class GoodsReceiptConfiguration : IEntityTypeConfiguration<GoodsReceipt> {
     public void Configure(EntityTypeBuilder<GoodsReceipt> builder) {
+        // Configure auto-incrementing Number property
+        builder.Property(e => e.Number)
+            .UseIdentityColumn();
+
         // Configure Lines relationship with cascade delete
         builder
             .HasMany(gr => gr.Lines)
