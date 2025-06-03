@@ -18,7 +18,7 @@ namespace Service.Controllers;
 [Authorize]
 public class TransferController(ITransferService transferService) : ControllerBase {
     [HttpPost]
-    [ActionName("Create")]
+    [ActionName("create")]
     [RequireRolePermission(RoleType.TransferSupervisor)]
     public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
 
@@ -118,17 +118,13 @@ public class TransferController(ITransferService transferService) : ControllerBa
     // }
     //
     [HttpGet]
-    [ActionName("Transfers")]
     [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
     public async Task<IEnumerable<TransferResponse>> GetTransfers([FromQuery] TransfersRequest request) => await transferService.GetTransfers(request, HttpContext.GetSession().Warehouse);
-    //
-    // [HttpGet]
-    // [Route("Transfer/{id:int}")]
-    // public API.Transfer.Models.Transfer GetTransfer(int id) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access to get transfer");
-    //     return Data.Transfer.GetTransfer(id);
-    // }
+
+    [HttpGet]
+    [Route("{id:guid}")]
+    [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
+    public async Task<TransferResponse> GetTransfer(Guid id) => await transferService.GetTransfer(id);
     //
     // [HttpPost]
     // [ActionName("TransferContent")]

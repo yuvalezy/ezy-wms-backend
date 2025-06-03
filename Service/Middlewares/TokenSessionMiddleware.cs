@@ -6,6 +6,7 @@ using Core;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Identity.Client;
@@ -18,8 +19,11 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
     public static string MockSessionToken { get; set; }
 #endif
     public async Task InvokeAsync(HttpContext context) {
-        var  endpoint     = context.GetEndpoint();
-        bool requiresAuth = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>() != null;
+        var endpoint = context.GetEndpoint();
+        bool requiresAuth = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>() != null ||
+                            endpoint?.Metadata.GetMetadata<RequireAnyRoleAttribute>() != null ||
+                            endpoint?.Metadata.GetMetadata<RequireRolePermissionAttribute>() != null ||
+                            endpoint?.Metadata.GetMetadata<RequireSuperUserAttribute>() != null;
 
         // Skip session check on public endpoints
         if (!requiresAuth) {
@@ -70,6 +74,7 @@ public static class SessionManagerExtensions {
                    throw new UnauthorizedAccessException("Session information not found");
         return info;
     }
+
     public static string GetWarehouse(this HttpContext httpContext) {
         var info = httpContext.Items["SessionData"] as SessionInfo ??
                    throw new UnauthorizedAccessException("Session information not found");

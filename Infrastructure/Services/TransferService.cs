@@ -3,12 +3,13 @@ using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.DbContexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
 public class TransferService(SystemDbContext db) : ITransferService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
-        var now = DateTime.UtcNow;
+        var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
             Name            = request.Name,
             CreatedByUserId = sessionInfo.Guid,
@@ -19,28 +20,90 @@ public class TransferService(SystemDbContext db) : ITransferService {
             Lines           = []
         };
         await db.Transfers.AddAsync(transfer);
-        return new TransferResponse {
-            Id              = transfer.Id,
-            CreatedAt       = transfer.CreatedAt,
-            CreatedByUserId = transfer.CreatedByUserId,
-            CreatedByUser   = transfer.CreatedByUser,
-            UpdatedAt       = transfer.UpdatedAt,
-            UpdatedByUserId = transfer.UpdatedByUserId,
-            UpdatedByUser   = transfer.UpdatedByUser,
-            Deleted         = transfer.Deleted,
-            DeletedAt       = transfer.DeletedAt,
-            Name            = transfer.Name,
-            Comments        = transfer.Comments,
-            Date            = transfer.Date,
-            Status          = transfer.Status,
-            WhsCode         = transfer.WhsCode,
-            Lines           = transfer.Lines,
-            Progress        = 0,
-            IsComplete      = false
-        };
+        await db.SaveChangesAsync();
+        return TransferResponse.FromTransfer(transfer);
     }
 
-    public Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest request, string warehouse) {
-        //todo complete me
+    public async Task<TransferResponse> GetTransfer(Guid id, bool progress = false) {
+        var query = db.Transfers.AsQueryable();
+
+        if (progress) {
+            query = query.Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed));
+        }
+
+        var transfer = await query.FirstOrDefaultAsync(t => t.Id == id);
+        if (transfer == null) {
+            throw new KeyNotFoundException($"Transfer with ID {id} not found.");
+        }
+
+        return GetTransferResponse(progress, transfer);
     }
+
+    public async Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest request, string warehouse) {
+        var query = db.Transfers
+            .Where(t => t.WhsCode == warehouse)
+            .AsQueryable();
+
+        // Apply filters
+        if (request.Date.HasValue) {
+            query = query.Where(t => t.Date == request.Date.Value.Date);
+        }
+
+        if (request.Status?.Length > 0) {
+            query = query.Where(t => request.Status.Contains(t.Status));
+        }
+
+        if (request.ID.HasValue) {
+            // Assuming ID is some sort of display ID, not the GUID
+            // You may need to adjust this based on your business logic
+            query = query.Where(t => t.Id == new Guid(request.ID.Value.ToString()));
+        }
+
+        // Include lines for progress calculation if requested
+        if (request.Progress) {
+            query = query.Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed));
+        }
+
+        // Apply ordering
+        switch (request.OrderBy) {
+            case TransferOrderBy.Date:
+                query = request.Desc 
+                    ? query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id)
+                    : query.OrderBy(t => t.Date).ThenBy(t => t.Id);
+                break;
+            case TransferOrderBy.ID:
+            default:
+                query = request.Desc 
+                    ? query.OrderByDescending(t => t.Id)
+                    : query.OrderBy(t => t.Id);
+                break;
+        }
+
+        // // Apply pagination if Number is specified
+        // if (request.Number.HasValue && request.Number.Value > 0) {
+        //     query = query.Take(request.Number.Value);
+        // }
+
+        var transfers = await query.ToListAsync();
+
+        return transfers.Select(transfer => GetTransferResponse(request.Progress, transfer)).ToList();
+    }
+    private static TransferResponse GetTransferResponse(bool progress, Transfer transfer) {
+        var response = TransferResponse.FromTransfer(transfer);
+
+        if (progress && transfer.Lines.Any()) {
+            int sourceQuantity = transfer.Lines
+                .Where(l => l.Type == SourceTarget.Source && l.LineStatus != LineStatus.Closed)
+                .Sum(l => l.Quantity);
+
+            int targetQuantity = transfer.Lines
+                .Where(l => l.Type == SourceTarget.Target && l.LineStatus != LineStatus.Closed)
+                .Sum(l => l.Quantity);
+
+            response.Progress = sourceQuantity > 0 ? (targetQuantity * 100) / sourceQuantity : 0;
+        }
+
+        return response;
+    }
+
 }
