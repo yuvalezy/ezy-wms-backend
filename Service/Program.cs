@@ -67,7 +67,11 @@ services.AddSingleton<IAuthorizationPolicyProvider, AnyRolePolicyProvider>();
 services.ConfigureServices(settings, builder.Configuration);
 
 services.AddControllers()
-    .AddJsonOptions(options => { options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
+    .AddJsonOptions(options => { 
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new Service.Models.UtcDateTimeConverter());
+        options.JsonSerializerOptions.Converters.Add(new Service.Models.NullableUtcDateTimeConverter());
+    });
 if (settings.SessionManagement.Type == SessionManagementType.Redis) {
     // Add Redis distributed cache
     services.AddStackExchangeRedisCache(options => {
