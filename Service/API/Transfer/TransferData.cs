@@ -17,17 +17,6 @@
 // namespace Service.API.Transfer;
 //
 // public class TransferData {
-//     public int CreateTransfer(CreateParameters createParameters, int employeeID) {
-//         object name     = !string.IsNullOrWhiteSpace(createParameters.Name) ? createParameters.Name : DBNull.Value;
-//         object comments = !string.IsNullOrWhiteSpace(createParameters.Comments) ? createParameters.Comments : DBNull.Value;
-//         var @params = new Parameters {
-//             new Parameter("@Name", SqlDbType.NVarChar, 50, name),
-//             new Parameter("@empID", SqlDbType.Int, employeeID),
-//             new Parameter("@Comments", SqlDbType.NText, comments),
-//         };
-//         using var conn = Global.Connector;
-//         return conn.GetValue<int>(GetQuery("CreateTransfer"), @params);
-//     }
 //
 //     public Models.Transfer ProcessInfo(int id) {
 //         var @params = new Parameters {

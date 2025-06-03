@@ -65,9 +65,14 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
 }
 
 public static class SessionManagerExtensions {
-    public static SessionInfo SessionInfo(this HttpContext httpContext) {
+    public static SessionInfo GetSession(this HttpContext httpContext) {
         var info = httpContext.Items["SessionData"] as SessionInfo ??
                    throw new UnauthorizedAccessException("Session information not found");
         return info;
+    }
+    public static string GetWarehouse(this HttpContext httpContext) {
+        var info = httpContext.Items["SessionData"] as SessionInfo ??
+                   throw new UnauthorizedAccessException("Session information not found");
+        return info.Warehouse;
     }
 }

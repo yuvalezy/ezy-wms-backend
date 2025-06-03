@@ -39,4 +39,8 @@ public class TransferService(SystemDbContext db) : ITransferService {
             IsComplete      = false
         };
     }
+
+    public Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest request, string warehouse) {
+        //todo complete me
+    }
 }

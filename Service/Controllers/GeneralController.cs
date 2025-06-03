@@ -22,13 +22,13 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("HomeInfo")]
     public async Task<ActionResult<HomeInfo>> GetHomeInfo() {
-        var response = await publicService.GetHomeInfoAsync(HttpContext.SessionInfo().Warehouse);
+        var response = await publicService.GetHomeInfoAsync(HttpContext.GetSession().Warehouse);
         return Ok(response);
     }
 
     [HttpGet("UserInfo")]
     public async Task<ActionResult<UserInfoResponse>> GetUserInfo() {
-        return await publicService.GetUserInfoAsync(HttpContext.SessionInfo());
+        return await publicService.GetUserInfoAsync(HttpContext.GetSession());
     }
 
     [HttpGet("Vendors")]
@@ -71,7 +71,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
             return BadRequest("Item code is required.");
         }
 
-        string warehouse = HttpContext.SessionInfo().Warehouse;
+        string warehouse = HttpContext.GetSession().Warehouse;
         return Ok(await publicService.ItemStockAsync(parameters.ItemCode, warehouse));
     }
 
@@ -79,6 +79,6 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
         RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode([FromBody] UpdateBarCodeRequest request) {
-        return await publicService.UpdateItemBarCode(HttpContext.SessionInfo().UserId, request);
+        return await publicService.UpdateItemBarCode(HttpContext.GetSession().UserId, request);
     }
 }

@@ -77,18 +77,18 @@ public class SystemDbContext : DbContext {
             return;
 
         // Check if entity has audit properties
-        var createdByUserIdProp = entityType.GetProperty("CreatedByUserId");
-        var updatedByUserIdProp = entityType.GetProperty("UpdatedByUserId");
+        var createdByUserProp = entityType.GetProperty("CreatedByUser");
+        var updatedByUserProp = entityType.GetProperty("UpdatedByUser");
 
-        if (createdByUserIdProp != null) {
-            entityBuilder.HasOne(typeof(User))
+        if (createdByUserProp != null) {
+            entityBuilder.HasOne("CreatedByUser")
                 .WithMany()
                 .HasForeignKey("CreatedByUserId")
                 .OnDelete(DeleteBehavior.Restrict);
         }
 
-        if (updatedByUserIdProp != null) {
-            entityBuilder.HasOne(typeof(User))
+        if (updatedByUserProp != null) {
+            entityBuilder.HasOne("UpdatedByUser")
                 .WithMany()
                 .HasForeignKey("UpdatedByUserId")
                 .OnDelete(DeleteBehavior.Restrict);

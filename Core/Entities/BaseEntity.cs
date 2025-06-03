@@ -12,13 +12,12 @@ public abstract class BaseEntity {
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [ForeignKey("CreatedByUser")]
     public Guid? CreatedByUserId { get; set; }
 
     public User? CreatedByUser { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-    [ForeignKey("UpdatedByUser")]
+    
     public Guid? UpdatedByUserId { get; set; }
 
     public User? UpdatedByUser { get; set; }

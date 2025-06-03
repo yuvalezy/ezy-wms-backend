@@ -1,10 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Service.API.Transfer.Models;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -16,7 +20,7 @@ public class TransferController(ITransferService transferService) : ControllerBa
     [HttpPost]
     [ActionName("Create")]
     [RequireRolePermission(RoleType.TransferSupervisor)]
-    public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.SessionInfo());
+    public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
 
     // [HttpGet]
     // [Route("ProcessInfo/{id:int}")]
@@ -113,14 +117,10 @@ public class TransferController(ITransferService transferService) : ControllerBa
     //     return Data.General.GetCancelReasons(ReasonType.Transfer);
     // }
     //
-    // [HttpGet]
-    // [ActionName("Transfers")]
-    // public IEnumerable<API.Transfer.Models.Transfer> GetTransfers([FromQuery] FilterParameters parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access to get transfer");
-    //     parameters.WhsCode = Data.General.GetEmployeeData(EmployeeID).WhsCode;
-    //     return Data.Transfer.GetTransfers(parameters);
-    // }
+    [HttpGet]
+    [ActionName("Transfers")]
+    [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
+    public async Task<IEnumerable<TransferResponse>> GetTransfers([FromQuery] TransfersRequest request) => await transferService.GetTransfers(request, HttpContext.GetSession().Warehouse);
     //
     // [HttpGet]
     // [Route("Transfer/{id:int}")]
