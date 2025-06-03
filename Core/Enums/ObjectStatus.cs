@@ -1,8 +1,8 @@
 ﻿namespace Core.Enums;
 
 public enum ObjectStatus {
-    Open = 'O', 
-    InProgress = 'I',
-    Finished = 'F',
-    Canceled = 'C'
+    Open = 0,
+    InProgress = 1,
+    Finished = 2,
+    Canceled = 3
 }

@@ -1,7 +1,7 @@
 ﻿namespace Core.Enums;
 
 public enum LineStatus {
-    Open       = 'O',
-    Closed     = 'C',
-    Processing = 'P'
+    Open = 0,
+    Closed = 1,
+    Processing = 2
 }

@@ -17,7 +17,7 @@ public class Transfer : BaseEntity {
     public DateTime? StatusDate { get; set; }
 
     [ForeignKey("StatusUserId")]
-    public int? StatusUserId { get; set; }
+    public Guid? StatusUserId { get; set; }
 
     public User? StatusUser { get; set; }
 
@@ -57,7 +57,7 @@ public class TransferLine : BaseEntity {
     public DateTime? StatusTimeStamp { get; set; }
 
     [ForeignKey("StatusUserId")]
-    public int? StatusUserId { get; set; }
+    public Guid? StatusUserId { get; set; }
 
     public User? StatusUser { get; set; }
 

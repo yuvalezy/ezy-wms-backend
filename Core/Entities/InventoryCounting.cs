@@ -16,7 +16,7 @@ public class InventoryCounting : BaseEntity {
     public DateTime? StatusDate { get; set; }
 
     [ForeignKey("StatusUserId")]
-    public int? StatusUserId { get; set; }
+    public Guid? StatusUserId { get; set; }
 
     public User? StatusUser { get; set; }
 
@@ -42,7 +42,7 @@ public class InventoryCountingLine : BaseEntity {
     public DateTime Date { get; set; }
 
     [ForeignKey("StatusUserId")]
-    public int? StatusUserId { get; set; }
+    public Guid? StatusUserId { get; set; }
 
     public User? StatusUser { get; set; }
 

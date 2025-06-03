@@ -1,6 +1,6 @@
 ﻿namespace Core.Enums;
 
 public enum SourceTarget {
-    Source = 'S',
-    Target = 'T'
+    Source = 0,
+    Target = 1
 }

@@ -1,6 +1,6 @@
 namespace Core.Enums;
 
 public enum SessionManagementType {
-    InMemory,
-    Redis
+    InMemory = 0,
+    Redis = 1
 }

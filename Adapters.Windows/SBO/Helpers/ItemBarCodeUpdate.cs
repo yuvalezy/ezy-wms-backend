@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
+using Core.Enums;
 using Core.Models;
 using SAPbobsCOM;
 

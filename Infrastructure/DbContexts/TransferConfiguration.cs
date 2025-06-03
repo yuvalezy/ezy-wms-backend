@@ -20,9 +20,7 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
             .HasForeignKey(tl => tl.TransferId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure enum conversion for char storage
-        builder.Property(e => e.Status)
-            .HasConversion<char>();
+        // Enums are now stored as integers by default
     }
 }
 public class TransferLineConfiguration : IEntityTypeConfiguration<TransferLine> {
@@ -34,14 +32,6 @@ public class TransferLineConfiguration : IEntityTypeConfiguration<TransferLine> 
             .HasForeignKey(tl => tl.StatusUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure enum conversions
-        builder.Property(e => e.LineStatus)
-            .HasConversion<char>();
-            
-        builder.Property(e => e.Type)
-            .HasConversion<char>();
-            
-        builder.Property(e => e.UnitType)
-            .HasConversion<int>();
+        // Enums are now stored as integers by default
     }
 }

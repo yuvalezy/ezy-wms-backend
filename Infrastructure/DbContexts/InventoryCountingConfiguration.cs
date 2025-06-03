@@ -20,9 +20,7 @@ public class InventoryCountingConfiguration : IEntityTypeConfiguration<Inventory
             .HasForeignKey(icl => icl.InventoryCountingId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure enum conversion for char storage
-        builder.Property(e => e.Status)
-            .HasConversion<char>();
+        // Enums are now stored as integers by default
     }
 }
 
@@ -35,11 +33,6 @@ public class InventoryCountingLineConfiguration : IEntityTypeConfiguration<Inven
             .HasForeignKey(icl => icl.StatusUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure enum conversions
-        builder.Property(e => e.LineStatus)
-            .HasConversion<char>();
-
-        builder.Property(e => e.Unit)
-            .HasConversion<int>();
+        // Enums are now stored as integers by default
     }
 }

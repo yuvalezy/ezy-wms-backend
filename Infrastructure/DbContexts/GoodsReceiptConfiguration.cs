@@ -20,12 +20,7 @@ public class GoodsReceiptConfiguration : IEntityTypeConfiguration<GoodsReceipt> 
             .HasForeignKey(grl => grl.GoodsReceiptId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure enum conversion for char storage
-        builder.Property(e => e.Status)
-            .HasConversion<char>();
-
-        builder.Property(e => e.Type)
-            .HasConversion<char>();
+        // Enums are now stored as integers by default
     }
 }
 
@@ -57,12 +52,7 @@ public class GoodsReceiptLineConfiguration : IEntityTypeConfiguration<GoodsRecei
             .HasForeignKey(grs => grs.GoodsReceiptLineId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure enum conversions
-        builder.Property(e => e.LineStatus)
-            .HasConversion<char>();
-
-        builder.Property(e => e.Unit)
-            .HasConversion<int>();
+        // Enums are now stored as integers by default
 
         // Configure decimal precision
         builder.Property(e => e.Quantity)
@@ -72,9 +62,7 @@ public class GoodsReceiptLineConfiguration : IEntityTypeConfiguration<GoodsRecei
 
 public class GoodsReceiptTargetConfiguration : IEntityTypeConfiguration<GoodsReceiptTarget> {
     public void Configure(EntityTypeBuilder<GoodsReceiptTarget> builder) {
-        // Configure enum conversion
-        builder.Property(e => e.TargetStatus)
-            .HasConversion<char>();
+        // Enums are now stored as integers by default
 
         // Configure decimal precision
         builder.Property(e => e.TargetQuantity)
