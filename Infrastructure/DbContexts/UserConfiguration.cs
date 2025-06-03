@@ -7,12 +7,15 @@ namespace Infrastructure.DbContexts;
 
 public class UserConfiguration: IEntityTypeConfiguration<User> {
     public void Configure(EntityTypeBuilder<User> builder) {
+        builder.Ignore(v => v.CreatedByUser);
+        builder.Ignore(v => v.UpdatedByUser);
+        
         builder
             .HasOne<AuthorizationGroup>(v => v.AuthorizationGroup)
             .WithMany()
             .HasForeignKey(a => a.AuthorizationGroupId)
             .OnDelete(DeleteBehavior.Restrict);
-
+        
         // Configure Warehouses collection as a JSON string
         builder.Property(e => e.Warehouses)
             .HasConversion(

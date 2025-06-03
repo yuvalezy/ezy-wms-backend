@@ -14,13 +14,6 @@ public class GoodsReceipt : BaseEntity {
     [Required]
     public ObjectStatus Status { get; set; } = ObjectStatus.Open;
 
-    public DateTime? StatusDate { get; set; }
-
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
-
     [Required]
     public GoodsReceiptType Type { get; set; } = GoodsReceiptType.All;
 
@@ -43,11 +36,6 @@ public class GoodsReceiptLine : BaseEntity {
     [Required]
     public DateTime Date { get; set; }
 
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
-
     [Required]
     [StringLength(50)]
     public required string ItemCode { get; set; }
@@ -59,8 +47,6 @@ public class GoodsReceiptLine : BaseEntity {
     public decimal Quantity { get; set; }
 
     public int? StatusReason { get; set; }
-
-    public DateTime? StatusTimeStamp { get; set; }
 
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;

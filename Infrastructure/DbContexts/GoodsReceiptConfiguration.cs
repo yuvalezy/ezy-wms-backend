@@ -6,13 +6,6 @@ namespace Infrastructure.DbContexts;
 
 public class GoodsReceiptConfiguration : IEntityTypeConfiguration<GoodsReceipt> {
     public void Configure(EntityTypeBuilder<GoodsReceipt> builder) {
-        // Configure StatusUser relationship
-        builder
-            .HasOne(gr => gr.StatusUser)
-            .WithMany()
-            .HasForeignKey(gr => gr.StatusUserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         // Configure Lines relationship with cascade delete
         builder
             .HasMany(gr => gr.Lines)
@@ -26,13 +19,6 @@ public class GoodsReceiptConfiguration : IEntityTypeConfiguration<GoodsReceipt> 
 
 public class GoodsReceiptLineConfiguration : IEntityTypeConfiguration<GoodsReceiptLine> {
     public void Configure(EntityTypeBuilder<GoodsReceiptLine> builder) {
-        // Configure StatusUser relationship
-        builder
-            .HasOne(grl => grl.StatusUser)
-            .WithMany()
-            .HasForeignKey(grl => grl.StatusUserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         // Configure child relationships with cascade delete
         builder
             .HasMany(grl => grl.Targets)

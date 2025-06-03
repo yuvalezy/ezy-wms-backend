@@ -11,13 +11,13 @@ public class SystemDbContext : DbContext {
 
     public DbSet<AuthorizationGroup> AuthorizationGroups { get; set; }
     public DbSet<User>               Users               { get; set; }
-    
+
     // Objects Entities
-    public DbSet<GoodsReceipt>       GoodsReceipts       { get; set; }
-    public DbSet<InventoryCounting>  InventoryCountings  { get; set; }
-    public DbSet<Transfer>           Transfers           { get; set; }
-    public DbSet<PickList>           PickLists           { get; set; }
-    
+    public DbSet<GoodsReceipt>      GoodsReceipts      { get; set; }
+    public DbSet<InventoryCounting> InventoryCountings { get; set; }
+    public DbSet<Transfer>          Transfers          { get; set; }
+    public DbSet<PickList>          PickLists          { get; set; }
+
     // Object Lines Entites
     public DbSet<GoodsReceiptLine>      GoodsReceiptLines      { get; set; }
     public DbSet<GoodsReceiptTarget>    GoodsReceiptTargets    { get; set; }
@@ -40,9 +40,9 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
-        
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
-            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) 
+            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
                 continue;
             var entityBuilder = modelBuilder.Entity(entityType.ClrType);
 
@@ -58,14 +58,40 @@ public class SystemDbContext : DbContext {
             var property   = Expression.Property(parameter, nameof(BaseEntity.Deleted));
             var comparison = Expression.Equal(property, Expression.Constant(false));
             var lambda     = Expression.Lambda(comparison, parameter);
-                    
+
+            // Configure audit relationships if properties exist
+            ConfigureAuditRelationships(entityBuilder, entityType.ClrType);
+
             entityBuilder.HasQueryFilter(lambda);
         }
-        
-        
+
+
         // Future: Add SAP HANA configuration
         // else if (Database.IsHana()) {
         //     ConfigureForHana(modelBuilder);
         // }
+    }
+
+    private void ConfigureAuditRelationships(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder entityBuilder, Type entityType) {
+        if (entityType == typeof(User))
+            return;
+
+        // Check if entity has audit properties
+        var createdByUserIdProp = entityType.GetProperty("CreatedByUserId");
+        var updatedByUserIdProp = entityType.GetProperty("UpdatedByUserId");
+
+        if (createdByUserIdProp != null) {
+            entityBuilder.HasOne(typeof(User))
+                .WithMany()
+                .HasForeignKey("CreatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+
+        if (updatedByUserIdProp != null) {
+            entityBuilder.HasOne(typeof(User))
+                .WithMany()
+                .HasForeignKey("UpdatedByUserId")
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 }

@@ -5,6 +5,9 @@ using Core.Enums;
 namespace Core.Entities;
 
 public class Transfer : BaseEntity {
+    [MaxLength(100)]
+    public string? Name { get; set; }
+    
     [MaxLength(4000)]
     public string? Comments { get; set; }
 
@@ -13,13 +16,6 @@ public class Transfer : BaseEntity {
 
     [Required]
     public ObjectStatus Status { get; set; } = ObjectStatus.Open;
-
-    public DateTime? StatusDate { get; set; }
-
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
 
     [Required]
     [StringLength(8)]
@@ -53,13 +49,6 @@ public class TransferLine : BaseEntity {
     public int Quantity { get; set; }
 
     public int? StatusReason { get; set; }
-
-    public DateTime? StatusTimeStamp { get; set; }
-
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
 
     [Required]
     public SourceTarget Type { get; set; } = SourceTarget.Source;

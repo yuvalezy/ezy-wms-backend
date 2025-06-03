@@ -13,13 +13,6 @@ public class InventoryCounting : BaseEntity {
 
     public ObjectStatus Status { get; set; } = ObjectStatus.Open;
 
-    public DateTime? StatusDate { get; set; }
-
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
-
     [Required]
     [StringLength(8)]
     public required string WhsCode { get; set; }
@@ -40,11 +33,6 @@ public class InventoryCountingLine : BaseEntity {
 
     [Required]
     public DateTime Date { get; set; }
-
-    [ForeignKey("StatusUserId")]
-    public Guid? StatusUserId { get; set; }
-
-    public User? StatusUser { get; set; }
 
     [Required]
     [StringLength(50)]
