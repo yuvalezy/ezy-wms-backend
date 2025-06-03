@@ -106,13 +106,12 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 
         return await dbService.QueryAsync(query, parameters, reader => new BinContent {
             ItemCode   = reader.GetString(0),
-            ItemName   = reader.GetString(1),
-            OnHand     = reader.GetDouble(2),
-            NumInBuy   = reader.GetInt32(3),
-            BuyUnitMsr = reader.GetString(4),
-            PurPackUn  = reader.GetInt32(5),
-            PurPackMsr = reader.GetString(6)
+            ItemName   = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+            OnHand     = Convert.ToInt32(reader[2]),
+            NumInBuy   = Convert.ToInt32(reader[3]),
+            BuyUnitMsr = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+            PurPackUn   = Convert.ToInt32(reader[5]),
+            PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6)
         });
     }
-
 }
