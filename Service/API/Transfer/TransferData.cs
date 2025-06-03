@@ -1,6 +1,29 @@
-﻿
+﻿//     public int ValidateAddItem(DataConnector conn, AddItemParameter parameters, int employeeID) =>
+//         conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
+//             new Parameter("@ID", SqlDbType.Int, parameters.ID),
+//             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+//             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+//             new Parameter("@empID", SqlDbType.Int, employeeID),
+//             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+//             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+//             new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString()),
+//             new Parameter("@Unit", SqlDbType.SmallInt, 1, parameters.Unit)
+//         ]);
 //
-
+//     public AddItemResponse AddItem(DataConnector conn, AddItemParameter parameters, int employeeID) {
+//         var returnValue = new AddItemResponse();
+//         conn.ExecuteReader(GetQuery("AddItem"), [
+//             new Parameter("@ID", SqlDbType.Int, parameters.ID),
+//             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
+//             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
+//             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
+//             new Parameter("@empID", SqlDbType.Int, employeeID),
+//             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
+//             new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString()),
+//             new Parameter("@Unit", SqlDbType.SmallInt, 1, parameters.Unit)
+//         ], dr => returnValue.LineID = (int)dr["LineID"]);
+//         return returnValue;
+//     }
 //
 //     public void UpdateLine(DataConnector conn, UpdateLineParameter updateLineParameter) {
 //         var parameters = new Parameters {

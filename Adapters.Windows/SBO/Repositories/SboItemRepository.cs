@@ -133,4 +133,88 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         using var update = new ItemBarCodeUpdate(dbService, sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
         return Task.FromResult(update.Execute());
     }
+
+    public async Task<ValidateAddItemResult> ValidateAddItem(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
+        var result = new ValidateAddItemResult();
+
+        // Validate item and get basic item info
+        const string itemQuery =
+            """
+                SELECT T1."ItemCode", T1."ItemName", T1."CodeBars", T1."InvntItem", 
+                       COALESCE(T1."NumInBuy", 1) as "NumInBuy", 
+                       COALESCE(T1."PurPackUn", 1) as "PurPackUn",
+                       T3."BcdCode",
+                       T4."WhsCode"
+                FROM OITM T1
+                LEFT OUTER JOIN OBCD T3 ON T3."ItemCode" = T1."ItemCode" AND T3."BcdCode" = @BarCode
+                LEFT OUTER JOIN OITW T4 ON T4."ItemCode" = T1."ItemCode" AND T4."WhsCode" = @WhsCode
+                WHERE T1."ItemCode" = @ItemCode
+            """;
+
+        var itemParams = new[] {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = barCode },
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+        };
+
+        var itemData = await dbService.QuerySingleAsync(itemQuery, itemParams, reader => new ItemValidation(
+            reader.GetString(0),
+            reader.IsDBNull(1) ? null : reader.GetString(1),
+            reader.IsDBNull(2) ? null : reader.GetString(2),
+            reader.GetString(3) == "Y",
+            (int)reader.GetDecimal(4),
+            (int)reader.GetDecimal(5),
+            reader.IsDBNull(6) ? null : reader.GetString(6),
+            reader.IsDBNull(7) ? null : reader.GetString(7)
+        ));
+
+        if (itemData == null) {
+            result.IsValidItem = false;
+            return result;
+        }
+
+        result.IsValidItem = true;
+        result.NumInBuy    = itemData.NumInBuy;
+        result.PurPackUn   = itemData.PurPackUn;
+
+        // Validate barcode
+        result.IsValidBarCode = barCode == itemData.MainBarcode || itemData.Barcode != null;
+
+        // Check if it's an inventory item
+        result.IsInventoryItem = itemData.StockItem;
+
+        // Check if item exists in warehouse
+        result.ItemExistsInWarehouse = !string.IsNullOrWhiteSpace(itemData.Warehouse);
+
+        if (!binEntry.HasValue) {
+            return result;
+        }
+
+        // Validate bin if provided
+        const string binQuery =
+            """
+                SELECT T5."AbsEntry", T5."WhsCode", COALESCE(T7."OnHandQty", 0) as "OnHandQty"
+                FROM OBIN T5
+                LEFT OUTER JOIN OIBQ T7 ON T7."ItemCode" = @ItemCode AND T7."BinAbs" = @BinEntry
+                WHERE T5."AbsEntry" = @BinEntry
+            """;
+
+        var binParams = new[] {
+            new SqlParameter("@BinEntry", SqlDbType.Int) { Value          = binEntry.Value },
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
+        };
+
+        var binData = await dbService.QuerySingleAsync(binQuery, binParams, reader => new BinValidation(reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2)));
+
+        if (binData == null) {
+            result.BinExists = false;
+        }
+        else {
+            result.BinExists             = true;
+            result.BinBelongsToWarehouse = binData.Warehouse == warehouse;
+            result.AvailableQuantity     = binData.Stock;
+        }
+
+        return result;
+    }
 }

@@ -30,4 +30,5 @@ public class SboAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<BinContent>>        BinCheckAsync(int                      binEntry)                 => await generalRepository.BinCheckAsync(binEntry);
     public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string                  itemCode, string whsCode) => await itemRepository.ItemStockAsync(itemCode, whsCode);
     public async Task<UpdateItemBarCodeResponse>      UpdateItemBarCode(UpdateBarCodeRequest request) => await itemRepository.UpdateItemBarCode(request);
+    public async Task<ValidateAddItemResult> ValidateAddItemTransfer(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) => await itemRepository.ValidateAddItem(itemCode, barCode, warehouse, binEntry, enableBin);
 }

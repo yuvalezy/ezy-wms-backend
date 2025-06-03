@@ -2,13 +2,15 @@
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Infrastructure.DbContexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
 public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adapter) : ITransferLineService {
-    public async Task<TransferAddItemResponse> AddItem(Guid userId, string warehouse, TransferAddItemRequest request) {
-        if (!await ValidateAddItem(warehouse, request))
+    public async Task<TransferAddItemResponse> AddItem(SessionInfo info, TransferAddItemRequest request) {
+        if (!await ValidateAddItem(info, request))
             return new TransferAddItemResponse { ClosedTransfer = true };
 
         var transaction = await db.Database.BeginTransactionAsync();
@@ -35,10 +37,10 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                 Date         = DateTime.UtcNow,
                 Quantity     = quantity,
                 Type         = request.Type,
-                UnitType     = request.Unit,
+                UnitType     = request.Unit!.Value,
                 TransferId   = request.ID,
                 CreatedAt       = DateTime.UtcNow,
-                CreatedByUserId = userId,
+                CreatedByUserId = info.Guid,
                 LineStatus      = LineStatus.Open
             };
             
@@ -57,43 +59,133 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
         }
     }
 
-    private async Task<bool> ValidateAddItem(string warehouse, TransferAddItemRequest request) {
-        /*
-         * select Case
-    When T1.ItemCode is null Then -1
-    When T0.BarCode <> T1.CodeBars and T3.BcdCode is null Then -2
-    When T2.Code is null Then -3
-    When T2.U_Status not in ('O', 'I') Then -4
-    When T1.InvntItem = 'N' Then -8
-    When T4.WhsCode is null Then -9
-    When @BinEntry is not null and T5.AbsEntry is null Then -10
-    When @BinEntry is not null and T5.WhsCode <> @WhsCode Then -11
-    When @BinEntry is null and T6.BinActivat = 'Y' Then -12
-    Else 0 End ValidationMessage
-from (select @ID ID, @BarCode BarCode, @ItemCode ItemCode) T0
-         left outer join OITM T1 on T1.ItemCode = T0.ItemCode
-left outer join "@LW_YUVAL08_OINC" T2 on T2.Code = T0.ID
-         left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
-left outer join OITW T4 on T4.ItemCode = T1.ItemCode and T4.WhsCode = @WhsCode
-left outer join OBIN T5 on T5.AbsEntry = @BinEntry
-left outer join OWHS T6 on T6.WhsCode = @WhsCode
+    private async Task<bool> ValidateAddItem(SessionInfo info, TransferAddItemRequest request) {
+        // Validate bin is required but not provided
+        if (!request.BinEntry.HasValue && info.EnableBinLocations) {
+            throw new ApiErrorException((int)AddItemReturnValueType.BinMissing, new { });
+        }
+        
+        // Check if transfer exists and is in valid state
+        var transfer = await db.Transfers
+            .Where(t => t.Id == request.ID)
+            .Select(t => new { t.Status })
+            .FirstOrDefaultAsync();
+            
+        if (transfer == null) {
+            throw new ApiErrorException((int)AddItemReturnValueType.TransactionIDNotExists, new { request.ID });
+        }
+        
+        if (transfer.Status != ObjectStatus.Open && transfer.Status != ObjectStatus.InProgress) {
+            return false; // Transfer is closed
+        }
+        
+        // Get validation data from external system
+        var validationResult = await adapter.ValidateAddItemTransfer(request.ItemCode, request.BarCode, info.Warehouse, request.BinEntry, info.EnableBinLocations);
+        
+        // Validate item exists
+        if (!validationResult.IsValidItem) {
+            throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, request.BarCode });
+        }
+        
+        // Validate barcode matches
+        if (!validationResult.IsValidBarCode) {
+            throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeBarCodeMismatch, new { request.ItemCode, request.BarCode });
+        }
+        
+        // Validate it's an inventory item
+        if (!validationResult.IsInventoryItem) {
+            throw new ApiErrorException((int)AddItemReturnValueType.NotStockItem, new { request.ItemCode, request.BarCode });
+        }
+        
+        // Validate item exists in warehouse
+        if (!validationResult.ItemExistsInWarehouse) {
+            throw new ApiErrorException((int)AddItemReturnValueType.ItemNotInWarehouse, new { BinEntry = request.BinEntry ?? 0 });
+        }
+        
+        // Validate bin existence if provided
+        if (request.BinEntry.HasValue) {
+            if (!validationResult.BinExists) {
+                throw new ApiErrorException((int)AddItemReturnValueType.BinNotExists, new { BinEntry = request.BinEntry.Value });
+            }
+            
+            if (!validationResult.BinBelongsToWarehouse) {
+                throw new ApiErrorException((int)AddItemReturnValueType.BinNotInWarehouse, new { request.ItemCode, request.BarCode });
+            }
+        }
+        
+        // Calculate total quantity including unit conversion
+        int totalQuantity = request.Quantity;
+        if (request.Unit != UnitType.Unit) {
+            totalQuantity *= validationResult.NumInBuy * (request.Unit == UnitType.Pack ? validationResult.PurPackUn : 1);
+        }
+        
+        // Calculate existing quantities from database
+        var existingQuantities = await db.TransferLines
+            .Where(tl => tl.TransferId == request.ID && 
+                        tl.ItemCode == request.ItemCode && 
+                        tl.LineStatus != LineStatus.Closed)
+            .GroupBy(tl => tl.Type)
+            .Select(g => new {
+                Type = g.Key,
+                TotalQuantity = g.Sum(tl => tl.Quantity)
+            })
+            .ToListAsync();
+            
+        int sourceQuantity = 0;
+        int targetQuantity = 0;
+        
+        foreach (var eq in existingQuantities) {
+            switch (eq.Type) {
+                case SourceTarget.Source:
+                    sourceQuantity = eq.TotalQuantity;
+                    break;
+                case SourceTarget.Target:
+                    targetQuantity = eq.TotalQuantity;
+                    break;
+            }
+        }
+        
+        if (!request.BinEntry.HasValue) 
+            return true;
+        
+        // If specific bin is requested, filter by bin
+        var binSpecificQuantities = await db.TransferLines
+            .Where(tl => tl.TransferId == request.ID && 
+                         tl.ItemCode == request.ItemCode && 
+                         tl.BinEntry == request.BinEntry.Value &&
+                         tl.LineStatus != LineStatus.Closed)
+            .GroupBy(tl => tl.Type)
+            .Select(g => new {
+                Type          = g.Key,
+                TotalQuantity = g.Sum(tl => tl.Quantity)
+            })
+            .ToListAsync();
+                
+        int binSourceQuantity = binSpecificQuantities
+            .Where(x => x.Type == SourceTarget.Source)
+            .Select(x => x.TotalQuantity)
+            .FirstOrDefault();
 
-         */
+        switch (request.Type) {
+            // Validate quantity availability
+            case SourceTarget.Source: {
+                decimal availableInBin = validationResult.AvailableQuantity - binSourceQuantity;
+                if (availableInBin < totalQuantity) {
+                    throw new ApiErrorException((int)AddItemReturnValueType.QuantityMoreAvailable, new { request.ItemCode });
+                }
 
-        // public bool Validate(DataConnector conn, Data data, int empID) {
-        //     var value = (AddItemReturnValueType)data.Transfer.ValidateAddItem(conn, this, empID);
-        //     return value.IsValid(this);
-        // }
+                break;
+            }
+            case SourceTarget.Target: {
+                decimal availableToTransfer = sourceQuantity - targetQuantity;
+                if (availableToTransfer < totalQuantity) {
+                    throw new ApiErrorException((int)AddItemReturnValueType.QuantityMoreAvailable, new { request.ItemCode });
+                }
 
-        //         conn.GetValue<int>(GetQuery("ValidateAddItemParameters"), [
-//             new Parameter("@ID", SqlDbType.Int, parameters.ID),
-//             new Parameter("@ItemCode", SqlDbType.NVarChar, 50, parameters.ItemCode),
-//             new Parameter("@BarCode", SqlDbType.NVarChar, 254, parameters.BarCode),
-//             new Parameter("@empID", SqlDbType.Int, employeeID),
-//             new Parameter("@BinEntry", SqlDbType.Int, parameters.BinEntry is > 0 ? parameters.BinEntry.Value : DBNull.Value),
-//             new Parameter("@Quantity", SqlDbType.Int, parameters.Quantity),
-//             new Parameter("@Type", SqlDbType.Char, 1, ((char)parameters.Type).ToString()),
-//             new Parameter("@Unit", SqlDbType.SmallInt, 1, parameters.Unit)
-//         ]);
+                break;
+            }
+        }
+
+        return true;
     }
 }

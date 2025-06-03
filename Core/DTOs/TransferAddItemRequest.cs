@@ -8,7 +8,7 @@ public class TransferAddItemRequest : AddItemRequestBase, IValidatableObject {
     public SourceTarget Type     { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
-        if (ID <= 0)
+        if (ID == Guid.Empty)
             yield return new ValidationResult("ID is a required parameter", [nameof(ID)]);
         if (Quantity <= 0)
             yield return new ValidationResult("Quantity is a required parameter", [nameof(Quantity)]);
