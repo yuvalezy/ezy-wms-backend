@@ -134,7 +134,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         return Task.FromResult(update.Execute());
     }
 
-    public async Task<ValidateAddItemResult> ValidateAddItem(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
+    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
         var result = new ValidateAddItemResult();
 
         // Validate item and get basic item info

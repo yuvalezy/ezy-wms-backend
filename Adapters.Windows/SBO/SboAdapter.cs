@@ -5,17 +5,8 @@ using Core.Models;
 
 namespace Adapters.Windows.SBO;
 
-public class SboAdapter : IExternalSystemAdapter {
-    private readonly SboEmployeeRepository employeeRepository;
-    private readonly SboGeneralRepository  generalRepository;
-    private readonly SboItemRepository     itemRepository;
-
-    public SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository) {
-        this.employeeRepository = employeeRepository;
-        this.generalRepository  = generalRepository;
-        this.itemRepository     = itemRepository;
-    }
-
+public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository)
+    : IExternalSystemAdapter {
     public async Task<ExternalValue?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
     public async Task<IEnumerable<ExternalValue>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
     public async Task<string?>                        GetCompanyNameAsync()                                                  => await generalRepository.GetCompanyNameAsync();
@@ -30,5 +21,7 @@ public class SboAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<BinContent>>        BinCheckAsync(int                      binEntry)                 => await generalRepository.BinCheckAsync(binEntry);
     public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string                  itemCode, string whsCode) => await itemRepository.ItemStockAsync(itemCode, whsCode);
     public async Task<UpdateItemBarCodeResponse>      UpdateItemBarCode(UpdateBarCodeRequest request) => await itemRepository.UpdateItemBarCode(request);
-    public async Task<ValidateAddItemResult> ValidateAddItemTransfer(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) => await itemRepository.ValidateAddItem(itemCode, barCode, warehouse, binEntry, enableBin);
+
+    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
+        await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
 }

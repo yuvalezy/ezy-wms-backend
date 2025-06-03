@@ -18,5 +18,5 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<BinContent>>        BinCheckAsync(int                      binEntry);
     Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string                  itemCode, string whsCode);
     Task<UpdateItemBarCodeResponse>      UpdateItemBarCode(UpdateBarCodeRequest request);
-    Task<ValidateAddItemResult>  ValidateAddItemTransfer(string         itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
+    Task<ValidateAddItemResult>          GetItemValidationInfo(string           itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
 }
