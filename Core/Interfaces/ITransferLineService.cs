@@ -3,5 +3,5 @@
 namespace Core.Interfaces;
 
 public interface ITransferLineService {
-    Task<TransferAddItemResponse> AddItem(string warehouse, TransferAddItemRequest request);
+    Task<TransferAddItemResponse> AddItem(Guid userId, string warehouse, TransferAddItemRequest request);
 }

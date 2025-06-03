@@ -26,7 +26,10 @@ public class TransferController(ITransferService transferService, ITransferLineS
     
     [HttpPost("addItem")]
     [RequireRolePermission(RoleType.Transfer)]
-    public async Task<TransferAddItemResponse> AddItem([FromBody] TransferAddItemRequest request) => await transferLineService.AddItem(HttpContext.GetSession().Warehouse, request);
+    public async Task<TransferAddItemResponse> AddItem([FromBody] TransferAddItemRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        return await transferLineService.AddItem(sessionInfo.Guid, sessionInfo.Warehouse, request);
+    }
 
     //
     // [HttpPost]

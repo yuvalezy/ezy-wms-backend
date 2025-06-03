@@ -49,7 +49,23 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             return response;
 
         var data = new List<ItemCheckResponse>();
-        if (!string.IsNullOrWhiteSpace(barcode)) {
+        if (!string.IsNullOrWhiteSpace(itemCode)) {
+            const string query =
+                """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
+            var parameters = new[] {
+                new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
+            };
+            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
+                ItemCode   = reader.GetString(0),
+                ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
+                BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
+                NumInBuy   = (int)reader.GetDecimal(3),
+                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
+                PurPackUn  = (int)reader.GetDecimal(5)
+            });
+            data.AddRange(items);
+        }
+        else if (!string.IsNullOrWhiteSpace(barcode)) {
             const string query =
                 """
                 select T0."ItemCode"
@@ -64,22 +80,6 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
                 """;
             var parameters = new[] {
                 new SqlParameter("@ScanCode", SqlDbType.NVarChar, 255) { Value = barcode }
-            };
-            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
-                ItemCode   = reader.GetString(0),
-                ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-                BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
-                NumInBuy   = (int)reader.GetDecimal(3),
-                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
-                PurPackUn  = (int)reader.GetDecimal(5)
-            });
-            data.AddRange(items);
-        }
-        else if (!string.IsNullOrWhiteSpace(itemCode)) {
-            const string query =
-                """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
-            var parameters = new[] {
-                new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
             };
             var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
                 ItemCode   = reader.GetString(0),
