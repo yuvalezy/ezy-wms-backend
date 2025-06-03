@@ -128,4 +128,34 @@ public class TransferService(SystemDbContext db) : ITransferService {
 
         return TransferResponse.FromTransfer(transfer);
     }
+
+    public async Task<bool> CancelTransfer(Guid id, SessionInfo sessionInfo) {
+        var transfer = await db.Transfers.FindAsync(id);
+        if (transfer == null) {
+            throw new KeyNotFoundException($"Transfer with ID {id} not found.");
+        }
+
+        if (transfer.Status != ObjectStatus.Open && transfer.Status != ObjectStatus.InProgress) {
+            throw new InvalidOperationException("Cannot cancel transfer if the Status is not Open or In Progress");
+        }
+
+        // Update transfer status
+        transfer.Status = ObjectStatus.Cancelled;
+        transfer.UpdatedAt = DateTime.UtcNow;
+        transfer.UpdatedByUserId = sessionInfo.Guid;
+
+        // Update all open lines to cancelled
+        var openLines = await db.TransferLines
+            .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
+            .ToListAsync();
+
+        foreach (var line in openLines) {
+            line.LineStatus = LineStatus.Closed;
+            line.UpdatedAt = DateTime.UtcNow;
+            line.UpdatedByUserId = sessionInfo.Guid;
+        }
+
+        await db.SaveChangesAsync();
+        return true;
+    }
 }

@@ -23,7 +23,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [RequireRolePermission(RoleType.Transfer)]
     public async Task<TransferResponse> ProcessInfo(Guid id) => await transferService.GetProcessInfo(id);
 
-    
+
     [HttpPost("addItem")]
     [RequireRolePermission(RoleType.Transfer)]
     public async Task<TransferAddItemResponse> AddItem([FromBody] TransferAddItemRequest request) {
@@ -45,15 +45,14 @@ public class TransferController(ITransferService transferService, ITransferLineS
         return await transferLineService.UpdateLineQuantity(sessionInfo, request);
     }
 
-    //
-    // [HttpPost]
-    // [ActionName("Cancel")]
-    // public bool CancelTransfer([FromBody] IDParameters parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access for transfer cancellation");
-    //
-    //     return Data.Transfer.CancelTransfer(parameters.ID, EmployeeID);
-    // }
+    [HttpPost("cancel")]
+    [RequireRolePermission(RoleType.TransferSupervisor)]
+    public async Task<IActionResult> CancelTransfer([FromBody] CancelTransferRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        bool result      = await transferService.CancelTransfer(request.ID, sessionInfo);
+        return Ok(new { success = result });
+    }
+
     //
     // [HttpPost]
     // [ActionName("Process")]
