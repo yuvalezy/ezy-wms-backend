@@ -53,6 +53,9 @@ public class TransferLine : BaseEntity {
     public int Quantity { get; set; }
 
     public int? StatusReason { get; set; }
+    
+    [ForeignKey("CancellationReason")]
+    public Guid? CancellationReasonId { get; set; }
 
     [Required]
     public SourceTarget Type { get; set; } = SourceTarget.Source;
@@ -63,6 +66,7 @@ public class TransferLine : BaseEntity {
     [ForeignKey("Transfer")]
     public required Guid TransferId { get; set; }
 
-    // Navigation property
+    // Navigation properties
     public virtual Transfer Transfer { get; set; } = null!;
+    public virtual CancellationReason? CancellationReason { get; set; }
 }

@@ -49,6 +49,9 @@ public class InventoryCountingLine : BaseEntity {
     public int Quantity { get; set; }
 
     public int? StatusReason { get; set; }
+    
+    [ForeignKey("CancellationReason")]
+    public Guid? CancellationReasonId { get; set; }
 
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;
@@ -58,4 +61,5 @@ public class InventoryCountingLine : BaseEntity {
     public Guid InventoryCountingId { get; set; }
 
     public virtual InventoryCounting InventoryCounting { get; set; } = null!;
+    public virtual CancellationReason? CancellationReason { get; set; }
 }

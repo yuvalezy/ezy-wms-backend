@@ -51,6 +51,9 @@ public class GoodsReceiptLine : BaseEntity {
     public decimal Quantity { get; set; }
 
     public int? StatusReason { get; set; }
+    
+    [ForeignKey("CancellationReason")]
+    public Guid? CancellationReasonId { get; set; }
 
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;
@@ -60,6 +63,7 @@ public class GoodsReceiptLine : BaseEntity {
     public Guid GoodsReceiptId { get; set; }
 
     public virtual GoodsReceipt GoodsReceipt { get; set; } = null!;
+    public virtual CancellationReason? CancellationReason { get; set; }
 
     public virtual ICollection<GoodsReceiptTarget>   Targets   { get; set; } = new List<GoodsReceiptTarget>();
     public virtual ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();

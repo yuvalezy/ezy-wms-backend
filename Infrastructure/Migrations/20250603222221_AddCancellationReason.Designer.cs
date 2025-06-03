@@ -4,6 +4,7 @@ using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    partial class SystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250603222221_AddCancellationReason")]
+    partial class AddCancellationReason
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -249,9 +252,6 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("nvarchar(254)");
 
-                    b.Property<Guid?>("CancellationReasonId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -301,8 +301,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CancellationReasonId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -499,9 +497,6 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("BinEntry")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("CancellationReasonId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -550,8 +545,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CancellationReasonId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -694,9 +687,6 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("BinEntry")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("CancellationReasonId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -748,8 +738,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CancellationReasonId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -907,10 +895,6 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptLine", b =>
                 {
-                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
-                        .WithMany()
-                        .HasForeignKey("CancellationReasonId");
-
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -926,8 +910,6 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 
@@ -1005,10 +987,6 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.InventoryCountingLine", b =>
                 {
-                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
-                        .WithMany()
-                        .HasForeignKey("CancellationReasonId");
-
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -1024,8 +1002,6 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 
@@ -1070,10 +1046,6 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.TransferLine", b =>
                 {
-                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
-                        .WithMany()
-                        .HasForeignKey("CancellationReasonId");
-
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -1089,8 +1061,6 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 

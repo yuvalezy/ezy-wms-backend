@@ -45,6 +45,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPickListService, PickListService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
+        services.AddScoped<ICancellationReasonService, CancellationReasonService>();
 
         // External System Adapters for SBO 9.0
         SboAssembly.RedirectAssembly();

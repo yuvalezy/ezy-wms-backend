@@ -63,14 +63,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     //     return Data.Transfer.ProcessTransfer(parameters.ID, EmployeeID, Data.General.AlertUsers);
     // }
     //
-    // [HttpGet]
-    // [ActionName("CancelReasons")]
-    // public IEnumerable<ValueDescription<int>> GetCancelReasons() {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
-    //         throw new UnauthorizedAccessException("You don't have access to get cancel reasons");
-    //     return Data.General.GetCancelReasons(ReasonType.Transfer);
-    // }
-    //
+
     [HttpGet]
     [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
     public async Task<IEnumerable<TransferResponse>> GetTransfers([FromQuery] TransfersRequest request) => await transferService.GetTransfers(request, HttpContext.GetSession().Warehouse);

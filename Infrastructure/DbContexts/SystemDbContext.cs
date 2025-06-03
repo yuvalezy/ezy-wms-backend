@@ -11,6 +11,7 @@ public class SystemDbContext : DbContext {
 
     public DbSet<AuthorizationGroup> AuthorizationGroups { get; set; }
     public DbSet<User>               Users               { get; set; }
+    public DbSet<CancellationReason> CancellationReasons { get; set; }
 
     // Objects Entities
     public DbSet<GoodsReceipt>      GoodsReceipts      { get; set; }
@@ -30,6 +31,7 @@ public class SystemDbContext : DbContext {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new AuthorizationGroupConfiguration());
+        modelBuilder.ApplyConfiguration(new CancellationReasonConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptLineConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptTargetConfiguration());

@@ -242,9 +242,20 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             }
 
             // Handle line closure
-            if (request.CloseReason.HasValue) {
-                line.LineStatus   = LineStatus.Closed;
-                line.StatusReason = request.CloseReason.Value;
+            if (request.CancellationReasonId.HasValue) {
+                // Validate the cancellation reason exists and is enabled
+                var cancellationReason = await db.CancellationReasons
+                    .Where(cr => cr.Id == request.CancellationReasonId.Value && cr.IsEnabled && cr.Transfer)
+                    .FirstOrDefaultAsync();
+                    
+                if (cancellationReason == null) {
+                    response.ReturnValue = UpdateLineReturnValue.CloseReason;
+                    response.ErrorMessage = "Invalid or disabled cancellation reason for transfers";
+                    return response;
+                }
+                
+                line.LineStatus = LineStatus.Closed;
+                line.CancellationReasonId = request.CancellationReasonId.Value;
             }
 
             // Update modification tracking
