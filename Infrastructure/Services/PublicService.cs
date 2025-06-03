@@ -55,7 +55,7 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
 
     public async Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await externalSystemAdapter.ScanItemBarCodeAsync(scanCode, item);
 
-    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string itemCode, string barcode) => await externalSystemAdapter.ItemCheckAsync(itemCode, barcode);
+    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await externalSystemAdapter.ItemCheckAsync(itemCode, barcode);
 
     public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) => await externalSystemAdapter.BinCheckAsync(binEntry);
 

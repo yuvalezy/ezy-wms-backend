@@ -42,24 +42,25 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         });
     }
 
-    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string itemCode, string barcode) {
+    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) {
         var response = new List<ItemCheckResponse>();
         if (string.IsNullOrWhiteSpace(itemCode) && string.IsNullOrWhiteSpace(barcode))
             return response;
 
         var data = new List<ItemCheckResponse>();
         if (!string.IsNullOrWhiteSpace(barcode)) {
-            const string query = """
-                                 select T0."ItemCode"
-                                      , T1."ItemName"
-                                      , T1."BuyUnitMsr"
-                                      , COALESCE(T1."NumInBuy", 1)  "NumInBuy"
-                                      , T1."PurPackMsr"
-                                      , COALESCE(T1."PurPackUn", 1) "PurPackUn"
-                                 from OBCD T0
-                                          inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
-                                 where T0."BcdCode" = @ScanCode
-                                 """;
+            const string query =
+                """
+                select T0."ItemCode"
+                     , T1."ItemName"
+                     , T1."BuyUnitMsr"
+                     , COALESCE(T1."NumInBuy", 1)  "NumInBuy"
+                     , T1."PurPackMsr"
+                     , COALESCE(T1."PurPackUn", 1) "PurPackUn"
+                from OBCD T0
+                         inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
+                where T0."BcdCode" = @ScanCode
+                """;
             var parameters = new[] {
                 new SqlParameter("@ScanCode", SqlDbType.NVarChar, 255) { Value = barcode }
             };
@@ -68,12 +69,12 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
                 ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
                 BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
                 NumInBuy   = (int)reader.GetDecimal(3),
-                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "", 
+                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
                 PurPackUn  = (int)reader.GetDecimal(5)
             });
             data.AddRange(items);
         }
-        else {
+        else if (!string.IsNullOrWhiteSpace(itemCode)) {
             const string query =
                 """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
             var parameters = new[] {
@@ -88,6 +89,9 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
                 PurPackUn  = (int)reader.GetDecimal(5)
             });
             data.AddRange(items);
+        }
+        else {
+            throw new ArgumentException("Either itemCode or barcode must be provided.");
         }
 
         const string barcodeQuery = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
@@ -120,7 +124,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
 
         return await dbService.QueryAsync(query, parameters, reader => new ItemStockResponse {
             BinCode  = reader.GetString(0),
-            Quantity = reader.GetInt32(1)
+            Quantity = Convert.ToInt32(reader[1])
         });
     }
 

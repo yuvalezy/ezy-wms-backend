@@ -88,12 +88,15 @@ public class AuthenticationService(
             string token     = jwtService.GenerateToken(authenticatedUser, expiresAt);
 
             var authorizations = authenticatedUser.AuthorizationGroup?.Authorizations ?? new List<RoleType>();
+            if (authenticatedUser.SuperUser) {
+                authorizations = Enum.GetValues<RoleType>();
+            }
 
             var sessionInfo = new SessionInfo {
                 UserId             = authenticatedUser.Id.ToString(),
                 Name               = authenticatedUser.FullName,
                 SuperUser          = authenticatedUser.SuperUser,
-                Roles     = authorizations,
+                Roles              = authorizations,
                 Warehouse          = selectedWarehouse!,
                 EnableBinLocations = warehouse!.EnableBinLocations,
                 Token              = token,
