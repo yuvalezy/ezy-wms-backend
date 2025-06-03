@@ -10,4 +10,8 @@ public interface ITransferService {
     Task<TransferResponse>              GetProcessInfo(Guid                  id);
     Task<bool>                          CancelTransfer(Guid                  id,      SessionInfo sessionInfo);
     Task<ProcessTransferResponse>       ProcessTransfer(Guid                 id,      SessionInfo sessionInfo);
+    Task<IEnumerable<TransferContentResponse>> GetTransferContent(TransferContentRequest request);
+    Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest request);
+    Task UpdateContentTargetDetail(UpdateContentTargetDetailRequest request, SessionInfo sessionInfo);
+    Task<CreateTransferRequestResponse> CreateTransferRequest(CreateTransferRequestRequest request, SessionInfo sessionInfo);
 }

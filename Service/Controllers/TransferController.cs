@@ -70,38 +70,30 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [Route("{id:guid}")]
     [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
     public async Task<TransferResponse> GetTransfer(Guid id) => await transferService.GetTransfer(id);
-    //
-    // [HttpPost]
-    // [ActionName("TransferContent")]
-    // public IEnumerable<TransferContent> TransferContent([FromBody] TransferContentParameters parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access to get transfer content");
-    //     return Data.Transfer.GetTransferContent(parameters);
-    // }
-    //
-    // [HttpPost]
-    // [ActionName("TransferContentTargetDetail")]
-    // public IEnumerable<TransferContentTargetItemDetail> TransferContentTargetDetail([FromBody] TransferContentTargetItemDetailParameters parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access to get transfer content");
-    //     return Data.Transfer.TransferContentTargetDetail(parameters);
-    // }
-    //
-    // [HttpPost]
-    // [ActionName("UpdateContentTargetDetail")]
-    // public void UpdateContentTargetDetail([FromBody] UpdateDetailParameters parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferSupervisor))
-    //         throw new UnauthorizedAccessException("You don't have access for document cancellation");
-    //     Data.Transfer.UpdateContentTargetDetail(parameters);
-    // }
-    //
-    // [HttpPost]
-    // [ActionName("CreateTransferRequest")]
-    // public int CreateTransferRequest([FromBody] TransferContent[] contents) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.TransferRequest))
-    //         throw new UnauthorizedAccessException("You don't have access for transfer request creation");
-    //
-    //     var employeeData = Data.General.GetEmployeeData(EmployeeID);
-    //     return Data.Transfer.CreateTransferRequest(contents, employeeData);
-    // }
+    [HttpPost("transferContent")]
+    [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
+    public async Task<IEnumerable<TransferContentResponse>> TransferContent([FromBody] TransferContentRequest request) {
+        return await transferService.GetTransferContent(request);
+    }
+
+    [HttpPost("transferContentTargetDetail")]
+    [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
+    public async Task<IEnumerable<TransferContentTargetDetailResponse>> TransferContentTargetDetail([FromBody] TransferContentTargetDetailRequest request) {
+        return await transferService.GetTransferContentTargetDetail(request);
+    }
+
+    [HttpPost("updateContentTargetDetail")]
+    [RequireRolePermission(RoleType.TransferSupervisor)]
+    public async Task<IActionResult> UpdateContentTargetDetail([FromBody] UpdateContentTargetDetailRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        await transferService.UpdateContentTargetDetail(request, sessionInfo);
+        return Ok(new { success = true });
+    }
+
+    [HttpPost("createTransferRequest")]
+    [RequireRolePermission(RoleType.TransferRequest)]
+    public async Task<CreateTransferRequestResponse> CreateTransferRequest([FromBody] CreateTransferRequestRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        return await transferService.CreateTransferRequest(request, sessionInfo);
+    }
 }

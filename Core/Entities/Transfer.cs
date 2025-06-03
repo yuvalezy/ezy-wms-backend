@@ -64,7 +64,7 @@ public class TransferLine : BaseEntity {
     public UnitType UnitType { get; set; } = UnitType.Pack;
 
     [ForeignKey("Transfer")]
-    public required Guid TransferId { get; set; }
+    public Guid TransferId { get; set; }
 
     // Navigation properties
     public virtual Transfer Transfer { get; set; } = null!;
