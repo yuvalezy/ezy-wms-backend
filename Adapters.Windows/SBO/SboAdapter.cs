@@ -1,4 +1,5 @@
 ﻿using Adapters.Windows.SBO.Repositories;
+using Core.DTOs;
 using Core.Interfaces;
 using Core.Models;
 

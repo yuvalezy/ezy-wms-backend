@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
+using Core.DTOs;
 using Core.Interfaces;
 using Core.Models;
 using Microsoft.Data.SqlClient;

@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
+using Core.DTOs;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Service.API.Transfer.Models;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -16,7 +14,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TransferController(ITransferService transferService) : ControllerBase {
+public class TransferController(ITransferService transferService, ITransferLineService transferLineService) : ControllerBase {
     [HttpPost("create")]
     [RequireRolePermission(RoleType.TransferSupervisor)]
     public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
@@ -26,25 +24,10 @@ public class TransferController(ITransferService transferService) : ControllerBa
     public async Task<TransferResponse> ProcessInfo(Guid id) => await transferService.GetProcessInfo(id);
 
     
-    // [HttpPost("addItem")]
-    // [RequireRolePermission(RoleType.Transfer)]
-    // public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
-    //         throw new UnauthorizedAccessException("You don't have access for adding item to transfer");
-    //     using var conn = Global.Connector;
-    //     conn.BeginTransaction();
-    //     try {
-    //         if (!parameters.Validate(conn, Data, EmployeeID))
-    //             return new AddItemResponse { ClosedTransfer = true };
-    //         var addItemResponse = Data.Transfer.AddItem(conn, parameters, EmployeeID);
-    //         conn.CommitTransaction();
-    //         return addItemResponse;
-    //     }
-    //     catch (Exception e) {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
+    [HttpPost("addItem")]
+    [RequireRolePermission(RoleType.Transfer)]
+    public async Task<TransferAddItemResponse> AddItem([FromBody] TransferAddItemRequest request) => await transferLineService.AddItem(HttpContext.GetSession().Warehouse, request);
+
     //
     // [HttpPost]
     // [ActionName("UpdateLine")]

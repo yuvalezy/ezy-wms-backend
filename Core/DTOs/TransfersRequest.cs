@@ -1,6 +1,6 @@
 ﻿using Core.Enums;
 
-namespace Core.Models;
+namespace Core.DTOs;
 
 public class TransfersRequest {
     public DateTime?        Date     { get; set; }

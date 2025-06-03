@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Core.DTOs;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
@@ -21,7 +22,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     }
 
     [HttpGet("HomeInfo")]
-    public async Task<ActionResult<HomeInfo>> GetHomeInfo() {
+    public async Task<ActionResult<HomeInfoResponse>> GetHomeInfo() {
         var response = await publicService.GetHomeInfoAsync(HttpContext.GetSession().Warehouse);
         return Ok(response);
     }
@@ -52,8 +53,8 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpPost("ItemCheck")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public async Task<ActionResult<IEnumerable<ItemCheckResponse>>> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
-        return Ok(await publicService.ItemCheckAsync(parameters.ItemCode, parameters.Barcode));
+    public async Task<ActionResult<IEnumerable<ItemCheckResponse>>> ItemCheck([FromBody] ItemBarCodeRequest request) {
+        return Ok(await publicService.ItemCheckAsync(request.ItemCode, request.Barcode));
     }
 
     [HttpGet("BinCheck")]
@@ -66,13 +67,13 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpPost("ItemStock")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeParameters parameters) {
-        if (string.IsNullOrWhiteSpace(parameters.ItemCode)) {
+    public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeRequest request) {
+        if (string.IsNullOrWhiteSpace(request.ItemCode)) {
             return BadRequest("Item code is required.");
         }
 
         string warehouse = HttpContext.GetSession().Warehouse;
-        return Ok(await publicService.ItemStockAsync(parameters.ItemCode, warehouse));
+        return Ok(await publicService.ItemStockAsync(request.ItemCode, warehouse));
     }
 
     [HttpPost("UpdateItemBarCode")]

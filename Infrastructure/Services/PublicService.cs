@@ -1,4 +1,5 @@
-﻿using Core.Enums;
+﻿using Core.DTOs;
+using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 
@@ -10,8 +11,8 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
         return warehouses;
     }
 
-    public async Task<HomeInfo> GetHomeInfoAsync(string warehouse) {
-        var homeInfo = new HomeInfo();
+    public async Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse) {
+        var homeInfo = new HomeInfoResponse();
 
         var response = await externalSystemAdapter.GetItemAndBinCount(warehouse);
         homeInfo.BinCheck  = response.binCount;

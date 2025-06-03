@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Core.DTOs;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.Auth;

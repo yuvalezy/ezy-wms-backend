@@ -15,4 +15,5 @@ public class SessionInfo {
     public          bool                  EnableBinLocations { get; set; }
     public required ICollection<RoleType> Roles              { get; set; }
     public          DateTime              ExpiresAt          { get; set; }
+    public          string                Token              { get; set; }
 }

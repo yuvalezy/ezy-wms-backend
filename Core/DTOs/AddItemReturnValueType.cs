@@ -1,33 +1,15 @@
-﻿// using System;
-//
-// namespace Service.API.General;
-//
-// public enum AddItemReturnValueType {
-//     Ok                                            = 0,
-//     ItemCodeNotFound                              = -1,
-//     ItemCodeBarCodeMismatch                       = -2,
-//     TransactionIDNotExists                        = -3,
-//     NotAdded                                      = -4,
-//     NotPurchaseItem                               = -5,
-//     ItemWasNotFoundInTransactionSpecificDocuments = -6,
-//     QuantityMoreThenReleased                      = -7,
-//     NotStockItem                                  = -8,
-//     ItemNotInWarehouse                            = -9,
-//     BinNotExists                                  = -10,
-//     BinNotInWarehouse                             = -11,
-//     BinMissing                                    = -12,
-//     QuantityMoreAvailable                         = -13,
-// }
-//
-//
-// public abstract class AddItemParameterBase {
-//     public int       ID       { get; set; }
-//     public string    ItemCode { get; set; }
-//     public string    BarCode  { get; set; }
-//     public int?      BinEntry { get; set; }
-//     public UnitType? Unit     { get; set; }
-// }
-//
+﻿using Core.Enums;
+
+namespace Core.DTOs;
+
+public abstract class AddItemRequestBase {
+    public int       ID       { get; set; }
+    public string    ItemCode { get; set; }
+    public string    BarCode  { get; set; }
+    public int?      BinEntry { get; set; }
+    public UnitType? Unit     { get; set; }
+}
+
 // public static class AddItemReturnValueTypeDescription {
 //     public static bool Value(this AddItemReturnValueType type, AddItemParameterBase parameter) {
 //         string itemCode = parameter.ItemCode;

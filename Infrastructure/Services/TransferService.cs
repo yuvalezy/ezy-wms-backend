@@ -1,4 +1,5 @@
-﻿using Core.Entities;
+﻿using Core.DTOs;
+using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
@@ -62,6 +63,10 @@ public class TransferService(SystemDbContext db) : ITransferService {
             query = query.Where(t => t.Id == new Guid(request.ID.Value.ToString()));
         }
 
+        if (request.Number is > 0) {
+            query = query.Where(t => t.Number == request.Number);
+        }
+
         // Include lines for progress calculation if requested
         if (request.Progress) {
             query = query.Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed));
@@ -70,44 +75,22 @@ public class TransferService(SystemDbContext db) : ITransferService {
         // Apply ordering
         switch (request.OrderBy) {
             case TransferOrderBy.Date:
-                query = request.Desc 
+                query = request.Desc
                     ? query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id)
                     : query.OrderBy(t => t.Date).ThenBy(t => t.Id);
                 break;
             case TransferOrderBy.ID:
             default:
-                query = request.Desc 
+                query = request.Desc
                     ? query.OrderByDescending(t => t.Id)
                     : query.OrderBy(t => t.Id);
                 break;
         }
 
-        // // Apply pagination if Number is specified
-        // if (request.Number.HasValue && request.Number.Value > 0) {
-        //     query = query.Take(request.Number.Value);
-        // }
 
         var transfers = await query.ToListAsync();
 
         return transfers.Select(transfer => GetTransferResponse(request.Progress, transfer)).ToList();
-    }
-
-    public async Task<TransferResponse> GetProcessInfo(Guid id) {
-        var transfer = await GetTransfer(id, true);
-        
-        bool hasIncompleteItems = await db.TransferLines
-            .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
-            .GroupBy(l => l.ItemCode)
-            .AnyAsync(g => g.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity) != 
-                           g.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity));
-    
-        bool hasItems = await db.TransferLines
-            .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
-    
-        var response = TransferResponse.FromTransfer(transfer);
-        response.IsComplete = !hasIncompleteItems && hasItems;
-        
-        return TransferResponse.FromTransfer(transfer);
     }
 
     private static TransferResponse GetTransferResponse(bool progress, Transfer transfer) {
@@ -128,4 +111,21 @@ public class TransferService(SystemDbContext db) : ITransferService {
         return response;
     }
 
+    public async Task<TransferResponse> GetProcessInfo(Guid id) {
+        var transfer = await GetTransfer(id, true);
+
+        bool hasIncompleteItems = await db.TransferLines
+            .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
+            .GroupBy(l => l.ItemCode)
+            .AnyAsync(g => g.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity) !=
+                           g.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity));
+
+        bool hasItems = await db.TransferLines
+            .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
+
+        var response = TransferResponse.FromTransfer(transfer);
+        response.IsComplete = !hasIncompleteItems && hasItems;
+
+        return TransferResponse.FromTransfer(transfer);
+    }
 }

@@ -1,6 +1,6 @@
 ﻿using Core.Entities;
 
-namespace Core.Models;
+namespace Core.DTOs;
 
 public class TransferResponse : Transfer {
     public int?  Progress   { get; set; }

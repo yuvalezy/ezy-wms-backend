@@ -1,4 +1,4 @@
-﻿namespace Core.Models;
+﻿namespace Core.DTOs;
 
 public class CreateTransferRequest {
     public string? Name     { get; set; }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Core;
+using Core.DTOs;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
