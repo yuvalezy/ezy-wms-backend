@@ -1,7 +1,6 @@
-﻿using Core.Entities;
-using Core.Enums;
+﻿using System.Linq.Expressions;
+using Core.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.DbContexts;
 
@@ -31,38 +30,42 @@ public class SystemDbContext : DbContext {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new AuthorizationGroupConfiguration());
+        modelBuilder.ApplyConfiguration(new GoodsReceiptConfiguration());
+        modelBuilder.ApplyConfiguration(new GoodsReceiptLineConfiguration());
+        modelBuilder.ApplyConfiguration(new GoodsReceiptTargetConfiguration());
+        modelBuilder.ApplyConfiguration(new GoodsReceiptDocumentConfiguration());
+        modelBuilder.ApplyConfiguration(new GoodsReceiptSourceConfiguration());
+        modelBuilder.ApplyConfiguration(new TransferConfiguration());
+        modelBuilder.ApplyConfiguration(new TransferLineConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
+        modelBuilder.ApplyConfiguration(new PickListConfiguration());
         
-        
-        // Apply database-specific configurations
-        if (Database.IsSqlServer()) {
-            SqlConfigurations.ConfigureForSqlServer(modelBuilder);
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
+            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) 
+                continue;
+            var entityBuilder = modelBuilder.Entity(entityType.ClrType);
+
+
+            if (Database.IsSqlServer()) {
+                entityBuilder
+                    .Property(nameof(BaseEntity.CreatedAt))
+                    .HasDefaultValueSql("GETUTCDATE()");
+            }
+
+            // Create query filter using reflection
+            var parameter  = Expression.Parameter(entityType.ClrType, "e");
+            var property   = Expression.Property(parameter, nameof(BaseEntity.Deleted));
+            var comparison = Expression.Equal(property, Expression.Constant(false));
+            var lambda     = Expression.Lambda(comparison, parameter);
+                    
+            entityBuilder.HasQueryFilter(lambda);
         }
+        
+        
         // Future: Add SAP HANA configuration
         // else if (Database.IsHana()) {
         //     ConfigureForHana(modelBuilder);
         // }
-    }
-}
-
-public class UserConfiguration: IEntityTypeConfiguration<User> {
-    public void Configure(EntityTypeBuilder<User> builder) {
-        builder
-            .HasOne<AuthorizationGroup>(v => v.AuthorizationGroup)
-            .WithMany()
-            .HasForeignKey(a => a.AuthorizationGroupId)
-            .OnDelete(DeleteBehavior.Restrict);
-    }
-}
-
-public class AuthorizationGroupConfiguration: IEntityTypeConfiguration<AuthorizationGroup> {
-    public void Configure(EntityTypeBuilder<AuthorizationGroup> builder) {
-        // Store the Authorization enum collection as a JSON string
-        builder.Property(e => e.Authorizations)
-            .HasConversion(
-                v => string.Join(',', v.Select(a => (int)a)),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                     .Select(s => (RoleType)int.Parse(s))
-                     .ToList()
-            );
     }
 }
