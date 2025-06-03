@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Core.Enums;
 using Service.API.General;
 
 namespace Service.API.GoodsReceipt.Models;

@@ -21,16 +21,13 @@ public class TransferController(ITransferService transferService) : ControllerBa
     [RequireRolePermission(RoleType.TransferSupervisor)]
     public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
 
-    // [HttpGet]
-    // [Route("ProcessInfo/{id:int}")]
-    // public API.Transfer.Models.Transfer ProcessInfo(int id) {
-    //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
-    //         throw new UnauthorizedAccessException("You don't have access for transfer completion check");
-    //     return Data.Transfer.ProcessInfo(id);
-    // }
-    //
-    // [HttpPost]
-    // [ActionName("AddItem")]
+    [HttpGet("processInfo/{id:guid}")]
+    [RequireRolePermission(RoleType.Transfer)]
+    public async Task<TransferResponse> ProcessInfo(Guid id) => await transferService.GetProcessInfo(id);
+
+    
+    // [HttpPost("addItem")]
+    // [RequireRolePermission(RoleType.Transfer)]
     // public AddItemResponse AddItem([FromBody] AddItemParameter parameters) {
     //     if (!Global.ValidateAuthorization(EmployeeID, Authorization.Transfer))
     //         throw new UnauthorizedAccessException("You don't have access for adding item to transfer");

@@ -91,6 +91,25 @@ public class TransferService(SystemDbContext db) : ITransferService {
 
         return transfers.Select(transfer => GetTransferResponse(request.Progress, transfer)).ToList();
     }
+
+    public async Task<TransferResponse> GetProcessInfo(Guid id) {
+        var transfer = await GetTransfer(id, true);
+        
+        bool hasIncompleteItems = await db.TransferLines
+            .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
+            .GroupBy(l => l.ItemCode)
+            .AnyAsync(g => g.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity) != 
+                           g.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity));
+    
+        bool hasItems = await db.TransferLines
+            .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
+    
+        var response = TransferResponse.FromTransfer(transfer);
+        response.IsComplete = !hasIncompleteItems && hasItems;
+        
+        return TransferResponse.FromTransfer(transfer);
+    }
+
     private static TransferResponse GetTransferResponse(bool progress, Transfer transfer) {
         var response = TransferResponse.FromTransfer(transfer);
 

@@ -14,6 +14,5 @@ public class SessionInfo {
     public required string                Warehouse          { get; set; }
     public          bool                  EnableBinLocations { get; set; }
     public required ICollection<RoleType> Roles              { get; set; }
-    public required string                Token              { get; set; }
     public          DateTime              ExpiresAt          { get; set; }
 }

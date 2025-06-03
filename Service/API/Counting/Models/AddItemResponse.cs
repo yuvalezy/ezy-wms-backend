@@ -1,4 +1,5 @@
-﻿using Service.API.General;
+﻿using Core.Enums;
+using Service.API.General;
 
 namespace Service.API.Counting.Models;
 
