@@ -71,10 +71,11 @@ public static class SessionManagerExtensions {
         return info;
     }
 
+    [Obsolete("Use RequireAnyRoleAttribute instead for declarative authorization")]
     public static void HasAnyRole(this HttpContext httpContext, params RoleType[] roles) {
         var sessionInfo = httpContext.SessionInfo();
         if (roles.Any(v => sessionInfo.SuperUser || sessionInfo.Roles.Contains(v)))
             return;
-        throw new UnauthorizedAccessException("You don't have access for vendors list");
+        throw new UnauthorizedAccessException("You don't have access to this resource");
     }
 }

@@ -60,6 +60,8 @@ services.AddAuthorization(options => {
 
 services.AddSingleton<IAuthorizationHandler, RolePermissionHandler>();
 services.AddSingleton<IAuthorizationHandler, SuperUserHandler>();
+services.AddSingleton<IAuthorizationHandler, AnyRoleHandler>();
+services.AddSingleton<IAuthorizationPolicyProvider, AnyRolePolicyProvider>();
 
 //dependency injection here
 services.ConfigureServices(settings, builder.Configuration);

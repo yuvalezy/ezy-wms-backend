@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 using Core.Enums;
 using Core.Interfaces;
@@ -8,8 +6,6 @@ using Core.Models;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Service.API.General.Models;
-using Service.API.Models;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -36,41 +32,41 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     }
 
     [HttpGet("Vendors")]
+    [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor, RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public ActionResult<IEnumerable<ExternalValue>> GetVendors() {
-        HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor, RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
         return Ok(publicService.GetVendorsAsync());
     }
 
     [HttpGet("ScanBinLocation")]
+    [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.Counting)]
     public async Task<ActionResult<BinLocation?>> ScanBinLocation([FromQuery] string bin) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.Counting);
         return await publicService.ScanBinLocationAsync(bin);
     }
 
     [HttpGet("ItemByBarCode")]
+    [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest)]
     public async Task<ActionResult<IEnumerable<Item>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest);
         return Ok(await publicService.ScanItemBarCodeAsync(scanCode, item));
     }
 
     [HttpPost("ItemCheck")]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<ActionResult<IEnumerable<ItemCheckResponse>>> ItemCheck([FromBody] ItemBarCodeParameters parameters) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
-            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
         return Ok(await publicService.ItemCheckAsync(parameters.ItemCode, parameters.Barcode));
     }
 
     [HttpGet("BinCheck")]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<ActionResult<IEnumerable<BinContent>>> BinCheck([FromQuery] int binEntry) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
-            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
         return Ok(await publicService.BinCheckAsync(binEntry));
     }
 
     [HttpPost("ItemStock")]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeParameters parameters) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
-            RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor);
         if (string.IsNullOrWhiteSpace(parameters.ItemCode)) {
             return BadRequest("Item code is required.");
         }
@@ -80,9 +76,9 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     }
 
     [HttpPost("UpdateItemBarCode")]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
+        RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode([FromBody] UpdateBarCodeRequest request) {
-        HttpContext.HasAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
-            RoleType.GoodsReceiptConfirmationSupervisor);
         return await publicService.UpdateItemBarCode(HttpContext.SessionInfo().UserId, request);
     }
 }
