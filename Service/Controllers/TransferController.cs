@@ -17,8 +17,7 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class TransferController(ITransferService transferService) : ControllerBase {
-    [HttpPost]
-    [ActionName("create")]
+    [HttpPost("create")]
     [RequireRolePermission(RoleType.TransferSupervisor)]
     public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
 

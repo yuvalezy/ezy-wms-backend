@@ -31,6 +31,8 @@ public class TransferService(SystemDbContext db) : ITransferService {
             query = query.Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed));
         }
 
+        query = query.Include(t => t.CreatedByUser);
+
         var transfer = await query.FirstOrDefaultAsync(t => t.Id == id);
         if (transfer == null) {
             throw new KeyNotFoundException($"Transfer with ID {id} not found.");
@@ -41,6 +43,7 @@ public class TransferService(SystemDbContext db) : ITransferService {
 
     public async Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest request, string warehouse) {
         var query = db.Transfers
+            .Include(t => t.CreatedByUser)
             .Where(t => t.WhsCode == warehouse)
             .AsQueryable();
 
