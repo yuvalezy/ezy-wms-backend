@@ -230,14 +230,9 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         var transferData = new Dictionary<string, TransferCreationData>();
 
         foreach (var itemGroup in lines) {
-            var data = new TransferCreationData {
-                ItemCode = itemGroup.ItemCode,
-                Quantity = itemGroup.Lines.Sum(l => l.Quantity)
-            };
-
             // Group source bins
             var sourceBins = itemGroup.Lines
-                .Where(l => l.Type == SourceTarget.Source && l.BinEntry.HasValue)
+                .Where(l => l is { Type: SourceTarget.Source, BinEntry: not null })
                 .GroupBy(l => l.BinEntry.Value)
                 .Select(g => new TransferCreationBin {
                     BinEntry = g.Key,
@@ -247,7 +242,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
 
             // Group target bins
             var targetBins = itemGroup.Lines
-                .Where(l => l.Type == SourceTarget.Target && l.BinEntry.HasValue)
+                .Where(l => l is { Type: SourceTarget.Target, BinEntry: not null })
                 .GroupBy(l => l.BinEntry.Value)
                 .Select(g => new TransferCreationBin {
                     BinEntry = g.Key,
@@ -255,8 +250,20 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                 })
                 .ToList();
 
-            data.SourceBins = sourceBins;
-            data.TargetBins = targetBins;
+            // Calculate the transfer quantity - should be the source quantity (what we're transferring)
+            decimal sourceQuantity = sourceBins.Sum(s => s.Quantity);
+            decimal targetQuantity = targetBins.Sum(t => t.Quantity);
+            
+            // Use the maximum of source or target as the line quantity
+            // In a proper transfer, these should be equal
+            decimal transferQuantity = Math.Max(sourceQuantity, targetQuantity);
+
+            var data = new TransferCreationData {
+                ItemCode = itemGroup.ItemCode,
+                Quantity = transferQuantity,
+                SourceBins = sourceBins,
+                TargetBins = targetBins
+            };
 
             transferData[itemGroup.ItemCode] = data;
         }
