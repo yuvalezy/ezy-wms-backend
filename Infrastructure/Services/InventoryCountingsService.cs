@@ -387,6 +387,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         int     varianceLines     = 0;
         decimal totalSystemValue  = 0m;
         decimal totalCountedValue = 0m;
+        var     reportLines       = new List<InventoryCountingReportLine>();
 
         // Group lines by ItemCode and BinEntry to calculate variances
         var groupedLines = lines
@@ -396,31 +397,52 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         foreach (var group in groupedLines) {
             int totalCountedQuantity = group.Sum(l => l.Quantity);
             int systemQuantity       = 0;
+            string itemName = "";
+            string binCode = "";
+            ItemCheckResponse? item = null;
 
             try {
+                // Get item information
+                var itemInfo = await adapter.ItemCheckAsync(group.Key.ItemCode, null);
+                item = itemInfo.FirstOrDefault();
+                itemName = item?.ItemName ?? "";
+
                 // Get system quantity from SAP B1 using external adapter
                 if (group.Key.BinEntry.HasValue) {
                     var binContents = await adapter.BinCheckAsync(group.Key.BinEntry.Value);
                     var binContent  = binContents.FirstOrDefault(bc => bc.ItemCode == group.Key.ItemCode);
-                    systemQuantity = 0;
-                    if (binContent != null) {
-                        systemQuantity = (int)binContent.OnHand;
-                    }
+                    systemQuantity = binContent != null ? (int)binContent.OnHand : 0;
+                    binCode        = group.Key.BinEntry.Value.ToString(); // Could be enhanced to get actual bin code
                 }
                 else {
                     // Get stock from warehouse if no specific bin
                     var stocks = await adapter.ItemStockAsync(group.Key.ItemCode, counting.WhsCode);
                     systemQuantity = stocks.Sum(s => s.Quantity);
+                    binCode = "No Bin";
                 }
             }
             catch {
                 // If external adapter fails, continue with zero system quantity
+                itemName = group.Key.ItemCode; // Use item code as fallback
+                binCode = group.Key.BinEntry?.ToString() ?? "No Bin";
             }
 
             int variance = totalCountedQuantity - systemQuantity;
             if (variance != 0) {
                 varianceLines++;
             }
+
+            // Add report line
+            reportLines.Add(new InventoryCountingReportLine {
+                ItemCode   = group.Key.ItemCode,
+                ItemName   = itemName,
+                BinCode    = binCode,
+                Quantity   = totalCountedQuantity,
+                BuyUnitMsr = item?.BuyUnitMsr,
+                NumInBuy   = item?.NumInBuy ?? 1,
+                PurPackMsr = item?.PurPackMsr,
+                PurPackUn  = item?.PurPackUn ?? 1
+            });
 
             // Note: For value calculations, we would need price information from SAP B1
             // For now, we'll leave values as 0 since price retrieval would require additional adapter calls
@@ -429,7 +451,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         return new InventoryCountingSummaryResponse {
             CountingId         = counting.Id,
             Number             = counting.Number,
-            Name               = counting.Name ?? string.Empty,
+            Name               = counting.Name,
             Date               = counting.Date,
             WhsCode            = counting.WhsCode,
             TotalLines         = totalLines,
@@ -437,7 +459,8 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             VarianceLines      = varianceLines,
             TotalSystemValue   = totalSystemValue,
             TotalCountedValue  = totalCountedValue,
-            TotalVarianceValue = totalSystemValue - totalCountedValue
+            TotalVarianceValue = totalSystemValue - totalCountedValue,
+            Lines              = reportLines
         };
     }
 }
