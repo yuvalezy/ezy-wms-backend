@@ -20,4 +20,13 @@ public interface IExternalSystemAdapter {
     Task<UpdateItemBarCodeResponse>      UpdateItemBarCode(UpdateBarCodeRequest request);
     Task<ValidateAddItemResult>          GetItemValidationInfo(string           itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
     Task<ProcessTransferResponse>        ProcessTransfer(Guid                   transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data);
+    
+    // Picking methods
+    Task<IEnumerable<PickingDocument>>         GetPickLists(Dictionary<string, object>              parameters, string whereClause);
+    Task<IEnumerable<PickingDetail>>           GetPickingDetails(Dictionary<string, object>         parameters);
+    Task<IEnumerable<PickingDetailItem>>       GetPickingDetailItems(Dictionary<string, object>     parameters);
+    Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
+    Task<PickingValidationResult>              ValidatePickingAddItem(PickListAddItemRequest        request, Guid userId);
+    Task                                       AddPickingItem(PickListAddItemRequest                request, Guid employeeId, int pickEntry);
+    Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse);
 }

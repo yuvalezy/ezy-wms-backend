@@ -5,7 +5,7 @@ using Core.Models;
 
 namespace Adapters.Windows.SBO;
 
-public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository)
+public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository, SboPickingRepository pickingRepository)
     : IExternalSystemAdapter {
     public async Task<ExternalValue?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
     public async Task<IEnumerable<ExternalValue>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
@@ -28,5 +28,33 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
         var response = generalRepository.ProcessTransfer(transferId, whsCode, comments, data);
         return Task.FromResult(response);
+    }
+
+    public async Task<IEnumerable<PickingDocument>> GetPickLists(Dictionary<string, object> parameters, string whereClause) {
+        return await pickingRepository.GetPickLists(parameters, whereClause);
+    }
+
+    public async Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) {
+        return await pickingRepository.GetPickingDetails(parameters);
+    }
+
+    public async Task<IEnumerable<PickingDetailItem>> GetPickingDetailItems(Dictionary<string, object> parameters) {
+        return await pickingRepository.GetPickingDetailItems(parameters);
+    }
+
+    public async Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {
+        return await pickingRepository.GetPickingDetailItemsBins(parameters);
+    }
+
+    public async Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+        return await pickingRepository.ValidatePickingAddItem(request, userId);
+    }
+
+    public async Task AddPickingItem(PickListAddItemRequest request, Guid employeeId, int pickEntry) {
+        await pickingRepository.AddPickingItem(request, employeeId, pickEntry);
+    }
+
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
+        return await pickingRepository.ProcessPickList(absEntry, warehouse);
     }
 }

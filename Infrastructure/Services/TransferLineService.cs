@@ -20,7 +20,6 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                 throw new KeyNotFoundException($"Transfer with ID {request.ID} not found.");
             }
 
-
             int quantity = request.Quantity;
             if (request.Unit != UnitType.Unit) {
                 var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
@@ -46,11 +45,13 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                 LineStatus      = LineStatus.Open
             };
 
-            transfer.Lines.Add(line);
+            db.TransferLines.Add(line);
+            
             if (transfer.Status == ObjectStatus.Open)
                 transfer.Status = ObjectStatus.InProgress;
 
             db.Update(transfer);
+            await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return new TransferAddItemResponse { LineID = line.Id };

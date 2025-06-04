@@ -1,5 +1,6 @@
 ﻿using Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.DbContexts;
@@ -8,7 +9,9 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
     public void Configure(EntityTypeBuilder<Transfer> builder) {
         // Configure auto-incrementing Number property
         builder.Property(e => e.Number)
-            .UseIdentityColumn();
+            .UseIdentityColumn()
+            .ValueGeneratedOnAdd()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
         // Configure Lines relationship with cascade delete
         builder

@@ -7,5 +7,8 @@ public class BinLocation {
 
 
 public class BinLocationQuantity : BinLocation {
-    public int Quantity { get; set; }
+    public int    Quantity { get; set; }
+}
+public class ItemBinLocationQuantity : BinLocationQuantity {
+    public string ItemCode { get; set; } = string.Empty;
 }
