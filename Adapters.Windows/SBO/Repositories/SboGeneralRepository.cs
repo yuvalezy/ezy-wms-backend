@@ -8,6 +8,8 @@ using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
+using SAPbobsCOM;
+using BinLocation = Core.Models.BinLocation;
 
 namespace Adapters.Windows.SBO.Repositories;
 
@@ -112,13 +114,33 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             OnHand     = Convert.ToInt32(reader[2]),
             NumInBuy   = Convert.ToInt32(reader[3]),
             BuyUnitMsr = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-            PurPackUn   = Convert.ToInt32(reader[5]),
+            PurPackUn  = Convert.ToInt32(reader[5]),
             PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6)
         });
     }
 
-    public ProcessTransferResponse ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
-        using var transferCreation = new TransferCreation(dbService, sboCompany, transferId, whsCode, comments, data);
+    private async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
+
+    private async Task<int> GetSeries(string objectCode) {
+        const string query =
+            """
+            select top 1 T1."Series"
+            from OFPR T0
+                     inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
+            where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
+            and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
+            """;
+        var parameters = new[] {
+            new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
+            new SqlParameter("@Date", SqlDbType.DateTime){Value = DateTime.UtcNow}
+        };
+        return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
+    }
+
+
+    public async Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+        int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
+        using var transferCreation = new TransferCreation(dbService, sboCompany, transferId, whsCode, comments, series, data);
         return transferCreation.Execute();
         //todo send alert to sap
 //     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
@@ -138,4 +160,5 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 //         }
 //     }
     }
+
 }

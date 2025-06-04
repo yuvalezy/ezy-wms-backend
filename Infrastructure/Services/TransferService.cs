@@ -139,8 +139,8 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
 
         // Update transfer status
-        transfer.Status = ObjectStatus.Cancelled;
-        transfer.UpdatedAt = DateTime.UtcNow;
+        transfer.Status          = ObjectStatus.Cancelled;
+        transfer.UpdatedAt       = DateTime.UtcNow;
         transfer.UpdatedByUserId = sessionInfo.Guid;
 
         // Update all open lines to cancelled
@@ -149,8 +149,8 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             .ToListAsync();
 
         foreach (var line in openLines) {
-            line.LineStatus = LineStatus.Closed;
-            line.UpdatedAt = DateTime.UtcNow;
+            line.LineStatus      = LineStatus.Closed;
+            line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = sessionInfo.Guid;
         }
 
@@ -159,35 +159,36 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
     }
 
     public async Task<ProcessTransferResponse> ProcessTransfer(Guid id, SessionInfo sessionInfo) {
-        var transfer = await db.Transfers
-            .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
-            .FirstOrDefaultAsync(t => t.Id == id);
-
-        if (transfer == null) {
-            throw new KeyNotFoundException($"Transfer with ID {id} not found.");
-        }
-
-        if (transfer.Status != ObjectStatus.InProgress) {
-            throw new InvalidOperationException("Cannot process transfer if the Status is not In Progress");
-        }
-
-        // Update transfer status to Processing
-        transfer.Status = ObjectStatus.Processing;
-        transfer.UpdatedAt = DateTime.UtcNow;
-        transfer.UpdatedByUserId = sessionInfo.Guid;
-        await db.SaveChangesAsync();
-
+        var transaction = await db.Database.BeginTransactionAsync();
         try {
+            var transfer = await db.Transfers
+                .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (transfer == null) {
+                throw new KeyNotFoundException($"Transfer with ID {id} not found.");
+            }
+
+            if (transfer.Status != ObjectStatus.InProgress) {
+                throw new InvalidOperationException("Cannot process transfer if the Status is not In Progress");
+            }
+
+            // Update transfer status to Processing
+            transfer.Status          = ObjectStatus.Processing;
+            transfer.UpdatedAt       = DateTime.UtcNow;
+            transfer.UpdatedByUserId = sessionInfo.Guid;
+            await db.SaveChangesAsync();
+
             // Prepare data for SAP B1 transfer creation
             var transferData = await PrepareTransferData(id);
-            
+
             // Call external system to create the transfer in SAP B1
             var result = await adapter.ProcessTransfer(id, transfer.WhsCode, transfer.Comments, transferData);
 
             if (result.Success) {
                 // Update transfer status to Finished
-                transfer.Status = ObjectStatus.Finished;
-                transfer.UpdatedAt = DateTime.UtcNow;
+                transfer.Status          = ObjectStatus.Finished;
+                transfer.UpdatedAt       = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
 
                 // Update all open lines to Finished
@@ -196,31 +197,29 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                     .ToListAsync();
 
                 foreach (var line in openLines) {
-                    line.LineStatus = LineStatus.Finished;
-                    line.UpdatedAt = DateTime.UtcNow;
+                    line.LineStatus      = LineStatus.Finished;
+                    line.UpdatedAt       = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
 
                 await db.SaveChangesAsync();
-            } else {
+            }
+            else {
                 // Rollback to InProgress if SAP B1 creation failed
-                transfer.Status = ObjectStatus.InProgress;
+                transfer.Status    = ObjectStatus.InProgress;
                 transfer.UpdatedAt = DateTime.UtcNow;
                 await db.SaveChangesAsync();
             }
 
+            await transaction.CommitAsync();
             return result;
         }
         catch (Exception ex) {
-            // Rollback to InProgress on any error
-            transfer.Status = ObjectStatus.InProgress;
-            transfer.UpdatedAt = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-            
+            await transaction.RollbackAsync();
             return new ProcessTransferResponse {
-                Success = false,
+                Success      = false,
                 ErrorMessage = $"Error processing transfer: {ex.Message}",
-                Status = ResponseStatus.Error
+                Status       = ResponseStatus.Error
             };
         }
     }
@@ -231,7 +230,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             .GroupBy(tl => tl.ItemCode)
             .Select(g => new {
                 ItemCode = g.Key,
-                Lines = g.ToList()
+                Lines    = g.ToList()
             })
             .ToListAsync();
 
@@ -295,7 +294,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             .GroupBy(tl => tl.ItemCode)
             .Select(g => new {
                 ItemCode = g.Key,
-                Lines = g.ToList()
+                Lines    = g.ToList()
             })
             .ToList();
 
@@ -303,34 +302,34 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
 
         foreach (var group in groupedLines) {
             var firstLine = group.Lines.First();
-            
+
             // Get item information from external adapter
             var itemInfo = await adapter.ItemCheckAsync(group.ItemCode, null);
-            var item = itemInfo.FirstOrDefault();
+            var item     = itemInfo.FirstOrDefault();
 
             var content = new TransferContentResponse {
-                Code = group.ItemCode,
-                Name = item?.ItemName ?? "",
-                Quantity = group.Lines.Sum(l => l.Quantity),
-                NumInBuy = item?.NumInBuy ?? 1,
+                Code       = group.ItemCode,
+                Name       = item?.ItemName ?? "",
+                Quantity   = group.Lines.Sum(l => l.Quantity),
+                NumInBuy   = item?.NumInBuy ?? 1,
                 BuyUnitMsr = item?.BuyUnitMsr ?? "",
-                PurPackUn = item?.PurPackUn ?? 1,
+                PurPackUn  = item?.PurPackUn ?? 1,
                 PurPackMsr = item?.PurPackMsr ?? "",
-                Unit = firstLine.UnitType
+                Unit       = firstLine.UnitType
             };
 
             if (request.Type == SourceTarget.Target) {
                 // Calculate progress and open quantity for target
                 var allItemLines = await db.TransferLines
-                    .Where(tl => tl.TransferId == request.ID && 
-                                tl.ItemCode == group.ItemCode && 
-                                tl.LineStatus != LineStatus.Closed)
+                    .Where(tl => tl.TransferId == request.ID &&
+                                 tl.ItemCode == group.ItemCode &&
+                                 tl.LineStatus != LineStatus.Closed)
                     .ToListAsync();
 
                 var sourceQuantity = allItemLines.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity);
                 var targetQuantity = allItemLines.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity);
 
-                content.Progress = sourceQuantity > 0 ? (targetQuantity * 100) / sourceQuantity : 0;
+                content.Progress     = sourceQuantity > 0 ? (targetQuantity * 100) / sourceQuantity : 0;
                 content.OpenQuantity = sourceQuantity - targetQuantity;
 
                 if (request.TargetBinQuantity && request.BinEntry.HasValue) {
@@ -353,10 +352,10 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
 
     private async Task AddBinInformation(List<TransferContentResponse> contents, Guid transferId) {
         var binData = await db.TransferLines
-            .Where(tl => tl.TransferId == transferId && 
-                        tl.Type == SourceTarget.Target && 
-                        tl.LineStatus != LineStatus.Closed &&
-                        tl.BinEntry.HasValue)
+            .Where(tl => tl.TransferId == transferId &&
+                         tl.Type == SourceTarget.Target &&
+                         tl.LineStatus != LineStatus.Closed &&
+                         tl.BinEntry.HasValue)
             .GroupBy(tl => new { tl.ItemCode, tl.BinEntry })
             .Select(g => new {
                 ItemCode = g.Key.ItemCode,
@@ -372,15 +371,15 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             return new { BinEntry = binEntry, BinCode = binContents.FirstOrDefault()?.ItemCode ?? binEntry.ToString() };
         });
 
-        var binInfos = await Task.WhenAll(binInfoTasks);
+        var binInfos      = await Task.WhenAll(binInfoTasks);
         var binCodeLookup = binInfos.ToDictionary(b => b.BinEntry, b => b.BinCode);
 
         foreach (var content in contents) {
             var itemBins = binData.Where(b => b.ItemCode == content.Code).ToList();
             if (itemBins.Any()) {
                 content.Bins = itemBins.Select(b => new TransferContentBin {
-                    Entry = b.BinEntry,
-                    Code = binCodeLookup.GetValueOrDefault(b.BinEntry, b.BinEntry.ToString()),
+                    Entry    = b.BinEntry,
+                    Code     = binCodeLookup.GetValueOrDefault(b.BinEntry, b.BinEntry.ToString()),
                     Quantity = b.Quantity
                 }).ToList();
             }
@@ -390,10 +389,10 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
     public async Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest request) {
         var query = db.TransferLines
             .Include(tl => tl.CreatedByUser)
-            .Where(tl => tl.TransferId == request.ID && 
-                        tl.ItemCode == request.ItemCode &&
-                        tl.Type == SourceTarget.Target &&
-                        tl.LineStatus != LineStatus.Closed);
+            .Where(tl => tl.TransferId == request.ID &&
+                         tl.ItemCode == request.ItemCode &&
+                         tl.Type == SourceTarget.Target &&
+                         tl.LineStatus != LineStatus.Closed);
 
         if (request.BinEntry.HasValue) {
             query = query.Where(tl => tl.BinEntry == request.BinEntry.Value);
@@ -404,10 +403,10 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             .ToListAsync();
 
         return lines.Select(line => new TransferContentTargetDetailResponse {
-            LineID = line.Id,
+            LineID        = line.Id,
             CreatedByName = line.CreatedByUser?.FullName ?? "Unknown",
-            TimeStamp = line.Date,
-            Quantity = line.Quantity
+            TimeStamp     = line.Date,
+            Quantity      = line.Quantity
         });
     }
 
@@ -425,15 +424,15 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
 
                     // Use existing UpdateLine validation logic
                     var updateRequest = new UpdateLineRequest {
-                        ID = request.ID,
-                        LineID = change.Key,
+                        ID       = request.ID,
+                        LineID   = change.Key,
                         Quantity = change.Value
                     };
 
                     // Note: This would ideally reuse the existing UpdateLine validation
                     // For now, we'll do basic validation
-                    line.Quantity = change.Value;
-                    line.UpdatedAt = DateTime.UtcNow;
+                    line.Quantity        = change.Value;
+                    line.UpdatedAt       = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
             }
@@ -447,8 +446,8 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                     // Validate line belongs to transfer and is not already closed
                     if (line.TransferId != request.ID || line.LineStatus == LineStatus.Closed) continue;
 
-                    line.LineStatus = LineStatus.Closed;
-                    line.UpdatedAt = DateTime.UtcNow;
+                    line.LineStatus      = LineStatus.Closed;
+                    line.UpdatedAt       = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
             }
@@ -467,13 +466,13 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         // For now, we'll create a basic transfer based on the content
         try {
             var transfer = new Transfer {
-                Name = $"Transfer Request {DateTime.UtcNow:yyyyMMdd-HHmmss}",
+                Name            = $"Transfer Request {DateTime.UtcNow:yyyyMMdd-HHmmss}",
                 CreatedByUserId = sessionInfo.Guid,
-                Comments = "Created from transfer request",
-                Date = DateTime.UtcNow.Date,
-                Status = ObjectStatus.Open,
-                WhsCode = sessionInfo.Warehouse,
-                Lines = new List<TransferLine>()
+                Comments        = "Created from transfer request",
+                Date            = DateTime.UtcNow.Date,
+                Status          = ObjectStatus.Open,
+                WhsCode         = sessionInfo.Warehouse,
+                Lines           = new List<TransferLine>()
             };
 
             // Add lines based on content
@@ -489,7 +488,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                     CreatedByUserId = sessionInfo.Guid,
                     LineStatus      = LineStatus.Open,
                 };
-                
+
                 transfer.Lines.Add(line);
             }
 
@@ -497,13 +496,13 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             await db.SaveChangesAsync();
 
             return new CreateTransferRequestResponse {
-                Number = transfer.Number,
+                Number  = transfer.Number,
                 Success = true
             };
         }
         catch (Exception ex) {
             return new CreateTransferRequestResponse {
-                Success = false,
+                Success      = false,
                 ErrorMessage = ex.Message
             };
         }

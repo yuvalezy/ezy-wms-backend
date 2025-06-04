@@ -105,4 +105,10 @@
     <data name="PickEntryRequiredParameter" xml:space="preserve">
         <value>PickEntry is a required parameter</value>
     </data>
+    <data name="TargetQuantityExceedsSourceQuantity" xml:space="preserve">
+        <value>Target quantity ({0}) exceeds available source quantity ({1}) for item {2}</value>
+    </data>
+    <data name="TargetQuantityExceedsSourceQuantityForBin" xml:space="preserve">
+        <value>Target quantity ({0}) for bin {1} exceeds available source quantity ({2}) for item {3}</value>
+    </data>
 </root>

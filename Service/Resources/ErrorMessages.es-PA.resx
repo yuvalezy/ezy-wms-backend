@@ -69,4 +69,10 @@
     <data name="PickEntryRequiredParameter" xml:space="preserve">
         <value>El parametero "PickEntry" es obligatorio</value>
     </data>
+    <data name="TargetQuantityExceedsSourceQuantity" xml:space="preserve">
+        <value>La cantidad destino ({0}) excede la cantidad fuente disponible ({1}) para el artículo {2}</value>
+    </data>
+    <data name="TargetQuantityExceedsSourceQuantityForBin" xml:space="preserve">
+        <value>La cantidad destino ({0}) para la ubicación {1} excede la cantidad fuente disponible ({2}) para el artículo {3}</value>
+    </data>
 </root>

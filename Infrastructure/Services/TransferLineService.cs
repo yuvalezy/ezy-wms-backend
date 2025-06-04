@@ -316,7 +316,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                     }
                 }
             }
-            
+
             // Validate quantity availability for source lines
             if (line is { Type: SourceTarget.Source, BinEntry: not null }) {
                 var validationResult = await adapter.GetItemValidationInfo(line.ItemCode, line.BarCode, info.Warehouse, line.BinEntry, info.EnableBinLocations);
@@ -337,6 +337,34 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                     response.ErrorMessage = "Quantity more than available in bin";
                     return response;
                 }
+            }
+
+            if (line.Type == SourceTarget.Target) {
+                // Validate that the source has enough quantity to support this target quantity
+                var allItemLines = await db.TransferLines
+                    .Where(tl => tl.TransferId == request.ID &&
+                                 tl.ItemCode == line.ItemCode &&
+                                 tl.LineStatus != LineStatus.Closed)
+                    .ToListAsync();
+                
+                // Calculate total source quantity for this item
+                int totalSourceQuantity = allItemLines
+                    .Where(l => l.Type == SourceTarget.Source)
+                    .Sum(l => l.Quantity);
+                
+                // Calculate total target quantity excluding current line being updated
+                int otherTargetQuantity = allItemLines
+                    .Where(l => l.Type == SourceTarget.Target && l.Id != line.Id)
+                    .Sum(l => l.Quantity);
+                
+                // Check if new target quantity would exceed available source quantity
+                int totalTargetWithNewQuantity = otherTargetQuantity + newQuantity;
+                if (totalTargetWithNewQuantity > totalSourceQuantity) {
+                    response.ReturnValue = UpdateLineReturnValue.QuantityMoreThenAvailable;
+                    // response.ErrorMessage = $"Target quantity ({totalTargetWithNewQuantity}) exceeds available source quantity ({totalSourceQuantity}) for item {line.ItemCode}";
+                    return response;
+                }
+                
             }
             
             // Update the quantity

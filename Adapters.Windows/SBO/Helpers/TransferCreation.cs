@@ -7,7 +7,7 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompany, Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data)
+public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompany, Guid transferId, string whsCode, string? comments, int series, Dictionary<string, TransferCreationData> data)
     : IDisposable {
 
     private StockTransfer? transfer;
@@ -26,11 +26,8 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
                     sboCompany.ConnectCompany();
                     company = sboCompany.Company!;
                     company.StartTransaction();
-
-                    // Get transfer series (using default series for now)
-                    int transferSeries = GetDefaultSeries();
                     
-                    CreateTransfer(transferSeries);
+                    CreateTransfer();
 
                     if (company.InTransaction)
                         company.EndTransaction(BoWfTransOpt.wf_Commit);
@@ -46,21 +43,23 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
             }
         }
         catch (Exception ex) {
+            string? errorMessage = company?.GetLastErrorDescription();
             company?.EndTransaction(BoWfTransOpt.wf_RollBack);
-            response.Success = false;
-            response.ErrorMessage = $"Error generating Stock Transfer: {ex.Message}";
-            response.Status = ResponseStatus.Error;
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                throw new Exception(errorMessage, ex);
+            throw;
         }
 
         return response;
     }
 
-    private void CreateTransfer(int transferSeries) {
+    private void CreateTransfer() {
         var company = sboCompany.Company!;
         transfer = (StockTransfer)company.GetBusinessObject(BoObjectTypes.oStockTransfer);
         
         transfer.DocDate = DateTime.Now;
-        transfer.Series = transferSeries;
+        transfer.Series = series;
+        throw new Exception("test");
         
         if (!string.IsNullOrWhiteSpace(comments))
             transfer.Comments = comments;
@@ -108,12 +107,6 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
         rs = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
         rs.DoQuery($"select \"DocNum\" from OWTR where \"DocEntry\" = {Entry}");
         Number = (int)rs.Fields.Item(0).Value;
-    }
-
-    private int GetDefaultSeries() {
-        // For now, return -1 to use default series
-        // In a full implementation, you would query the series from SAP B1
-        return -1;
     }
 
     public void Dispose() {
