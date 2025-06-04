@@ -21,30 +21,26 @@ public class CountingCreation(
     Dictionary<string, InventoryCountingCreationData> data,
     ILoggerFactory                                    loggerFactory)
     : IDisposable {
-    private CompanyService            companyService;
-    private InventoryCountingsService service;
-    private InventoryCounting         counting;
-    private Recordset                 rs;
-    private readonly ILogger<CountingCreation> tracer = new Logger<CountingCreation>(loggerFactory) ;
+    private          CompanyService?            companyService;
+    private          InventoryCountingsService? service;
+    private          InventoryCounting?         counting;
+    private          Recordset?                 rs;
+    private readonly ILogger<CountingCreation>  tracer = new Logger<CountingCreation>(loggerFactory) ;
 
     public (int Entry, int Number) NewEntry { get; private set; }
 
     public ProcessInventoryCountingResponse Execute() {
         try {
             tracer?.Write("Wait Mutex");
-            if (!Global.TransactionMutex.WaitOne())
-                return;
+            sboCompany.TransactionMutex.WaitOne();
             try {
-                tracer?.Write("Loading Data");
-                LoadData();
-                tracer?.Write("Getting Document Series");
-                int docSeries = GeneralData.GetSeries(ObjectTypes.oInventoryCounting);
                 tracer?.Write("Checking Company Connection");
-                Global.ConnectCompany();
+                sboCompany.ConnectCompany();
+                company.StartTransaction();
                 tracer?.Write("Begin Transaction");
                 ConnectionController.BeginTransaction();
                 tracer?.Write("Creating Counting Object");
-                CreateCounting(docSeries);
+                CreateCounting(series);
                 tracer?.Write("Commiting");
                 ConnectionController.Commit();
             }
@@ -89,23 +85,6 @@ public class CountingCreation(
         var @params = service.Add(counting);
         NewEntry = (@params.DocumentEntry, @params.DocumentNumber);
     }
-
-    private void LoadData() {
-        const string query = """select "U_WhsCode" "WhsCode" from "@LW_YUVAL08_OINC" where "Code" = @ID""";
-        using var    conn  = Global.Connector;
-        whsCode = conn.GetValue<string>(query, new Parameter("@ID", SqlDbType.Int, id));
-        using var dt = conn.GetDataTable(CountingData.GetQuery("ProcessCountingLines"), [
-            new Parameter("@ID", SqlDbType.Int, id),
-            new Parameter("@WhsCode", SqlDbType.NVarChar, 8, whsCode),
-        ]);
-        data = dt.Rows.Cast<DataRow>()
-            .Select(dr => new CountingContent {
-                Code     = (string)dr["ItemCode"],
-                Quantity = Convert.ToInt32(dr["Quantity"]),
-                BinEntry = dr["BinEntry"] != DBNull.Value ? (int)dr["BinEntry"] : null
-            });
-    }
-
 
     public void Dispose() {
         if (counting != null) {

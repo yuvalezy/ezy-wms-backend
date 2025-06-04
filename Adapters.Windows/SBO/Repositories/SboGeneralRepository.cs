@@ -9,12 +9,13 @@ using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using SAPbobsCOM;
 using BinLocation = Core.Models.BinLocation;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings, SboCompany sboCompany) {
+public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings, SboCompany sboCompany, ILoggerFactory loggerFactory) {
     private readonly Filters filters = settings.Filters;
 
     public async Task<string?> GetCompanyNameAsync() {
@@ -152,7 +153,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 
     public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
         int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
-        using var transferCreation = new TransferCreation(dbService, sboCompany, transferNumber, whsCode, comments, series, data);
+        using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
         try {
             return transferCreation.Execute();
         }
