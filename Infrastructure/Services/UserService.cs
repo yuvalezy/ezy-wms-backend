@@ -25,6 +25,8 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
                     Active                 = u.Active,
                     AuthorizationGroupId   = u.AuthorizationGroupId,
                     AuthorizationGroupName = u.AuthorizationGroup != null ? u.AuthorizationGroup.Name : null,
+                    Warehouses             = u.Warehouses,
+                    ExternalId             = u.ExternalId,
                     CreatedAt              = u.CreatedAt,
                     UpdatedAt              = u.UpdatedAt
                 })
@@ -68,7 +70,8 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
                 AuthorizationGroupId = request.AuthorizationGroupId,
                 ExternalId           = request.ExternalId,
                 CreatedAt            = DateTime.UtcNow,
-                UpdatedAt            = DateTime.UtcNow
+                UpdatedAt            = DateTime.UtcNow,
+                Warehouses           = request.Warehouses
             };
 
             dbContext.Users.Add(newUser);
@@ -108,6 +111,7 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
             user.SuperUser            = request.SuperUser;
             user.AuthorizationGroupId = request.AuthorizationGroupId;
             user.ExternalId           = request.ExternalId;
+            user.Warehouses           = request.Warehouses;
 
             // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))

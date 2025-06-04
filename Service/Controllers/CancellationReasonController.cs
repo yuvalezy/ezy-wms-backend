@@ -50,7 +50,7 @@ public class CancellationReasonController(ICancellationReasonService cancellatio
     [AllowAnonymous] // Allow non-superusers to read cancellation reasons
     [Authorize] // But still require authentication
     public async Task<ActionResult<IEnumerable<CancellationReasonResponse>>> GetAll([FromQuery] GetCancellationReasonsRequest request) {
-        var reasons = await cancellationReasonService.GetAllAsync(request.ObjectType, request.IncludeDisabled);
+        var reasons = await cancellationReasonService.GetAllAsync(request);
         return Ok(reasons);
     }
 

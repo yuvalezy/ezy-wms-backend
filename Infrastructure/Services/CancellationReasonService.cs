@@ -7,31 +7,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class CancellationReasonService : ICancellationReasonService {
-    private readonly SystemDbContext _db;
-
-    public CancellationReasonService(SystemDbContext db) {
-        _db = db;
-    }
-
+public class CancellationReasonService(SystemDbContext db) : ICancellationReasonService {
     public async Task<CancellationReasonResponse> CreateAsync(CreateCancellationReasonRequest request) {
         var reason = new CancellationReason {
             Name = request.Name,
             Transfer = request.Transfer,
             GoodsReceipt = request.GoodsReceipt,
             Counting = request.Counting,
-            IsEnabled = true,
+            IsEnabled = request.IsEnabled,
             CreatedAt = DateTime.UtcNow
         };
 
-        _db.CancellationReasons.Add(reason);
-        await _db.SaveChangesAsync();
+        db.CancellationReasons.Add(reason);
+        await db.SaveChangesAsync();
 
         return MapToResponse(reason);
     }
 
     public async Task<CancellationReasonResponse> UpdateAsync(UpdateCancellationReasonRequest request) {
-        var reason = await _db.CancellationReasons.FindAsync(request.Id);
+        var reason = await db.CancellationReasons.FindAsync(request.Id);
         if (reason == null) {
             throw new KeyNotFoundException($"Cancellation reason with ID {request.Id} not found.");
         }
@@ -43,13 +37,13 @@ public class CancellationReasonService : ICancellationReasonService {
         reason.IsEnabled = request.IsEnabled;
         reason.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         return await MapToResponseWithCanDelete(reason);
     }
 
     public async Task<bool> DeleteAsync(Guid id) {
-        var reason = await _db.CancellationReasons.FindAsync(id);
+        var reason = await db.CancellationReasons.FindAsync(id);
         if (reason == null) {
             return false;
         }
@@ -60,23 +54,27 @@ public class CancellationReasonService : ICancellationReasonService {
             throw new InvalidOperationException("Cannot delete cancellation reason that is in use. Consider disabling it instead.");
         }
 
-        _db.CancellationReasons.Remove(reason);
-        await _db.SaveChangesAsync();
+        db.CancellationReasons.Remove(reason);
+        await db.SaveChangesAsync();
 
         return true;
     }
 
-    public async Task<IEnumerable<CancellationReasonResponse>> GetAllAsync(ObjectType? objectType = null, bool includeDisabled = false) {
-        var query = _db.CancellationReasons.AsQueryable();
+    public async Task<IEnumerable<CancellationReasonResponse>> GetAllAsync(GetCancellationReasonsRequest   request) {
+        var query = db.CancellationReasons.AsQueryable();
 
         // Filter by enabled status
-        if (!includeDisabled) {
+        if (!request.IncludeDisabled) {
             query = query.Where(r => r.IsEnabled);
         }
 
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm)) {
+            query = query.Where(r => EF.Functions.Like(r.Name.ToLower(), $"%{request.SearchTerm.ToLower()}%"));
+        }
+
         // Filter by object type
-        if (objectType.HasValue) {
-            query = objectType.Value switch {
+        if (request.ObjectType.HasValue) {
+            query = request.ObjectType.Value switch {
                 ObjectType.Transfer => query.Where(r => r.Transfer),
                 ObjectType.GoodsReceipt => query.Where(r => r.GoodsReceipt),
                 ObjectType.InventoryCounting => query.Where(r => r.Counting),
@@ -96,23 +94,23 @@ public class CancellationReasonService : ICancellationReasonService {
     }
 
     public async Task<CancellationReasonResponse?> GetByIdAsync(Guid id) {
-        var reason = await _db.CancellationReasons.FindAsync(id);
+        var reason = await db.CancellationReasons.FindAsync(id);
         return reason == null ? null : await MapToResponseWithCanDelete(reason);
     }
 
     private async Task<bool> IsReasonInUse(Guid reasonId) {
         // Check if used in TransferLines
-        var usedInTransfers = await _db.TransferLines
+        var usedInTransfers = await db.TransferLines
             .AnyAsync(tl => tl.CancellationReasonId == reasonId);
         if (usedInTransfers) return true;
 
         // Check if used in GoodsReceiptLines
-        var usedInGoodsReceipts = await _db.GoodsReceiptLines
+        var usedInGoodsReceipts = await db.GoodsReceiptLines
             .AnyAsync(grl => grl.CancellationReasonId == reasonId);
         if (usedInGoodsReceipts) return true;
 
         // Check if used in InventoryCountingLines
-        var usedInCountings = await _db.InventoryCountingLines
+        var usedInCountings = await db.InventoryCountingLines
             .AnyAsync(icl => icl.CancellationReasonId == reasonId);
         if (usedInCountings) return true;
 
