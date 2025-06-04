@@ -94,14 +94,24 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
+    public async Task<string?> GetBinCodeAsync(int binEntry) {
+        const string query = """select "BinCode" from OBIN where "AbsEntry" = @BinEntry""";
+
+        var parameters = new[] {
+            new SqlParameter("@BinEntry", SqlDbType.Int) { Value = binEntry }
+        };
+
+        return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
+    }
 
     public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) {
         const string query = """
                              select T1."ItemCode", T2."ItemName", T1."OnHandQty" "OnHand", 
                              COALESCE(T2."NumInBuy", 1) "NumInBuy", T2."BuyUnitMsr",
-                             COALESCE(T2."PurPackUn", 1) "PurPackUn", T2."PurPackMsr"
+                             COALESCE(T2."PurPackUn", 1) "PurPackUn", T2."PurPackMsr", T3."BinCode"
                              from OIBQ T1 
                              inner join OITM T2 on T2."ItemCode" = T1."ItemCode"
+                             inner join OBIN T3 on T3."AbsEntry" = T1."BinAbs" and T3."WhsCode" = T1."WhsCode"
                              where T1."BinAbs" = @AbsEntry and T1."OnHandQty" <> 0
                              order by 1
                              """;
@@ -116,7 +126,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             NumInBuy   = Convert.ToInt32(reader[3]),
             BuyUnitMsr = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
             PurPackUn  = Convert.ToInt32(reader[5]),
-            PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6)
+            PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+            BinCode    = reader.GetString(7)
         });
     }
 
@@ -133,7 +144,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             """;
         var parameters = new[] {
             new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50) { Value = objectCode },
-            new SqlParameter("@Date", SqlDbType.DateTime) { Value = DateTime.UtcNow }
+            new SqlParameter("@Date", SqlDbType.DateTime) { Value           = DateTime.UtcNow }
         };
         return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
     }
@@ -147,8 +158,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         }
         catch (Exception e) {
             return new ProcessTransferResponse {
-                Success = false,
-                Status = ResponseStatus.Error,
+                Success      = false,
+                Status       = ResponseStatus.Error,
                 ErrorMessage = e.Message
             };
         }
@@ -170,5 +181,4 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 //         }
 //     }
     }
-
 }

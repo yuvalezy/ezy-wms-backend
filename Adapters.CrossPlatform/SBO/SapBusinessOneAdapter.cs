@@ -41,6 +41,10 @@ public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
         throw new NotImplementedException();
     }
 
+    public Task<string?> GetBinCodeAsync(int binEntry) {
+        throw new NotImplementedException();
+    }
+
     public Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
         throw new NotImplementedException();
     }

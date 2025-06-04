@@ -412,7 +412,9 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                     var binContents = await adapter.BinCheckAsync(group.Key.BinEntry.Value);
                     var binContent  = binContents.FirstOrDefault(bc => bc.ItemCode == group.Key.ItemCode);
                     systemQuantity = binContent != null ? (int)binContent.OnHand : 0;
-                    binCode        = group.Key.BinEntry.Value.ToString(); // Could be enhanced to get actual bin code
+                    
+                    // Get the actual bin code
+                    binCode = await adapter.GetBinCodeAsync(group.Key.BinEntry.Value) ?? group.Key.BinEntry.Value.ToString();
                 }
                 else {
                     // Get stock from warehouse if no specific bin
@@ -423,8 +425,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             }
             catch {
                 // If external adapter fails, continue with zero system quantity
-                itemName = group.Key.ItemCode; // Use item code as fallback
-                binCode = group.Key.BinEntry?.ToString() ?? "No Bin";
+                throw new Exception($"Failed to get item information for {group.Key.ItemCode} and bin {group.Key.BinEntry}.");
             }
 
             int variance = totalCountedQuantity - systemQuantity;
