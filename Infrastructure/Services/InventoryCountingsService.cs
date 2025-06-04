@@ -193,6 +193,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                         }
                     }
                 }
+
                 line.Quantity = newQuantity;
             }
 
@@ -249,45 +250,144 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         return true;
     }
 
-    public async Task<bool> ProcessCounting(Guid id, SessionInfo sessionInfo) {
-        var counting = await db.InventoryCountings.FindAsync(id);
-        if (counting == null) {
-            throw new KeyNotFoundException($"Inventory counting with ID {id} not found.");
-        }
-
-        if (counting.Status != ObjectStatus.InProgress) {
-            throw new InvalidOperationException("Cannot process counting if the Status is not In Progress");
-        }
-
-        // Update status to Processing
-        counting.Status          = ObjectStatus.Processing;
-        counting.UpdatedAt       = DateTime.UtcNow;
-        counting.UpdatedByUserId = sessionInfo.Guid;
-        db.Update(counting);
-        await db.SaveChangesAsync();
-
+    public async Task<ProcessInventoryCountingResponse> ProcessCounting(Guid id, SessionInfo sessionInfo) {
+        var transaction = await db.Database.BeginTransactionAsync();
         try {
-            // Call external system to process the counting
-            await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse);
+            var counting = await db.InventoryCountings
+                .Include(ic => ic.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+                .FirstOrDefaultAsync(ic => ic.Id == id);
+                
+            if (counting == null) {
+                throw new KeyNotFoundException($"Inventory counting with ID {id} not found.");
+            }
 
-            // Update status to Finished
-            counting.Status          = ObjectStatus.Closed;
+            if (counting.Status != ObjectStatus.InProgress) {
+                throw new InvalidOperationException("Cannot process counting if the Status is not In Progress");
+            }
+
+            // Update status to Processing
+            counting.Status          = ObjectStatus.Processing;
             counting.UpdatedAt       = DateTime.UtcNow;
             counting.UpdatedByUserId = sessionInfo.Guid;
-            db.Update(counting);
             await db.SaveChangesAsync();
 
-            return true;
+            // Prepare data for SAP B1 inventory counting creation
+            var countingData = await PrepareCountingData(id, counting.WhsCode);
+
+            // Call external system to process the counting
+            var result = await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse, countingData);
+
+            if (result.Success) {
+                // Update status to Closed
+                counting.Status          = ObjectStatus.Closed;
+                counting.UpdatedAt       = DateTime.UtcNow;
+                counting.UpdatedByUserId = sessionInfo.Guid;
+
+                // Update all open lines to Closed
+                var openLines = await db.InventoryCountingLines
+                    .Where(icl => icl.InventoryCountingId == id && icl.LineStatus != LineStatus.Closed)
+                    .ToListAsync();
+
+                foreach (var line in openLines) {
+                    line.LineStatus      = LineStatus.Closed;
+                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.UpdatedByUserId = sessionInfo.Guid;
+                }
+
+                await db.SaveChangesAsync();
+            }
+            else {
+                throw new InvalidOperationException(result.ErrorMessage ?? "Unknown error");
+            }
+
+            await transaction.CommitAsync();
+            return result;
         }
         catch (Exception) {
-            // Revert status back to InProgress on error
-            counting.Status          = ObjectStatus.InProgress;
-            counting.UpdatedAt       = DateTime.UtcNow;
-            counting.UpdatedByUserId = sessionInfo.Guid;
-            db.Update(counting);
-            await db.SaveChangesAsync();
+            await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    private async Task<Dictionary<string, InventoryCountingCreationData>> PrepareCountingData(Guid countingId, string warehouse) {
+        var lines = await db.InventoryCountingLines
+            .Where(icl => icl.InventoryCountingId == countingId && icl.LineStatus != LineStatus.Closed)
+            .GroupBy(icl => icl.ItemCode)
+            .Select(g => new {
+                ItemCode = g.Key,
+                Lines    = g.ToList()
+            })
+            .ToListAsync();
+
+        var countingData = new Dictionary<string, InventoryCountingCreationData>();
+
+        foreach (var itemGroup in lines) {
+            var totalCountedQuantity = 0;
+            var systemQuantity = 0;
+            var countedBins = new List<InventoryCountingCreationBin>();
+
+            // Group by bins
+            var binGroups = itemGroup.Lines
+                .Where(l => l.BinEntry.HasValue)
+                .GroupBy(l => l.BinEntry.Value)
+                .ToList();
+
+            foreach (var binGroup in binGroups) {
+                var binCountedQuantity = binGroup.Sum(l => l.Quantity);
+                var binSystemQuantity = 0;
+
+                try {
+                    // Get system quantity for this bin
+                    var binContents = await adapter.BinCheckAsync(binGroup.Key);
+                    var binContent = binContents.FirstOrDefault(bc => bc.ItemCode == itemGroup.ItemCode);
+                    binSystemQuantity = binContent != null ? (int)binContent.OnHand : 0;
+                }
+                catch {
+                    // If external adapter fails, continue with zero system quantity
+                }
+
+                countedBins.Add(new InventoryCountingCreationBin {
+                    BinEntry = binGroup.Key,
+                    CountedQuantity = binCountedQuantity,
+                    SystemQuantity = binSystemQuantity
+                });
+
+                totalCountedQuantity += binCountedQuantity;
+                systemQuantity += binSystemQuantity;
+            }
+
+            // Handle lines without bins
+            var noBinLines = itemGroup.Lines.Where(l => !l.BinEntry.HasValue).ToList();
+            if (noBinLines.Any()) {
+                var noBinCountedQuantity = noBinLines.Sum(l => l.Quantity);
+                totalCountedQuantity += noBinCountedQuantity;
+
+                try {
+                    // Get warehouse stock for items without bins
+                    var stocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                    var warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
+                    // Subtract quantities already counted in bins
+                    systemQuantity += Math.Max(0, warehouseSystemQuantity - systemQuantity);
+                }
+                catch {
+                    // If external adapter fails, continue with existing system quantity
+                }
+            }
+
+            var variance = totalCountedQuantity - systemQuantity;
+
+            var data = new InventoryCountingCreationData {
+                ItemCode = itemGroup.ItemCode,
+                CountedQuantity = totalCountedQuantity,
+                SystemQuantity = systemQuantity,
+                Variance = variance,
+                CountedBins = countedBins
+            };
+
+            countingData[itemGroup.ItemCode] = data;
+        }
+
+        return countingData;
     }
 
     public async Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request) {
@@ -395,16 +495,16 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             .ToList();
 
         foreach (var group in groupedLines) {
-            int totalCountedQuantity = group.Sum(l => l.Quantity);
-            int systemQuantity       = 0;
-            string itemName = "";
-            string binCode = "";
-            ItemCheckResponse? item = null;
+            int                totalCountedQuantity = group.Sum(l => l.Quantity);
+            int                systemQuantity       = 0;
+            string             itemName             = "";
+            string             binCode              = "";
+            ItemCheckResponse? item                 = null;
 
             try {
                 // Get item information
                 var itemInfo = await adapter.ItemCheckAsync(group.Key.ItemCode, null);
-                item = itemInfo.FirstOrDefault();
+                item     = itemInfo.FirstOrDefault();
                 itemName = item?.ItemName ?? "";
 
                 // Get system quantity from SAP B1 using external adapter
@@ -412,7 +512,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                     var binContents = await adapter.BinCheckAsync(group.Key.BinEntry.Value);
                     var binContent  = binContents.FirstOrDefault(bc => bc.ItemCode == group.Key.ItemCode);
                     systemQuantity = binContent != null ? (int)binContent.OnHand : 0;
-                    
+
                     // Get the actual bin code
                     binCode = await adapter.GetBinCodeAsync(group.Key.BinEntry.Value) ?? group.Key.BinEntry.Value.ToString();
                 }
@@ -420,7 +520,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                     // Get stock from warehouse if no specific bin
                     var stocks = await adapter.ItemStockAsync(group.Key.ItemCode, counting.WhsCode);
                     systemQuantity = stocks.Sum(s => s.Quantity);
-                    binCode = "No Bin";
+                    binCode        = "No Bin";
                 }
             }
             catch {

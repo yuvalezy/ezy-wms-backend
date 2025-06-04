@@ -9,46 +9,44 @@ namespace Adapters.Windows.SBO.Helpers;
 
 public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompany, int transferNumber, string whsCode, string? comments, int series, Dictionary<string, TransferCreationData> data)
     : IDisposable {
-
     private StockTransfer? transfer;
-    private Recordset? rs;
+    private Recordset?     rs;
 
-    public int Entry { get; private set; }
+    public int Entry  { get; private set; }
     public int Number { get; private set; }
 
     public ProcessTransferResponse Execute() {
-        var response = new ProcessTransferResponse();
-        Company? company = null;
-        
+        var      response = new ProcessTransferResponse();
+        Company? company  = null;
+
         try {
-            if (sboCompany.TransactionMutex.WaitOne()) {
-                try {
-                    sboCompany.ConnectCompany();
-                    company = sboCompany.Company!;
-                    company.StartTransaction();
-                    
-                    CreateTransfer();
+            sboCompany.TransactionMutex.WaitOne();
+            try {
+                sboCompany.ConnectCompany();
+                company = sboCompany.Company!;
+                company.StartTransaction();
 
-                    if (company.InTransaction)
-                        company.EndTransaction(BoWfTransOpt.wf_Commit);
+                CreateTransfer();
 
-                    response.Success = true;
-                    response.ExternalEntry = Entry;
-                    response.ExternalNumber = Number;
-                    response.Status = ResponseStatus.Ok;
-                }
-                finally {
-                    sboCompany.TransactionMutex.ReleaseMutex();
-                }
+                if (company.InTransaction)
+                    company.EndTransaction(BoWfTransOpt.wf_Commit);
+
+                response.Success        = true;
+                response.ExternalEntry  = Entry;
+                response.ExternalNumber = Number;
+                response.Status         = ResponseStatus.Ok;
+            }
+            finally {
+                sboCompany.TransactionMutex.ReleaseMutex();
             }
         }
         catch (Exception ex) {
             if (company?.InTransaction == true)
                 company.EndTransaction(BoWfTransOpt.wf_RollBack);
             return new ProcessTransferResponse {
-                Success        = false,
-                ErrorMessage   = ex.Message,
-                Status         = ResponseStatus.Error
+                Success      = false,
+                ErrorMessage = ex.Message,
+                Status       = ResponseStatus.Error
             };
         }
 
@@ -58,10 +56,10 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
     private void CreateTransfer() {
         var company = sboCompany.Company!;
         transfer = (StockTransfer)company.GetBusinessObject(BoObjectTypes.oStockTransfer);
-        
+
         transfer.DocDate = DateTime.Now;
-        transfer.Series = series;
-        
+        transfer.Series  = series;
+
         if (!string.IsNullOrWhiteSpace(comments))
             transfer.Comments = comments;
 
@@ -73,42 +71,42 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
         foreach (var pair in data) {
             if (!string.IsNullOrWhiteSpace(lines.ItemCode))
                 lines.Add();
-                
+
             var value = pair.Value;
-            lines.ItemCode = value.ItemCode;
+            lines.ItemCode          = value.ItemCode;
             lines.FromWarehouseCode = whsCode;
-            lines.WarehouseCode = whsCode;
-            lines.Quantity = (double)value.Quantity;
-            lines.UseBaseUnits = BoYesNoEnum.tYES;
+            lines.WarehouseCode     = whsCode;
+            lines.Quantity          = (double)value.Quantity;
+            lines.UseBaseUnits      = BoYesNoEnum.tYES;
 
             // Add source bin allocations
             foreach (var source in value.SourceBins) {
-                if (lines.BinAllocations.BinAbsEntry > 0) 
+                if (lines.BinAllocations.BinAbsEntry > 0)
                     lines.BinAllocations.Add();
                 lines.BinAllocations.BinActionType = BinActionTypeEnum.batFromWarehouse;
-                lines.BinAllocations.BinAbsEntry = source.BinEntry;
-                lines.BinAllocations.Quantity = (double)source.Quantity;
+                lines.BinAllocations.BinAbsEntry   = source.BinEntry;
+                lines.BinAllocations.Quantity      = (double)source.Quantity;
             }
-            
+
             // Add target bin allocations
             foreach (var target in value.TargetBins) {
-                if (lines.BinAllocations.BinAbsEntry > 0) 
+                if (lines.BinAllocations.BinAbsEntry > 0)
                     lines.BinAllocations.Add();
                 lines.BinAllocations.BinActionType = BinActionTypeEnum.batToWarehouse;
-                lines.BinAllocations.BinAbsEntry = target.BinEntry;
-                lines.BinAllocations.Quantity = (double)target.Quantity;
+                lines.BinAllocations.BinAbsEntry   = target.BinEntry;
+                lines.BinAllocations.Quantity      = (double)target.Quantity;
             }
         }
 
         var result = transfer.Add();
         if (result != 0) {
-            var errorCode = company.GetLastErrorCode();
+            var errorCode        = company.GetLastErrorCode();
             var errorDescription = company.GetLastErrorDescription();
             throw new Exception($"SAP B1 Error {errorCode}: {errorDescription}");
         }
 
         Entry = int.Parse(company.GetNewObjectKey());
-        rs = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
+        rs    = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
         rs.DoQuery($"select \"DocNum\" from OWTR where \"DocEntry\" = {Entry}");
         Number = (int)rs.Fields.Item(0).Value;
     }

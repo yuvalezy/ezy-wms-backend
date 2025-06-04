@@ -69,7 +69,41 @@ public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
         throw new NotImplementedException();
     }
 
-    public Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+    public Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+        throw new NotImplementedException();
+    }
+
+    // Picking methods
+    public Task<IEnumerable<PickingDocument>> GetPickLists(Dictionary<string, object> parameters, string whereClause) {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<PickingDetailItem>> GetPickingDetailItems(Dictionary<string, object> parameters) {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {
+        throw new NotImplementedException();
+    }
+
+    public Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+        throw new NotImplementedException();
+    }
+
+    public Task AddPickingItem(PickListAddItemRequest request, Guid employeeId, int pickEntry) {
+        throw new NotImplementedException();
+    }
+
+    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
+        throw new NotImplementedException();
+    }
+
+    // Inventory Counting methods
+    public Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data) {
         throw new NotImplementedException();
     }
 }

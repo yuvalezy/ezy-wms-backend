@@ -22,6 +22,9 @@
         <Reference Include="Interop.SAPbouiCOM">
             <HintPath>..\..\dependencies\Interop.SAPbouiCOM_100.dll</HintPath>
         </Reference>
+        <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+          <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\9.0.5\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
 </Project>

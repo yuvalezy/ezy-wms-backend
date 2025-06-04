@@ -58,7 +58,8 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
         return await pickingRepository.ProcessPickList(absEntry, warehouse);
     }
     
-    public async Task ProcessInventoryCounting(int countingNumber, string warehouse) {
-        await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse);
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data) {
+        int  series = await generalRepository.GetSeries("1470000065");
+        return await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse, data, series);
     }
 }

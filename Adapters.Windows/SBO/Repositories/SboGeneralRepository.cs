@@ -131,9 +131,9 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
-    private async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
+    public async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
 
-    private async Task<int> GetSeries(string objectCode) {
+    public async Task<int> GetSeries(string objectCode) {
         const string query =
             """
             select top 1 T1."Series"

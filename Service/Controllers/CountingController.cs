@@ -59,10 +59,10 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
     
     [HttpPost("process")]
     [RequireRolePermission(RoleType.CountingSupervisor)]
-    public async Task<IActionResult> ProcessCounting([FromBody] ProcessInventoryCountingRequest request) {
+    public async Task<ActionResult<ProcessInventoryCountingResponse>> ProcessCounting([FromBody] ProcessInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        bool result = await inventoryCountingsService.ProcessCounting(request.ID, sessionInfo);
-        return Ok(new { success = result });
+        var result = await inventoryCountingsService.ProcessCounting(request.ID, sessionInfo);
+        return Ok(result);
     }
     
     [HttpPost("countingContent")]

@@ -32,5 +32,5 @@ public interface IExternalSystemAdapter {
     Task<ProcessPickListResult>                ProcessPickList(int                                  absEntry, string warehouse);
 
     // Inventory Counting methods
-    Task                                                ProcessInventoryCounting(int     countingNumber, string warehouse);
+    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data);
 }

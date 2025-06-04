@@ -1,66 +1,66 @@
 using System.Data;
+using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.SBO.Utils;
 using Core.DTOs;
+using Core.Enums;
+using Core.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCompany sboCompany) {
+public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCompany sboCompany, ILoggerFactory loggerFactory) {
     
-    public async Task ProcessInventoryCounting(int countingNumber, string warehouse) {
-        // sboCompany.TransactionMutex.WaitOne();
-        //
-        // try {
-        //     var company = sboCompany.Company;
-        //     
-        //     // Begin transaction
-        //     if (company.InTransaction) {
-        //         company.EndTransaction(BoWfTransOpt.wf_RollBack);
-        //     }
-        //     company.StartTransaction();
-        //     
-        //     try {
-        //         // Get company service
-        //         var companyService = company.GetCompanyService();
-        //         var inventoryCountingsService = companyService.GetBusinessService(ServiceTypes.InventoryCountingsService) as InventoryCountingsService;
-        //         
-        //         // Create inventory counting object
-        //         var counting = inventoryCountingsService.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting) as InventoryCounting;
-        //         
-        //         // Set counting properties
-        //         counting.CountingType = CountingTypeEnum.ctSingleCounter;
-        //         counting.Counted = BoYesNoEnum.tYES;
-        //         
-        //         // Get series for inventory counting document  
-        //         var series = GetDocumentSeries(company, (int)BoObjectTypes.oInventoryCounting);
-        //         if (series > 0) {
-        //             counting.Series = series;
-        //         }
-        //         
-        //         // Load counting data and add lines
-        //         await LoadCountingLines(counting, countingNumber, warehouse);
-        //         
-        //         // Add the counting to SAP B1
-        //         var countingParams = inventoryCountingsService.Add(counting);
-        //         
-        //         company.EndTransaction(BoWfTransOpt.wf_Commit);
-        //         
-        //         // Update the WMS database with the SAP document entry
-        //         await UpdateWmsWithSapEntry(countingNumber, countingParams.CountingNumber);
-        //     }
-        //     catch (Exception) {
-        //         if (company.InTransaction) {
-        //             company.EndTransaction(BoWfTransOpt.wf_RollBack);
-        //         }
-        //         throw;
-        //     }
-        // }
-        // finally {
-        //     SboAssembly.TransactionMutex.ReleaseMutex();
-        // }
-        throw new NotImplementedException();
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationData> data, int i) {
+        int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
+        using var creation = new CountingCreation(dbService, sboCompany, countingNumber, whsCode, series, data, loggerFactory);
+        try {
+            return creation.Execute();
+        }
+        catch (Exception e) {
+            return new ProcessInventoryCountingResponse {
+                Success      = false,
+                Status       = ResponseStatus.Error,
+                ErrorMessage = e.Message
+            };
+        }
+        //todo send alert to sap
+//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
+//         try {
+//             using var alert = new Alert();
+//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
+//             alert.Columns.AddRange([transactionColumn, transferColumn]);
+//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
+//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
+//
+//             alert.Send(sendTo);
+//         }
+//         catch (Exception e) {
+//             //todo log error handler
+//         }
+//     }
+    }
+    
+    private async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
+
+    private async Task<int> GetSeries(string objectCode) {
+        const string query =
+            """
+            select top 1 T1."Series"
+            from OFPR T0
+                     inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
+            where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
+            and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
+            """;
+        var parameters = new[] {
+            new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50) { Value = objectCode },
+            new SqlParameter("@Date", SqlDbType.DateTime) { Value = DateTime.UtcNow }
+        };
+        return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
     }
     
     public async Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId, int? binEntry) {

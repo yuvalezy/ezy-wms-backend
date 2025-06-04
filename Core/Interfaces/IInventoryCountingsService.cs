@@ -11,7 +11,7 @@ public interface IInventoryCountingsService {
     Task<InventoryCountingAddItemResponse> AddItem(SessionInfo sessionInfo, InventoryCountingAddItemRequest request);
     Task<UpdateLineResponse> UpdateLine(SessionInfo sessionInfo, InventoryCountingUpdateLineRequest request);
     Task<bool> CancelCounting(Guid id, SessionInfo sessionInfo);
-    Task<bool> ProcessCounting(Guid id, SessionInfo sessionInfo);
+    Task<ProcessInventoryCountingResponse> ProcessCounting(Guid id, SessionInfo sessionInfo);
     Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request);
     Task<InventoryCountingSummaryResponse> GetCountingSummaryReport(Guid id);
 }
