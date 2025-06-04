@@ -29,4 +29,9 @@ public interface IExternalSystemAdapter {
     Task<PickingValidationResult>              ValidatePickingAddItem(PickListAddItemRequest        request, Guid userId);
     Task                                       AddPickingItem(PickListAddItemRequest                request, Guid employeeId, int pickEntry);
     Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse);
+    
+    // Inventory Counting methods
+    Task ProcessInventoryCounting(int countingNumber, string warehouse);
+    Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId, int? binEntry);
+    Task<InventoryCountingSummaryResponse> GetInventoryCountingSummary(Guid countingId);
 }

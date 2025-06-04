@@ -102,7 +102,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
 
         // Validate item exists in warehouse
         if (!validationResult.ItemExistsInWarehouse) {
-            throw new ApiErrorException((int)AddItemReturnValueType.ItemNotInWarehouse, new { BinEntry = request.BinEntry ?? 0 });
+            throw new ApiErrorException((int)AddItemReturnValueType.ItemNotInWarehouse, new { request.ItemCode, request.BarCode });
         }
 
         // Validate bin existence if provided
@@ -112,7 +112,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             }
 
             if (!validationResult.BinBelongsToWarehouse) {
-                throw new ApiErrorException((int)AddItemReturnValueType.BinNotInWarehouse, new { request.ItemCode, request.BarCode });
+                throw new ApiErrorException((int)AddItemReturnValueType.BinNotInWarehouse, new { validationResult.BinCode });
             }
         }
 

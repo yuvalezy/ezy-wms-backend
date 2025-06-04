@@ -9,6 +9,9 @@ public class InventoryCounting : BaseEntity {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Number { get; set; }
 
+    [MaxLength(100)]
+    public string? Name { get; set; }
+
     [Required]
     public DateTime Date { get; set; }
 

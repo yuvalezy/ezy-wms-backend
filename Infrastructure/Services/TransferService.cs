@@ -123,10 +123,9 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         bool hasItems = await db.TransferLines
             .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
 
-        var response = TransferResponse.FromTransfer(transfer);
-        response.IsComplete = !hasIncompleteItems && hasItems;
+        transfer.IsComplete = !hasIncompleteItems && hasItems;
 
-        return TransferResponse.FromTransfer(transfer);
+        return transfer;
     }
 
     public async Task<bool> CancelTransfer(Guid id, SessionInfo sessionInfo) {

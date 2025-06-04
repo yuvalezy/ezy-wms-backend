@@ -193,7 +193,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         // Validate bin if provided
         const string binQuery =
             """
-                SELECT T5."AbsEntry", T5."WhsCode", COALESCE(T7."OnHandQty", 0) as "OnHandQty"
+                SELECT T5."AbsEntry", T5."WhsCode", COALESCE(T7."OnHandQty", 0) as "OnHandQty", T5."BinCode"
                 FROM OBIN T5
                 LEFT OUTER JOIN OIBQ T7 ON T7."ItemCode" = @ItemCode AND T7."BinAbs" = @BinEntry
                 WHERE T5."AbsEntry" = @BinEntry
@@ -204,7 +204,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
         };
 
-        var binData = await dbService.QuerySingleAsync(binQuery, binParams, reader => new BinValidation(reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2)));
+        var binData = await dbService.QuerySingleAsync(binQuery, binParams, reader => new BinValidation(reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2), reader[3].ToString()));
 
         if (binData == null) {
             result.BinExists = false;
@@ -213,6 +213,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             result.BinExists             = true;
             result.BinBelongsToWarehouse = binData.Warehouse == warehouse;
             result.AvailableQuantity     = binData.Stock;
+            result.BinCode               = binData.BinCode;
         }
 
         return result;

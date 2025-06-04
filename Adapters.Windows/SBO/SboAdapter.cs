@@ -5,7 +5,7 @@ using Core.Models;
 
 namespace Adapters.Windows.SBO;
 
-public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository, SboPickingRepository pickingRepository)
+public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository, SboPickingRepository pickingRepository, SboInventoryCountingRepository inventoryCountingRepository)
     : IExternalSystemAdapter {
     public async Task<ExternalValue?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
     public async Task<IEnumerable<ExternalValue>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
@@ -56,5 +56,17 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
         return await pickingRepository.ProcessPickList(absEntry, warehouse);
+    }
+    
+    public async Task ProcessInventoryCounting(int countingNumber, string warehouse) {
+        await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse);
+    }
+    
+    public async Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId, int? binEntry) {
+        return await inventoryCountingRepository.GetInventoryCountingContent(countingId, binEntry);
+    }
+    
+    public async Task<InventoryCountingSummaryResponse> GetInventoryCountingSummary(Guid countingId) {
+        return await inventoryCountingRepository.GetInventoryCountingSummary(countingId);
     }
 }

@@ -56,6 +56,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<SboGeneralRepository>();
         services.AddScoped<SboItemRepository>();
         services.AddScoped<SboPickingRepository>();
+        services.AddScoped<SboInventoryCountingRepository>();
         services.AddScoped<IExternalSystemAdapter, SboAdapter>();
 
         return services;

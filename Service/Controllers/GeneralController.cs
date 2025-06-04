@@ -41,7 +41,9 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpGet("ScanBinLocation")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.Counting)]
     public async Task<ActionResult<BinLocation?>> ScanBinLocation([FromQuery] string bin) {
-        return await publicService.ScanBinLocationAsync(bin);
+        var response = await publicService.ScanBinLocationAsync(bin);
+        
+        return response != null ? Ok(response) : NotFound();
     }
 
     [HttpGet("ItemByBarCode")]

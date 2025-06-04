@@ -5,7 +5,7 @@ using Core.Models;
 namespace Core.Utils;
 
 public static class JsonUtils {
-    private static readonly JsonSerializerOptions Options = new() {
+    public static readonly JsonSerializerOptions Options = new() {
         Converters                  = { new JsonStringEnumConverter() },
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition      = JsonIgnoreCondition.WhenWritingNull
