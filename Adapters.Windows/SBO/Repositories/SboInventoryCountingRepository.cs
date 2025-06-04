@@ -15,7 +15,7 @@ public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCom
     
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationData> data, int i) {
         int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
-        using var creation = new CountingCreation(dbService, sboCompany, countingNumber, whsCode, series, data, loggerFactory);
+        using var creation = new CountingCreation(sboCompany, countingNumber, whsCode, series, data, loggerFactory);
         try {
             return creation.Execute();
         }

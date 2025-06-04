@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.Enums;
 using Core.Models;
 using Microsoft.Extensions.Logging;
 using SAPbobsCOM;
@@ -13,7 +11,6 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO.Helpers;
 
 public class CountingCreation(
-    SboDatabaseService                                dbService,
     SboCompany                                        sboCompany,
     int                                               countingNumber,
     string                                            whsCode,
@@ -25,63 +22,65 @@ public class CountingCreation(
     private          InventoryCountingsService? service;
     private          InventoryCounting?         counting;
     private          Recordset?                 rs;
-    private readonly ILogger<CountingCreation>  tracer = new Logger<CountingCreation>(loggerFactory) ;
+    private readonly ILogger<CountingCreation>  logger = new Logger<CountingCreation>(loggerFactory);
 
     public (int Entry, int Number) NewEntry { get; private set; }
 
     public ProcessInventoryCountingResponse Execute() {
+        var response = new ProcessInventoryCountingResponse();
         try {
-            tracer?.Write("Wait Mutex");
             sboCompany.TransactionMutex.WaitOne();
             try {
-                tracer?.Write("Checking Company Connection");
                 sboCompany.ConnectCompany();
-                company.StartTransaction();
-                tracer?.Write("Begin Transaction");
-                ConnectionController.BeginTransaction();
-                tracer?.Write("Creating Counting Object");
-                CreateCounting(series);
-                tracer?.Write("Commiting");
-                ConnectionController.Commit();
+                sboCompany.Company!.StartTransaction();
+                CreateCounting();
+                if (sboCompany.Company.InTransaction)
+                    sboCompany.Company.EndTransaction(BoWfTransOpt.wf_Commit);
+                response.Success        = true;
+                response.ExternalEntry  = NewEntry.Entry;
+                response.ExternalNumber = NewEntry.Number;
+                response.Status         = ResponseStatus.Ok;
             }
             finally {
-                tracer?.Write("Release Mutex");
-                Global.TransactionMutex.ReleaseMutex();
+                sboCompany.TransactionMutex.ReleaseMutex();
             }
         }
         catch (Exception e) {
-            ConnectionController.TryRollback();
-            string errorMessage = "Error generating Counting: " + e.Message;
-            tracer?.Write(errorMessage);
-            throw new Exception(errorMessage);
+            if (sboCompany.Company?.InTransaction == true)
+                sboCompany.Company.EndTransaction(BoWfTransOpt.wf_RollBack);
+            response.ErrorMessage = e.Message;
+            response.Status       = ResponseStatus.Error;
         }
+
+        return response;
     }
 
-    private void CreateCounting(int series) {
-        //todo lower default bin location quantity
-        tracer?.Write("Get Company Service");
-        companyService = ConnectionController.Company.GetCompanyService();
-        tracer?.Write("Get Service");
-        service = (InventoryCountingsService)companyService.GetBusinessService(ServiceTypes.InventoryCountingsService);
-        tracer?.Write("Get Counting Service");
-        counting = (InventoryCounting)service.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting);
-        tracer?.Write("Assigning Counting Series");
-        counting.Series = series;
-        tracer?.Write($"Counted Data: {data.Count()}");
+    private void CreateCounting() {
+        companyService      = sboCompany.Company!.GetCompanyService();
+        service             = (InventoryCountingsService)companyService.GetBusinessService(ServiceTypes.InventoryCountingsService);
+        counting            = (InventoryCounting)service.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting);
+        counting.Series     = series;
+        counting.Reference2 = countingNumber.ToString();
         foreach (var value in data) {
-            var line = counting.InventoryCountingLines.Add();
-            tracer?.Write($"Processing Line {line.LineNumber}, Code: {value.Code}, Whs: {whsCode}, bin: {value.BinEntry}");
-            line.ItemCode      = value.Code;
-            line.WarehouseCode = whsCode;
-            if (value.BinEntry > 0) {
-                line.BinEntry = value.BinEntry.Value;
+            if (value.Value.CountedBins.Count > 0) {
+                foreach (var countedBin in value.Value.CountedBins) {
+                    var line = counting.InventoryCountingLines.Add();
+                    line.ItemCode        = value.Value.ItemCode;
+                    line.WarehouseCode   = whsCode;
+                    line.BinEntry        = countedBin.BinEntry;
+                    line.Counted         = BoYesNoEnum.tYES;
+                    line.CountedQuantity = countedBin.CountedQuantity;
+                }
             }
-
-            line.Counted         = BoYesNoEnum.tYES;
-            line.CountedQuantity = value.Quantity;
+            else {
+                var line = counting.InventoryCountingLines.Add();
+                line.ItemCode        = value.Value.ItemCode;
+                line.WarehouseCode   = whsCode;
+                line.Counted         = BoYesNoEnum.tYES;
+                line.CountedQuantity = value.Value.CountedQuantity;
+            }
         }
 
-        tracer?.Write("Adding Counting through service");
         var @params = service.Add(counting);
         NewEntry = (@params.DocumentEntry, @params.DocumentNumber);
     }
@@ -108,12 +107,5 @@ public class CountingCreation(
         }
 
         GC.Collect();
-    }
-
-
-    public void SetClosedLines() {
-        string    sqlStr = "update \"@LW_YUVAL08_OINC1\" set \"U_LineStatus\" = 'C' where U_ID = @ID and \"U_LineStatus\" = 'O'";
-        using var conn   = Global.Connector;
-        conn.Execute(sqlStr, new Parameter("@ID", SqlDbType.Int, id));
     }
 }
