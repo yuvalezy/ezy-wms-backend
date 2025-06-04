@@ -14,7 +14,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class InventoryCountingController(IInventoryCountingsService inventoryCountingsService, ICancellationReasonService cancellationReasonService) : ControllerBase {
+public class CountingController(IInventoryCountingsService inventoryCountingsService, ICancellationReasonService cancellationReasonService) : ControllerBase {
     
     [HttpPost("create")]
     [RequireRolePermission(RoleType.CountingSupervisor)]
@@ -52,10 +52,9 @@ public class InventoryCountingController(IInventoryCountingsService inventoryCou
     
     [HttpPost("cancel")]
     [RequireRolePermission(RoleType.CountingSupervisor)]
-    public async Task<IActionResult> CancelCounting([FromBody] CancelInventoryCountingRequest request) {
+    public async Task<ActionResult<bool>> CancelCounting([FromBody] CancelInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        bool result = await inventoryCountingsService.CancelCounting(request.ID, sessionInfo);
-        return Ok(new { success = result });
+        return await inventoryCountingsService.CancelCounting(request.ID, sessionInfo);
     }
     
     [HttpPost("process")]

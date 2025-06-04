@@ -8,10 +8,13 @@ public class InventoryCountingResponse {
     public int Number { get; set; }
     public string Name { get; set; } = string.Empty;
     public DateTime Date { get; set; }
-    public UserInfoResponse? Employee { get; set; }
     public ObjectStatus Status { get; set; }
-    public DateTime StatusDate { get; set; }
-    public UserInfoResponse? StatusEmployee { get; set; }
+    public DateTime     CreatedAt       { get; set; }
+    public Guid?        CreatedByUserId { get; set; }
+    public User?        CreatedByUser   { get; set; }
+    public DateTime?    UpdatedAt       { get; set; }
+    public Guid?        UpdatedByUserId { get; set; }
+    public User?        UpdatedByUser   { get; set; }
     public string WhsCode { get; set; } = string.Empty;
     public bool Error { get; set; }
     public int ErrorCode { get; set; }
@@ -20,14 +23,19 @@ public class InventoryCountingResponse {
 
     public static InventoryCountingResponse FromEntity(InventoryCounting counting) {
         return new InventoryCountingResponse {
-            Id = counting.Id,
-            Number = counting.Number,
-            Name = counting.Name ?? string.Empty,
-            Date = counting.Date,
-            Status = counting.Status,
-            StatusDate = counting.UpdatedAt ?? counting.CreatedAt,
-            WhsCode = counting.WhsCode,
-            Lines = counting.Lines?.Select(InventoryCountingLineResponse.FromEntity).ToList()
+            Id              = counting.Id,
+            Number          = counting.Number,
+            CreatedAt       = counting.CreatedAt,
+            CreatedByUserId = counting.CreatedByUserId,
+            CreatedByUser   = counting.CreatedByUser,
+            UpdatedAt       = counting.UpdatedAt,
+            UpdatedByUserId = counting.UpdatedByUserId,
+            UpdatedByUser   = counting.UpdatedByUser,
+            Name            = counting.Name ?? string.Empty,
+            Date            = counting.Date,
+            Status          = counting.Status,
+            WhsCode         = counting.WhsCode,
+            Lines           = counting.Lines?.Select(InventoryCountingLineResponse.FromEntity).ToList()
         };
     }
 }
