@@ -183,7 +183,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             var transferData = await PrepareTransferData(id);
 
             // Call external system to create the transfer in SAP B1
-            var result = await adapter.ProcessTransfer(id, transfer.WhsCode, transfer.Comments, transferData);
+            var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData);
 
             if (result.Success) {
                 // Update transfer status to Finished
@@ -205,10 +205,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                 await db.SaveChangesAsync();
             }
             else {
-                // Rollback to InProgress if SAP B1 creation failed
-                transfer.Status    = ObjectStatus.InProgress;
-                transfer.UpdatedAt = DateTime.UtcNow;
-                await db.SaveChangesAsync();
+                throw new InvalidOperationException(result.ErrorMessage ?? "Unknown error");
             }
 
             await transaction.CommitAsync();
@@ -216,11 +213,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
         catch (Exception ex) {
             await transaction.RollbackAsync();
-            return new ProcessTransferResponse {
-                Success      = false,
-                ErrorMessage = $"Error processing transfer: {ex.Message}",
-                Status       = ResponseStatus.Error
-            };
+            throw;
         }
     }
 

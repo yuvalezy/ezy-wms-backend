@@ -4,6 +4,7 @@ using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.Utils;
 using Core.DTOs;
+using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
@@ -131,17 +132,26 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
             """;
         var parameters = new[] {
-            new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50, objectCode),
-            new SqlParameter("@Date", SqlDbType.DateTime){Value = DateTime.UtcNow}
+            new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50) { Value = objectCode },
+            new SqlParameter("@Date", SqlDbType.DateTime) { Value = DateTime.UtcNow }
         };
         return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
     }
 
 
-    public async Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
         int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
-        using var transferCreation = new TransferCreation(dbService, sboCompany, transferId, whsCode, comments, series, data);
-        return transferCreation.Execute();
+        using var transferCreation = new TransferCreation(dbService, sboCompany, transferNumber, whsCode, comments, series, data);
+        try {
+            return transferCreation.Execute();
+        }
+        catch (Exception e) {
+            return new ProcessTransferResponse {
+                Success = false,
+                Status = ResponseStatus.Error,
+                ErrorMessage = e.Message
+            };
+        }
         //todo send alert to sap
 //     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
 //         try {

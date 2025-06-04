@@ -25,8 +25,8 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
 
-    public async Task<ProcessTransferResponse> ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
-        return await generalRepository.ProcessTransfer(transferId, whsCode, comments, data);
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+        return await generalRepository.ProcessTransfer(transferNumber, whsCode, comments, data);
     }
 
     public async Task<IEnumerable<PickingDocument>> GetPickLists(Dictionary<string, object> parameters, string whereClause) {

@@ -7,7 +7,7 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompany, Guid transferId, string whsCode, string? comments, int series, Dictionary<string, TransferCreationData> data)
+public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompany, int transferNumber, string whsCode, string? comments, int series, Dictionary<string, TransferCreationData> data)
     : IDisposable {
 
     private StockTransfer? transfer;
@@ -33,8 +33,8 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
                         company.EndTransaction(BoWfTransOpt.wf_Commit);
 
                     response.Success = true;
-                    response.SapDocEntry = Entry;
-                    response.SapDocNumber = Number;
+                    response.ExternalEntry = Entry;
+                    response.ExternalNumber = Number;
                     response.Status = ResponseStatus.Ok;
                 }
                 finally {
@@ -43,11 +43,13 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
             }
         }
         catch (Exception ex) {
-            string? errorMessage = company?.GetLastErrorDescription();
-            company?.EndTransaction(BoWfTransOpt.wf_RollBack);
-            if (!string.IsNullOrWhiteSpace(errorMessage))
-                throw new Exception(errorMessage, ex);
-            throw;
+            if (company?.InTransaction == true)
+                company.EndTransaction(BoWfTransOpt.wf_RollBack);
+            return new ProcessTransferResponse {
+                Success        = false,
+                ErrorMessage   = ex.Message,
+                Status         = ResponseStatus.Error
+            };
         }
 
         return response;
@@ -59,13 +61,12 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
         
         transfer.DocDate = DateTime.Now;
         transfer.Series = series;
-        throw new Exception("test");
         
         if (!string.IsNullOrWhiteSpace(comments))
             transfer.Comments = comments;
 
         // Set reference to our transfer id
-        transfer.Reference2 = transferId.ToString();
+        transfer.Reference2 = transferNumber.ToString();
 
         var lines = transfer.Lines;
 
@@ -99,8 +100,11 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
             }
         }
 
-        if (transfer.Add() != 0) {
-            throw new Exception(company.GetLastErrorDescription());
+        var result = transfer.Add();
+        if (result != 0) {
+            var errorCode = company.GetLastErrorCode();
+            var errorDescription = company.GetLastErrorDescription();
+            throw new Exception($"SAP B1 Error {errorCode}: {errorDescription}");
         }
 
         Entry = int.Parse(company.GetNewObjectKey());
