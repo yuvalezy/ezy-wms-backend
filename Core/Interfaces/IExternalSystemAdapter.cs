@@ -32,6 +32,4 @@ public interface IExternalSystemAdapter {
 
     // Inventory Counting methods
     Task                                                ProcessInventoryCounting(int     countingNumber, string warehouse);
-    Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId,     int?   binEntry);
-    Task<InventoryCountingSummaryResponse>              GetInventoryCountingSummary(Guid countingId);
 }

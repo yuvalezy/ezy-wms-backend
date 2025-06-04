@@ -60,12 +60,4 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public async Task ProcessInventoryCounting(int countingNumber, string warehouse) {
         await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse);
     }
-    
-    public async Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId, int? binEntry) {
-        return await inventoryCountingRepository.GetInventoryCountingContent(countingId, binEntry);
-    }
-    
-    public async Task<InventoryCountingSummaryResponse> GetInventoryCountingSummary(Guid countingId) {
-        return await inventoryCountingRepository.GetInventoryCountingSummary(countingId);
-    }
 }
