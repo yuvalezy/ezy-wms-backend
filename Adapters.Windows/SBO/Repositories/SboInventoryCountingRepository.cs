@@ -14,7 +14,7 @@ namespace Adapters.Windows.SBO.Repositories;
 public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCompany sboCompany, ILoggerFactory loggerFactory) {
     
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationData> data, int i) {
-        int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
+        int       series           = await GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, whsCode, series, data, loggerFactory);
         try {
             return creation.Execute();
