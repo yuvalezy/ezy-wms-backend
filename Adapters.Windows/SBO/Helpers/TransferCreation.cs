@@ -65,8 +65,8 @@ public class TransferCreation(SboDatabaseService dbService, SboCompany sboCompan
         if (!string.IsNullOrWhiteSpace(comments))
             transfer.Comments = comments;
 
-        // Set custom field to link back to our transfer
-        transfer.UserFields.Fields.Item("U_LW_TRANSFER").Value = transferId.ToString();
+        // Set reference to our transfer id
+        transfer.Reference2 = transferId.ToString();
 
         var lines = transfer.Lines;
 

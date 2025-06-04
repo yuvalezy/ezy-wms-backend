@@ -1,39 +1,4 @@
 ﻿//
-//     public bool ProcessTransfer(int id, int employeeID, List<string> sendTo) {
-//         var transfer = GetTransfer(id);
-//         if (transfer.Status != DocumentStatus.InProgress)
-//             throw new Exception("Cannot process transfer if the Status is not In Progress");
-//         UpdateTransferStatus(id, employeeID, DocumentStatus.Processing);
-//         try {
-//             using var creation = new TransferCreation(id, employeeID);
-//             creation.Execute();
-//             UpdateTransferStatus(id, employeeID, DocumentStatus.Finished);
-//             creation.SetFinishedLines();
-//             ProcessTransferSendAlert(id, sendTo, creation);
-//             return true;
-//         }
-//         catch (Exception e) {
-//             UpdateTransferStatus(id, employeeID, DocumentStatus.InProgress);
-//             throw;
-//         }
-//     }
-//
-//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
-//         try {
-//             using var alert = new Alert();
-//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
-//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
-//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
-//             alert.Columns.AddRange([transactionColumn, transferColumn]);
-//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
-//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
-//
-//             alert.Send(sendTo);
-//         }
-//         catch (Exception e) {
-//             //todo log error handler
-//         }
-//     }
 //
 //     public IEnumerable<TransferContent> GetTransferContent(TransferContentParameters contentParameters) {
 //         var        list        = new List<TransferContent>();

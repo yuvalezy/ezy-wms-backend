@@ -120,5 +120,22 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
     public ProcessTransferResponse ProcessTransfer(Guid transferId, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
         using var transferCreation = new TransferCreation(dbService, sboCompany, transferId, whsCode, comments, data);
         return transferCreation.Execute();
+        //todo send alert to sap
+//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
+//         try {
+//             using var alert = new Alert();
+//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
+//             alert.Columns.AddRange([transactionColumn, transferColumn]);
+//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
+//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
+//
+//             alert.Send(sendTo);
+//         }
+//         catch (Exception e) {
+//             //todo log error handler
+//         }
+//     }
     }
 }
