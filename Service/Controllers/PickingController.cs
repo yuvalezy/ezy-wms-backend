@@ -30,6 +30,7 @@ public class PickingController(IPickListService pickListService) : ControllerBas
         [FromQuery(Name = "entry")] int? entry = null,
         [FromQuery(Name = "availableBins")] bool? availableBins = false,
         [FromQuery(Name = "binEntry")] int? binEntry = null) {
+        var sessionInfo = HttpContext.GetSession();
         
         var detailRequest = new PickListDetailRequest {
             Type = type,
@@ -38,7 +39,7 @@ public class PickingController(IPickListService pickListService) : ControllerBas
             BinEntry = binEntry
         };
         
-        var result = await pickListService.GetPickList(id, detailRequest);
+        var result = await pickListService.GetPickList(id, detailRequest, sessionInfo.Warehouse);
         
         if (result == null) {
             return NotFound();

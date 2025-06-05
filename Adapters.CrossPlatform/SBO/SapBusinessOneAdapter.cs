@@ -74,7 +74,7 @@ public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     // Picking methods
-    public Task<IEnumerable<PickingDocument>> GetPickLists(Dictionary<string, object> parameters, string whereClause) {
+    public Task<IEnumerable<PickingDocument>> GetPickLists(PickListsRequest request, string warehouse) {
         throw new NotImplementedException();
     }
 

@@ -11,33 +11,7 @@ namespace Infrastructure.Services;
 
 public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter) : IPickListService {
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
-        var parameters = new Dictionary<string, object> {
-            { "@WhsCode", warehouse }
-        };
-        
-        var whereClause = new StringBuilder();
-        
-        if (request.ID.HasValue) {
-            parameters.Add("@AbsEntry", request.ID.Value);
-            whereClause.AppendLine(" and PICKS.\"AbsEntry\" = @AbsEntry ");
-        }
-        
-        if (request.Date.HasValue) {
-            parameters.Add("@Date", request.Date.Value);
-            whereClause.AppendLine(" and DATEDIFF(day,PICKS.\"U_StatusDate\",@Date) = 0 ");
-        }
-        
-        if (request.Statuses?.Length > 0) {
-            whereClause.AppendLine("and PICKS.\"Status\" in (");
-            for (int i = 0; i < request.Statuses.Length; i++) {
-                if (i > 0)
-                    whereClause.Append(", ");
-                whereClause.Append($"'{(char)request.Statuses[i]}'");
-            }
-            whereClause.Append(") ");
-        }
-        
-        var picks = await adapter.GetPickLists(parameters, whereClause.ToString());
+        var picks = await adapter.GetPickLists(request, warehouse);
         return picks.Select(p => new PickListResponse {
             Entry = p.Entry,
             Date = p.Date,
@@ -52,12 +26,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         });
     }
     
-    public async Task<PickListResponse> GetPickList(int absEntry, PickListDetailRequest request) {
-        var parameters = new Dictionary<string, object> {
-            { "@AbsEntry", absEntry }
-        };
-        
-        var picks = await adapter.GetPickLists(parameters, " and PICKS.\"AbsEntry\" = @AbsEntry ");
+    public async Task<PickListResponse?> GetPickList(int absEntry, PickListDetailRequest request, string warehouse) {
+        var pickListRequest = new PickListsRequest { ID = absEntry };
+        var picks = await adapter.GetPickLists(pickListRequest, warehouse);
         var pick = picks.FirstOrDefault();
         
         if (pick == null)

@@ -30,8 +30,8 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
         return await generalRepository.ProcessTransfer(transferNumber, whsCode, comments, data);
     }
 
-    public async Task<IEnumerable<PickingDocument>> GetPickLists(Dictionary<string, object> parameters, string whereClause) {
-        return await pickingRepository.GetPickLists(parameters, whereClause);
+    public async Task<IEnumerable<PickingDocument>> GetPickLists(PickListsRequest request, string warehouse) {
+        return await pickingRepository.GetPickLists(request, warehouse);
     }
 
     public async Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) {

@@ -23,7 +23,7 @@ public interface IExternalSystemAdapter {
     Task<ProcessTransferResponse>        ProcessTransfer(int                    transferNumber, string whsCode, string? comments,  Dictionary<string, TransferCreationData> data);
 
     // Picking methods
-    Task<IEnumerable<PickingDocument>>         GetPickLists(Dictionary<string, object>              parameters, string whereClause);
+    Task<IEnumerable<PickingDocument>>         GetPickLists(PickListsRequest request, string warehouse);
     Task<IEnumerable<PickingDetail>>           GetPickingDetails(Dictionary<string, object>         parameters);
     Task<IEnumerable<PickingDetailItem>>       GetPickingDetailItems(Dictionary<string, object>     parameters);
     Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
