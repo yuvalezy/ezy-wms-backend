@@ -4,6 +4,7 @@ using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.Entities;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
@@ -284,7 +285,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         return result.ToArray();
     }
 
-    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, Dictionary<string, List<PickingCreationData>> data) {
+    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
         using var update = new PickingUpdate(absEntry, warehouse, data, dbService, sboCompany);
         var result = new ProcessPickListResult {
             Success        = true,

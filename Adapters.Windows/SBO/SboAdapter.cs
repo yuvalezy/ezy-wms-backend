@@ -1,5 +1,6 @@
 ﻿using Adapters.Windows.SBO.Repositories;
 using Core.DTOs;
+using Core.Entities;
 using Core.Interfaces;
 using Core.Models;
 
@@ -51,7 +52,7 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     }
 
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, Dictionary<string, List<PickingCreationData>> data) {
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
         return await pickingRepository.ProcessPickList(absEntry, warehouse, data);
     }
 

@@ -1,12 +1,14 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 using Adapters.Windows.SBO.Services;
+using Core.Entities;
+using Core.Enums;
 using Core.Models;
 using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class PickingUpdate(int absEntry, string warehouse, Dictionary<string, List<PickingCreationData>> data, SboDatabaseService dbService, SboCompany sboCompany) : IDisposable {
+public class PickingUpdate(int absEntry, string warehouse, List<PickList> data, SboDatabaseService dbService, SboCompany sboCompany) : IDisposable {
     private Recordset? rs;
 
     public void Execute() {
@@ -38,6 +40,7 @@ public class PickingUpdate(int absEntry, string warehouse, Dictionary<string, Li
             if (pl.Status == BoPickStatus.ps_Closed) {
                 throw new Exception($"Cannot process document if the Status is closed");
             }
+
             UpdatePickList(pl);
         }
         finally {
@@ -69,7 +72,7 @@ public class PickingUpdate(int absEntry, string warehouse, Dictionary<string, Li
                 }
             }
 
-            
+
             // pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value = "Y";
             if (pl.UpdateReleasedAllocation() != 0) {
                 throw new Exception(sboCompany.Company.GetLastErrorDescription());
@@ -83,45 +86,52 @@ public class PickingUpdate(int absEntry, string warehouse, Dictionary<string, Li
 
 
     private void UpdatePickList(PickLists pl) {
+        var lines = data.GroupBy(v => v.PickEntry)
+            .Select(a => new {
+                PickEntry = a.Key,
+                Quantity  = a.Sum(b => b.Quantity),
+                Bins = a.GroupBy(b => b.BinEntry)
+                    .Select(c => new { BinEntry = c.Key, Quantity = c.Sum(d => d.Quantity) })
+            });
         for (int i = 0; i < pl.Lines.Count; i++) {
             pl.Lines.SetCurrentLine(i);
-            var value = data.FirstOrDefault(v => v.PickEntry == pl.Lines.LineNumber);
+            var value = lines.FirstOrDefault(v => v.PickEntry == pl.Lines.LineNumber);
             if (value == null) {
                 continue;
             }
 
-            pl.Lines.PickedQuantity = (double)value.Quantity / (value.Unit != UnitType.Unit ? value.NumInBuy : 1);
+            pl.Lines.PickedQuantity = value.Quantity;
+            // pl.Lines.PickedQuantity = (double)value.Quantity / (value.Unit != UnitType.Unit ? value.NumInBuy : 1);
 
-            UpdatePickListBinLocations(pl.Lines.BinAllocations, value);
+            // Process bins
+            var bins    = pl.Lines.BinAllocations;
+            var control = new Dictionary<int, int>();
+            for (int j = 0; j < bins.Count; j++) {
+                if (bins.BinAbsEntry == 0)
+                    continue;
+                bins.SetCurrentLine(j);
+                control[bins.BinAbsEntry] = j;
+            }
+
+            foreach (var binValue in value.Bins) {
+                int binEntry = binValue.BinEntry!.Value;
+                if (control.TryGetValue(binEntry, out int index)) {
+                    bins.SetCurrentLine(index);
+                }
+                else {
+                    if (bins.Count == 1 && bins.BinAbsEntry != 0)
+                        bins.Add();
+                    bins.BinAbsEntry = binEntry;
+                    control.Add(binEntry, bins.Count - 1);
+                }
+
+                bins.Quantity = binValue.Quantity;
+            }
         }
 
         if (pl.Update() != 0) {
-            throw new Exception($"Could not update Pick List: {ConnectionController.Company.GetLastErrorDescription()}");
+            throw new Exception($"Could not update Pick List: {sboCompany.Company.GetLastErrorDescription()}");
         }
-    }
-
-    private void UpdatePickListBinLocations(DocumentLinesBinAllocations bins, PickingValue value) {
-        var control = new Dictionary<int, int>();
-        for (int i = 0; i < bins.Count; i++) {
-            if (bins.BinAbsEntry == 0)
-                continue;
-            bins.SetCurrentLine(i);
-            control[bins.BinAbsEntry] = i;
-        }
-
-        value.BinLocations.ForEach(binValue => {
-            if (control.TryGetValue(binValue.BinEntry, out int index)) {
-                bins.SetCurrentLine(index);
-            }
-            else {
-                if (bins.Count == 1 && bins.BinAbsEntry != 0)
-                    bins.Add();
-                bins.BinAbsEntry = binValue.BinEntry;
-                control.Add(binValue.BinEntry, bins.Count - 1);
-            }
-
-            bins.Quantity = binValue.Quantity;
-        });
     }
 
     public void Dispose() {
