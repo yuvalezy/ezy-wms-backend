@@ -89,7 +89,8 @@ public class SboPickingRepository(SboDatabaseService dbService) {
                 COALESCE(T2."CardCode", T3."CardCode", T4."CardCode") AS "CardCode",
                 COALESCE(T2."CardName", T3."CardName", T4."CardName") AS "CardName",
                 SUM(T0."RelQtty" + T0."PickQtty") AS "TotalItems",
-                SUM(T0."RelQtty") AS "TotalOpenItems" 
+                SUM(T0."RelQtty") AS "TotalOpenItems",
+                T0."PickEntry"
             FROM PKL1 T0
             LEFT JOIN ORDR T2 
                 ON T2."DocEntry" = T0."OrderEntry" AND T2."ObjType" = T0."BaseObject"
@@ -117,7 +118,8 @@ public class SboPickingRepository(SboDatabaseService dbService) {
                      T2."DocNum", T3."DocNum", T4."DocNum", 
                      T2."DocDate", T3."DocDate", T4."DocDate", 
                      T2."CardCode", T3."CardCode", T4."CardCode", 
-                     T2."CardName", T3."CardName", T4."CardName"
+                     T2."CardName", T3."CardName", T4."CardName",
+                     T0."PickEntry"
                  """;
 
         query += " ORDER BY T0.\"BaseObject\", T0.\"OrderEntry\"";
@@ -133,7 +135,8 @@ public class SboPickingRepository(SboDatabaseService dbService) {
                 CardCode       = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
                 CardName       = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                 TotalItems     = (int)reader.GetDecimal(6),
-                TotalOpenItems = (int)reader.GetDecimal(7)
+                TotalOpenItems = (int)reader.GetDecimal(7),
+                PickEntry      = reader.GetInt32(8),
             };
             return detail;
         });

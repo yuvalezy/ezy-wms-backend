@@ -5,25 +5,34 @@ using Core.Interfaces;
 using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace Infrastructure.Services;
 
 public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter) : IPickListService {
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var picks = await adapter.GetPickLists(request, warehouse);
-        return picks.Select(p => new PickListResponse {
-            Entry          = p.Entry,
-            Date           = p.Date,
-            SalesOrders    = p.SalesOrders,
-            Invoices       = p.Invoices,
-            Transfers      = p.Transfers,
-            Remarks        = p.Remarks,
-            Status         = p.Status,
-            Quantity       = p.Quantity,
-            OpenQuantity   = p.OpenQuantity,
-            UpdateQuantity = p.UpdateQuantity
-        });
+        var response = picks.Select(p => new PickListResponse {
+                Entry          = p.Entry,
+                Date           = p.Date,
+                SalesOrders    = p.SalesOrders,
+                Invoices       = p.Invoices,
+                Transfers      = p.Transfers,
+                Remarks        = p.Remarks,
+                Status         = p.Status,
+                Quantity       = p.Quantity,
+                OpenQuantity   = p.OpenQuantity,
+                UpdateQuantity = p.UpdateQuantity
+            })
+            .ToArray();
+        int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
+        var dbPick = await db.PickLists
+            .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+            .ToArrayAsync();
+        foreach (var r in response) {
+            r.OpenQuantity -= dbPick.Where(p => p.AbsEntry == r.Entry).Sum(p => p.Quantity);
+        }
+
+        return response;
     }
 
     public async Task<PickListResponse?> GetPickList(int absEntry, PickListDetailRequest request, string warehouse) {
@@ -45,8 +54,13 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             Quantity       = pick.Quantity,
             OpenQuantity   = pick.OpenQuantity,
             UpdateQuantity = pick.UpdateQuantity,
-            Detail         = new List<PickListDetailResponse>()
+            Detail         = []
         };
+
+        var dbPick = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+            .ToArrayAsync();
+        response.OpenQuantity -= dbPick.Sum(p => p.Quantity);
 
         // Get picking details
         var detailParams = new Dictionary<string, object> {
@@ -61,87 +75,107 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             detailParams.Add("@Entry", request.Entry.Value);
         }
 
-        var details = await adapter.GetPickingDetails(detailParams);
+        var details        = await adapter.GetPickingDetails(detailParams);
 
         foreach (var detail in details) {
-            var detailResponse = new PickListDetailResponse {
-                Type           = detail.Type,
-                Entry          = detail.Entry,
-                Number         = detail.Number,
-                Date           = detail.Date,
-                CardCode       = detail.CardCode,
-                CardName       = detail.CardName,
-                TotalItems     = detail.TotalItems,
-                TotalOpenItems = detail.TotalOpenItems,
-                Items          = new List<PickListDetailItemResponse>()
-            };
+            detail.TotalOpenItems -= dbPick.Where(p => p.AbsEntry == response.Entry && p.PickEntry == detail.PickEntry).Sum(p => p.Quantity);
 
-            // Get detail items if specific type and entry provided
-            if (request is { Type: not null, Entry: not null }) {
-                var itemParams = new Dictionary<string, object> {
-                    { "@AbsEntry", absEntry },
-                    { "@Type", request.Type.Value },
-                    { "@Entry", request.Entry.Value }
+            PickListDetailResponse detailResponse; 
+            var exists = response.Detail.FirstOrDefault(d => d.Type == detail.Type && d.Entry == detail.Entry);
+            if (exists == null) {
+                detailResponse = new PickListDetailResponse {
+                    Type           = detail.Type,
+                    Entry          = detail.Entry,
+                    Number         = detail.Number,
+                    Date           = detail.Date,
+                    CardCode       = detail.CardCode,
+                    CardName       = detail.CardName,
+                    TotalItems     = detail.TotalItems,
+                    TotalOpenItems = detail.TotalOpenItems,
+                    Items          = []
                 };
-
-                var items    = await adapter.GetPickingDetailItems(itemParams);
-                var itemDict = new Dictionary<string, PickListDetailItemResponse>();
-
-                foreach (var item in items) {
-                    var itemResponse = new PickListDetailItemResponse {
-                        ItemCode     = item.ItemCode,
-                        ItemName     = item.ItemName,
-                        Quantity     = item.Quantity,
-                        Picked       = item.Picked,
-                        OpenQuantity = item.OpenQuantity,
-                        NumInBuy     = item.NumInBuy,
-                        BuyUnitMsr   = item.BuyUnitMsr,
-                        PurPackUn    = item.PurPackUn,
-                        PurPackMsr   = item.PurPackMsr
-                    };
-
-                    itemDict[item.ItemCode] = itemResponse;
-                    detailResponse.Items.Add(itemResponse);
-                }
-
-                // Get available bins if requested
-                if (request.AvailableBins == true) {
-                    var binParams = new Dictionary<string, object> {
-                        { "@AbsEntry", absEntry },
-                        { "@Type", request.Type.Value },
-                        { "@Entry", request.Entry.Value }
-                    };
-
-                    if (request.BinEntry.HasValue) {
-                        binParams.Add("@BinEntry", request.BinEntry.Value);
-                    }
-
-                    var bins = await adapter.GetPickingDetailItemsBins(binParams);
-
-                    foreach (var bin in bins) {
-                        if (!itemDict.TryGetValue(bin.ItemCode, out var item))
-                            continue;
-                        item.BinQuantities ??= [];
-                        item.BinQuantities.Add(new BinLocationQuantityResponse {
-                            Entry    = bin.Entry,
-                            Code     = bin.Code,
-                            Quantity = bin.Quantity
-                        });
-                    }
-
-                    // Calculate available quantities and filter if bin entry specified
-                    if (request.BinEntry.HasValue) {
-                        detailResponse.Items.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
-                        foreach (var item in detailResponse.Items) {
-                            if (item.BinQuantities != null) {
-                                item.Available = item.BinQuantities.Sum(b => b.Quantity);
-                            }
-                        }
-                    }
-                }
+                response.Detail.Add(detailResponse);
+            }
+            else {
+                detailResponse            =  exists;
+                detailResponse.TotalItems += detail.TotalItems;
+                detailResponse.TotalOpenItems += detail.TotalOpenItems;
             }
 
-            response.Detail.Add(detailResponse);
+
+            // // Get detail items if specific type and entry provided
+            // if (request is { Type: not null, Entry: not null }) {
+            //     var itemParams = new Dictionary<string, object> {
+            //         { "@AbsEntry", absEntry },
+            //         { "@Type", request.Type.Value },
+            //         { "@Entry", request.Entry.Value }
+            //     };
+            //
+            //     var items    = await adapter.GetPickingDetailItems(itemParams);
+            //     var itemDict = new Dictionary<string, PickListDetailItemResponse>();
+            //
+            //     foreach (var item in items) {
+            //         PickListDetailItemResponse itemResponse;
+            //         if (!itemDict.ContainsKey(item.ItemCode)) {
+            //             itemResponse = new PickListDetailItemResponse {
+            //                 ItemCode     = item.ItemCode,
+            //                 ItemName     = item.ItemName,
+            //                 Quantity     = item.Quantity,
+            //                 Picked       = item.Picked,
+            //                 OpenQuantity = item.OpenQuantity,
+            //                 NumInBuy     = item.NumInBuy,
+            //                 BuyUnitMsr   = item.BuyUnitMsr,
+            //                 PurPackUn    = item.PurPackUn,
+            //                 PurPackMsr   = item.PurPackMsr
+            //             };
+            //             itemDict[item.ItemCode] = itemResponse;
+            //             detailResponse.Items!.Add(itemResponse);
+            //         }
+            //         else {
+            //             itemResponse = itemDict[item.ItemCode];
+            //             itemResponse.Quantity += item.Quantity;
+            //             itemResponse.OpenQuantity += item.OpenQuantity;
+            //         }
+            //
+            //         // itemResponse.OpenQuantity -= dbPick.Where(p => p.AbsEntry == detail.Entry && p.PickEntry == detail.PickEntry).Sum(p => p.Quantity);
+            //     }
+            //
+            //     // Get available bins if requested
+            //     if (request.AvailableBins == true) {
+            //         var binParams = new Dictionary<string, object> {
+            //             { "@AbsEntry", absEntry },
+            //             { "@Type", request.Type.Value },
+            //             { "@Entry", request.Entry.Value }
+            //         };
+            //
+            //         if (request.BinEntry.HasValue) {
+            //             binParams.Add("@BinEntry", request.BinEntry.Value);
+            //         }
+            //
+            //         var bins = await adapter.GetPickingDetailItemsBins(binParams);
+            //
+            //         foreach (var bin in bins) {
+            //             if (!itemDict.TryGetValue(bin.ItemCode, out var item))
+            //                 continue;
+            //             item.BinQuantities ??= [];
+            //             item.BinQuantities.Add(new BinLocationQuantityResponse {
+            //                 Entry    = bin.Entry,
+            //                 Code     = bin.Code,
+            //                 Quantity = bin.Quantity
+            //             });
+            //         }
+            //
+            //         // Calculate available quantities and filter if bin entry specified
+            //         if (request.BinEntry.HasValue) {
+            //             detailResponse.Items.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
+            //             foreach (var item in detailResponse.Items) {
+            //                 if (item.BinQuantities != null) {
+            //                     item.Available = item.BinQuantities.Sum(b => b.Quantity);
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         return response;
