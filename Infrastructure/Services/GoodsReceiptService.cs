@@ -133,13 +133,16 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         await db.GoodsReceiptLines.AddAsync(line);
         await db.SaveChangesAsync();
 
-        return GoodsReceiptAddItemResponse.OkResponse;
+        return new() {
+            Status = ResponseStatus.Ok,
+            LineId = line.Id,
+        };
     }
 
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
         var line = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.Id == request.LineID && l.GoodsReceipt.Id == request.Id);
+            .FirstOrDefaultAsync(l => l.Id == request.LineID);
 
         if (line == null) {
             throw new KeyNotFoundException($"Line with ID {request.LineID} not found");
@@ -161,8 +164,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         if (request.CancellationReasonId.HasValue)
             line.CancellationReasonId = request.CancellationReasonId.Value;
 
-        if (!string.IsNullOrEmpty(request.Comments))
-            line.Comments = request.Comments;
+        if (!string.IsNullOrEmpty(request.Comment))
+            line.Comments = request.Comment;
 
         line.UpdatedAt       = DateTime.UtcNow;
         line.UpdatedByUserId = session.Guid;

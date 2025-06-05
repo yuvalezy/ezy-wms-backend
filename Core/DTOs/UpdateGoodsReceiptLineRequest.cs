@@ -17,5 +17,5 @@ public class UpdateGoodsReceiptLineRequest {
     public Guid? CancellationReasonId { get; set; }
     
     [MaxLength(4000)]
-    public string? Comments { get; set; }
+    public string? Comment { get; set; }
 }
