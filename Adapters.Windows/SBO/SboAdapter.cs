@@ -50,9 +50,6 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
         return await pickingRepository.ValidatePickingAddItem(request, userId);
     }
 
-    public async Task AddPickingItem(PickListAddItemRequest request, Guid employeeId, int pickEntry) {
-        await pickingRepository.AddPickingItem(request, employeeId, pickEntry);
-    }
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
         return await pickingRepository.ProcessPickList(absEntry, warehouse);

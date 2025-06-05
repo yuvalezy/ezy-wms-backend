@@ -160,20 +160,31 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
 
         // Create pick list entry
+        int quantity = request.Quantity;
+        if (request.Unit != UnitType.Unit) {
+            var items = await adapter.ItemCheckAsync(request.ItemCode, null);
+            var item  = items.FirstOrDefault();
+            if (item == null) {
+                throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
+            }
+
+            quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+        }
+
         var pickList = new PickList {
-            AbsEntry  = request.ID,
-            PickEntry = validationResult.PickEntry ?? request.PickEntry ?? 0,
-            ItemCode  = request.ItemCode,
-            Quantity  = request.Quantity,
-            BinEntry  = request.BinEntry,
-            Status    = ObjectStatus.Open
+            AbsEntry        = request.ID,
+            PickEntry       = validationResult.PickEntry ?? request.PickEntry ?? 0,
+            ItemCode        = request.ItemCode,
+            Quantity        = quantity,
+            BinEntry        = request.BinEntry,
+            Unit            = request.Unit,
+            Status          = ObjectStatus.Open,
+            CreatedAt       = DateTime.UtcNow,
+            CreatedByUserId = sessionInfo.Guid
         };
 
         await db.PickLists.AddAsync(pickList);
         await db.SaveChangesAsync();
-
-        // Execute the add item in SAP
-        await adapter.AddPickingItem(request, sessionInfo.Guid, pickList.PickEntry);
 
         return PickListAddItemResponse.OkResponse;
     }

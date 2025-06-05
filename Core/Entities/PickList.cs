@@ -22,5 +22,8 @@ public class PickList : BaseEntity {
     public int Quantity { get; set; }
 
     [Required]
+    public UnitType Unit { get; set; }
+
+    [Required]
     public ObjectStatus Status { get; set; } = ObjectStatus.Open;
 }

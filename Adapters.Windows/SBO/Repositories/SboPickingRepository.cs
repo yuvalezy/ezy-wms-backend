@@ -283,24 +283,6 @@ public class SboPickingRepository(SboDatabaseService dbService) {
         };
     }
 
-    public async Task AddPickingItem(PickListAddItemRequest request, Guid employeeId, int pickEntry) {
-        throw new NotImplementedException("Not implemented!");
-//         var query = @"
-// UPDATE PKL1 
-// SET ""PickQtty"" = ""PickQtty"" + @Quantity,
-//     ""Status"" = CASE WHEN ""PickQtty"" + @Quantity >= ""RelQtty"" THEN 'Y' ELSE 'P' END
-// WHERE ""AbsEntry"" = @AbsEntry 
-//     AND ""PickEntry"" = @PickEntry";
-//
-//         var sqlParams = new[] {
-//             new SqlParameter("@AbsEntry", SqlDbType.Int) { Value  = request.ID },
-//             new SqlParameter("@PickEntry", SqlDbType.Int) { Value = pickEntry },
-//             new SqlParameter("@Quantity", SqlDbType.Int) { Value  = request.Quantity }
-//         };
-//
-//         await dbService.ExecuteAsync(query, sqlParams);
-    }
-
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
         throw new Exception("Not implemented!");
 //         try {
