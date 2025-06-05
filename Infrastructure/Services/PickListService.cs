@@ -33,7 +33,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
         foreach (var r in response) {
-            r.OpenQuantity -= dbPick.Where(p => p.AbsEntry == r.Entry).Sum(p => p.Quantity);
+            int pickedQuantity = dbPick.Where(p => p.AbsEntry == r.Entry).Sum(p => p.Quantity);
+            r.OpenQuantity -= pickedQuantity;
+            r.UpdateQuantity += pickedQuantity;
         }
 
         return response;
@@ -67,7 +69,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         var dbPick = await db.PickLists
             .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
-        response.OpenQuantity -= dbPick.Sum(p => p.Quantity);
+        int dbPickQty = dbPick.Sum(p => p.Quantity);
+        response.OpenQuantity   -= dbPickQty;
+        response.UpdateQuantity += dbPickQty;
 
         // Get picking details
         var detailParams = new Dictionary<string, object> {
