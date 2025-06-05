@@ -68,6 +68,13 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             Name = reader.GetString(1)
         });
     }
+    public async Task<ExternalValue<string>?> GetVendorAsync(string cardCode) {
+        const string query = """select "CardCode", "CardName" from OCRD where "CardCode" = @CardCode and "CardType = 'S'""";
+        return await dbService.QuerySingleAsync(query, null, reader => new ExternalValue<string> {
+            Id   = reader.GetString(0),
+            Name = reader.GetString(1)
+        });
+    }
 
     public async Task<bool> ValidateVendorsAsync(string id) {
         var sb = new StringBuilder("""select 1 from OCRD where "CardCode" = @CardCode and "CardType" = 'S' """);
@@ -182,4 +189,5 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 //         }
 //     }
     }
+
 }

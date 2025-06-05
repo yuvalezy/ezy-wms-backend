@@ -1,20 +1,30 @@
 ﻿using Adapters.Windows.SBO.Repositories;
 using Core.DTOs;
 using Core.Entities;
+using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Microsoft.VisualBasic;
 
 namespace Adapters.Windows.SBO;
 
-public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository, SboPickingRepository pickingRepository, SboInventoryCountingRepository inventoryCountingRepository)
+public class SboAdapter(
+    SboEmployeeRepository          employeeRepository,
+    SboGeneralRepository           generalRepository,
+    SboItemRepository              itemRepository,
+    SboPickingRepository           pickingRepository,
+    SboInventoryCountingRepository inventoryCountingRepository,
+    SboGoodsReceiptRepository      goodsReceiptRepository)
     : IExternalSystemAdapter {
-    public async Task<ExternalValue<string>?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
-    public async Task<IEnumerable<ExternalValue<string>>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
-    public async Task<string?>                        GetCompanyNameAsync()                                                  => await generalRepository.GetCompanyNameAsync();
-    public async Task<IEnumerable<Warehouse>>         GetWarehousesAsync(string[]? filter = null)                            => await generalRepository.GetWarehousesAsync(filter);
-    public async Task<Warehouse?>                     GetWarehouseAsync(string     id)                                       => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
-    public async Task<(int itemCount, int binCount)>  GetItemAndBinCount(string    warehouse)                                => await generalRepository.GetItemAndBinCountAsync(warehouse);
-    public async Task<IEnumerable<ExternalValue<string>>>     GetVendorsAsync()                                                      => await generalRepository.GetVendorsAsync();
+    public async Task<ExternalValue<string>?>             GetUserInfoAsync(string id)                 => await employeeRepository.GetByIdAsync(id);
+    public async Task<IEnumerable<ExternalValue<string>>> GetUsersAsync()                             => await employeeRepository.GetAllAsync();
+    public async Task<string?>                            GetCompanyNameAsync()                       => await generalRepository.GetCompanyNameAsync();
+    public async Task<IEnumerable<Warehouse>>             GetWarehousesAsync(string[]? filter = null) => await generalRepository.GetWarehousesAsync(filter);
+    public async Task<Warehouse?>                         GetWarehouseAsync(string     id)            => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
+    public async Task<(int itemCount, int binCount)>      GetItemAndBinCount(string    warehouse)     => await generalRepository.GetItemAndBinCountAsync(warehouse);
+    public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync()                           => await generalRepository.GetVendorsAsync();
+    public async Task<ExternalValue<string>?>             GetVendorAsync(string cardCode)             => await generalRepository.GetVendorAsync(cardCode);
+
     public async Task<bool>                           ValidateVendorsAsync(string            id)                             => await generalRepository.ValidateVendorsAsync(id);
     public async Task<BinLocation?>                   ScanBinLocationAsync(string            bin)                            => await generalRepository.ScanBinLocationAsync(bin);
     public async Task<string?>                        GetBinCodeAsync(int                    binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);
@@ -59,9 +69,22 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
         return await pickingRepository.GetPickListStatuses(absEntries);
     }
-    
+
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data) {
-        int  series = await generalRepository.GetSeries("1470000065");
+        int series = await generalRepository.GetSeries("1470000065");
         return await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse, data, series);
+    }
+
+    // Goods Receipt methods
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, Guid userId) {
+        return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(request, userId);
+    }
+
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data) {
+        return await goodsReceiptRepository.ProcessGoodsReceipt(number, warehouse, data);
+    }
+
+    public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
+        await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
     }
 }

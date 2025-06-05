@@ -20,7 +20,7 @@ public class SboDatabaseService(ISettings settings) {
 
     public async Task<IEnumerable<T>> QueryAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         var results = new List<T>();
-        
+
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
@@ -34,6 +34,7 @@ public class SboDatabaseService(ISettings settings) {
 
         return results;
     }
+
 
     public async Task<T?> ExecuteScalarAsync<T>(string query, SqlParameter[]? parameters) {
         await using var connection = new SqlConnection(ConnectionString);
@@ -87,6 +88,27 @@ public class SboDatabaseService(ISettings settings) {
         }
     }
 
+    /// <summary>
+    /// Executes a SQL query and processes the results with the provided reader function.
+    /// </summary>
+    /// <param name="query">SQL query to execute</param>
+    /// <param name="parameters">Optional SQL parameters</param>
+    /// <param name="readerFunc">Function to process the SqlDataReader</param>
+    /// <typeparam name="T">Return type of the reader function</typeparam>
+    /// <returns>Result from processing the reader</returns>
+    public async Task ExecuteReaderAsync<T>(string query, SqlParameter[]? parameters, Action<SqlDataReader> readerFunc) {
+        await using var connection = new SqlConnection(ConnectionString);
+        await connection.OpenAsync();
+
+        await using var command = new SqlCommand(query, connection);
+        AddParameters(command, parameters);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync()) {
+            readerFunc(reader);
+        }
+    }
+
     private void AddParameters(SqlCommand command, SqlParameter[]? parameters) {
         if (parameters == null) return;
         command.Parameters.AddRange(parameters);
@@ -110,10 +132,10 @@ public class SboDatabaseService(ISettings settings) {
         await using var command = new SqlCommand(query, connection);
         AddParameters(command, parameters);
 
-        using var adapter = new SqlDataAdapter(command);
-        var dataTable = new DataTable();
+        using var adapter   = new SqlDataAdapter(command);
+        var       dataTable = new DataTable();
         await Task.Run(() => adapter.Fill(dataTable));
-        
+
         return dataTable;
     }
 

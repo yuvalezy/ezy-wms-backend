@@ -9,6 +9,9 @@ public class GoodsReceipt : BaseEntity {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Number { get; set; }
 
+    [MaxLength(100)]
+    public string? Name { get; set; }
+
     [StringLength(15)]
     public string? CardCode { get; set; }
 

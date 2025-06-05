@@ -34,8 +34,9 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("Vendors")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor, RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public ActionResult<IEnumerable<ExternalValue<string>>> GetVendors() {
-        return Ok(publicService.GetVendorsAsync());
+    public async Task<ActionResult<IEnumerable<ExternalValue<string>>>> GetVendors() {
+        var response = await publicService.GetVendorsAsync();
+        return Ok(response);
     }
 
     [HttpGet("ScanBinLocation")]

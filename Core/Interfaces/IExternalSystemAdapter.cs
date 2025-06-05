@@ -1,27 +1,29 @@
 ﻿using Core.DTOs;
 using Core.Entities;
+using Core.Enums;
 using Core.Models;
 
 namespace Core.Interfaces;
 
 public interface IExternalSystemAdapter {
-    Task<ExternalValue<string>?>                 GetUserInfoAsync(string id);
-    Task<IEnumerable<ExternalValue<string>>>     GetUsersAsync();
-    Task<string?>                        GetCompanyNameAsync();
-    Task<IEnumerable<Warehouse>>         GetWarehousesAsync(string[]? filter = null);
-    Task<Warehouse?>                     GetWarehouseAsync(string     id);
-    Task<(int itemCount, int binCount)>  GetItemAndBinCount(string    warehouse);
-    Task<IEnumerable<ExternalValue<string>>>     GetVendorsAsync();
-    Task<bool>                           ValidateVendorsAsync(string            id);
-    Task<BinLocation?>                   ScanBinLocationAsync(string            bin);
-    Task<string?>                        GetBinCodeAsync(int                    binEntry);
-    Task<IEnumerable<Item>>              ScanItemBarCodeAsync(string            scanCode, bool    item = false);
-    Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string?                 itemCode, string? barcode);
-    Task<IEnumerable<BinContent>>        BinCheckAsync(int                      binEntry);
-    Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string                  itemCode, string whsCode);
-    Task<UpdateItemBarCodeResponse>      UpdateItemBarCode(UpdateBarCodeRequest request);
-    Task<ValidateAddItemResult>          GetItemValidationInfo(string           itemCode,       string barCode, string  warehouse, int?                                     binEntry, bool enableBin);
-    Task<ProcessTransferResponse>        ProcessTransfer(int                    transferNumber, string whsCode, string? comments,  Dictionary<string, TransferCreationData> data);
+    Task<ExternalValue<string>?>             GetUserInfoAsync(string id);
+    Task<IEnumerable<ExternalValue<string>>> GetUsersAsync();
+    Task<string?>                            GetCompanyNameAsync();
+    Task<IEnumerable<Warehouse>>             GetWarehousesAsync(string[]? filter = null);
+    Task<Warehouse?>                         GetWarehouseAsync(string id);
+    Task<(int itemCount, int binCount)>      GetItemAndBinCount(string warehouse);
+    Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
+    Task<ExternalValue<string>?>             GetVendorAsync(string                  cardCode);
+    Task<bool>                               ValidateVendorsAsync(string            id);
+    Task<BinLocation?>                       ScanBinLocationAsync(string            bin);
+    Task<string?>                            GetBinCodeAsync(int                    binEntry);
+    Task<IEnumerable<Item>>                  ScanItemBarCodeAsync(string            scanCode, bool item = false);
+    Task<IEnumerable<ItemCheckResponse>>     ItemCheckAsync(string?                 itemCode, string? barcode);
+    Task<IEnumerable<BinContent>>            BinCheckAsync(int                      binEntry);
+    Task<IEnumerable<ItemStockResponse>>     ItemStockAsync(string                  itemCode, string whsCode);
+    Task<UpdateItemBarCodeResponse>          UpdateItemBarCode(UpdateBarCodeRequest request);
+    Task<ValidateAddItemResult>              GetItemValidationInfo(string           itemCode,       string barCode, string  warehouse, int? binEntry, bool enableBin);
+    Task<ProcessTransferResponse>            ProcessTransfer(int                    transferNumber, string whsCode, string? comments,  Dictionary<string, TransferCreationData> data);
 
     // Picking methods
     Task<IEnumerable<PickingDocument>>         GetPickLists(PickListsRequest                        request, string warehouse);
@@ -34,4 +36,9 @@ public interface IExternalSystemAdapter {
 
     // Inventory Counting methods
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data);
+
+    // Goods Receipt methods
+    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request,   Guid             userId);
+    Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int                                number,    string           warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data);
+    Task                               ValidateGoodsReceiptDocuments(string                   warehouse, GoodsReceiptType type,      List<DocumentParameter>                            documents);
 }
