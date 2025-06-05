@@ -25,10 +25,10 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             })
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
-        
+
         // Validate and close stale pick lists before calculating quantities
         await ValidateAndCloseStalePickLists();
-        
+
         var dbPick = await db.PickLists
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
@@ -63,7 +63,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
 
         // Validate and close stale pick lists before calculating quantities
         await ValidateAndCloseStalePickLists();
-        
+
         var dbPick = await db.PickLists
             .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
@@ -230,35 +230,45 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
     }
 
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
+        if (request.Unit != UnitType.Unit) {
+            var items = await adapter.ItemCheckAsync(request.ItemCode, null);
+            var item  = items.FirstOrDefault();
+            if (item == null) {
+                throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
+            }
+
+            request.Quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+        }
+
         // Validate the add item request
         var validationResult = await adapter.ValidatePickingAddItem(request, sessionInfo.Guid);
-        
-        //todo
-        // var result = db.PickLists
-        //     .Where(p => p.Status == ObjectStatus.Open 
-        //                 || p.Status == ObjectStatus.Processing)
-        //     .Select(p => new {
-        //         ItemCode = (string?)p.ItemCode,
-        //         p.BinEntry,
-        //         p.Quantity
-        //     })
-        //     .Concat(
-        //         db.TransferLines
-        //             .Where(t => t.LineStatus == LineStatus.Open 
-        //                         || t.LineStatus == LineStatus.Processing)
-        //             .Select(t => new {
-        //                 ItemCode = (string?)t.ItemCode,
-        //                 t.BinEntry,
-        //                 t.Quantity
-        //             })
-        //     )
-        //     .GroupBy(x => new { x.ItemCode, x.BinEntry })
-        //     .Select(g => new {
-        //         g.Key.ItemCode,
-        //         g.Key.BinEntry,
-        //         Quantity = g.Sum(x => x.Quantity)
-        //     });
-        //
+
+        int result = db.PickLists
+            .Where(p => p.ItemCode == request.ItemCode && p.BinEntry == request.BinEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+            .Select(p => p.Quantity)
+            .Concat(
+                db.TransferLines
+                    .Where(t => t.ItemCode == request.ItemCode && t.BinEntry == request.BinEntry && (t.LineStatus == LineStatus.Open || t.LineStatus == LineStatus.Processing))
+                    .Select(t => t.Quantity)
+            )
+            .Sum();
+        validationResult.BinOnHand -= result;
+        validationResult.OpenQuantity -= await db.PickLists
+            .Where(v => v.AbsEntry == request.ID && v.ItemCode == request.ItemCode && (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing)).SumAsync(v => v.Quantity);
+
+        if (request.Quantity > validationResult.OpenQuantity) {
+            return new PickListAddItemResponse {
+                Status         = ResponseStatus.Error,
+                ErrorMessage   = "Quantity exceeds open quantity",
+            };
+        }
+
+        if (request.Quantity > validationResult.BinOnHand) {
+            return new PickListAddItemResponse {
+                Status         = ResponseStatus.Error,
+                ErrorMessage   = "Quantity exceeds bin available stock",
+            };
+        }
 
         if (!validationResult.IsValid) {
             return new PickListAddItemResponse {
@@ -268,23 +278,13 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             };
         }
 
-        // Create pick list entry
-        int quantity = request.Quantity;
-        if (request.Unit != UnitType.Unit) {
-            var items = await adapter.ItemCheckAsync(request.ItemCode, null);
-            var item  = items.FirstOrDefault();
-            if (item == null) {
-                throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
-            }
-
-            quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
-        }
+        // var binCheck = await adapter.BinCheckAsync()
 
         var pickList = new PickList {
             AbsEntry        = request.ID,
             PickEntry       = validationResult.PickEntry ?? request.PickEntry ?? 0,
             ItemCode        = request.ItemCode,
-            Quantity        = quantity,
+            Quantity        = request.Quantity,
             BinEntry        = request.BinEntry,
             Unit            = request.Unit,
             Status          = ObjectStatus.Open,
@@ -339,12 +339,12 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         if (closedPickListEntries.Length > 0) {
             // Close all local pick lists that are closed in SAP
             var pickListsToClose = await db.PickLists
-                .Where(p => closedPickListEntries.Contains(p.AbsEntry) && 
-                           (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                .Where(p => closedPickListEntries.Contains(p.AbsEntry) &&
+                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
                 .ToArrayAsync();
 
             foreach (var pickList in pickListsToClose) {
-                pickList.Status = ObjectStatus.Closed;
+                pickList.Status    = ObjectStatus.Closed;
                 pickList.UpdatedAt = DateTime.UtcNow;
             }
 

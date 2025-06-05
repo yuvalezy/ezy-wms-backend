@@ -232,23 +232,25 @@ public class SboPickingRepository(SboDatabaseService dbService) {
     public async Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
         const string query =
             """
-
-            SELECT 
-                PKL1."PickEntry",
-                CASE 
-                    WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
-                    WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
-                    WHEN PKL1."PickQtty" >= PKL1."RelQtty" THEN -3  -- Already picked
-                    WHEN @Quantity > (PKL1."RelQtty" - PKL1."PickQtty") THEN -4  -- Too much quantity
-                    ELSE 0  -- OK
-                END AS "ValidationResult"
+            SELECT top 1 
+            PKL1."PickEntry",
+            CASE 
+                WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
+                WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
+                WHEN PKL1."PickQtty" >= PKL1."RelQtty" THEN -3  -- Already picked
+                WHEN @Quantity > (PKL1."RelQtty" - PKL1."PickQtty") THEN -4  -- Too much quantity
+                ELSE 0  -- OK
+            END AS "ValidationResult",
+            PKL1."RelQtty" - PKL1."PickQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) "OnHandQty"
             FROM OPKL
             INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
             inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
+            left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
             WHERE OPKL."AbsEntry" = @ID
-                AND PKL1."BaseObject" = @SourceType
-                AND PKL1."OrderEntry" = @SourceEntry
-                AND T2."ItemCode" = @ItemCode
+            AND PKL1."BaseObject" = @SourceType
+            AND PKL1."OrderEntry" = @SourceEntry
+            AND T2."ItemCode" = @ItemCode
+            order by 2 desc, 3 desc
             """;
 
         var sqlParams = new[] {
@@ -256,12 +258,26 @@ public class SboPickingRepository(SboDatabaseService dbService) {
             new SqlParameter("@SourceType", SqlDbType.Int) { Value        = request.Type },
             new SqlParameter("@SourceEntry", SqlDbType.Int) { Value       = request.Entry },
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
-            new SqlParameter("@Quantity", SqlDbType.Int) { Value          = request.Quantity }
+            new SqlParameter("@Quantity", SqlDbType.Int) { Value          = request.Quantity },
+            new SqlParameter("@BinEntry", SqlDbType.Int) { Value          = request.BinEntry },
         };
 
-        var result = await dbService.QuerySingleAsync(query, sqlParams, reader => new {
-            PickEntry   = reader.IsDBNull(0) ? (int?)null : reader.GetInt32(0),
-            ReturnValue = reader.GetInt32(1)
+        var result = await dbService.QuerySingleAsync(query, sqlParams, reader => {
+            int returnValue = reader.GetInt32(1);
+            return new PickingValidationResult {
+                PickEntry    = reader.IsDBNull(0) ? null : reader.GetInt32(0),
+                ReturnValue  = returnValue,
+                OpenQuantity = (int)reader.GetDecimal(2),
+                BinOnHand    = (int)reader.GetDecimal(3),
+                ErrorMessage = returnValue switch {
+                    -2 => "Wrong item code",
+                    -3 => "Item already fully picked",
+                    -4 => "Quantity exceeds open quantity",
+                    -6 => "Document is closed",
+                    _  => null
+                },
+                IsValid = returnValue == 0,
+            };
         });
 
         if (result == null) {
@@ -272,18 +288,7 @@ public class SboPickingRepository(SboDatabaseService dbService) {
             };
         }
 
-        return new PickingValidationResult {
-            PickEntry   = result.PickEntry,
-            ReturnValue = result.ReturnValue,
-            IsValid     = result.ReturnValue == 0,
-            ErrorMessage = result.ReturnValue switch {
-                -2 => "Wrong item code",
-                -3 => "Item already fully picked",
-                -4 => "Quantity exceeds available amount",
-                -6 => "Document is closed",
-                _  => null
-            }
-        };
+        return result;
     }
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
@@ -327,12 +332,12 @@ public class SboPickingRepository(SboDatabaseService dbService) {
 
         var placeholders = string.Join(", ", absEntries.Select((_, i) => $"@AbsEntry{i}"));
         var query = $"""
-            SELECT 
-                OPKL."AbsEntry",
-                CASE WHEN OPKL."Status" IN ('R', 'P', 'D') THEN 1 ELSE 0 END AS "IsOpen"
-            FROM OPKL 
-            WHERE OPKL."AbsEntry" IN ({placeholders})
-            """;
+                     SELECT 
+                         OPKL."AbsEntry",
+                         CASE WHEN OPKL."Status" IN ('R', 'P', 'D') THEN 1 ELSE 0 END AS "IsOpen"
+                     FROM OPKL 
+                     WHERE OPKL."AbsEntry" IN ({placeholders})
+                     """;
 
         var sqlParams = new List<SqlParameter>();
         for (int i = 0; i < absEntries.Length; i++) {
@@ -341,7 +346,7 @@ public class SboPickingRepository(SboDatabaseService dbService) {
 
         var results = await dbService.QueryAsync(query, sqlParams.ToArray(), reader => new {
             AbsEntry = reader.GetInt32(0),
-            IsOpen = reader.GetInt32(1) == 1
+            IsOpen   = reader.GetInt32(1) == 1
         });
 
         // Create a dictionary with all entries, defaulting to false for missing ones
@@ -349,7 +354,7 @@ public class SboPickingRepository(SboDatabaseService dbService) {
         foreach (var entry in absEntries) {
             statusDict[entry] = false;
         }
-        
+
         // Update with actual results from database
         foreach (var result in results) {
             statusDict[result.AbsEntry] = result.IsOpen;
