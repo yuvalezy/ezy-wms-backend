@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250603185026_ObjectNumbers")]
-    partial class ObjectNumbers
+    [Migration("20250605194451_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -73,6 +73,69 @@ namespace Infrastructure.Migrations
                     b.ToTable("AuthorizationGroups");
                 });
 
+            modelBuilder.Entity("Core.Entities.CancellationReason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Counting")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("GoodsReceipt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("Transfer")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.HasIndex("Transfer", "GoodsReceipt", "Counting", "IsEnabled")
+                        .HasDatabaseName("IX_CancellationReasons_ObjectTypes");
+
+                    b.ToTable("CancellationReasons", (string)null);
+                });
+
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
                 {
                     b.Property<Guid>("Id")
@@ -99,6 +162,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("Number")
                         .ValueGeneratedOnAdd()
@@ -155,7 +222,10 @@ namespace Infrastructure.Migrations
                     b.Property<int>("DocEntry")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("GoodsReceiptLineId")
+                    b.Property<int>("DocNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GoodsReceiptId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("ObjType")
@@ -171,7 +241,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("GoodsReceiptLineId");
+                    b.HasIndex("GoodsReceiptId");
 
                     b.HasIndex("UpdatedByUserId");
 
@@ -188,6 +258,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("nvarchar(254)");
+
+                    b.Property<Guid?>("CancellationReasonId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
@@ -238,6 +311,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CancellationReasonId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -329,9 +404,6 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("LineId")
-                        .HasColumnType("int");
-
                     b.Property<int>("TargetEntry")
                         .HasColumnType("int");
 
@@ -391,6 +463,10 @@ namespace Infrastructure.Migrations
                     b.Property<int>("InvCountEntry")
                         .HasColumnType("int");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("Number")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
@@ -433,6 +509,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<int?>("BinEntry")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("CancellationReasonId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
@@ -483,6 +562,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CancellationReasonId");
+
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("InventoryCountingId");
@@ -523,6 +604,7 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(254)");
 
                     b.Property<string>("ItemCode")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -533,6 +615,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Unit")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -624,6 +709,9 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("BinEntry")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("CancellationReasonId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Comments")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -675,6 +763,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CancellationReasonId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -771,6 +861,23 @@ namespace Infrastructure.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
+            modelBuilder.Entity("Core.Entities.CancellationReason", b =>
+                {
+                    b.HasOne("Core.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Core.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
                 {
                     b.HasOne("Core.Entities.User", "CreatedByUser")
@@ -795,9 +902,9 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Core.Entities.GoodsReceiptLine", "GoodsReceiptLine")
+                    b.HasOne("Core.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany("Documents")
-                        .HasForeignKey("GoodsReceiptLineId")
+                        .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -808,13 +915,17 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("CreatedByUser");
 
-                    b.Navigation("GoodsReceiptLine");
+                    b.Navigation("GoodsReceipt");
 
                     b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptLine", b =>
                 {
+                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
+                        .WithMany()
+                        .HasForeignKey("CancellationReasonId");
+
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -830,6 +941,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 
@@ -907,6 +1020,10 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.InventoryCountingLine", b =>
                 {
+                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
+                        .WithMany()
+                        .HasForeignKey("CancellationReasonId");
+
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -922,6 +1039,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 
@@ -966,6 +1085,10 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.TransferLine", b =>
                 {
+                    b.HasOne("Core.Entities.CancellationReason", "CancellationReason")
+                        .WithMany()
+                        .HasForeignKey("CancellationReasonId");
+
                     b.HasOne("Core.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
@@ -981,6 +1104,8 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CancellationReason");
 
                     b.Navigation("CreatedByUser");
 
@@ -1001,13 +1126,13 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
                 {
+                    b.Navigation("Documents");
+
                     b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptLine", b =>
                 {
-                    b.Navigation("Documents");
-
                     b.Navigation("Sources");
 
                     b.Navigation("Targets");

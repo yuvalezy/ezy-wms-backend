@@ -96,7 +96,7 @@ public class SboDatabaseService(ISettings settings) {
     /// <param name="readerFunc">Function to process the SqlDataReader</param>
     /// <typeparam name="T">Return type of the reader function</typeparam>
     /// <returns>Result from processing the reader</returns>
-    public async Task ExecuteReaderAsync<T>(string query, SqlParameter[]? parameters, Action<SqlDataReader> readerFunc) {
+    public async Task ExecuteReaderAsync(string query, SqlParameter[]? parameters, Action<SqlDataReader> readerFunc) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 

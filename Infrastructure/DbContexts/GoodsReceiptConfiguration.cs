@@ -19,6 +19,12 @@ public class GoodsReceiptConfiguration : IEntityTypeConfiguration<GoodsReceipt> 
             .WithOne(grl => grl.GoodsReceipt)
             .HasForeignKey(grl => grl.GoodsReceiptId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        builder
+            .HasMany(gr => gr.Documents)
+            .WithOne(grl => grl.GoodsReceipt)
+            .HasForeignKey(grl => grl.GoodsReceiptId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Enums are now stored as integers by default
     }
@@ -31,12 +37,6 @@ public class GoodsReceiptLineConfiguration : IEntityTypeConfiguration<GoodsRecei
             .HasMany(grl => grl.Targets)
             .WithOne(grt => grt.GoodsReceiptLine)
             .HasForeignKey(grt => grt.GoodsReceiptLineId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasMany(grl => grl.Documents)
-            .WithOne(grd => grd.GoodsReceiptLine)
-            .HasForeignKey(grd => grd.GoodsReceiptLineId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
@@ -65,7 +65,7 @@ public class GoodsReceiptTargetConfiguration : IEntityTypeConfiguration<GoodsRec
 
 public class GoodsReceiptDocumentConfiguration : IEntityTypeConfiguration<GoodsReceiptDocument> {
     public void Configure(EntityTypeBuilder<GoodsReceiptDocument> builder) {
-        // No additional configuration needed beyond what's in annotations
+        // Configure child relationships with cascade delete
     }
 }
 

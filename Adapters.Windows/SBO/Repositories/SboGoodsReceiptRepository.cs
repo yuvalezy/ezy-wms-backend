@@ -142,7 +142,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
         string documentsQuery = documents.Aggregate("",
-            (a, b) => a + " union " +
+            (a, b) => a + a.UnionQuery() +
                       $"""
                        select {b.ObjectType} "ObjType",
                        {b.DocumentNumber} "DocNum",
@@ -157,7 +157,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         queryBuilder.AppendLine("    When Sum(COALESCE(X3.\"Quantity\", X4.\"Quantity\", 0)) = 0 Then 'W'");
         queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' Then 'O'");
         queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
-        queryBuilder.AppendLine($"from ({documents}) X0");
+        queryBuilder.AppendLine($"from ({documentsQuery}) X0");
         queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "OPOR" : "OPDN")} X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
         queryBuilder.AppendLine("left outer join OPCH X2 on X2.\"DocEntry\" = X0.\"DocEntry\" and X2.\"ObjType\" = X0.\"ObjType\"");
         queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "POR1" : "PDN1")} X3 on X3.\"DocEntry\" = X1.\"DocEntry\" and X3.\"WhsCode\" = @WhsCode");

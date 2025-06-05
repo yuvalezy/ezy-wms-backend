@@ -12,17 +12,23 @@ namespace Infrastructure.Services;
 public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter) : IGoodsReceiptService {
     public async Task<GoodsReceiptResponse> CreateGoodsReceipt(CreateGoodsReceiptRequest request, SessionInfo session) {
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
+        var now = DateTime.UtcNow;
         var goodsReceipt = new GoodsReceipt {
             Type            = request.Type,
             CardCode        = request.Type == GoodsReceiptType.All ? request.CardCode : null,
             Name            = request.Name,
-            Date            = DateTime.UtcNow,
+            Date            = now,
             Status          = ObjectStatus.Open,
             WhsCode         = session.Warehouse,
-            CreatedAt       = DateTime.UtcNow,
-            CreatedByUserId = session.Guid
+            CreatedByUserId = session.Guid,
+            Documents       = request.Documents.Select(d => new GoodsReceiptDocument {
+                CreatedByUserId = session.Guid,
+                DocEntry        = d.DocumentEntry,
+                DocNumber        = d.DocumentNumber,
+                ObjType         = d.ObjectType,
+            }).ToArray()
         };
-
+        
         await db.GoodsReceipts.AddAsync(goodsReceipt);
         await db.SaveChangesAsync();
 

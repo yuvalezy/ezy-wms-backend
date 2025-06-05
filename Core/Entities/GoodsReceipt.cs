@@ -29,7 +29,8 @@ public class GoodsReceipt : BaseEntity {
     public required string WhsCode { get; set; }
 
     // Navigation properties
-    public virtual ICollection<GoodsReceiptLine> Lines { get; set; } = new List<GoodsReceiptLine>();
+    public virtual ICollection<GoodsReceiptLine>     Lines     { get; set; } = new List<GoodsReceiptLine>();
+    public virtual ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
 }
 
 public class GoodsReceiptLine : BaseEntity {
@@ -54,7 +55,7 @@ public class GoodsReceiptLine : BaseEntity {
     public decimal Quantity { get; set; }
 
     public int? StatusReason { get; set; }
-    
+
     [ForeignKey("CancellationReason")]
     public Guid? CancellationReasonId { get; set; }
 
@@ -65,21 +66,17 @@ public class GoodsReceiptLine : BaseEntity {
     [ForeignKey("GoodsReceipt")]
     public Guid GoodsReceiptId { get; set; }
 
-    public virtual GoodsReceipt GoodsReceipt { get; set; } = null!;
+    public virtual GoodsReceipt        GoodsReceipt       { get; set; } = null!;
     public virtual CancellationReason? CancellationReason { get; set; }
 
-    public virtual ICollection<GoodsReceiptTarget>   Targets   { get; set; } = new List<GoodsReceiptTarget>();
-    public virtual ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
-    public virtual ICollection<GoodsReceiptSource>   Sources   { get; set; } = new List<GoodsReceiptSource>();
+    public virtual ICollection<GoodsReceiptTarget> Targets { get; set; } = new List<GoodsReceiptTarget>();
+    public virtual ICollection<GoodsReceiptSource> Sources { get; set; } = new List<GoodsReceiptSource>();
 }
 
 public class GoodsReceiptTarget : BaseEntity {
     [Required]
     [StringLength(50)]
     public required string ItemCode { get; set; }
-
-    [Required]
-    public int LineId { get; set; }
 
     [Required]
     public int TargetEntry { get; set; }
@@ -110,11 +107,13 @@ public class GoodsReceiptDocument : BaseEntity {
     [Required]
     public int ObjType { get; set; }
 
-    // Navigation property
-    [ForeignKey("GoodsReceiptLine")]
-    public Guid GoodsReceiptLineId { get; set; }
+    public int DocNumber { get; set; }
 
-    public virtual GoodsReceiptLine GoodsReceiptLine { get; set; } = null!;
+    // Navigation property
+    [ForeignKey("GoodsReceipt")]
+    public Guid GoodsReceiptId { get; set; }
+
+    public virtual GoodsReceipt GoodsReceipt { get; set; } = null!;
 }
 
 public class GoodsReceiptSource : BaseEntity {

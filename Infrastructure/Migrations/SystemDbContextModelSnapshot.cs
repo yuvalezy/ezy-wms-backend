@@ -219,7 +219,10 @@ namespace Infrastructure.Migrations
                     b.Property<int>("DocEntry")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("GoodsReceiptLineId")
+                    b.Property<int>("DocNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GoodsReceiptId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("ObjType")
@@ -235,7 +238,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("GoodsReceiptLineId");
+                    b.HasIndex("GoodsReceiptId");
 
                     b.HasIndex("UpdatedByUserId");
 
@@ -397,9 +400,6 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("LineId")
-                        .HasColumnType("int");
 
                     b.Property<int>("TargetEntry")
                         .HasColumnType("int");
@@ -899,9 +899,9 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Core.Entities.GoodsReceiptLine", "GoodsReceiptLine")
+                    b.HasOne("Core.Entities.GoodsReceipt", "GoodsReceipt")
                         .WithMany("Documents")
-                        .HasForeignKey("GoodsReceiptLineId")
+                        .HasForeignKey("GoodsReceiptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -912,7 +912,7 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("CreatedByUser");
 
-                    b.Navigation("GoodsReceiptLine");
+                    b.Navigation("GoodsReceipt");
 
                     b.Navigation("UpdatedByUser");
                 });
@@ -1123,13 +1123,13 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
                 {
+                    b.Navigation("Documents");
+
                     b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptLine", b =>
                 {
-                    b.Navigation("Documents");
-
                     b.Navigation("Sources");
 
                     b.Navigation("Targets");

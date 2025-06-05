@@ -38,4 +38,6 @@ public static class QueryHelper {
             ObjectTypes.oInventoryPostings        => "IQR",
             _                                     => ""
         };
+    public static  string UnionQuery(this   string value)                       => ProcessQuery(value, "union");
+    private static string ProcessQuery(this string value, string replaceString) => !string.IsNullOrWhiteSpace(value) ? $" {replaceString} " : "";
 }

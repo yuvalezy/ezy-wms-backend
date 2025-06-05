@@ -64,10 +64,47 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CancellationReasons",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    Transfer = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    GoodsReceipt = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    Counting = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CancellationReasons", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CancellationReasons_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_CancellationReasons_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "GoodsReceipts",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Number = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     CardCode = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: true),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -102,6 +139,9 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Number = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
                     InvCountEntry = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
@@ -138,9 +178,10 @@ namespace Infrastructure.Migrations
                     AbsEntry = table.Column<int>(type: "int", nullable: false),
                     BinEntry = table.Column<int>(type: "int", nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(254)", maxLength: 254, nullable: true),
-                    ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     PickEntry = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
+                    Unit = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -171,6 +212,8 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Number = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Comments = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -201,6 +244,45 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GoodsReceiptDocuments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DocEntry = table.Column<int>(type: "int", nullable: false),
+                    ObjType = table.Column<int>(type: "int", nullable: false),
+                    DocNumber = table.Column<int>(type: "int", nullable: false),
+                    GoodsReceiptId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GoodsReceiptDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GoodsReceiptDocuments_GoodsReceipts_GoodsReceiptId",
+                        column: x => x.GoodsReceiptId,
+                        principalTable: "GoodsReceipts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_GoodsReceiptDocuments_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_GoodsReceiptDocuments_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "GoodsReceiptLines",
                 columns: table => new
                 {
@@ -212,6 +294,7 @@ namespace Infrastructure.Migrations
                     LineStatus = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<decimal>(type: "decimal(16,6)", precision: 16, scale: 6, nullable: false),
                     StatusReason = table.Column<int>(type: "int", nullable: true),
+                    CancellationReasonId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Unit = table.Column<int>(type: "int", nullable: false),
                     GoodsReceiptId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
@@ -224,6 +307,11 @@ namespace Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_GoodsReceiptLines", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GoodsReceiptLines_CancellationReasons_CancellationReasonId",
+                        column: x => x.CancellationReasonId,
+                        principalTable: "CancellationReasons",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_GoodsReceiptLines_GoodsReceipts_GoodsReceiptId",
                         column: x => x.GoodsReceiptId,
@@ -257,6 +345,7 @@ namespace Infrastructure.Migrations
                     LineStatus = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     StatusReason = table.Column<int>(type: "int", nullable: true),
+                    CancellationReasonId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Unit = table.Column<int>(type: "int", nullable: false),
                     InventoryCountingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
@@ -269,6 +358,11 @@ namespace Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_InventoryCountingLines", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InventoryCountingLines_CancellationReasons_CancellationReasonId",
+                        column: x => x.CancellationReasonId,
+                        principalTable: "CancellationReasons",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_InventoryCountingLines_InventoryCountings_InventoryCountingId",
                         column: x => x.InventoryCountingId,
@@ -302,6 +396,7 @@ namespace Infrastructure.Migrations
                     LineStatus = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     StatusReason = table.Column<int>(type: "int", nullable: true),
+                    CancellationReasonId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Type = table.Column<int>(type: "int", nullable: false),
                     UnitType = table.Column<int>(type: "int", nullable: false),
                     TransferId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -316,6 +411,11 @@ namespace Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_TransferLines", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_TransferLines_CancellationReasons_CancellationReasonId",
+                        column: x => x.CancellationReasonId,
+                        principalTable: "CancellationReasons",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_TransferLines_Transfers_TransferId",
                         column: x => x.TransferId,
                         principalTable: "Transfers",
@@ -329,44 +429,6 @@ namespace Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_TransferLines_Users_UpdatedByUserId",
-                        column: x => x.UpdatedByUserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "GoodsReceiptDocuments",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DocEntry = table.Column<int>(type: "int", nullable: false),
-                    ObjType = table.Column<int>(type: "int", nullable: false),
-                    GoodsReceiptLineId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Deleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_GoodsReceiptDocuments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_GoodsReceiptDocuments_GoodsReceiptLines_GoodsReceiptLineId",
-                        column: x => x.GoodsReceiptLineId,
-                        principalTable: "GoodsReceiptLines",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_GoodsReceiptDocuments_Users_CreatedByUserId",
-                        column: x => x.CreatedByUserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_GoodsReceiptDocuments_Users_UpdatedByUserId",
                         column: x => x.UpdatedByUserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -419,7 +481,6 @@ namespace Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    LineId = table.Column<int>(type: "int", nullable: false),
                     TargetEntry = table.Column<int>(type: "int", nullable: false),
                     TargetLine = table.Column<int>(type: "int", nullable: false),
                     TargetQuantity = table.Column<decimal>(type: "decimal(16,6)", precision: 16, scale: 6, nullable: false),
@@ -467,19 +528,39 @@ namespace Infrastructure.Migrations
                 column: "UpdatedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CancellationReasons_CreatedByUserId",
+                table: "CancellationReasons",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CancellationReasons_ObjectTypes",
+                table: "CancellationReasons",
+                columns: new[] { "Transfer", "GoodsReceipt", "Counting", "IsEnabled" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CancellationReasons_UpdatedByUserId",
+                table: "CancellationReasons",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_GoodsReceiptDocuments_CreatedByUserId",
                 table: "GoodsReceiptDocuments",
                 column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GoodsReceiptDocuments_GoodsReceiptLineId",
+                name: "IX_GoodsReceiptDocuments_GoodsReceiptId",
                 table: "GoodsReceiptDocuments",
-                column: "GoodsReceiptLineId");
+                column: "GoodsReceiptId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GoodsReceiptDocuments_UpdatedByUserId",
                 table: "GoodsReceiptDocuments",
                 column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GoodsReceiptLines_CancellationReasonId",
+                table: "GoodsReceiptLines",
+                column: "CancellationReasonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GoodsReceiptLines_CreatedByUserId",
@@ -537,6 +618,11 @@ namespace Infrastructure.Migrations
                 column: "UpdatedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_InventoryCountingLines_CancellationReasonId",
+                table: "InventoryCountingLines",
+                column: "CancellationReasonId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InventoryCountingLines_CreatedByUserId",
                 table: "InventoryCountingLines",
                 column: "CreatedByUserId");
@@ -570,6 +656,11 @@ namespace Infrastructure.Migrations
                 name: "IX_PickLists_UpdatedByUserId",
                 table: "PickLists",
                 column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TransferLines_CancellationReasonId",
+                table: "TransferLines",
+                column: "CancellationReasonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TransferLines_CreatedByUserId",
@@ -655,6 +746,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Transfers");
+
+            migrationBuilder.DropTable(
+                name: "CancellationReasons");
 
             migrationBuilder.DropTable(
                 name: "GoodsReceipts");
