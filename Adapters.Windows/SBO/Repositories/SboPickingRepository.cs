@@ -229,11 +229,10 @@ public class SboPickingRepository(SboDatabaseService dbService) {
         });
     }
 
-    public async Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
         const string query =
             """
-            SELECT top 1 
-            PKL1."PickEntry",
+            SELECT PKL1."PickEntry",
             CASE 
                 WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
                 WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
@@ -262,7 +261,7 @@ public class SboPickingRepository(SboDatabaseService dbService) {
             new SqlParameter("@BinEntry", SqlDbType.Int) { Value          = request.BinEntry },
         };
 
-        var result = await dbService.QuerySingleAsync(query, sqlParams, reader => {
+        var result = await dbService.QueryAsync(query, sqlParams, reader => {
             int returnValue = reader.GetInt32(1);
             return new PickingValidationResult {
                 PickEntry    = reader.IsDBNull(0) ? null : reader.GetInt32(0),
@@ -280,15 +279,7 @@ public class SboPickingRepository(SboDatabaseService dbService) {
             };
         });
 
-        if (result == null) {
-            return new PickingValidationResult {
-                IsValid      = false,
-                ReturnValue  = -6,
-                ErrorMessage = "Pick entry not found"
-            };
-        }
-
-        return result;
+        return result.ToArray();
     }
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {

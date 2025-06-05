@@ -241,7 +241,15 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
 
         // Validate the add item request
-        var validationResult = await adapter.ValidatePickingAddItem(request, sessionInfo.Guid);
+        var validationResults = await adapter.ValidatePickingAddItem(request, sessionInfo.Guid);
+
+        if (validationResults.Length == 0) {
+            return new PickListAddItemResponse {
+                ErrorMessage   = "Pick entry not found",
+                Status         = ResponseStatus.Error,
+                ClosedDocument = true
+            };
+        }
 
         int result = db.PickLists
             .Where(p => p.ItemCode == request.ItemCode && p.BinEntry == request.BinEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
@@ -252,37 +260,39 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
                     .Select(t => t.Quantity)
             )
             .Sum();
-        validationResult.BinOnHand -= result;
-        validationResult.OpenQuantity -= await db.PickLists
-            .Where(v => v.AbsEntry == request.ID && v.ItemCode == request.ItemCode && (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing)).SumAsync(v => v.Quantity);
 
-        if (request.Quantity > validationResult.OpenQuantity) {
+        int binOnHand = validationResults.First().BinOnHand - result;
+
+        var dbPickedQuantity = await db.PickLists.Where(v => v.AbsEntry == request.ID && v.ItemCode == request.ItemCode && (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing))
+            .GroupBy(v => v.PickEntry)
+            .Select(v => new {PickEntry = v.Key, Quantity = v.Sum(vv => vv.Quantity)})
+            .ToArrayAsync();
+        
+        var check = (from v in validationResults
+                    join p in dbPickedQuantity on v.PickEntry equals p.PickEntry into gj
+                    from sub in gj.DefaultIfEmpty()
+                    where v.OpenQuantity - (sub?.Quantity ?? 0) > 0
+                    select new { ValidationResult = v, PickedQuantity = sub?.Quantity ?? 0 })
+                   .FirstOrDefault();
+        if (check == null) {
             return new PickListAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = "Quantity exceeds open quantity",
+                Status       = ResponseStatus.Error,
+                ErrorMessage = "Quantity exceeds open quantity",
             };
         }
 
-        if (request.Quantity > validationResult.BinOnHand) {
+        check.ValidationResult.OpenQuantity -= check.PickedQuantity;
+
+        if (request.Quantity > binOnHand) {
             return new PickListAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = "Quantity exceeds bin available stock",
+                Status       = ResponseStatus.Error,
+                ErrorMessage = "Quantity exceeds bin available stock",
             };
         }
-
-        if (!validationResult.IsValid) {
-            return new PickListAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = validationResult.ErrorMessage,
-                ClosedDocument = validationResult.ReturnValue == -6
-            };
-        }
-
-        // var binCheck = await adapter.BinCheckAsync()
 
         var pickList = new PickList {
             AbsEntry        = request.ID,
-            PickEntry       = validationResult.PickEntry ?? request.PickEntry ?? 0,
+            PickEntry       = check.ValidationResult.PickEntry ?? request.PickEntry ?? 0,
             ItemCode        = request.ItemCode,
             Quantity        = request.Quantity,
             BinEntry        = request.BinEntry,

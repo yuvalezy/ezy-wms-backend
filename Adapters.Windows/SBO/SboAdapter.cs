@@ -46,7 +46,7 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
         return await pickingRepository.GetPickingDetailItemsBins(parameters);
     }
 
-    public async Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
         return await pickingRepository.ValidatePickingAddItem(request, userId);
     }
 

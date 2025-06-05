@@ -90,7 +90,7 @@ public class SapBusinessOneServiceLayerAdapter : IExternalSystemAdapter {
         throw new NotImplementedException();
     }
 
-    public Task<PickingValidationResult> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+    public Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
         throw new NotImplementedException();
     }
 
