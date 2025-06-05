@@ -54,6 +54,10 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
         return await pickingRepository.ProcessPickList(absEntry, warehouse);
     }
+
+    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
+        return await pickingRepository.GetPickListStatuses(absEntries);
+    }
     
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data) {
         int  series = await generalRepository.GetSeries("1470000065");

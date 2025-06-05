@@ -29,6 +29,7 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
     Task<PickingValidationResult>              ValidatePickingAddItem(PickListAddItemRequest        request,  Guid   userId);
     Task<ProcessPickListResult>                ProcessPickList(int                                  absEntry, string warehouse);
+    Task<Dictionary<int, bool>>                GetPickListStatuses(int[]                            absEntries);
 
     // Inventory Counting methods
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationData> data);

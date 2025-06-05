@@ -25,6 +25,10 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             })
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
+        
+        // Validate and close stale pick lists before calculating quantities
+        await ValidateAndCloseStalePickLists();
+        
         var dbPick = await db.PickLists
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
@@ -57,6 +61,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             Detail         = []
         };
 
+        // Validate and close stale pick lists before calculating quantities
+        await ValidateAndCloseStalePickLists();
+        
         var dbPick = await db.PickLists
             .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
@@ -175,6 +182,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
 
         var bins = await adapter.GetPickingDetailItemsBins(binParams);
+
+        // Validate and close stale pick lists before querying
+        await ValidateAndCloseStalePickLists();
 
         var result = db.PickLists
             .Where(p => p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
@@ -303,6 +313,42 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
                 Message      = "Failed to process pick list",
                 ErrorMessage = ex.Message
             };
+        }
+    }
+
+    private async Task ValidateAndCloseStalePickLists() {
+        var openPickLists = await db.PickLists
+            .Where(p => p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
+            .Select(p => p.AbsEntry)
+            .Distinct()
+            .ToArrayAsync();
+
+        if (openPickLists.Length == 0) {
+            return;
+        }
+
+        // Get all statuses in a single query
+        var pickListStatuses = await adapter.GetPickListStatuses(openPickLists);
+
+        // Find closed pick lists
+        var closedPickListEntries = pickListStatuses
+            .Where(kvp => !kvp.Value)
+            .Select(kvp => kvp.Key)
+            .ToArray();
+
+        if (closedPickListEntries.Length > 0) {
+            // Close all local pick lists that are closed in SAP
+            var pickListsToClose = await db.PickLists
+                .Where(p => closedPickListEntries.Contains(p.AbsEntry) && 
+                           (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                .ToArrayAsync();
+
+            foreach (var pickList in pickListsToClose) {
+                pickList.Status = ObjectStatus.Closed;
+                pickList.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await db.SaveChangesAsync();
         }
     }
 }

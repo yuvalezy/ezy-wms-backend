@@ -320,6 +320,44 @@ public class SboPickingRepository(SboDatabaseService dbService) {
 //         }
     }
 
+    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
+        if (absEntries == null || absEntries.Length == 0) {
+            return new Dictionary<int, bool>();
+        }
+
+        var placeholders = string.Join(", ", absEntries.Select((_, i) => $"@AbsEntry{i}"));
+        var query = $"""
+            SELECT 
+                OPKL."AbsEntry",
+                CASE WHEN OPKL."Status" IN ('R', 'P', 'D') THEN 1 ELSE 0 END AS "IsOpen"
+            FROM OPKL 
+            WHERE OPKL."AbsEntry" IN ({placeholders})
+            """;
+
+        var sqlParams = new List<SqlParameter>();
+        for (int i = 0; i < absEntries.Length; i++) {
+            sqlParams.Add(new SqlParameter($"@AbsEntry{i}", SqlDbType.Int) { Value = absEntries[i] });
+        }
+
+        var results = await dbService.QueryAsync(query, sqlParams.ToArray(), reader => new {
+            AbsEntry = reader.GetInt32(0),
+            IsOpen = reader.GetInt32(1) == 1
+        });
+
+        // Create a dictionary with all entries, defaulting to false for missing ones
+        var statusDict = new Dictionary<int, bool>();
+        foreach (var entry in absEntries) {
+            statusDict[entry] = false;
+        }
+        
+        // Update with actual results from database
+        foreach (var result in results) {
+            statusDict[result.AbsEntry] = result.IsOpen;
+        }
+
+        return statusDict;
+    }
+
     private static ObjectStatus ConvertStatus(string? status) {
         return status?.ToUpper() switch {
             "Y" => ObjectStatus.Closed,
