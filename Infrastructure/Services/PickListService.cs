@@ -77,7 +77,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             };
             
             // Get detail items if specific type and entry provided
-            if (request.Type.HasValue && request.Entry.HasValue) {
+            if (request is { Type: not null, Entry: not null }) {
                 var itemParams = new Dictionary<string, object> {
                     { "@AbsEntry", absEntry },
                     { "@Type", request.Type.Value },

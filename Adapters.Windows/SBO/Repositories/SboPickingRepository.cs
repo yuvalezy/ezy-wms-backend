@@ -79,79 +79,117 @@ public class SboPickingRepository(SboDatabaseService dbService) {
     }
 
     public async Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) {
-        var query = @"
-SELECT DISTINCT
-    PKL1.""BaseObject"" AS ""Type"",
-    PKL1.""OrderEntry"" AS ""Entry"",
-    T0.""DocNum"",
-    T0.""DocDate"",
-    T0.""CardCode"",
-    T0.""CardName"",
-    (SELECT COUNT(*) FROM PKL1 T1 WHERE T1.""AbsEntry"" = PKL1.""AbsEntry"" AND T1.""BaseObject"" = PKL1.""BaseObject"" AND T1.""OrderEntry"" = PKL1.""OrderEntry"") AS ""TotalItems"",
-    (SELECT COUNT(*) FROM PKL1 T1 WHERE T1.""AbsEntry"" = PKL1.""AbsEntry"" AND T1.""BaseObject"" = PKL1.""BaseObject"" AND T1.""OrderEntry"" = PKL1.""OrderEntry"" AND T1.""PickQtty"" < T1.""RelQtty"") AS ""TotalOpenItems""
-FROM PKL1
-INNER JOIN ODLN T0 ON T0.""DocEntry"" = PKL1.""OrderEntry"" AND PKL1.""BaseObject"" = 15
-WHERE PKL1.""AbsEntry"" = @AbsEntry";
+        string query =
+            """
+            SELECT
+                T0."BaseObject" AS "Type",
+                T0."OrderEntry" AS "Entry",
+                COALESCE(T2."DocNum", T3."DocNum", T4."DocNum") AS "DocNum",
+                COALESCE(T2."DocDate", T3."DocDate", T4."DocDate") AS "DocDate",
+                COALESCE(T2."CardCode", T3."CardCode", T4."CardCode") AS "CardCode",
+                COALESCE(T2."CardName", T3."CardName", T4."CardName") AS "CardName",
+                SUM(T0."RelQtty" + T0."PickQtty") AS "TotalItems",
+                SUM(T0."RelQtty") AS "TotalOpenItems" 
+            FROM PKL1 T0
+            LEFT JOIN ORDR T2 
+                ON T2."DocEntry" = T0."OrderEntry" AND T2."ObjType" = T0."BaseObject"
+            LEFT JOIN OINV T3 
+                ON T3."DocEntry" = T0."OrderEntry" AND T3."ObjType" = T0."BaseObject"
+            LEFT JOIN OWTQ T4 
+                ON T4."DocEntry" = T0."OrderEntry" AND T4."ObjType" = T0."BaseObject"
+            WHERE 
+                T0."AbsEntry" = @AbsEntry
+
+            """;
 
         if (parameters.ContainsKey("@Type")) {
-            query += " AND PKL1.\"BaseObject\" = @Type";
+            query += " AND T0.\"BaseObject\" = @Type";
         }
 
         if (parameters.ContainsKey("@Entry")) {
-            query += " AND PKL1.\"OrderEntry\" = @Entry";
+            query += " AND T0.\"OrderEntry\" = @Entry";
         }
 
-        query += " ORDER BY PKL1.\"BaseObject\", PKL1.\"OrderEntry\"";
+        query += """
+                  GROUP BY 
+                     T0."BaseObject", 
+                     T0."OrderEntry", 
+                     T2."DocNum", T3."DocNum", T4."DocNum", 
+                     T2."DocDate", T3."DocDate", T4."DocDate", 
+                     T2."CardCode", T3."CardCode", T4."CardCode", 
+                     T2."CardName", T3."CardName", T4."CardName"
+                 """;
+
+        query += " ORDER BY T0.\"BaseObject\", T0.\"OrderEntry\"";
 
         var sqlParams = ConvertToSqlParameters(parameters);
 
-        return await dbService.QueryAsync(query, sqlParams, reader => new PickingDetail {
-            Type           = reader.GetInt32(0),
-            Entry          = reader.GetInt32(1),
-            Number         = reader.GetInt32(2),
-            Date           = reader.GetDateTime(3),
-            CardCode       = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-            CardName       = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
-            TotalItems     = reader.GetInt32(6),
-            TotalOpenItems = reader.GetInt32(7)
+        return await dbService.QueryAsync(query, sqlParams, reader => {
+            var detail = new PickingDetail {
+                Type           = reader.GetInt32(0),
+                Entry          = reader.GetInt32(1),
+                Number         = reader.GetInt32(2),
+                Date           = reader.GetDateTime(3),
+                CardCode       = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                CardName       = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                TotalItems     = (int)reader.GetDecimal(6),
+                TotalOpenItems = (int)reader.GetDecimal(7)
+            };
+            return detail;
         });
     }
 
     public async Task<IEnumerable<PickingDetailItem>> GetPickingDetailItems(Dictionary<string, object> parameters) {
         const string query =
             """
-
             SELECT 
                 T2."ItemCode",
                 OITM."ItemName",
-                PKL1."RelQtty" AS "Quantity",
-                PKL1."PickQtty" AS "Picked",
-                (PKL1."RelQtty" - PKL1."PickQtty") AS "OpenQuantity",
+                SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
+                SUM(PKL1."PickQtty") AS "Picked",
+                SUM(PKL1."RelQtty") AS "OpenQuantity",
                 COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
                 COALESCE(OITM."BuyUnitMsr", '') AS "BuyUnitMsr",
                 COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
                 COALESCE(OITM."PurPackMsr", '') AS "PurPackMsr"
             FROM PKL1
-            inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
-            INNER JOIN OITM ON OITM."ItemCode" = T2."ItemCode"
-            WHERE PKL1."AbsEntry" = @AbsEntry
+            INNER JOIN OILM T2 
+                ON T2."TransType" = PKL1."BaseObject" 
+                AND T2."DocEntry" = PKL1."OrderEntry" 
+                AND T2."DocLineNum" = PKL1."OrderLine"
+            INNER JOIN OITM 
+                ON OITM."ItemCode" = T2."ItemCode"
+            WHERE 
+                PKL1."AbsEntry" = @AbsEntry
                 AND PKL1."BaseObject" = @Type
                 AND PKL1."OrderEntry" = @Entry
-            ORDER BY PKL1."PickEntry"
+            Group by 
+                T2."ItemCode",
+                OITM."ItemName",
+            	OITM."NumInBuy",
+            	OITM."BuyUnitMsr",
+            	OITM."PurPackUn",
+            	OITM."PurPackMsr"
+            ORDER BY 
+                CASE WHEN SUM(PKL1."RelQtty") = 0 THEN 1 ELSE 0 END,
+                T2."ItemCode";
             """;
 
         var sqlParams = ConvertToSqlParameters(parameters);
 
-        return await dbService.QueryAsync(query, sqlParams, reader => new PickingDetailItem {
-            ItemCode     = reader.GetString(0),
-            ItemName     = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-            Quantity     = reader.GetInt32(2),
-            Picked       = reader.GetInt32(3),
-            OpenQuantity = reader.GetInt32(4),
-            NumInBuy     = reader.GetInt32(5),
-            BuyUnitMsr   = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-            PurPackUn    = reader.GetInt32(7),
-            PurPackMsr   = reader.IsDBNull(8) ? string.Empty : reader.GetString(8)
+        return await dbService.QueryAsync(query, sqlParams, reader => {
+            var item = new PickingDetailItem {
+                ItemCode     = reader.GetString(0),
+                ItemName     = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                Quantity     = (int)reader.GetDecimal(2),
+                Picked       = (int)reader.GetDecimal(3),
+                OpenQuantity = (int)reader.GetDecimal(4),
+                NumInBuy     = (int)reader.GetDecimal(5),
+                BuyUnitMsr   = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                PurPackUn    = (int)reader.GetDecimal(7),
+                PurPackMsr   = reader.IsDBNull(8) ? string.Empty : reader.GetString(8)
+            };
+            return item;
         });
     }
 
@@ -176,15 +214,15 @@ WHERE PKL1.""AbsEntry"" = @AbsEntry";
             query += " AND T3.\"BinAbs\" = @BinEntry";
         }
 
-        query += " ORDER BY OIBQ.\"ItemCode\", OBIN.\"BinCode\"";
+        query += " ORDER BY T2.\"ItemCode\", T4.\"BinCode\"";
 
         var sqlParams = ConvertToSqlParameters(parameters);
 
         return await dbService.QueryAsync(query, sqlParams, reader => new ItemBinLocationQuantity {
-            Entry    = reader.GetInt32(0),
-            Code     = reader.GetString(1),
-            ItemCode = reader.GetString(2),
-            Quantity = reader.GetInt32(3)
+            ItemCode = reader.GetString(0),
+            Entry    = reader.GetInt32(1),
+            Code     = reader.GetString(2),
+            Quantity = (int)reader.GetDecimal(3)
         });
     }
 
