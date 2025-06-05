@@ -90,10 +90,5 @@
         </EmbeddedResource>
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="API\Authentication\"/>
-        <Folder Include="API\Users\"/>
-    </ItemGroup>
-
 
 </Project>

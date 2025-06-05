@@ -8,13 +8,13 @@ namespace Adapters.Windows.SBO;
 
 public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepository generalRepository, SboItemRepository itemRepository, SboPickingRepository pickingRepository, SboInventoryCountingRepository inventoryCountingRepository)
     : IExternalSystemAdapter {
-    public async Task<ExternalValue?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
-    public async Task<IEnumerable<ExternalValue>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
+    public async Task<ExternalValue<string>?>                 GetUserInfoAsync(string id)                                            => await employeeRepository.GetByIdAsync(id);
+    public async Task<IEnumerable<ExternalValue<string>>>     GetUsersAsync()                                                        => await employeeRepository.GetAllAsync();
     public async Task<string?>                        GetCompanyNameAsync()                                                  => await generalRepository.GetCompanyNameAsync();
     public async Task<IEnumerable<Warehouse>>         GetWarehousesAsync(string[]? filter = null)                            => await generalRepository.GetWarehousesAsync(filter);
     public async Task<Warehouse?>                     GetWarehouseAsync(string     id)                                       => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
     public async Task<(int itemCount, int binCount)>  GetItemAndBinCount(string    warehouse)                                => await generalRepository.GetItemAndBinCountAsync(warehouse);
-    public async Task<IEnumerable<ExternalValue>>     GetVendorsAsync()                                                      => await generalRepository.GetVendorsAsync();
+    public async Task<IEnumerable<ExternalValue<string>>>     GetVendorsAsync()                                                      => await generalRepository.GetVendorsAsync();
     public async Task<bool>                           ValidateVendorsAsync(string            id)                             => await generalRepository.ValidateVendorsAsync(id);
     public async Task<BinLocation?>                   ScanBinLocationAsync(string            bin)                            => await generalRepository.ScanBinLocationAsync(bin);
     public async Task<string?>                        GetBinCodeAsync(int                    binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);

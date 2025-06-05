@@ -16,7 +16,7 @@ namespace Service.Controllers;
 [Authorize]
 public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpGet("Warehouses")]
-    public async Task<ActionResult<IEnumerable<ExternalValue>>> GetWarehouses([FromQuery] string[]? filter = null) {
+    public async Task<ActionResult<IEnumerable<ExternalValue<string>>>> GetWarehouses([FromQuery] string[]? filter = null) {
         var warehouses = await publicService.GetWarehousesAsync(filter);
         return Ok(warehouses);
     }
@@ -34,7 +34,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("Vendors")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor, RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public ActionResult<IEnumerable<ExternalValue>> GetVendors() {
+    public ActionResult<IEnumerable<ExternalValue<string>>> GetVendors() {
         return Ok(publicService.GetVendorsAsync());
     }
 

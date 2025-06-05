@@ -58,12 +58,12 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         ));
     }
 
-    public async Task<IEnumerable<ExternalValue>> GetVendorsAsync() {
+    public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync() {
         var sb = new StringBuilder("""select "CardCode", "CardName" from OCRD where "CardType" = 'S' """);
         if (!string.IsNullOrWhiteSpace(filters.Vendors))
             sb.Append($"and {filters.Vendors}");
 
-        return await dbService.QueryAsync(sb.ToString(), null, reader => new ExternalValue {
+        return await dbService.QueryAsync(sb.ToString(), null, reader => new ExternalValue<string> {
             Id   = reader.GetString(0),
             Name = reader.GetString(1)
         });

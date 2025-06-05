@@ -1,6 +1,5 @@
 ﻿using System;
 using Core.Enums;
-using Service.API.Models;
 
 namespace Service.API.GoodsReceipt.Models;
 

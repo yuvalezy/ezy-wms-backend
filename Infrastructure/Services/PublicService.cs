@@ -51,7 +51,7 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
         };
     }
 
-    public async Task<IEnumerable<ExternalValue>> GetVendorsAsync() => await externalSystemAdapter.GetVendorsAsync();
+    public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync() => await externalSystemAdapter.GetVendorsAsync();
 
     public async Task<BinLocation?> ScanBinLocationAsync(string bin) => await externalSystemAdapter.ScanBinLocationAsync(bin);
 
