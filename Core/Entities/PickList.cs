@@ -13,7 +13,7 @@ public class PickList : BaseEntity {
     public string? ErrorMessage { get; set; }
 
     [StringLength(50)]
-    public string? ItemCode { get; set; }
+    public required string ItemCode { get; set; }
 
     [Required]
     public int PickEntry { get; set; }
