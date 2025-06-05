@@ -21,14 +21,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Status          = ObjectStatus.Open,
             WhsCode         = session.Warehouse,
             CreatedByUserId = session.Guid,
-            Documents       = request.Documents.Select(d => new GoodsReceiptDocument {
+            Documents = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
                 DocEntry        = d.DocumentEntry,
-                DocNumber        = d.DocumentNumber,
+                DocNumber       = d.DocumentNumber,
                 ObjType         = d.ObjectType,
             }).ToArray()
         };
-        
+
         await db.GoodsReceipts.AddAsync(goodsReceipt);
         await db.SaveChangesAsync();
 
@@ -50,7 +50,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
     public async Task<IEnumerable<GoodsReceiptResponse>> GetGoodsReceipts(GoodsReceiptsRequest request, string warehouse) {
         var query = db.GoodsReceipts
-            .Include(gr => gr.Lines)
+            .Include(gr => gr.Documents)
+            .Include(gr => gr.CreatedByUser)
             .Where(gr => gr.WhsCode == warehouse);
 
         if (request.ID.HasValue)
@@ -76,6 +77,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
     public async Task<GoodsReceiptResponse?> GetGoodsReceipt(Guid id) {
         var goodsReceipt = await db.GoodsReceipts
+            .Include(gr => gr.CreatedByUser)
+            .Include(gr => gr.Documents)
             .Include(gr => gr.Lines)
             .ThenInclude(l => l.CancellationReason)
             .FirstOrDefaultAsync(gr => gr.Id == id);
@@ -398,14 +401,15 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     // Helper methods
     private GoodsReceiptResponse MapToResponse(GoodsReceipt goodsReceipt) {
         return new GoodsReceiptResponse {
-            ID       = goodsReceipt.Id,
-            Number   = goodsReceipt.Number,
-            Name     = goodsReceipt.Name,
-            CardCode = goodsReceipt.CardCode,
-            Date     = goodsReceipt.Date,
-            Status   = goodsReceipt.Status,
-            Type     = goodsReceipt.Type,
-            WhsCode  = goodsReceipt.WhsCode,
+            ID                = goodsReceipt.Id,
+            Number            = goodsReceipt.Number,
+            Name              = goodsReceipt.Name,
+            CardCode          = goodsReceipt.CardCode,
+            Date              = goodsReceipt.Date,
+            Status            = goodsReceipt.Status,
+            Type              = goodsReceipt.Type,
+            WhsCode           = goodsReceipt.WhsCode,
+            CreatedByUserName = goodsReceipt.CreatedByUser?.FullName,
             Lines = goodsReceipt.Lines?.Select(l => new GoodsReceiptLineResponse {
                 ID                   = l.Id,
                 BarCode              = l.BarCode,
@@ -418,6 +422,11 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 Comments             = l.Comments,
                 StatusReason         = l.StatusReason,
                 CancellationReasonId = l.CancellationReasonId
+            }).ToList(),
+            Documents = goodsReceipt.Documents?.Select(d => new GoodsReceiptDocumentResponse {
+                DocEntry  = d.DocEntry,
+                DocNumber = d.DocNumber,
+                ObjType   = d.ObjType,
             }).ToList()
         };
     }
