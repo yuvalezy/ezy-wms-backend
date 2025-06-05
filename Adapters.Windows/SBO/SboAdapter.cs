@@ -51,8 +51,8 @@ public class SboAdapter(SboEmployeeRepository employeeRepository, SboGeneralRepo
     }
 
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
-        return await pickingRepository.ProcessPickList(absEntry, warehouse);
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, Dictionary<string, List<PickingCreationData>> data) {
+        return await pickingRepository.ProcessPickList(absEntry, warehouse, data);
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {

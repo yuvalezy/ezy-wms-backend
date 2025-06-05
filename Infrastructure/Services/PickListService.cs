@@ -309,21 +309,101 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
     }
 
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, SessionInfo sessionInfo) {
+        var transaction = await db.Database.BeginTransactionAsync();
         try {
-            var result = await adapter.ProcessPickList(absEntry, sessionInfo.Warehouse);
+            // Load local pick list data
+            var pickLists = await db.PickLists
+                .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                .ToListAsync();
 
-            return new ProcessPickListResponse {
-                Status         = ResponseStatus.Ok,
-                DocumentNumber = result.DocumentNumber
-            };
-        }
-        catch (Exception ex) {
+            if (!pickLists.Any()) {
+                throw new InvalidOperationException($"No open pick list items found for AbsEntry {absEntry}");
+            }
+
+            // Update status to Processing
+            foreach (var pickList in pickLists) {
+                pickList.Status = ObjectStatus.Processing;
+                pickList.UpdatedAt = DateTime.UtcNow;
+                pickList.UpdatedByUserId = sessionInfo.Guid;
+            }
+            await db.SaveChangesAsync();
+
+            // Prepare data for SAP B1
+            var pickingData = await PreparePickingData(absEntry);
+
+            // Call external system to process the pick list
+            var result = await adapter.ProcessPickList(absEntry, sessionInfo.Warehouse, pickingData);
+
+            if (result.Success) {
+                // Update pick lists to Closed
+                foreach (var pickList in pickLists) {
+                    pickList.Status = ObjectStatus.Closed;
+                    pickList.UpdatedAt = DateTime.UtcNow;
+                    pickList.UpdatedByUserId = sessionInfo.Guid;
+                }
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ProcessPickListResponse {
+                    Status = ResponseStatus.Ok,
+                    DocumentNumber = result.DocumentNumber
+                };
+            }
+
+            await transaction.RollbackAsync();
             return new ProcessPickListResponse {
                 Status       = ResponseStatus.Error,
                 Message      = "Failed to process pick list",
+                ErrorMessage = result.ErrorMessage
+            };
+        }
+        catch (Exception ex) {
+            await transaction.RollbackAsync();
+            return new ProcessPickListResponse {
+                Status = ResponseStatus.Error,
+                Message = "Failed to process pick list",
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    private async Task<Dictionary<string, List<PickingCreationData>>> PreparePickingData(int absEntry) {
+        // Get pick list details from SAP to get base object and order info
+        var detailParams = new Dictionary<string, object> {
+            { "@AbsEntry", absEntry }
+        };
+        var pickingDetails = await adapter.GetPickingDetails(detailParams);
+
+        // Load local pick list lines
+        var localPickLists = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+            .ToListAsync();
+
+        // Group by item code and prepare data
+        var pickingData = new Dictionary<string, List<PickingCreationData>>();
+
+        foreach (var pickList in localPickLists) {
+            // Find the matching picking detail for this pick entry
+            var detail = pickingDetails.FirstOrDefault(d => d.PickEntry == pickList.PickEntry);
+            if (detail == null) continue;
+
+            if (!pickingData.ContainsKey(pickList.ItemCode)) {
+                pickingData[pickList.ItemCode] = new List<PickingCreationData>();
+            }
+
+            pickingData[pickList.ItemCode].Add(new PickingCreationData {
+                ItemCode = pickList.ItemCode,
+                PickEntry = pickList.PickEntry,
+                Quantity = pickList.Quantity,
+                BinEntry = pickList.BinEntry!.Value,
+                BaseObject = detail.Type,
+                OrderEntry = detail.Entry,
+                OrderLine = 0, // This would need to be determined from picking detail items
+                Unit = pickList.Unit
+            });
+        }
+
+        return pickingData;
     }
 
     private async Task ValidateAndCloseStalePickLists() {

@@ -1,15 +1,17 @@
 using System.Data;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
+using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SboPickingRepository(SboDatabaseService dbService) {
+public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany) {
     public async Task<IEnumerable<PickingDocument>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
@@ -282,38 +284,21 @@ public class SboPickingRepository(SboDatabaseService dbService) {
         return result.ToArray();
     }
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse) {
-        throw new Exception("Not implemented!");
-//         try {
-//             // This would typically call a stored procedure or create documents in SAP B1
-//             // For now, we'll simulate the process
-//             var query = @"
-// UPDATE OPKL 
-// SET ""Status"" = 'Y',
-//     ""CloseDate"" = GETDATE()
-// WHERE ""AbsEntry"" = @AbsEntry
-//     AND ""WhsCode"" = @WhsCode
-//     AND ""Status"" = 'N'";
-//
-//             var sqlParams = new[] {
-//                 new SqlParameter("@AbsEntry", SqlDbType.Int) { Value        = absEntry },
-//                 new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse }
-//             };
-//
-//             var rowsAffected = await dbService.ExecuteAsync(query, sqlParams);
-//
-//             return new ProcessPickListResult {
-//                 Success        = rowsAffected > 0,
-//                 DocumentNumber = absEntry, // In real implementation, this would be the created document number
-//                 ErrorMessage   = rowsAffected == 0 ? "No rows were updated. Document may already be processed." : null
-//             };
-//         }
-//         catch (Exception ex) {
-//             return new ProcessPickListResult {
-//                 Success      = false,
-//                 ErrorMessage = ex.Message
-//             };
-//         }
+    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, Dictionary<string, List<PickingCreationData>> data) {
+        using var update = new PickingUpdate(absEntry, warehouse, data, dbService, sboCompany);
+        var result = new ProcessPickListResult {
+            Success        = true,
+            DocumentNumber = absEntry,
+        };
+        try {
+            update.Execute();
+        }
+        catch (Exception e) {
+            result.ErrorMessage = e.Message;
+            result.Success      = false;
+        }
+
+        return Task.FromResult(result);
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
