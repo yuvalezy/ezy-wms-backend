@@ -89,16 +89,44 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
         
         // Handle case where we still have unallocated quantity (over-receipt scenario)
         if (quantity > 0) {
+            // Add remaining quantity to the last allocated source document
             if (sourceDocuments.Count > 0) {
                 sourceDocuments.Last().Quantity += quantity;
             }
+            // No sources found, try to find a fallback source from existing receipt lines
             else {
-                
+                var fallback = db
+                    .GoodsReceiptSources
+                    .OrderBy(v => v.SourceType == 20 ? 'A' : v.SourceType == 22 ? 'B' : 'C')
+                    .ThenByDescending(v => v.CreatedAt)
+                    .FirstOrDefault();
+                if (fallback != null) {
+                    sourceDocuments.Add(new GoodsReceiptAddItemSourceDocument {
+                        Type     = fallback.SourceType,
+                        Entry    = fallback.SourceEntry,
+                        LineNum  = fallback.SourceLine,
+                        Quantity = quantity
+                    });
+                }
             }
+
+            quantity = 0;
+        }
+        
+        // Validate that we found at least one source document
+        if (sourceDocuments.Count == 0) {
+            return new GoodsReceiptAddItemResponse {
+                Status       = ResponseStatus.Error,
+                ErrorMessage = $"No source documents found for item {request.ItemCode}"
+            };
         }
         
         
+        // STEP 5: Create the goods receipt line entry
+        // Reset quantity for actual insertion
+        quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
 
+        // Insert the main goods receipt line
         var line = new GoodsReceiptLine {
             GoodsReceiptId  = goodsReceipt.Id,
             ItemCode        = request.ItemCode,
@@ -107,16 +135,37 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             Unit            = request.Unit,
             Date            = DateTime.UtcNow,
             LineStatus      = LineStatus.Open,
-            CreatedAt       = DateTime.UtcNow,
-            CreatedByUserId = session.Guid
+            CreatedByUserId = session.Guid,
+            Sources         = sourceDocuments.Select(s => new GoodsReceiptSource {
+                CreatedByUserId    = session.Guid,
+                Quantity           = s.Quantity,
+                SourceEntry        = s.Entry,
+                SourceLine         = s.LineNum,
+                SourceType         = s.Type,
+                GoodsReceiptLineId = goodsReceipt.Id,
+            }).ToArray()
         };
+        await db.GoodsReceiptLines.AddAsync(line);
+        
+        // Insert source document allocations for this line
+        foreach (var s in sourceDocuments) {
+            var source = new GoodsReceiptSource {
+                CreatedByUserId    = session.Guid,
+                Quantity           = s.Quantity,
+                SourceEntry        = s.Entry,
+                SourceLine         = s.LineNum,
+                SourceType         = s.Type,
+                GoodsReceiptLineId = line.Id,
+            };
+            await db.GoodsReceiptSources.AddAsync(source);
+        }
 
+        // Update goods receipt header status to InProgress
         if (goodsReceipt.Status != ObjectStatus.InProgress) {
             goodsReceipt.Status                                                       = ObjectStatus.InProgress;
             db.GoodsReceipts.Entry(goodsReceipt).Property(gr => gr.Status).IsModified = true;
         }
 
-        await db.GoodsReceiptLines.AddAsync(line);
         await db.SaveChangesAsync();
 
         return new() {
