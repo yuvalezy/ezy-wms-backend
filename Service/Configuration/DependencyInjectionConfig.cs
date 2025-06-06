@@ -45,6 +45,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPickListService, PickListService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<IGoodsReceiptLinesService, GoodsReceiptLinesService>();
+        services.AddScoped<IGoodsReceiptAddItemService, GoodsReceiptAddItemService>();
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();

@@ -15,7 +15,11 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IGoodsReceiptLinesService goodsReceiptLinesService,ISettings settings) : ControllerBase {
+public class GoodsReceiptController(
+    IGoodsReceiptService        goodsReceiptService,
+    IGoodsReceiptLinesService   goodsReceiptLinesService,
+    IGoodsReceiptAddItemService goodsReceiptAddItemService,
+    ISettings                   settings) : ControllerBase {
     // 1. Create Goods Receipt
     [HttpPost("create")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor)]
@@ -60,15 +64,15 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
             : RoleType.GoodsReceiptConfirmation;
 
         if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
-            var supervisorRole = requiredRole == RoleType.GoodsReceipt 
-                ? RoleType.GoodsReceiptSupervisor 
+            var supervisorRole = requiredRole == RoleType.GoodsReceipt
+                ? RoleType.GoodsReceiptSupervisor
                 : RoleType.GoodsReceiptConfirmationSupervisor;
             if (!sessionInfo.Roles.Contains(supervisorRole)) {
                 return Forbid();
             }
         }
 
-        return await goodsReceiptLinesService.AddItem(sessionInfo, request);
+        return await goodsReceiptAddItemService.AddItem(sessionInfo, request);
     }
 
     // 3. Update Line
@@ -87,8 +91,8 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
             : RoleType.GoodsReceiptConfirmation;
 
         if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
-            var supervisorRole = requiredRole == RoleType.GoodsReceipt 
-                ? RoleType.GoodsReceiptSupervisor 
+            var supervisorRole = requiredRole == RoleType.GoodsReceipt
+                ? RoleType.GoodsReceiptSupervisor
                 : RoleType.GoodsReceiptConfirmationSupervisor;
             if (!sessionInfo.Roles.Contains(supervisorRole)) {
                 return Forbid();
@@ -114,8 +118,8 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
             : RoleType.GoodsReceiptConfirmation;
 
         if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
-            var supervisorRole = requiredRole == RoleType.GoodsReceipt 
-                ? RoleType.GoodsReceiptSupervisor 
+            var supervisorRole = requiredRole == RoleType.GoodsReceipt
+                ? RoleType.GoodsReceiptSupervisor
                 : RoleType.GoodsReceiptConfirmationSupervisor;
             if (!sessionInfo.Roles.Contains(supervisorRole)) {
                 return Forbid();
@@ -177,14 +181,14 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
 
         // Determine required roles based on Confirm parameter
         if (request.Confirm == true) {
-            if (!sessionInfo.SuperUser && 
+            if (!sessionInfo.SuperUser &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptConfirmation) &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptConfirmationSupervisor)) {
                 return Forbid();
             }
         }
         else {
-            if (!sessionInfo.SuperUser && 
+            if (!sessionInfo.SuperUser &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceipt) &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptSupervisor)) {
                 return Forbid();
@@ -201,21 +205,21 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<ActionResult<GoodsReceiptResponse>> GetGoodsReceipt(Guid id) {
         var sessionInfo = HttpContext.GetSession();
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document    = await goodsReceiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
 
         // Verify role matches document type
         if (document.Type != GoodsReceiptType.SpecificReceipts) {
-            if (!sessionInfo.SuperUser && 
+            if (!sessionInfo.SuperUser &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceipt) &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptSupervisor)) {
                 return Forbid();
             }
         }
         else {
-            if (!sessionInfo.SuperUser && 
+            if (!sessionInfo.SuperUser &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptConfirmation) &&
                 !sessionInfo.Roles.Contains(RoleType.GoodsReceiptConfirmationSupervisor)) {
                 return Forbid();
@@ -229,7 +233,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
     [HttpGet("{id:guid}/report/all")]
     public async Task<ActionResult<IEnumerable<GoodsReceiptReportAllResponse>>> GetGoodsReceiptAllReport(Guid id) {
         var sessionInfo = HttpContext.GetSession();
-        
+
         // Get document type to determine required role
         var document = await goodsReceiptService.GetGoodsReceipt(id);
         if (document == null) {
@@ -251,7 +255,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
     [HttpGet("{id:guid}/report/all/{itemCode}")]
     public async Task<ActionResult<IEnumerable<GoodsReceiptReportAllDetailsResponse>>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var sessionInfo = HttpContext.GetSession();
-        
+
         // Get document type to determine required role
         var document = await goodsReceiptService.GetGoodsReceipt(id);
         if (document == null) {
@@ -296,7 +300,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
     [HttpGet("{id:guid}/report/vsExit")]
     public async Task<ActionResult<IEnumerable<GoodsReceiptVSExitReportResponse>>> GetGoodsReceiptVSExitReport(Guid id) {
         var sessionInfo = HttpContext.GetSession();
-        
+
         // Get document type to determine required role
         var document = await goodsReceiptService.GetGoodsReceipt(id);
         if (document == null) {
@@ -318,7 +322,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
     [HttpGet("{id:guid}/validateProcess")]
     public async Task<ActionResult<IEnumerable<GoodsReceiptValidateProcessResponse>>> GetGoodsReceiptValidateProcess(Guid id) {
         var sessionInfo = HttpContext.GetSession();
-        
+
         // Get document type to determine required role
         var document = await goodsReceiptService.GetGoodsReceipt(id);
         if (document == null) {
@@ -341,7 +345,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IG
     public async Task<ActionResult<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>>> GetGoodsReceiptValidateProcessLineDetails(
         [FromBody] GoodsReceiptValidateProcessLineDetailsRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        
+
         // Get document type to determine required role
         var document = await goodsReceiptService.GetGoodsReceipt(request.ID);
         if (document == null) {
