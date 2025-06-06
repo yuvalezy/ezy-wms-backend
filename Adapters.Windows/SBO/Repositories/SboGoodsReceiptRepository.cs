@@ -13,131 +13,88 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO.Repositories;
 
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany sboCompany) {
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, Guid userId) {
-        // For now, return a simple validation result
-        // This would typically validate against SAP B1 purchase orders, etc.
-        return await Task.FromResult(new GoodsReceiptValidationResult {
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, string warehouse, List<ObjectKey> specificDocuments) {
+        var response = new GoodsReceiptValidationResult {
             IsValid      = true,
             ErrorMessage = null,
             ReturnValue  = 0
-        });
+        };
+        const string checkItem =
+            """
+            select Case
+                When @BarCode <> T0.CodeBars and T3.BcdCode is null Then -2
+                When T0.PrchseItem = 'N' Then -5
+                Else 0 End ValidationMessage
+            from OITM T0
+                left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
+            """;
+        int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode }
+        ], reader => reader.GetInt32(0));
+
+        switch (result) {
+            case null:
+                response.ReturnValue  = -1;
+                response.IsValid      = false;
+                response.ErrorMessage = "Item not found";
+                return await Task.FromResult(response);
+            case -2:
+                response.ReturnValue  = -2;
+                response.IsValid      = false;
+                response.ErrorMessage = "Invalid barcode";
+                break;
+            case -5:
+                response.ReturnValue  = -5;
+                response.IsValid      = false;
+                response.ErrorMessage = "Item is not for purchase";
+                break;
+        }
+
+        if (specificDocuments.Count == 0)
+            return await Task.FromResult(response);
+
+        var parameters = new List<SqlParameter> {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+        };
+        var sb = new StringBuilder("""
+                                   select X0."ObjType",
+                                          X0."DocEntry",
+                                          COALESCE(X1."OpenInvQty", X2."OpenInvQty", X3."InvQty") "OpenInvQty"
+                                   from (
+                                   """);
+
+        for (int i = 0; i < specificDocuments.Count; i++) {
+            if (i > 0) sb.Append(" union ");
+            sb.Append($"select @ObjType{i} \"ObjType\", @DocEntry{i} \"DocEntry\"");
+            parameters.Add(new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = specificDocuments[i].Type });
+            parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = specificDocuments[i].Entry });
+        }
+
+        sb.Append("""
+                  ) X0
+                       left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode
+                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode
+                       left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode
+                  where X1."LineNum" is not null
+                     or X2."LineNum" is not null
+                     or X3."LineNum" is not null
+                  """);
+
+        var documentsResult = (await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader => new GoodsReceiptValidationDocumentResult {
+            Type     = reader.GetInt32(0),
+            Entry    = reader.GetInt32(1),
+            Quantity = (int)reader.GetDecimal(2)
+        })).ToArray();
+
+        response.Documents = documentsResult;
+
+        return await Task.FromResult(response);
     }
 
-    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data) {
-        // Get series for Goods Receipt PO
-        int series = await dbService.QuerySingleAsync(
-            "SELECT DfltSeries FROM ONNM WHERE ObjectCode = '20'",
-            Array.Empty<SqlParameter>(),
-            reader => reader.GetInt32(0)
-        );
-
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data, int series) {
         using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
         return await Task.FromResult(creation.Execute());
-    }
-
-    // Report queries
-    public async Task<IEnumerable<dynamic>> GetGoodsReceiptAllReport(int number) {
-        const string query = @"
-            SELECT 
-                ItemCode,
-                ItemName,
-                SUM(ScannedQuantity) as ScannedQuantity,
-                SUM(ReceivedQuantity) as ReceivedQuantity,
-                COUNT(*) as LineCount
-            FROM GoodsReceiptReportView
-            WHERE Number = @Number
-            GROUP BY ItemCode, ItemName";
-
-        var sqlParams = new[] {
-            new SqlParameter("@Number", SqlDbType.Int) { Value = number }
-        };
-
-        return await dbService.QueryAsync(query, sqlParams, reader => new {
-            ItemCode         = reader.GetString(0),
-            ItemName         = reader.GetString(1),
-            ScannedQuantity  = reader.GetDecimal(2),
-            ReceivedQuantity = reader.GetDecimal(3),
-            LineCount        = reader.GetInt32(4)
-        });
-    }
-
-    public async Task<IEnumerable<dynamic>> GetGoodsReceiptAllReportDetails(int number, string itemCode) {
-        const string query = @"
-            SELECT 
-                LineID,
-                BarCode,
-                Date,
-                Quantity,
-                Comments,
-                Status
-            FROM GoodsReceiptLineView
-            WHERE Number = @Number AND ItemCode = @ItemCode";
-
-        var sqlParams = new[] {
-            new SqlParameter("@Number", SqlDbType.Int) { Value            = number },
-            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
-        };
-
-        return await dbService.QueryAsync(query, sqlParams, reader => new {
-            LineID   = reader.GetGuid(0),
-            BarCode  = reader.GetString(1),
-            Date     = reader.GetDateTime(2),
-            Quantity = reader.GetDecimal(3),
-            Comments = reader.IsDBNull(4) ? null : reader.GetString(4),
-            Status   = reader.GetString(5)
-        });
-    }
-
-    public async Task<IEnumerable<dynamic>> GetGoodsReceiptVSExitReport(int number) {
-        const string query = @"
-            SELECT 
-                ItemCode,
-                ItemName,
-                ReceivedQuantity,
-                ExitQuantity,
-                ReceivedQuantity - ExitQuantity as Variance
-            FROM GoodsReceiptVSExitView
-            WHERE Number = @Number";
-
-        var sqlParams = new[] {
-            new SqlParameter("@Number", SqlDbType.Int) { Value = number }
-        };
-
-        return await dbService.QueryAsync(query, sqlParams, reader => new {
-            ItemCode         = reader.GetString(0),
-            ItemName         = reader.GetString(1),
-            ReceivedQuantity = reader.GetDecimal(2),
-            ExitQuantity     = reader.GetDecimal(3),
-            Variance         = reader.GetDecimal(4)
-        });
-    }
-
-    public async Task<IEnumerable<dynamic>> GetGoodsReceiptValidateProcess(int number) {
-        const string query = @"
-            SELECT 
-                LineID,
-                ItemCode,
-                ItemName,
-                BarCode,
-                Quantity,
-                IsValid,
-                ValidationMessage
-            FROM GoodsReceiptValidateView
-            WHERE Number = @Number";
-
-        var sqlParams = new[] {
-            new SqlParameter("@Number", SqlDbType.Int) { Value = number }
-        };
-
-        return await dbService.QueryAsync(query, sqlParams, reader => new {
-            LineID            = reader.GetGuid(0),
-            ItemCode          = reader.GetString(1),
-            ItemName          = reader.GetString(2),
-            BarCode           = reader.GetString(3),
-            Quantity          = reader.GetDecimal(4),
-            IsValid           = reader.GetBoolean(5),
-            ValidationMessage = reader.IsDBNull(6) ? null : reader.GetString(6)
-        });
     }
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
@@ -172,7 +129,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
                 int    documentNumber = reader.GetInt32(reader.GetOrdinal("DocNum"));
                 int    documentEntry  = reader.IsDBNull(reader.GetOrdinal("DocEntry")) ? -1 : reader.GetInt32(reader.GetOrdinal("DocEntry"));
                 if (docStatus != "O") {
-                    throw new ApiErrorException(-1, new { objectType, documentEntry, documentNumber, docStatus});
+                    throw new ApiErrorException(-1, new { objectType, documentEntry, documentNumber, docStatus });
                 }
 
                 documents.First(v => v.ObjectType == objectType && v.DocumentNumber == documentNumber).DocumentEntry = documentEntry;

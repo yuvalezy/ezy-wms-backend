@@ -14,23 +14,31 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
     }
 
     public async Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse) {
-        var homeInfo = new HomeInfoResponse();
+        var itemAndBinCountTask = adapter.GetItemAndBinCount(warehouse);
+        var pickingDocumentsTask = adapter.GetPickListsAsync(new PickListsRequest(), warehouse);
 
-        var response = await adapter.GetItemAndBinCount(warehouse);
-        homeInfo.BinCheck  = response.binCount;
-        homeInfo.ItemCheck = response.itemCount;
-
-        var result = db.GoodsReceipts
+        var goodsReceiptResult = db.GoodsReceipts
             .Where(a => a.Status == ObjectStatus.Open || a.Status == ObjectStatus.InProgress);
-        homeInfo.GoodsReceipt        = await result.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
-        homeInfo.ReceiptConfirmation = await result.CountAsync(v => v.Type == GoodsReceiptType.SpecificReceipts);
+        int goodsReceiptCount = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
+        int receiptConfirmationCount = await goodsReceiptResult.CountAsync(v => v.Type == GoodsReceiptType.SpecificReceipts);
 
-        var pickingDocuments = await adapter.GetPickListsAsync(new PickListsRequest(), warehouse);
-        homeInfo.Picking = pickingDocuments.Count();
-        homeInfo.Counting = await db.InventoryCountings.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
-        homeInfo.Transfers = await db.Transfers.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
+        int countingCount = await db.InventoryCountings.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
+        int transfersCount = await db.Transfers.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
 
-        return homeInfo;
+        await Task.WhenAll(itemAndBinCountTask, pickingDocumentsTask);
+
+        var response = await itemAndBinCountTask;
+        var pickingDocuments = await pickingDocumentsTask;
+
+        return new HomeInfoResponse {
+            BinCheck = response.binCount,
+            ItemCheck = response.itemCount,
+            GoodsReceipt = goodsReceiptCount,
+            ReceiptConfirmation = receiptConfirmationCount,
+            Picking = pickingDocuments.Count(),
+            Counting = countingCount,
+            Transfers = transfersCount
+        };
     }
 
     public async Task<UserInfoResponse> GetUserInfoAsync(SessionInfo info) {

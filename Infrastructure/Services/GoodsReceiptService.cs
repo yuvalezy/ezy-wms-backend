@@ -70,7 +70,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             query = request.Confirm.Value ? query.Where(gr => gr.Type == GoodsReceiptType.SpecificReceipts) : query.Where(gr => gr.Type != GoodsReceiptType.SpecificReceipts);
         }
 
-        var results = await query.OrderByDescending(gr => gr.CreatedAt).ToListAsync();
+        var results = await query.AsNoTracking().OrderByDescending(gr => gr.CreatedAt).ToListAsync();
         return results.Select(MapToResponse);
     }
 
@@ -80,124 +80,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             .Include(gr => gr.Documents)
             .Include(gr => gr.Lines)
             .ThenInclude(l => l.CancellationReason)
+            .AsNoTracking()
             .FirstOrDefaultAsync(gr => gr.Id == id);
 
         return goodsReceipt == null ? null : MapToResponse(goodsReceipt);
     }
 
-    public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo session, GoodsReceiptAddItemRequest request) {
-        var goodsReceipt = await db.GoodsReceipts
-            .FirstOrDefaultAsync(gr => gr.Id == request.Id && gr.Status == ObjectStatus.Open);
 
-        if (goodsReceipt == null) {
-            return new GoodsReceiptAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = "Goods receipt not found or already closed",
-                ClosedDocument = true
-            };
-        }
-
-        // Validate with external system
-        var validationResult = await adapter.ValidateGoodsReceiptAddItem(request, session.Guid);
-        if (!validationResult.IsValid) {
-            return new GoodsReceiptAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = validationResult.ErrorMessage,
-                ClosedDocument = validationResult.ReturnValue == -6
-            };
-        }
-
-        // Get item details
-        var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
-        var item  = items.FirstOrDefault();
-        if (item == null) {
-            return new GoodsReceiptAddItemResponse {
-                Status       = ResponseStatus.Error,
-                ErrorMessage = "Item not found"
-            };
-        }
-
-        var line = new GoodsReceiptLine {
-            GoodsReceiptId  = goodsReceipt.Id,
-            ItemCode        = request.ItemCode,
-            BarCode         = request.BarCode,
-            Quantity        = 1, // Default quantity
-            Unit            = request.Unit,
-            Date            = DateTime.UtcNow,
-            LineStatus      = LineStatus.Open,
-            CreatedAt       = DateTime.UtcNow,
-            CreatedByUserId = session.Guid
-        };
-
-        await db.GoodsReceiptLines.AddAsync(line);
-        await db.SaveChangesAsync();
-
-        return new() {
-            Status = ResponseStatus.Ok,
-            LineId = line.Id,
-        };
-    }
-
-    public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
-        var line = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.Id == request.LineID);
-
-        if (line == null) {
-            throw new KeyNotFoundException($"Line with ID {request.LineID} not found");
-        }
-
-        if (line.LineStatus == LineStatus.Closed) {
-            return new UpdateLineResponse {
-                ReturnValue  = UpdateLineReturnValue.LineStatus,
-                ErrorMessage = "Cannot update closed line"
-            };
-        }
-
-        if (request.Status.HasValue)
-            line.LineStatus = request.Status.Value;
-
-        if (request.StatusReason.HasValue)
-            line.StatusReason = request.StatusReason.Value;
-
-        if (request.CancellationReasonId.HasValue)
-            line.CancellationReasonId = request.CancellationReasonId.Value;
-
-        if (!string.IsNullOrEmpty(request.Comment))
-            line.Comments = request.Comment;
-
-        line.UpdatedAt       = DateTime.UtcNow;
-        line.UpdatedByUserId = session.Guid;
-
-        await db.SaveChangesAsync();
-
-        return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
-    }
-
-    public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request) {
-        var line = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == request.Id && l.Id == request.LineID);
-
-        if (line == null) {
-            throw new KeyNotFoundException($"Line with ID {request.LineID} not found");
-        }
-
-        if (line.LineStatus == LineStatus.Closed) {
-            return new UpdateLineResponse {
-                ReturnValue  = UpdateLineReturnValue.LineStatus,
-                ErrorMessage = "Cannot update closed line"
-            };
-        }
-
-        line.Quantity        = request.Quantity;
-        line.UpdatedAt       = DateTime.UtcNow;
-        line.UpdatedByUserId = session.Guid;
-
-        await db.SaveChangesAsync();
-
-        return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
-    }
 
     public async Task<bool> CancelGoodsReceipt(Guid id, SessionInfo session) {
         var goodsReceipt = await db.GoodsReceipts
@@ -392,27 +281,28 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessResponse>> GetGoodsReceiptValidateProcess(Guid id) {
-        var lines = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .Include(l => l.Sources)
-            .Where(l => l.GoodsReceipt.Id == id && l.LineStatus == LineStatus.Open)
-            .Select(l => new GoodsReceiptValidateProcessResponse {
-                LineID   = l.Id,
-                ItemCode = l.ItemCode,
-                ItemName = l.ItemCode, // Would need item master
-                BarCode  = l.BarCode,
-                Quantity = l.Quantity,
-                IsValid  = true, // Would need validation logic
-                Sources = l.Sources.Select(s => new GoodsReceiptSourceInfo {
-                    SourceType  = s.SourceType,
-                    SourceEntry = s.SourceEntry,
-                    SourceLine  = s.SourceLine,
-                    Quantity    = s.Quantity
-                }).ToList()
-            })
-            .ToListAsync();
-
-        return lines;
+        throw new NotImplementedException();
+        // var lines = await db.GoodsReceiptLines
+        //     .Include(l => l.GoodsReceipt)
+        //     .Include(l => l.Sources)
+        //     .Where(l => l.GoodsReceiptId == id && l.LineStatus == LineStatus.Open)
+        //     .Select(l => new GoodsReceiptValidateProcessResponse {
+        //         LineID   = l.Id,
+        //         ItemCode = l.ItemCode,
+        //         ItemName = l.ItemCode, // Would need item master
+        //         BarCode  = l.BarCode,
+        //         Quantity = l.Quantity,
+        //         IsValid  = true, // Would need validation logic
+        //         Sources = l.Sources.Select(s => new GoodsReceiptSourceInfo {
+        //             SourceType  = s.SourceType,
+        //             SourceEntry = s.SourceEntry,
+        //             SourceLine  = s.SourceLine,
+        //             Quantity    = s.Quantity
+        //         }).ToList()
+        //     })
+        //     .ToListAsync();
+        //
+        // return lines;
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request) {

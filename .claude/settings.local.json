@@ -5,7 +5,8 @@
       "Bash(chmod:*)",
       "Bash(./fix-controllers.sh)",
       "Bash(./fix_controllers.sh)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(echo:*)"
     ],
     "deny": []
   }

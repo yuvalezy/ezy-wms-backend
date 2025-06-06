@@ -1,20 +1,45 @@
+using Core.Enums;
+using Core.Models;
+
 namespace Core.DTOs;
 
 public class GoodsReceiptValidateProcessResponse {
-    public Guid LineID { get; set; }
-    public string ItemCode { get; set; } = string.Empty;
-    public string ItemName { get; set; } = string.Empty;
-    public string BarCode { get; set; } = string.Empty;
-    public decimal Quantity { get; set; }
-    public bool IsValid { get; set; }
-    public string? ValidationMessage { get; set; }
-    public List<GoodsReceiptSourceInfo>? Sources { get; set; }
+    public          int                   DocumentNumber { get; set; }
+    public required ExternalValue<string> Vendor         { get; set; }
+    public          int                   BaseType       { get; set; }
+    public          int                   BaseEntry      { get; set; }
+
+    public List<GoodsReceiptValidateProcessLineResponse>? Lines { get; } = [];
 }
 
-public class GoodsReceiptSourceInfo {
-    public int SourceType { get; set; }
-    public int SourceEntry { get; set; }
-    public int SourceLine { get; set; }
-    public string DocumentNumber { get; set; } = string.Empty;
-    public decimal Quantity { get; set; }
+public class GoodsReceiptValidateProcessLineResponse {
+    public          int      LineNumber { get; set; }
+    public required string   ItemCode   { get; set; }
+    public          string?  ItemName   { get; set; }
+    public          decimal  Quantity   { get; set; }
+    public          int      BaseLine   { get; set; }
+    public          decimal  OpenInvQty { get; set; }
+    public          int      NumInBuy   { get; set; }
+    public          string?  BuyUnitMsr { get; set; }
+    public          int      PurPackUn  { get; set; }
+    public          string?  PurPackMsr { get; set; }
+    public          UnitType UnitType   { get; set; }
+
+    public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
+}
+
+public class GoodsReceiptValidateProcessLineDetails {
+    public          DateTime TimeStamp         { get; set; }
+    public required string   CreatedByUserName { get; set; }
+    public          decimal  Quantity          { get; set; }
+    public          decimal  ScannedQuantity   { get; set; }
+    public          UnitType Unit              { get; set; }
+}
+
+public enum GoodsReceiptValidateProcessLineStatus {
+    OK          = 0,
+    LessScan    = 1,
+    MoreScan    = 2,
+    ClosedLine  = 3,
+    NotReceived = 4
 }

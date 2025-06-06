@@ -32,16 +32,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- SAP COM Interop - Windows only -->
-        <Reference Include="Interop.SAPbobsCOM">
-            <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
-        </Reference>
-        <Reference Include="LicenseConnect">
-            <HintPath>..\..\..\Dependencies\LicenseConnect.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
         <!-- ASP.NET Core and Web API packages -->
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.5" />
         <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.3.0" />
