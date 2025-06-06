@@ -1,3 +1,3 @@
 ﻿namespace Core.Models;
 
-public record ObjectKey(int  Type, int Entry, int? Number) ;
+public record ObjectKey(int  Type, int Entry, int? Number = null) ;

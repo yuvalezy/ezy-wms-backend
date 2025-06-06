@@ -38,11 +38,11 @@ public class SboAdapter(
 
     // Items, Warehouse & Bins
     public async Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string       warehouse)                      => await generalRepository.GetItemAndBinCountAsync(warehouse);
-    public async Task<BinLocationResponse?>                                   ScanBinLocationAsync(string     bin)                            => await generalRepository.ScanBinLocationAsync(bin);
+    public async Task<BinLocationResponse?>                           ScanBinLocationAsync(string     bin)                            => await generalRepository.ScanBinLocationAsync(bin);
     public async Task<string?>                                        GetBinCodeAsync(int             binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);
-    public async Task<IEnumerable<ItemResponse>>                              ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemResponse>>                      ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
     public async Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?          itemCode, string? barcode)      => await itemRepository.ItemCheckAsync(itemCode, barcode);
-    public async Task<IEnumerable<BinContentResponse>>                        BinCheckAsync(int               binEntry)                    => await generalRepository.BinCheckAsync(binEntry);
+    public async Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int               binEntry)                    => await generalRepository.BinCheckAsync(binEntry);
     public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
     public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items)   => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
 
@@ -90,11 +90,16 @@ public class SboAdapter(
         await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode, List<ObjectKey> specificDocuments) {
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode,
+        List<ObjectKey>                                                                                                         specificDocuments) {
         return await goodsReceiptRepository.AddItemSourceDocuments(request, warehouse, type, cardCode, specificDocuments);
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
         return await goodsReceiptRepository.AddItemTargetDocuments(warehouse, itemCode);
+    }
+
+    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
+        return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
 }

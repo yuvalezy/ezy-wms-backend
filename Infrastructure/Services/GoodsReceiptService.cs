@@ -240,8 +240,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (goodsReceipt == null)
             return false;
-        
-        
+
+
         foreach (var line in goodsReceipt.Lines) {
             if (request.RemoveRows.Contains(line.Id)) {
                 line.UpdatedAt       = DateTime.UtcNow;
@@ -250,13 +250,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 continue;
             }
 
-            if (!request.QuantityChanges.TryGetValue(line.Id, out decimal change)) 
+            if (!request.QuantityChanges.TryGetValue(line.Id, out decimal change))
                 continue;
             line.Quantity        = change;
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
         }
-        
+
         await db.SaveChangesAsync();
         return true;
     }
@@ -280,7 +280,38 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessResponse>> GetGoodsReceiptValidateProcess(Guid id) {
-        throw new NotImplementedException();
+        var linesQuery = db.GoodsReceiptLines
+            .Where(v => v.GoodsReceiptId == id);
+        var linesIds = linesQuery.Select(v => v.Id).ToList();
+
+        var sourcesQuery = db.GoodsReceiptSources
+            .Where(v => linesIds.Contains(v.GoodsReceiptLineId));
+        var documentsQuery = db.GoodsReceiptDocuments
+            .Where(v => v.GoodsReceiptId == id);
+
+        var docs = await sourcesQuery
+            .Select(v => new ObjectKey(v.SourceType, v.SourceEntry, null))
+            .Union(documentsQuery
+                .Select(v => new ObjectKey(v.ObjType, v.DocEntry, null)))
+            .Distinct()
+            .ToArrayAsync();
+
+        var docsData = await adapter.GoodsReceiptValidateProcessDocumentsData(docs);
+
+        var response = new List<GoodsReceiptValidateProcessResponse>();
+
+        foreach (var doc in docsData) {
+            var value = new GoodsReceiptValidateProcessResponse {
+                DocumentNumber = doc.DocumentNumber,
+                Vendor         = doc.Vendor,
+                BaseType       = doc.ObjectType,
+                BaseEntry      = doc.DocumentEntry,
+            };
+            response.Add(value);
+        }
+
+        return response;
+
         // var lines = await db.GoodsReceiptLines
         //     .Include(l => l.GoodsReceipt)
         //     .Include(l => l.Sources)
@@ -337,7 +368,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Documents = goodsReceipt.Documents?.Select(d => new GoodsReceiptDocumentResponse {
                 DocumentEntry  = d.DocEntry,
                 DocumentNumber = d.DocNumber,
-                ObjectType   = d.ObjType,
+                ObjectType     = d.ObjType,
             }).ToList()
         };
     }

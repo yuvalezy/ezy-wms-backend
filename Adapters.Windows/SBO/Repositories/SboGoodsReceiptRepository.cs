@@ -1,4 +1,5 @@
 using System.Data;
+using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
@@ -189,5 +190,36 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
 
                 documents.First(v => v.ObjectType == objectType && v.DocumentNumber == documentNumber).DocumentEntry = documentEntry;
             });
+    }
+
+    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
+        if (docs.Length == 0)
+            return [];
+        var parameters = new List<SqlParameter>();
+        var sb         = new StringBuilder();
+        sb.Append("select T0.\"ObjType\", T0.\"DocEntry\", COALESCE(T1.DocNum, T2.DocNum, T3.DocNum) \"DocNum\", ");
+        sb.Append("COALESCE(T1.CardCode, T2.CardCode, T3.CardCode) \"CardCode\", ");
+        sb.Append("COALESCE(T1.CardName, T2.CardName, T3.CardName) \"CardName\" ");
+        sb.Append("from (");
+        for (int i = 0; i < docs.Length; i++) {
+            if (i > 0) sb.Append(" union ");
+            sb.Append($"select @ObjType{i} \"ObjType\", @DocEntry{i} \"DocEntry\" ");
+            parameters.Add(new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type });
+            parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry });
+        }
+
+        sb.Append(")");
+        sb.Append(
+            """
+            left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
+            left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
+            left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
+            """);
+        return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader => new GoodsReceiptValidateProcessDocumentsDataResponse {
+            ObjectType     = reader.GetInt32(0),
+            DocumentEntry  = reader.GetInt32(1),
+            DocumentNumber = reader.GetInt32(2),
+            Vendor         = new ExternalValue<string> { Id = reader.GetString(3), Name = reader[4]!.ToString() }
+        });
     }
 }
