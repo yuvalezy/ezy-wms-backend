@@ -67,8 +67,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             query = query.Where(gr => request.Statuses.Contains(gr.Status));
 
         if (request.Confirm.HasValue) {
-            var type = request.Confirm.Value ? GoodsReceiptType.SpecificReceipts : GoodsReceiptType.All;
-            query = query.Where(gr => gr.Type == type);
+            query = request.Confirm.Value ? query.Where(gr => gr.Type == GoodsReceiptType.SpecificReceipts) : query.Where(gr => gr.Type != GoodsReceiptType.SpecificReceipts);
         }
 
         var results = await query.OrderByDescending(gr => gr.CreatedAt).ToListAsync();
@@ -332,17 +331,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var lines = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .Include(l => l.CancellationReason)
-            .Where(l => l.GoodsReceipt.Id == id && l.ItemCode == itemCode)
+            .Include(l => l.CreatedByUser)
+            .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode)
             .Select(l => new GoodsReceiptReportAllDetailsResponse {
-                LineID             = l.Id,
-                BarCode            = l.BarCode,
-                Date               = l.Date,
-                Quantity           = l.Quantity,
-                Comments           = l.Comments,
-                Status             = l.LineStatus.ToString(),
-                CancellationReason = l.CancellationReason != null ? l.CancellationReason.Name : null
+                LineID            = l.Id,
+                CreatedByUserName = l.CreatedByUser!.FullName,
+                TimeStamp         = l.UpdatedAt ?? l.CreatedAt,
+                Quantity          = l.Quantity,
+                Unit              = l.Unit
             })
             .ToListAsync();
 
