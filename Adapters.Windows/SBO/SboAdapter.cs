@@ -4,7 +4,6 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
-using Microsoft.VisualBasic;
 
 namespace Adapters.Windows.SBO;
 
@@ -83,5 +82,9 @@ public class SboAdapter(
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
         await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
+    }
+
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string cardCode, List<ObjectKey> specificDocuments) {
+        return await goodsReceiptRepository.AddItemSourceDocuments(request, warehouse, type, cardCode, specificDocuments);
     }
 }

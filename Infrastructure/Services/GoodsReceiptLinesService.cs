@@ -12,6 +12,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
     public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo session, GoodsReceiptAddItemRequest request) {
         var goodsReceipt = await db.GoodsReceipts
             .Include(gr => gr.Documents)
+            .Include(gr => gr.Lines)
             .FirstOrDefaultAsync(gr => gr.Id == request.Id && (gr.Status == ObjectStatus.Open || gr.Status == ObjectStatus.InProgress));
 
         if (goodsReceipt == null) {
@@ -41,12 +42,35 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
                 ErrorMessage = "Item not found"
             };
         }
+
+        int quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+        var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
+        // Get the source documents data
+        var sourceDocuments = await adapter.AddItemSourceDocuments(request, session.Warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments);
         
+        // Get the source quantity already allocated and subtract it from the source documents
+        var goodsReceiptSources = await db
+            .GoodsReceiptSources
+            .Where(g => linesIds.Contains(g.GoodsReceiptLineId))
+            .ToListAsync();
+        
+        foreach (var sourceDocument in sourceDocuments) {
+            int selectedQuantity = (int)goodsReceiptSources
+                .Where(g => g.SourceType == sourceDocument.Type &&
+                            g.SourceEntry == sourceDocument.Entry && 
+                            g.SourceLine == sourceDocument.LineNum)
+                .Sum(g => g.Quantity);
+            sourceDocument.Quantity -= selectedQuantity;
+        }
+        sourceDocuments = sourceDocuments.Where(s => s.Quantity > 0).ToList();
+        
+        
+
         var line = new GoodsReceiptLine {
             GoodsReceiptId  = goodsReceipt.Id,
             ItemCode        = request.ItemCode,
             BarCode         = request.BarCode,
-            Quantity        = 1, // Default quantity
+            Quantity        = quantity,
             Unit            = request.Unit,
             Date            = DateTime.UtcNow,
             LineStatus      = LineStatus.Open,
@@ -58,7 +82,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             goodsReceipt.Status                                                       = ObjectStatus.InProgress;
             db.GoodsReceipts.Entry(goodsReceipt).Property(gr => gr.Status).IsModified = true;
         }
-        
+
         await db.GoodsReceiptLines.AddAsync(line);
         await db.SaveChangesAsync();
 
