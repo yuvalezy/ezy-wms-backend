@@ -10,6 +10,8 @@ namespace Infrastructure.Services;
 
 public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter adapter) : IGoodsReceiptLinesService {
     public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo session, GoodsReceiptAddItemRequest request) {
+        var    userId    = session.Guid;
+        string warehouse = session.Warehouse;
         var goodsReceipt = await db.GoodsReceipts
             .Include(gr => gr.Documents)
             .Include(gr => gr.Lines)
@@ -17,7 +19,6 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
 
         if (goodsReceipt == null) {
             return new GoodsReceiptAddItemResponse {
-                Status         = ResponseStatus.Error,
                 ErrorMessage   = "Goods receipt not found or already closed",
                 ClosedDocument = true
             };
@@ -25,10 +26,9 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
 
         // Validate with external system
         var specificDocuments = goodsReceipt.Documents.Select(d => new ObjectKey(d.ObjType, d.DocEntry, d.DocNumber)).ToList();
-        var validationResult  = await adapter.ValidateGoodsReceiptAddItem(request, specificDocuments, session.Guid, session.Warehouse);
+        var validationResult  = await adapter.ValidateGoodsReceiptAddItem(request, specificDocuments, userId, warehouse);
         if (!validationResult.IsValid) {
             return new GoodsReceiptAddItemResponse {
-                Status       = ResponseStatus.Error,
                 ErrorMessage = validationResult.ErrorMessage,
             };
         }
@@ -38,14 +38,13 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
         var item  = items.FirstOrDefault();
         if (item == null) {
             return new GoodsReceiptAddItemResponse {
-                Status       = ResponseStatus.Error,
                 ErrorMessage = "Item not found"
             };
         }
 
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
         // Get the source documents data
-        var sourceDocuments = (await adapter.AddItemSourceDocuments(request, session.Warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
+        var sourceDocuments = (await adapter.AddItemSourceDocuments(request, warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
 
         // Get the source quantity already allocated and subtract it from the source documents
         var goodsReceiptSources = await db
@@ -117,7 +116,6 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
         // Validate that we found at least one source document
         if (sourceDocuments.Count == 0) {
             return new GoodsReceiptAddItemResponse {
-                Status       = ResponseStatus.Error,
                 ErrorMessage = $"No source documents found for item {request.ItemCode}"
             };
         }
@@ -136,9 +134,9 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             Unit            = request.Unit,
             Date            = DateTime.UtcNow,
             LineStatus      = LineStatus.Open,
-            CreatedByUserId = session.Guid,
+            CreatedByUserId = userId,
             Sources = sourceDocuments.Select(s => new GoodsReceiptSource {
-                CreatedByUserId    = session.Guid,
+                CreatedByUserId    = userId,
                 Quantity           = s.Quantity,
                 SourceEntry        = s.Entry,
                 SourceLine         = s.LineNum,
@@ -151,7 +149,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
         // Insert source document allocations for this line
         foreach (var s in sourceDocuments) {
             var source = new GoodsReceiptSource {
-                CreatedByUserId    = session.Guid,
+                CreatedByUserId    = userId,
                 Quantity           = s.Quantity,
                 SourceEntry        = s.Entry,
                 SourceLine         = s.LineNum,
@@ -172,21 +170,87 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
 
         // STEP 7: Load target documents that need this item (ordered by priority)
         // Find documents waiting for this item and calculate remaining quantities needed
-        var documentsWaiting = adapter.AddItemTargetDocuments(session.Warehouse, request.ItemCode);
+        var          documentsWaiting = await adapter.AddItemTargetDocuments(warehouse, request.ItemCode);
         LineStatus[] targetStatuses   = [LineStatus.Open, LineStatus.Finished, LineStatus.Processing];
-        var targetData = db.GoodsReceiptTargets
-            .Where(v => v.ItemCode == request.ItemCode && v.WhsCode == session.Warehouse && targetStatuses.Contains(v.TargetStatus))
-            .GroupBy(v => new {v.TargetType, v.TargetEntry, v.TargetLine})
-            .Select(v => new {v.Key.TargetType, v.Key.TargetEntry, v.Key.TargetLine, Quantity = v.Sum(q => q.TargetQuantity)});
-        
-        // todo: documentsWaintng, join with targetData, reduce waiting.quantity - target quantity, select documentWaiting where waitnig.quantity - target.quantity > 0
-        
-        
+        var targetData = await db.GoodsReceiptTargets
+            .Where(v => v.ItemCode == request.ItemCode && v.WhsCode == warehouse && targetStatuses.Contains(v.TargetStatus))
+            .GroupBy(v => new { v.TargetType, v.TargetEntry, v.TargetLine })
+            .Select(v => new { v.Key.TargetType, v.Key.TargetEntry, v.Key.TargetLine, Quantity = v.Sum(q => q.TargetQuantity) })
+            .ToListAsync();
+
+        // Join documentsWaiting with targetData to calculate remaining quantities needed
+        var documentsNeedingItems = documentsWaiting
+            .GroupJoin(targetData,
+                waiting => new { waiting.Type, waiting.Entry, waiting.LineNum },
+                target => new { Type = target.TargetType, Entry = target.TargetEntry, LineNum = target.TargetLine },
+                (waiting, targets) => new {
+                    waiting.Priority,
+                    waiting.Type,
+                    waiting.Entry,
+                    waiting.LineNum,
+                    waiting.Date,
+                    RequiredQuantity  = waiting.Quantity,
+                    AllocatedQuantity = targets.Sum(t => (int)t.Quantity),
+                    RemainingQuantity = waiting.Quantity - targets.Sum(t => (int)t.Quantity)
+                })
+            .Where(doc => doc.RemainingQuantity > 0)
+            .OrderBy(doc => doc.Priority)
+            .ThenBy(doc => doc.Date)
+            .ToList();
+
+        // STEP 8: Distribute received quantity to target documents by priority
+        // Allocate our received quantity to waiting documents in priority order
+
+        (int fulfillment, int showroom) = (0, 0);
+        foreach (var needingItem in documentsNeedingItems) {
+            int scanQuantity = needingItem.RemainingQuantity;
+            // Determine how much to allocate (either full demand or remaining quantity)
+            int insertQuantity = quantity > scanQuantity ? scanQuantity : quantity;
+            // Reduce remaining quantity to allocate
+            quantity -= insertQuantity;
+
+            // Create target allocation record
+            await db.GoodsReceiptTargets.AddAsync(new GoodsReceiptTarget {
+                CreatedByUserId    = userId,
+                ItemCode           = request.ItemCode,
+                WhsCode            = warehouse,
+                TargetType         = needingItem.Type,
+                TargetEntry        = needingItem.Entry,
+                TargetLine         = needingItem.LineNum,
+                TargetQuantity     = insertQuantity,
+                TargetStatus       = LineStatus.Open,
+                GoodsReceiptLineId = line.Id,
+            });
+            
+            switch (needingItem.Type) {
+                case 1250000001:
+                    showroom += insertQuantity;
+                    break;
+                case 13 or 17:
+                    fulfillment += insertQuantity;
+                    break;
+            }
+
+            // Stop if we've allocated all available quantity
+            if (quantity == 0) {
+                break;
+            }
+        }
+
+
         await db.SaveChangesAsync();
 
+        quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
         return new() {
-            Status = ResponseStatus.Ok,
-            LineId = line.Id,
+            LineId      = line.Id,
+            Fulfillment = fulfillment > 0,
+            Showroom    = showroom > 0,
+            Warehouse   = quantity - fulfillment - showroom > 0,
+            Quantity    = 1,
+            NumInBuy    = item.NumInBuy,
+            BuyUnitMsr  = item.BuyUnitMsr,
+            PurPackUn   = item.PurPackUn,
+            PurPackMsr  = item.PurPackMsr
         };
     }
 
