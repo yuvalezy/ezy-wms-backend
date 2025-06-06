@@ -297,7 +297,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         var response = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
             .Include(l => l.Targets)
-            .Where(l => l.GoodsReceiptId == id)
+            .Where(l => l.GoodsReceiptId == id && l.LineStatus != LineStatus.Closed)
             .GroupBy(l => new { l.ItemCode })
             .Select(g => new GoodsReceiptReportAllResponse {
                 ItemCode = g.Key.ItemCode,
@@ -332,9 +332,9 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var lines = await db.GoodsReceiptLines
             .Include(l => l.CreatedByUser)
-            .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode)
+            .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
             .Select(l => new GoodsReceiptReportAllDetailsResponse {
-                LineID            = l.Id,
+                LineId            = l.Id,
                 CreatedByUserName = l.CreatedByUser!.FullName,
                 TimeStamp         = l.UpdatedAt ?? l.CreatedAt,
                 Quantity          = l.Quantity,
@@ -352,18 +352,23 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (goodsReceipt == null)
             return false;
-
-        foreach (var updateLine in request.Lines) {
-            var line = goodsReceipt.Lines.FirstOrDefault(l => l.Id == updateLine.LineID);
-            if (line != null && line.LineStatus != LineStatus.Closed) {
-                line.Quantity = updateLine.Quantity;
-                if (!string.IsNullOrEmpty(updateLine.Comments))
-                    line.Comments = updateLine.Comments;
+        
+        
+        foreach (var line in goodsReceipt.Lines) {
+            if (request.RemoveRows.Contains(line.Id)) {
                 line.UpdatedAt       = DateTime.UtcNow;
                 line.UpdatedByUserId = session.Guid;
+                line.LineStatus      = LineStatus.Closed;
+                continue;
             }
-        }
 
+            if (!request.QuantityChanges.TryGetValue(line.Id, out decimal change)) 
+                continue;
+            line.Quantity        = change;
+            line.UpdatedAt       = DateTime.UtcNow;
+            line.UpdatedByUserId = session.Guid;
+        }
+        
         await db.SaveChangesAsync();
         return true;
     }

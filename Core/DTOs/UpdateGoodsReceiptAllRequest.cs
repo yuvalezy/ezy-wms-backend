@@ -5,17 +5,10 @@ namespace Core.DTOs;
 public class UpdateGoodsReceiptAllRequest {
     [Required]
     public Guid Id { get; set; }
-    
-    [Required]
-    public required List<UpdateGoodsReceiptAllLineRequest> Lines { get; set; }
-}
 
-public class UpdateGoodsReceiptAllLineRequest {
     [Required]
-    public Guid LineID { get; set; }
-    
+    public required Dictionary<Guid, decimal> QuantityChanges { get; set; }
+
     [Required]
-    public decimal Quantity { get; set; }
-    
-    public string? Comments { get; set; }
+    public required Guid[] RemoveRows { get; set; }
 }

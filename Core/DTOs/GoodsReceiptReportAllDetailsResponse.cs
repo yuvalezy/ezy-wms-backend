@@ -3,7 +3,7 @@ using Core.Enums;
 namespace Core.DTOs;
 
 public class GoodsReceiptReportAllDetailsResponse {
-    public Guid     LineID            { get; set; }
+    public Guid     LineId            { get; set; }
     public string   CreatedByUserName { get; set; } = string.Empty;
     public DateTime TimeStamp         { get; set; }
 
