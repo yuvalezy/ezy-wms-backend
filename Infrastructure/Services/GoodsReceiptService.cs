@@ -294,22 +294,40 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     }
 
     // Report methods
-    public async Task<IEnumerable<GoodsReceiptReportAllResponse>> GetGoodsReceiptAllReport(Guid id) {
-        var lines = await db.GoodsReceiptLines
+    public async Task<IEnumerable<GoodsReceiptReportAllResponse>> GetGoodsReceiptAllReport(Guid id, string warehouse) {
+        var response = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
-            .Where(l => l.GoodsReceipt.Id == id)
+            .Include(l => l.Targets)
+            .Where(l => l.GoodsReceiptId == id)
             .GroupBy(l => new { l.ItemCode })
             .Select(g => new GoodsReceiptReportAllResponse {
-                ItemCode         = g.Key.ItemCode,
-                ItemName         = g.Key.ItemCode, // Would need item master for actual name
-                ScannedQuantity  = g.Sum(l => l.Quantity),
-                ReceivedQuantity = g.Where(l => l.LineStatus == LineStatus.Closed).Sum(l => l.Quantity),
-                Variance         = g.Sum(l => l.Quantity) - g.Where(l => l.LineStatus == LineStatus.Closed).Sum(l => l.Quantity),
-                LineCount        = g.Count()
+                ItemCode = g.Key.ItemCode,
+                Quantity = g.Sum(a => a.Quantity),
+                Delivery = g.SelectMany(a => a.Targets
+                        .Where(b => b.TargetType == 13 || b.TargetType == 17)
+                        .Select(b => b.TargetQuantity))
+                    .Sum(),
+                Showroom = g.SelectMany(a => a.Targets
+                        .Where(b => b.TargetType == 1250000001)
+                        .Select(b => b.TargetQuantity))
+                    .Sum(),
             })
             .ToListAsync();
 
-        return lines;
+        string[] items          = response.Select(r => r.ItemCode).ToArray();
+        var      itemsStockData = await adapter.ItemsWarehouseStockAsync(warehouse, items);
+        response.ForEach(r => {
+            if (!itemsStockData.TryGetValue(r.ItemCode, out var itemStockData))
+                throw new InvalidOperationException($"Item {r.ItemCode} not found in stock data from external adapter");
+            r.ItemName   = itemStockData.ItemName;
+            r.Stock      = itemStockData.Stock;
+            r.NumInBuy   = itemStockData.NumInBuy;
+            r.BuyUnitMsr = itemStockData.BuyUnitMsr;
+            r.PurPackUn  = itemStockData.PurPackUn;
+            r.PurPackMsr = itemStockData.PurPackMsr;
+        });
+
+        return response;
     }
 
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {

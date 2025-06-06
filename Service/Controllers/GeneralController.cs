@@ -70,7 +70,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpPost("ItemStock")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeRequest request) {
+    public async Task<ActionResult<IEnumerable<ItemBinStockResponse>>> ItemStock([FromBody] ItemBarCodeRequest request) {
         if (string.IsNullOrWhiteSpace(request.ItemCode)) {
             return BadRequest("Item code is required.");
         }

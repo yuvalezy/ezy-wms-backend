@@ -61,7 +61,7 @@ public class PublicService(IExternalSystemAdapter externalSystemAdapter, ISettin
 
     public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) => await externalSystemAdapter.BinCheckAsync(binEntry);
 
-    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await externalSystemAdapter.ItemStockAsync(itemCode, whsCode);
+    public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await externalSystemAdapter.ItemStockAsync(itemCode, whsCode);
 
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(string userId, UpdateBarCodeRequest request) {
         if (request.AddBarcodes != null) {

@@ -6,24 +6,25 @@ using Core.Models;
 namespace Core.Interfaces;
 
 public interface IExternalSystemAdapter {
-    Task<ExternalValue<string>?>             GetUserInfoAsync(string id);
-    Task<IEnumerable<ExternalValue<string>>> GetUsersAsync();
-    Task<string?>                            GetCompanyNameAsync();
-    Task<IEnumerable<Warehouse>>             GetWarehousesAsync(string[]? filter = null);
-    Task<Warehouse?>                         GetWarehouseAsync(string id);
-    Task<(int itemCount, int binCount)>      GetItemAndBinCount(string warehouse);
-    Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
-    Task<ExternalValue<string>?>             GetVendorAsync(string                  cardCode);
-    Task<bool>                               ValidateVendorsAsync(string            id);
-    Task<BinLocation?>                       ScanBinLocationAsync(string            bin);
-    Task<string?>                            GetBinCodeAsync(int                    binEntry);
-    Task<IEnumerable<Item>>                  ScanItemBarCodeAsync(string            scanCode, bool item = false);
-    Task<IEnumerable<ItemCheckResponse>>     ItemCheckAsync(string?                 itemCode, string? barcode);
-    Task<IEnumerable<BinContent>>            BinCheckAsync(int                      binEntry);
-    Task<IEnumerable<ItemStockResponse>>     ItemStockAsync(string                  itemCode, string whsCode);
-    Task<UpdateItemBarCodeResponse>          UpdateItemBarCode(UpdateBarCodeRequest request);
-    Task<ValidateAddItemResult>              GetItemValidationInfo(string           itemCode,       string barCode, string  warehouse, int? binEntry, bool enableBin);
-    Task<ProcessTransferResponse>            ProcessTransfer(int                    transferNumber, string whsCode, string? comments,  Dictionary<string, TransferCreationData> data);
+    Task<ExternalValue<string>?>                         GetUserInfoAsync(string id);
+    Task<IEnumerable<ExternalValue<string>>>             GetUsersAsync();
+    Task<string?>                                        GetCompanyNameAsync();
+    Task<IEnumerable<Warehouse>>                         GetWarehousesAsync(string[]? filter = null);
+    Task<Warehouse?>                                     GetWarehouseAsync(string     id);
+    Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string    warehouse);
+    Task<IEnumerable<ExternalValue<string>>>             GetVendorsAsync();
+    Task<ExternalValue<string>?>                         GetVendorAsync(string                  cardCode);
+    Task<bool>                                           ValidateVendorsAsync(string            id);
+    Task<BinLocation?>                                   ScanBinLocationAsync(string            bin);
+    Task<string?>                                        GetBinCodeAsync(int                    binEntry);
+    Task<IEnumerable<Item>>                              ScanItemBarCodeAsync(string            scanCode, bool    item = false);
+    Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?                 itemCode, string? barcode);
+    Task<IEnumerable<BinContent>>                        BinCheckAsync(int                      binEntry);
+    Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string                  itemCode,  string   whsCode);
+    Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items);
+    Task<UpdateItemBarCodeResponse>                      UpdateItemBarCode(UpdateBarCodeRequest request);
+    Task<ValidateAddItemResult>                          GetItemValidationInfo(string           itemCode,       string barCode, string  warehouse, int?                                     binEntry, bool enableBin);
+    Task<ProcessTransferResponse>                        ProcessTransfer(int                    transferNumber, string whsCode, string? comments,  Dictionary<string, TransferCreationData> data);
 
     // Picking methods
     Task<IEnumerable<PickingDocument>>         GetPickLists(PickListsRequest                        request, string warehouse);

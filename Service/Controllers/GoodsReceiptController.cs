@@ -243,7 +243,7 @@ public class GoodsReceiptController(IGoodsReceiptService goodsReceiptService, IS
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptAllReport(id));
+        return Ok(await goodsReceiptService.GetGoodsReceiptAllReport(id, sessionInfo.Warehouse));
     }
 
     // 10. Get All Report Details

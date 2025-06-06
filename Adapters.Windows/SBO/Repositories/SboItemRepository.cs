@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
@@ -108,7 +109,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         return response;
     }
 
-    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
+    public async Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode) {
         const string query = """
                              select T1."BinCode", T0."OnHandQty"
                              from OIBQ T0
@@ -123,10 +124,55 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = whsCode }
         };
 
-        return await dbService.QueryAsync(query, parameters, reader => new ItemStockResponse {
+        return await dbService.QueryAsync(query, parameters, reader => new ItemBinStockResponse {
             BinCode  = reader.GetString(0),
             Quantity = Convert.ToInt32(reader[1])
         });
+    }
+
+    public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items) {
+        if (items.Length == 0) {
+            return new();
+        }
+
+        var parameters = new List<SqlParameter> { new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse } };
+        var sb = new StringBuilder("""
+                                   select T0."ItemCode", T0."ItemName",
+                                          COALESCE(T1."OnHand", 0)        "OnHand",
+                                          COALESCE(T0."NumInBuy", 1)      "NumInBuy",
+                                          T0."BuyUnitMsr",
+                                          COALESCE(T0."PurPackUn", 1)     "PurPackUn",
+                                          T0."PurPackMsr"
+                                   from OITM T0
+                                   inner join OITW T1 on T1."ItemCode" = T0."ItemCode" and T1."whsCode" = @WhsCode
+                                   where T0."ItemCode" in (
+                                   """);
+        for (int i = 0; i < items.Length; i++) {
+            if (i > 0) {
+                sb.Append(", ");
+            }
+
+            sb.Append($"@ItemCode{i}");
+            parameters.Add(new($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] });
+        }
+
+        sb.Append(")");
+        var response = new Dictionary<string, ItemWarehouseStockResponse>();
+        await dbService.QueryAsync(sb.ToString(), parameters.ToArray(),
+            reader => {
+                var value = new ItemWarehouseStockResponse {
+                    ItemCode   = reader.GetString(0),
+                    ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
+                    Stock     = (int)reader.GetDecimal(2),
+                    NumInBuy   = (int)reader.GetDecimal(3),
+                    BuyUnitMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
+                    PurPackUn  = (int)reader.GetDecimal(5),
+                    PurPackMsr = !reader.IsDBNull(6) ? reader.GetString(6) : "",
+                };
+                response.Add(value.ItemCode, value);
+                return value;
+            });
+        return response;
     }
 
     public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
