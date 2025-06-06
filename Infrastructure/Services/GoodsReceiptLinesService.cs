@@ -43,10 +43,9 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             };
         }
 
-        int quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
         // Get the source documents data
-        var sourceDocuments = await adapter.AddItemSourceDocuments(request, session.Warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments);
+        var sourceDocuments = (await adapter.AddItemSourceDocuments(request, session.Warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
         
         // Get the source quantity already allocated and subtract it from the source documents
         var goodsReceiptSources = await db
@@ -62,7 +61,41 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
                 .Sum(g => g.Quantity);
             sourceDocument.Quantity -= selectedQuantity;
         }
-        sourceDocuments = sourceDocuments.Where(s => s.Quantity > 0).ToList();
+        sourceDocuments.RemoveAll(s => s.Quantity <= 0);
+        
+        // Iterate through available source documents and allocate quantities using FIFO
+        int quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+        for (int i = 0; i < sourceDocuments.Count; i++) {
+            var sourceDocument = sourceDocuments[i];
+            int iQty   = sourceDocument.Quantity;
+
+            // If this source can fully satisfy remaining quantity
+            if (iQty <= quantity) {
+                quantity -= iQty; // Reduce remaining quantity
+                if (quantity == 0) {
+                    sourceDocuments.RemoveRange(i + 1, sourceDocuments.Count - (i + 1)); // Remove unused sources
+                    break;
+                }
+            }
+            else {
+                // Partial allocation - this source has more than we need
+                sourceDocument.Quantity = quantity;
+                sourceDocuments.RemoveRange(i + 1, sourceDocuments.Count - (i + 1)); // Remove unused sources
+                quantity                = 0;
+                break;
+            }
+        }
+        
+        
+        // Handle case where we still have unallocated quantity (over-receipt scenario)
+        if (quantity > 0) {
+            if (sourceDocuments.Count > 0) {
+                sourceDocuments.Last().Quantity += quantity;
+            }
+            else {
+                
+            }
+        }
         
         
 

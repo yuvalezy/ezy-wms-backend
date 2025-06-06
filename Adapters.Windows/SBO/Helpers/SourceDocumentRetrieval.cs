@@ -14,7 +14,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         string           warehouse,
         UnitType         unit,
         GoodsReceiptType type,
-        string           cardCode,
+        string?          cardCode,
         List<ObjectKey>  specificDocuments) {
         int[] entries = specificDocuments.Where(v => v.Type == 22).Select(v => v.Entry).ToArray();
         if (type is not (GoodsReceiptType.All or GoodsReceiptType.SpecificOrders) || entries.Length == 0) {
@@ -125,7 +125,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         string           warehouse,
         UnitType         unit,
         GoodsReceiptType type,
-        string           cardCode,
+        string?          cardCode,
         List<ObjectKey>  specificDocuments) {
         int[] entries = specificDocuments.Where(v => v.Type == 18).Select(v => v.Entry).ToArray();
 
@@ -186,7 +186,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         string           warehouse,
         UnitType         unit,
         GoodsReceiptType type,
-        string           cardCode,
+        string?          cardCode,
         List<ObjectKey>  specificDocuments) {
         var response = new List<GoodsReceiptAddItemSourceDocument>();
 

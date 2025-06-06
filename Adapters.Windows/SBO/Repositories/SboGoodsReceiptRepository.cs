@@ -89,7 +89,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         GoodsReceiptAddItemRequest request,
         string                     warehouse,
         GoodsReceiptType           type,
-        string                     cardCode,
+        string?                    cardCode,
         List<ObjectKey>            specificDocuments) {
         
         return await _sourceDocumentRetrieval.GetAllSourceDocuments(
