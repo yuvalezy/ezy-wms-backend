@@ -1,9 +1,9 @@
 namespace Core.Models;
 
 public class GoodsReceiptValidationResult {
-    public bool                                   IsValid      { get; set; }
-    public string?                                ErrorMessage { get; set; }
-    public int                                    ReturnValue  { get; set; }
+    public bool    IsValid      { get; set; }
+    public string? ErrorMessage { get; set; }
+    public int     ReturnValue  { get; set; }
 }
 
 public class ProcessGoodsReceiptResult {
