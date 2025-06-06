@@ -46,28 +46,29 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
         // Get the source documents data
         var sourceDocuments = (await adapter.AddItemSourceDocuments(request, session.Warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
-        
+
         // Get the source quantity already allocated and subtract it from the source documents
         var goodsReceiptSources = await db
             .GoodsReceiptSources
             .Where(g => linesIds.Contains(g.GoodsReceiptLineId))
             .ToListAsync();
-        
+
         foreach (var sourceDocument in sourceDocuments) {
             int selectedQuantity = (int)goodsReceiptSources
                 .Where(g => g.SourceType == sourceDocument.Type &&
-                            g.SourceEntry == sourceDocument.Entry && 
+                            g.SourceEntry == sourceDocument.Entry &&
                             g.SourceLine == sourceDocument.LineNum)
                 .Sum(g => g.Quantity);
             sourceDocument.Quantity -= selectedQuantity;
         }
+
         sourceDocuments.RemoveAll(s => s.Quantity <= 0);
-        
+
         // Iterate through available source documents and allocate quantities using FIFO
         int quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
         for (int i = 0; i < sourceDocuments.Count; i++) {
             var sourceDocument = sourceDocuments[i];
-            int iQty   = sourceDocument.Quantity;
+            int iQty           = sourceDocument.Quantity;
 
             // If this source can fully satisfy remaining quantity
             if (iQty <= quantity) {
@@ -81,12 +82,12 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
                 // Partial allocation - this source has more than we need
                 sourceDocument.Quantity = quantity;
                 sourceDocuments.RemoveRange(i + 1, sourceDocuments.Count - (i + 1)); // Remove unused sources
-                quantity                = 0;
+                quantity = 0;
                 break;
             }
         }
-        
-        
+
+
         // Handle case where we still have unallocated quantity (over-receipt scenario)
         if (quantity > 0) {
             // Add remaining quantity to the last allocated source document
@@ -112,7 +113,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
 
             quantity = 0;
         }
-        
+
         // Validate that we found at least one source document
         if (sourceDocuments.Count == 0) {
             return new GoodsReceiptAddItemResponse {
@@ -120,8 +121,8 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
                 ErrorMessage = $"No source documents found for item {request.ItemCode}"
             };
         }
-        
-        
+
+
         // STEP 5: Create the goods receipt line entry
         // Reset quantity for actual insertion
         quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
@@ -136,7 +137,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             Date            = DateTime.UtcNow,
             LineStatus      = LineStatus.Open,
             CreatedByUserId = session.Guid,
-            Sources         = sourceDocuments.Select(s => new GoodsReceiptSource {
+            Sources = sourceDocuments.Select(s => new GoodsReceiptSource {
                 CreatedByUserId    = session.Guid,
                 Quantity           = s.Quantity,
                 SourceEntry        = s.Entry,
@@ -146,7 +147,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             }).ToArray()
         };
         await db.GoodsReceiptLines.AddAsync(line);
-        
+
         // Insert source document allocations for this line
         foreach (var s in sourceDocuments) {
             var source = new GoodsReceiptSource {
@@ -162,10 +163,25 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
 
         // Update goods receipt header status to InProgress
         if (goodsReceipt.Status != ObjectStatus.InProgress) {
-            goodsReceipt.Status                                                       = ObjectStatus.InProgress;
-            db.GoodsReceipts.Entry(goodsReceipt).Property(gr => gr.Status).IsModified = true;
+            goodsReceipt.Status = ObjectStatus.InProgress;
+            db.GoodsReceipts
+                .Entry(goodsReceipt)
+                .Property(gr => gr.Status)
+                .IsModified = true;
         }
 
+        // STEP 7: Load target documents that need this item (ordered by priority)
+        // Find documents waiting for this item and calculate remaining quantities needed
+        var documentsWaiting = adapter.AddItemTargetDocuments(session.Warehouse, request.ItemCode);
+        LineStatus[] targetStatuses   = [LineStatus.Open, LineStatus.Finished, LineStatus.Processing];
+        var targetData = db.GoodsReceiptTargets
+            .Where(v => v.ItemCode == request.ItemCode && v.WhsCode == session.Warehouse && targetStatuses.Contains(v.TargetStatus))
+            .GroupBy(v => new {v.TargetType, v.TargetEntry, v.TargetLine})
+            .Select(v => new {v.Key.TargetType, v.Key.TargetEntry, v.Key.TargetLine, Quantity = v.Sum(q => q.TargetQuantity)});
+        
+        // todo: documentsWaintng, join with targetData, reduce waiting.quantity - target quantity, select documentWaiting where waitnig.quantity - target.quantity > 0
+        
+        
         await db.SaveChangesAsync();
 
         return new() {

@@ -12,6 +12,7 @@ namespace Adapters.Windows.SBO.Repositories;
 
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany sboCompany) {
     private readonly SourceDocumentRetrieval _sourceDocumentRetrieval = new(dbService);
+
     public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, string warehouse, List<ObjectKey> specificDocuments) {
         var response = new GoodsReceiptValidationResult {
             IsValid      = true,
@@ -91,7 +92,6 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         GoodsReceiptType           type,
         string?                    cardCode,
         List<ObjectKey>            specificDocuments) {
-        
         return await _sourceDocumentRetrieval.GetAllSourceDocuments(
             request.ItemCode,
             warehouse,
@@ -99,6 +99,50 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
             type,
             cardCode,
             specificDocuments);
+    }
+
+    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocuments>> AddItemTargetDocuments(string warehouse, string itemCode) {
+        const string query =
+            """
+            -- Priority 1: Reserved A/R Invoices (highest priority)
+            select 1 [Priority], T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+            from INV1 T0
+                     inner join OINV T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y'
+            where T0."ItemCode" = @ItemCode
+              and T0."InvntSttus" = 'O'        -- Open inventory status
+              and T0."WhsCode" = @WhsCode
+
+            -- Priority 2: Open Sales Orders
+            union
+            select 2, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+            from RDR1 T0
+                     inner join ORDR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+            where T0."ItemCode" = @ItemCode
+              and T0."InvntSttus" = 'O'
+              and T0."WhsCode" = @WhsCode
+
+            -- Priority 3: Open Transfer Requests (lowest priority)
+            union
+            select 3, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+            from WTQ1 T0
+                     inner join OWTQ T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+            where T0."ItemCode" = @ItemCode
+              and T0."InvntSttus" = 'O'
+              and T0."FromWhsCod" = @WhsCode    -- From our warehouse
+              and T0."WhsCode" = @WhsCode
+            """;
+        var result = await dbService.QueryAsync(query, [
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+        ], reader => new GoodsReceiptAddItemTargetDocuments() {
+            Priority = reader.GetInt16(0),
+            Type     = reader.GetInt32(1),
+            Date     = reader.GetDateTime(2),
+            Entry    = reader.GetInt32(3),
+            LineNum  = reader.GetInt32(4),
+            Quantity = reader.GetInt32(5)
+        });
+        return result;
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data, int series) {

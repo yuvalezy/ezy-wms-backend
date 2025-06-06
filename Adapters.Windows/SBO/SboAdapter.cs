@@ -87,4 +87,8 @@ public class SboAdapter(
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode, List<ObjectKey> specificDocuments) {
         return await goodsReceiptRepository.AddItemSourceDocuments(request, warehouse, type, cardCode, specificDocuments);
     }
+
+    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocuments>> AddItemTargetDocuments(string warehouse, string itemCode) {
+        return await goodsReceiptRepository.AddItemTargetDocuments(warehouse, itemCode);
+    }
 }

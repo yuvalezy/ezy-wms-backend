@@ -79,6 +79,10 @@ public class GoodsReceiptTarget : BaseEntity {
     public required string ItemCode { get; set; }
 
     [Required]
+    [StringLength(8)]
+    public required string WhsCode { get; set; }
+
+    [Required]
     public int TargetEntry { get; set; }
 
     [Required]
