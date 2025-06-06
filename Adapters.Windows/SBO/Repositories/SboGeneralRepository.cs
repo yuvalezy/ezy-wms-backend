@@ -4,6 +4,8 @@ using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.Utils;
 using Core.DTOs;
+using Core.DTOs.Items;
+using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
@@ -11,7 +13,6 @@ using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using SAPbobsCOM;
-using BinLocation = Core.Models.BinLocation;
 
 namespace Adapters.Windows.SBO.Repositories;
 
@@ -24,7 +25,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return await dbService.QuerySingleAsync(query, null, reader => reader.GetString(0));
     }
 
-    public async Task<IEnumerable<Warehouse>> GetWarehousesAsync(string[]? filter) {
+    public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter) {
         string          query      = "select \"WhsCode\", \"WhsName\", \"BinActivat\" from OWHS";
         SqlParameter[]? parameters = null;
 
@@ -33,7 +34,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             parameters =  SqlQueryUtils.BuildInParameters("WhsCode", filter, parameters);
         }
 
-        return await dbService.QueryAsync(query, parameters, reader => new Warehouse(
+        return await dbService.QueryAsync(query, parameters, reader => new WarehouseResponse(
             reader.GetString(0),
             reader.GetString(1),
             reader.GetString(2) == "Y"
@@ -89,14 +90,14 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return result;
     }
 
-    public async Task<BinLocation?> ScanBinLocationAsync(string bin) {
+    public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) {
         const string query = $"select \"AbsEntry\", \"BinCode\" from OBIN where \"BinCode\" = @BinCode";
 
         var parameters = new[] {
             new SqlParameter("@BinCode", bin)
         };
 
-        return await dbService.QuerySingleAsync(query, parameters, reader => new BinLocation {
+        return await dbService.QuerySingleAsync(query, parameters, reader => new BinLocationResponse {
             Entry = reader.GetInt32(0),
             Code  = reader.GetString(1)
         });
@@ -112,7 +113,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
     }
 
-    public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) {
+    public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {
         const string query = """
                              select T1."ItemCode", T2."ItemName", T1."OnHandQty" "OnHand", 
                              COALESCE(T2."NumInBuy", 1) "NumInBuy", T2."BuyUnitMsr",
@@ -127,7 +128,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = binEntry }
         };
 
-        return await dbService.QueryAsync(query, parameters, reader => new BinContent {
+        return await dbService.QueryAsync(query, parameters, reader => new BinContentResponse {
             ItemCode   = reader.GetString(0),
             ItemName   = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
             OnHand     = Convert.ToInt32(reader[2]),
@@ -158,7 +159,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
     }
 
 
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationData> data) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
         int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
         using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
         try {

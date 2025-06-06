@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.Transfer;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -192,7 +193,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
         return true;
     }
 
-    public async Task<UpdateLineResponse> UpdateLine(SessionInfo info, UpdateLineRequest request) {
+    public async Task<UpdateLineResponse> UpdateLine(SessionInfo info, TransferUpdateLineRequest request) {
         var response = new UpdateLineResponse();
 
         var transaction = await db.Database.BeginTransactionAsync();
@@ -275,7 +276,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
         }
     }
 
-    public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo info, UpdateLineQuantityRequest request) {
+    public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo info, TransferUpdateLineQuantityRequest request) {
         var response = new UpdateLineResponse();
         
         var transaction = await db.Database.BeginTransactionAsync();

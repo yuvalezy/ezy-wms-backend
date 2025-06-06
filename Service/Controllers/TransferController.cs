@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.DTOs;
+using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.Auth;
@@ -33,14 +34,14 @@ public class TransferController(ITransferService transferService, ITransferLineS
 
     [HttpPost("updateLine")]
     [RequireRolePermission(RoleType.Transfer)]
-    public async Task<UpdateLineResponse> UpdateLine([FromBody] UpdateLineRequest request) {
+    public async Task<UpdateLineResponse> UpdateLine([FromBody] TransferUpdateLineRequest request) {
         var sessionInfo = HttpContext.GetSession();
         return await transferLineService.UpdateLine(sessionInfo, request);
     }
 
     [HttpPost("updateLineQuantity")]
     [RequireRolePermission(RoleType.Transfer)]
-    public async Task<UpdateLineResponse> UpdateLineQuantity([FromBody] UpdateLineQuantityRequest request) {
+    public async Task<UpdateLineResponse> UpdateLineQuantity([FromBody] TransferUpdateLineQuantityRequest request) {
         var sessionInfo = HttpContext.GetSession();
         return await transferLineService.UpdateLineQuantity(sessionInfo, request);
     }
@@ -84,7 +85,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
 
     [HttpPost("updateContentTargetDetail")]
     [RequireRolePermission(RoleType.TransferSupervisor)]
-    public async Task<IActionResult> UpdateContentTargetDetail([FromBody] UpdateContentTargetDetailRequest request) {
+    public async Task<IActionResult> UpdateContentTargetDetail([FromBody] TransferUpdateContentTargetDetailRequest request) {
         var sessionInfo = HttpContext.GetSession();
         await transferService.UpdateContentTargetDetail(request, sessionInfo);
         return Ok(new { success = true });

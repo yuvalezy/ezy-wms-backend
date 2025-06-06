@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.GoodsReceipt;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -101,7 +102,7 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
                     .ThenByDescending(v => v.CreatedAt)
                     .FirstOrDefault();
                 if (fallback != null) {
-                    sourceDocuments.Add(new GoodsReceiptAddItemSourceDocument {
+                    sourceDocuments.Add(new GoodsReceiptAddItemSourceDocumentResponse {
                         Type     = fallback.SourceType,
                         Entry    = fallback.SourceEntry,
                         LineNum  = fallback.SourceLine,

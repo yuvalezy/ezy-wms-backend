@@ -1,4 +1,5 @@
 using Core.DTOs;
+using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Models;
 

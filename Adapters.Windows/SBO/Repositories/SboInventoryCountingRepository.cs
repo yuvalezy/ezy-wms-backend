@@ -3,6 +3,7 @@ using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.SBO.Utils;
 using Core.DTOs;
+using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
@@ -13,7 +14,7 @@ namespace Adapters.Windows.SBO.Repositories;
 
 public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCompany sboCompany, ILoggerFactory loggerFactory) {
     
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationData> data, int i) {
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationDataResponse> data, int i) {
         int       series           = await GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, whsCode, series, data, loggerFactory);
         try {

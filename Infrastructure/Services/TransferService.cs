@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.Transfer;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -217,7 +218,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
     }
 
-    private async Task<Dictionary<string, TransferCreationData>> PrepareTransferData(Guid transferId) {
+    private async Task<Dictionary<string, TransferCreationDataResponse>> PrepareTransferData(Guid transferId) {
         var lines = await db.TransferLines
             .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
             .GroupBy(tl => tl.ItemCode)
@@ -227,14 +228,14 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             })
             .ToListAsync();
 
-        var transferData = new Dictionary<string, TransferCreationData>();
+        var transferData = new Dictionary<string, TransferCreationDataResponse>();
 
         foreach (var itemGroup in lines) {
             // Group source bins
             var sourceBins = itemGroup.Lines
                 .Where(l => l is { Type: SourceTarget.Source, BinEntry: not null })
                 .GroupBy(l => l.BinEntry.Value)
-                .Select(g => new TransferCreationBin {
+                .Select(g => new TransferCreationBinResponse {
                     BinEntry = g.Key,
                     Quantity = g.Sum(l => l.Quantity)
                 })
@@ -244,7 +245,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             var targetBins = itemGroup.Lines
                 .Where(l => l is { Type: SourceTarget.Target, BinEntry: not null })
                 .GroupBy(l => l.BinEntry.Value)
-                .Select(g => new TransferCreationBin {
+                .Select(g => new TransferCreationBinResponse {
                     BinEntry = g.Key,
                     Quantity = g.Sum(l => l.Quantity)
                 })
@@ -258,7 +259,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             // In a proper transfer, these should be equal
             decimal transferQuantity = Math.Max(sourceQuantity, targetQuantity);
 
-            var data = new TransferCreationData {
+            var data = new TransferCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,
                 Quantity = transferQuantity,
                 SourceBins = sourceBins,
@@ -410,7 +411,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         });
     }
 
-    public async Task UpdateContentTargetDetail(UpdateContentTargetDetailRequest request, SessionInfo sessionInfo) {
+    public async Task UpdateContentTargetDetail(TransferUpdateContentTargetDetailRequest request, SessionInfo sessionInfo) {
         var transaction = await db.Database.BeginTransactionAsync();
         try {
             // Handle quantity changes
@@ -423,7 +424,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
                     if (line.TransferId != request.ID || line.LineStatus == LineStatus.Closed) continue;
 
                     // Use existing UpdateLine validation logic
-                    var updateRequest = new UpdateLineRequest {
+                    var updateRequest = new TransferUpdateLineRequest {
                         ID       = request.ID,
                         LineID   = change.Key,
                         Quantity = change.Value

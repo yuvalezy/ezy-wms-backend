@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.Items;
 using Core.Enums;
 using Core.Models;
 using SAPbobsCOM;

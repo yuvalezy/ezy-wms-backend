@@ -4,6 +4,7 @@ using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.Utils;
 using Core.DTOs;
+using Core.DTOs.GoodsReceipt;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
@@ -86,7 +87,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         return await Task.FromResult(response);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> AddItemSourceDocuments(
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(
         GoodsReceiptAddItemRequest request,
         string                     warehouse,
         GoodsReceiptType           type,
@@ -101,7 +102,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
             specificDocuments);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocuments>> AddItemTargetDocuments(string warehouse, string itemCode) {
+    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
         const string query =
             """
             -- Priority 1: Reserved A/R Invoices (highest priority)
@@ -134,7 +135,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         var result = await dbService.QueryAsync(query, [
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
             new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
-        ], reader => new GoodsReceiptAddItemTargetDocuments() {
+        ], reader => new GoodsReceiptAddItemTargetDocumentsResponse() {
             Priority = reader.GetInt16(0),
             Type     = reader.GetInt32(1),
             Date     = reader.GetDateTime(2),
@@ -145,7 +146,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         return result;
     }
 
-    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationData>> data, int series) {
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data, int series) {
         using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
         return await Task.FromResult(creation.Execute());
     }

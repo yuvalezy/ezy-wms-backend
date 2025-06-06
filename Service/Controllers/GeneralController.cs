@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.DTOs;
+using Core.DTOs.Items;
+using Core.DTOs.Settings;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
@@ -41,7 +43,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("ScanBinLocation")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.Counting)]
-    public async Task<ActionResult<BinLocation?>> ScanBinLocation([FromQuery] string bin) {
+    public async Task<ActionResult<BinLocationResponse?>> ScanBinLocation([FromQuery] string bin) {
         var response = await publicService.ScanBinLocationAsync(bin);
         
         return response != null ? Ok(response) : NotFound();
@@ -49,7 +51,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("ItemByBarCode")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest)]
-    public async Task<ActionResult<IEnumerable<Item>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
+    public async Task<ActionResult<IEnumerable<ItemResponse>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
         return Ok(await publicService.ScanItemBarCodeAsync(scanCode, item));
     }
 
@@ -63,7 +65,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [HttpGet("BinCheck")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.PickingSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
-    public async Task<ActionResult<IEnumerable<BinContent>>> BinCheck([FromQuery] int binEntry) {
+    public async Task<ActionResult<IEnumerable<BinContentResponse>>> BinCheck([FromQuery] int binEntry) {
         return Ok(await publicService.BinCheckAsync(binEntry));
     }
 

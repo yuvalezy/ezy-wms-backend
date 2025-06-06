@@ -1,4 +1,6 @@
 using Core.DTOs;
+using Core.DTOs.InventoryCounting;
+using Core.DTOs.Items;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -309,7 +311,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         }
     }
 
-    private async Task<Dictionary<string, InventoryCountingCreationData>> PrepareCountingData(Guid countingId, string warehouse) {
+    private async Task<Dictionary<string, InventoryCountingCreationDataResponse>> PrepareCountingData(Guid countingId, string warehouse) {
         var lines = await db.InventoryCountingLines
             .Where(icl => icl.InventoryCountingId == countingId && icl.LineStatus != LineStatus.Closed)
             .GroupBy(icl => icl.ItemCode)
@@ -319,12 +321,12 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             })
             .ToListAsync();
 
-        var countingData = new Dictionary<string, InventoryCountingCreationData>();
+        var countingData = new Dictionary<string, InventoryCountingCreationDataResponse>();
 
         foreach (var itemGroup in lines) {
             var totalCountedQuantity = 0;
             var systemQuantity = 0;
-            var countedBins = new List<InventoryCountingCreationBin>();
+            var countedBins = new List<InventoryCountingCreationBinResponse>();
 
             // Group by bins
             var binGroups = itemGroup.Lines
@@ -346,7 +348,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                     // If external adapter fails, continue with zero system quantity
                 }
 
-                countedBins.Add(new InventoryCountingCreationBin {
+                countedBins.Add(new InventoryCountingCreationBinResponse {
                     BinEntry = binGroup.Key,
                     CountedQuantity = binCountedQuantity,
                     SystemQuantity = binSystemQuantity
@@ -376,7 +378,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
             var variance = totalCountedQuantity - systemQuantity;
 
-            var data = new InventoryCountingCreationData {
+            var data = new InventoryCountingCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,
                 CountedQuantity = totalCountedQuantity,
                 SystemQuantity = systemQuantity,

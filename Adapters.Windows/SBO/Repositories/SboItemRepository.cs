@@ -3,6 +3,8 @@ using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.Items;
+using Core.DTOs.Settings;
 using Core.Interfaces;
 using Core.Models;
 using Microsoft.Data.SqlClient;
@@ -10,7 +12,7 @@ using Microsoft.Data.SqlClient;
 namespace Adapters.Windows.SBO.Repositories;
 
 public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings) {
-    public async Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
+    public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
         string query;
         query = !item
             ? """
@@ -33,7 +35,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         };
 
         return await dbService.QueryAsync(query, parameters, reader => {
-            var item = new Item(reader.GetString(0));
+            var item = new ItemResponse(reader.GetString(0));
             if (!reader.IsDBNull(1))
                 item.Name = reader.GetString(1);
             if (!reader.IsDBNull(2))
@@ -203,7 +205,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
         };
 
-        var itemData = await dbService.QuerySingleAsync(itemQuery, itemParams, reader => new ItemValidation(
+        var itemData = await dbService.QuerySingleAsync(itemQuery, itemParams, reader => new ItemValidationResposne(
             reader.GetString(0),
             reader.IsDBNull(1) ? null : reader.GetString(1),
             reader.IsDBNull(2) ? null : reader.GetString(2),
@@ -250,7 +252,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
         };
 
-        var binData = await dbService.QuerySingleAsync(binQuery, binParams, reader => new BinValidation(reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2), reader[3].ToString()));
+        var binData = await dbService.QuerySingleAsync(binQuery, binParams, reader => new BinValidationResponse(reader.GetInt32(0), reader.GetString(1), reader.GetDecimal(2), reader[3].ToString()));
 
         if (binData == null) {
             result.BinExists = false;

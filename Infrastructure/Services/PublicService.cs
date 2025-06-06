@@ -1,4 +1,7 @@
 ﻿using Core.DTOs;
+using Core.DTOs.Items;
+using Core.DTOs.PickList;
+using Core.DTOs.Settings;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
@@ -8,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Services;
 
 public class PublicService(IExternalSystemAdapter adapter, ISettings settings, IUserService userService, SystemDbContext db) : IPublicService {
-    public async Task<IEnumerable<Warehouse>> GetWarehousesAsync(string[]? filter) {
+    public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter) {
         var warehouses = await adapter.GetWarehousesAsync(filter);
         return warehouses;
     }
@@ -57,13 +60,13 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync() => await adapter.GetVendorsAsync();
 
-    public async Task<BinLocation?> ScanBinLocationAsync(string bin) => await adapter.ScanBinLocationAsync(bin);
+    public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) => await adapter.ScanBinLocationAsync(bin);
 
-    public async Task<IEnumerable<Item>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await adapter.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await adapter.ScanItemBarCodeAsync(scanCode, item);
 
     public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await adapter.ItemCheckAsync(itemCode, barcode);
 
-    public async Task<IEnumerable<BinContent>> BinCheckAsync(int binEntry) => await adapter.BinCheckAsync(binEntry);
+    public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) => await adapter.BinCheckAsync(binEntry);
 
     public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await adapter.ItemStockAsync(itemCode, whsCode);
 

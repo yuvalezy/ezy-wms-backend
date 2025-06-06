@@ -1,5 +1,6 @@
 using Azure.Core;
 using Core.DTOs;
+using Core.DTOs.GoodsReceipt;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -343,16 +344,16 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         };
     }
 
-    private async Task<Dictionary<string, List<GoodsReceiptCreationData>>> PrepareGoodsReceiptData(GoodsReceipt goodsReceipt) {
-        var data = new Dictionary<string, List<GoodsReceiptCreationData>>();
+    private async Task<Dictionary<string, List<GoodsReceiptCreationDataResponse>>> PrepareGoodsReceiptData(GoodsReceipt goodsReceipt) {
+        var data = new Dictionary<string, List<GoodsReceiptCreationDataResponse>>();
 
         foreach (var line in goodsReceipt.Lines) {
             if (!data.ContainsKey(line.ItemCode))
-                data[line.ItemCode] = new List<GoodsReceiptCreationData>();
+                data[line.ItemCode] = new List<GoodsReceiptCreationDataResponse>();
 
             var sources = await db.GoodsReceiptSources
                 .Where(s => s.GoodsReceiptLineId == line.Id)
-                .Select(s => new GoodsReceiptSourceData {
+                .Select(s => new GoodsReceiptSourceDataResponse {
                     SourceType  = s.SourceType,
                     SourceEntry = s.SourceEntry,
                     SourceLine  = s.SourceLine,
@@ -360,7 +361,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 })
                 .ToListAsync();
 
-            data[line.ItemCode].Add(new GoodsReceiptCreationData {
+            data[line.ItemCode].Add(new GoodsReceiptCreationDataResponse {
                 ItemCode = line.ItemCode,
                 BarCode  = line.BarCode,
                 Quantity = line.Quantity,

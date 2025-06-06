@@ -1,28 +1,17 @@
 using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
+using Core.DTOs.GoodsReceipt;
 using Core.Models;
 using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class GoodsReceiptCreation : IDisposable {
-    private readonly SboCompany sboCompany;
-    private readonly int number;
-    private readonly string whsCode;
-    private readonly Dictionary<string, List<GoodsReceiptCreationData>> data;
-    private readonly int series;
-    private Documents? doc;
-    private Recordset? rs;
+public class GoodsReceiptCreation(SboCompany sboCompany, int number, string whsCode, int series, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data)
+    : IDisposable {
+    private          Documents?                                                 doc;
+    private          Recordset?                                                 rs;
 
-    public List<(int Entry, int Number)> NewEntries { get; } = new();
-
-    public GoodsReceiptCreation(SboCompany sboCompany, int number, string whsCode, int series, Dictionary<string, List<GoodsReceiptCreationData>> data) {
-        this.sboCompany = sboCompany;
-        this.number = number;
-        this.whsCode = whsCode;
-        this.series = series;
-        this.data = data;
-    }
+    private List<(int Entry, int Number)> NewEntries { get; } = [];
 
     public ProcessGoodsReceiptResult Execute() {
         try {
@@ -66,15 +55,15 @@ public class GoodsReceiptCreation : IDisposable {
         }
     }
 
-    private Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationData>> GroupDataBySource() {
-        var grouped = new Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationData>>();
+    private Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>> GroupDataBySource() {
+        var grouped = new Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>>();
 
         foreach (var item in data.SelectMany(kvp => kvp.Value)) {
             if (item.Sources.Any()) {
                 foreach (var source in item.Sources) {
                     var key = (CardCode: (string?)null, source.SourceType, source.SourceEntry);
                     if (!grouped.ContainsKey(key))
-                        grouped[key] = new List<GoodsReceiptCreationData>();
+                        grouped[key] = new List<GoodsReceiptCreationDataResponse>();
                     grouped[key].Add(item);
                 }
             }
@@ -82,7 +71,7 @@ public class GoodsReceiptCreation : IDisposable {
                 // Items without sources go into a general receipt
                 var key = (CardCode: (string?)null, Type: 0, Entry: 0);
                 if (!grouped.ContainsKey(key))
-                    grouped[key] = new List<GoodsReceiptCreationData>();
+                    grouped[key] = new List<GoodsReceiptCreationDataResponse>();
                 grouped[key].Add(item);
             }
         }
@@ -90,7 +79,7 @@ public class GoodsReceiptCreation : IDisposable {
         return grouped;
     }
 
-    private void CreateDocument((string? CardCode, int Type, int Entry) key, List<GoodsReceiptCreationData> items) {
+    private void CreateDocument((string? CardCode, int Type, int Entry) key, List<GoodsReceiptCreationDataResponse> items) {
         doc = (Documents)sboCompany.Company.GetBusinessObject(BoObjectTypes.oPurchaseDeliveryNotes);
         try {
             // Set document header

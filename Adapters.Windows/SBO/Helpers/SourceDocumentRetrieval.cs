@@ -2,6 +2,7 @@ using System.Data;
 using System.Text;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.GoodsReceipt;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
@@ -9,7 +10,7 @@ using Microsoft.Data.SqlClient;
 namespace Adapters.Windows.SBO.Helpers;
 
 public class SourceDocumentRetrieval(SboDatabaseService dbService) {
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> GetPurchaseOrderSourceDocuments(
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetPurchaseOrderSourceDocuments(
         string           itemCode,
         string           warehouse,
         UnitType         unit,
@@ -60,7 +61,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   """);
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
-            new GoodsReceiptAddItemSourceDocument {
+            new GoodsReceiptAddItemSourceDocumentResponse {
                 Type     = reader.GetInt32(0),
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
@@ -68,7 +69,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             });
     }
 
-    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> GetGoodsReceiptSourceDocuments(
+    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetGoodsReceiptSourceDocuments(
         string           itemCode,
         string           warehouse,
         UnitType         unit,
@@ -112,7 +113,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   """);
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
-            new GoodsReceiptAddItemSourceDocument {
+            new GoodsReceiptAddItemSourceDocumentResponse {
                 Type     = reader.GetInt32(0),
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
@@ -120,7 +121,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             });
     }
 
-    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> GetAPInvoiceSourceDocuments(
+    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetAPInvoiceSourceDocuments(
         string           itemCode,
         string           warehouse,
         UnitType         unit,
@@ -173,7 +174,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   """);
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
-            new GoodsReceiptAddItemSourceDocument {
+            new GoodsReceiptAddItemSourceDocumentResponse {
                 Type     = reader.GetInt32(0),
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
@@ -181,14 +182,14 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             });
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocument>> GetAllSourceDocuments(
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetAllSourceDocuments(
         string           itemCode,
         string           warehouse,
         UnitType         unit,
         GoodsReceiptType type,
         string?          cardCode,
         List<ObjectKey>  specificDocuments) {
-        var response = new List<GoodsReceiptAddItemSourceDocument>();
+        var response = new List<GoodsReceiptAddItemSourceDocumentResponse>();
 
         var purchaseOrders = await GetPurchaseOrderSourceDocuments(itemCode, warehouse, unit, type, cardCode, specificDocuments);
         response.AddRange(purchaseOrders);

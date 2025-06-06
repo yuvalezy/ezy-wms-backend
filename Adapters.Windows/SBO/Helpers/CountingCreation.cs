@@ -3,6 +3,7 @@ using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ public class CountingCreation(
     int                                               countingNumber,
     string                                            whsCode,
     int                                               series,
-    Dictionary<string, InventoryCountingCreationData> data,
+    Dictionary<string, InventoryCountingCreationDataResponse> data,
     ILoggerFactory                                    loggerFactory)
     : IDisposable {
     private          CompanyService?            companyService;

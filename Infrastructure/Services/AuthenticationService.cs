@@ -1,4 +1,5 @@
 using Core.DTOs;
+using Core.DTOs.Items;
 using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
@@ -49,7 +50,7 @@ public class AuthenticationService(
 
             // Handle warehouse selection
             string?    selectedWarehouse = null;
-            Warehouse? warehouse         = null;
+            WarehouseResponse? warehouse         = null;
             if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
                 if (string.IsNullOrEmpty(request.Warehouse)) {
                     // Fetch available warehouses

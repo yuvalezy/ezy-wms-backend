@@ -4,6 +4,8 @@ using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.Items;
+using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
 using Core.Models;
@@ -13,7 +15,7 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO.Repositories;
 
 public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany) {
-    public async Task<IEnumerable<PickingDocument>> GetPickLists(PickListsRequest request, string warehouse) {
+    public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
 
@@ -66,7 +68,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         var sqlParams = parameters.ToArray();
 
         return await dbService.QueryAsync(sb.ToString(), sqlParams, reader => {
-            var document = new PickingDocument();
+            var document = new PickingDocumentResponse();
             document.Entry          = reader.GetInt32(0);
             document.Date           = reader.GetDateTime(1);
             document.Remarks        = reader.IsDBNull(2) ? null : reader.GetString(2);
@@ -81,7 +83,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         });
     }
 
-    public async Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) {
+    public async Task<IEnumerable<PickingDetailResponse>> GetPickingDetails(Dictionary<string, object> parameters) {
         string query =
             """
             SELECT
@@ -130,7 +132,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         var sqlParams = ConvertToSqlParameters(parameters);
 
         return await dbService.QueryAsync(query, sqlParams, reader => {
-            var detail = new PickingDetail {
+            var detail = new PickingDetailResponse {
                 Type           = reader.GetInt32(0),
                 Entry          = reader.GetInt32(1),
                 Number         = reader.GetInt32(2),
@@ -145,7 +147,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         });
     }
 
-    public async Task<IEnumerable<PickingDetailItem>> GetPickingDetailItems(Dictionary<string, object> parameters) {
+    public async Task<IEnumerable<PickingDetailItemResponse>> GetPickingDetailItems(Dictionary<string, object> parameters) {
         const string query =
             """
             SELECT 
@@ -184,7 +186,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         var sqlParams = ConvertToSqlParameters(parameters);
 
         return await dbService.QueryAsync(query, sqlParams, reader => {
-            var item = new PickingDetailItem {
+            var item = new PickingDetailItemResponse {
                 ItemCode     = reader.GetString(0),
                 ItemName     = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
                 Quantity     = (int)reader.GetDecimal(2),
@@ -199,7 +201,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         });
     }
 
-    public async Task<IEnumerable<ItemBinLocationQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {
+    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {
         string query =
             """
             select DISTINCT T2."ItemCode",
@@ -224,7 +226,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
 
         var sqlParams = ConvertToSqlParameters(parameters);
 
-        return await dbService.QueryAsync(query, sqlParams, reader => new ItemBinLocationQuantity {
+        return await dbService.QueryAsync(query, sqlParams, reader => new ItemBinLocationResponseQuantity {
             ItemCode = reader.GetString(0),
             Entry    = reader.GetInt32(1),
             Code     = reader.GetString(2),

@@ -1,4 +1,5 @@
 using Core.DTOs;
+using Core.DTOs.PickList;
 using Core.Models;
 
 namespace Core.Interfaces;

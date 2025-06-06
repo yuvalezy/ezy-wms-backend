@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.Transfer;
 using Core.Models;
 
 namespace Core.Interfaces;
@@ -12,6 +13,6 @@ public interface ITransferService {
     Task<ProcessTransferResponse>       ProcessTransfer(Guid                 id,      SessionInfo sessionInfo);
     Task<IEnumerable<TransferContentResponse>> GetTransferContent(TransferContentRequest request);
     Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest request);
-    Task UpdateContentTargetDetail(UpdateContentTargetDetailRequest request, SessionInfo sessionInfo);
+    Task UpdateContentTargetDetail(TransferUpdateContentTargetDetailRequest request, SessionInfo sessionInfo);
     Task<CreateTransferRequestResponse> CreateTransferRequest(CreateTransferRequestRequest request, SessionInfo sessionInfo);
 }

@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;
+using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,7 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class TransferCreation(SboCompany sboCompany, int transferNumber, string whsCode, string? comments, int series, Dictionary<string, TransferCreationData> data, ILoggerFactory loggerFactory)
+public class TransferCreation(SboCompany sboCompany, int transferNumber, string whsCode, string? comments, int series, Dictionary<string, TransferCreationDataResponse> data, ILoggerFactory loggerFactory)
     : IDisposable {
     private StockTransfer? transfer;
     private Recordset?     rs;

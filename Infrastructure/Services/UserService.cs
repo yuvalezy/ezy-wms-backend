@@ -1,5 +1,6 @@
 using Core;
 using Core.DTOs;
+using Core.DTOs.Settings;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Models;

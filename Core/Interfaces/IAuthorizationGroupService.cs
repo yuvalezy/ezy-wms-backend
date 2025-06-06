@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.Settings;
 
 namespace Core.Interfaces;
 
