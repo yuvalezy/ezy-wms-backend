@@ -87,8 +87,6 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         return goodsReceipt == null ? null : MapToResponse(goodsReceipt);
     }
 
-
-
     public async Task<bool> CancelGoodsReceipt(Guid id, SessionInfo session) {
         var goodsReceipt = await db.GoodsReceipts
             .Include(gr => gr.Lines)
@@ -337,9 +335,9 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 CancellationReasonId = l.CancellationReasonId
             }).ToList(),
             Documents = goodsReceipt.Documents?.Select(d => new GoodsReceiptDocumentResponse {
-                DocEntry  = d.DocEntry,
-                DocNumber = d.DocNumber,
-                ObjType   = d.ObjType,
+                DocumentEntry  = d.DocEntry,
+                DocumentNumber = d.DocNumber,
+                ObjectType   = d.ObjType,
             }).ToList()
         };
     }

@@ -62,7 +62,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
             new GoodsReceiptAddItemSourceDocumentResponse {
-                Type     = reader.GetInt32(0),
+                Type     = 22,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
                 Quantity = (int)reader.GetDecimal(3)
@@ -114,7 +114,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
             new GoodsReceiptAddItemSourceDocumentResponse {
-                Type     = reader.GetInt32(0),
+                Type     = 20,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
                 Quantity = (int)reader.GetDecimal(3)
@@ -175,7 +175,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
             new GoodsReceiptAddItemSourceDocumentResponse {
-                Type     = reader.GetInt32(0),
+                Type     = 18,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
                 Quantity = (int)reader.GetDecimal(3)

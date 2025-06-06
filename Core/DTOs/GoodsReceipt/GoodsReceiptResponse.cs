@@ -32,7 +32,7 @@ public class GoodsReceiptLineResponse {
 }
 
 public class GoodsReceiptDocumentResponse {
-    public int DocEntry  { get; set; }
-    public int DocNumber { get; set; }
-    public int ObjType   { get; set; }
+    public int DocumentEntry  { get; set; }
+    public int DocumentNumber { get; set; }
+    public int ObjectType   { get; set; }
 }

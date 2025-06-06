@@ -65,7 +65,6 @@
         <EmbeddedResource Include="API\GoodsReceipt\Queries\SQL\*.sql"/>
         <EmbeddedResource Include="API\Picking\Queries\SQL\*.sql"/>
         <EmbeddedResource Include="API\Transfer\Queries\SQL\*.sql"/>
-        <EmbeddedResource Include="Queries\DatabaseSettings.sql"/>
         <EmbeddedResource Include="Queries\HANA\*.sql"/>
         <EmbeddedResource Include="Queries\SQL\*.sql"/>
 

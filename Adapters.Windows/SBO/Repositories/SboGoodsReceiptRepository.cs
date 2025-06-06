@@ -12,7 +12,7 @@ using Microsoft.Data.SqlClient;
 namespace Adapters.Windows.SBO.Repositories;
 
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany sboCompany) {
-    private readonly SourceDocumentRetrieval _sourceDocumentRetrieval = new(dbService);
+    private readonly SourceDocumentRetrieval sourceDocumentRetrieval = new(dbService);
 
     public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, string warehouse, List<ObjectKey> specificDocuments) {
         var response = new GoodsReceiptValidationResult {
@@ -30,7 +30,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
                 left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
             """;
         int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
-            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode }
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
+            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = request.BarCode }
         ], reader => reader.GetInt32(0));
 
         switch (result) {
@@ -93,7 +94,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
         GoodsReceiptType           type,
         string?                    cardCode,
         List<ObjectKey>            specificDocuments) {
-        return await _sourceDocumentRetrieval.GetAllSourceDocuments(
+        return await sourceDocumentRetrieval.GetAllSourceDocuments(
             request.ItemCode,
             warehouse,
             request.Unit,
