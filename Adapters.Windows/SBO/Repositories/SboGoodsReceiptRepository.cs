@@ -1,5 +1,4 @@
 using System.Data;
-using System.Reflection.Metadata;
 using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
@@ -8,7 +7,6 @@ using Core.DTOs;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
-using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Repositories;
 
@@ -54,15 +52,10 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
             return await Task.FromResult(response);
 
         var parameters = new List<SqlParameter> {
-            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
-            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+            new("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
+            new("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
         };
-        var sb = new StringBuilder("""
-                                   select X0."ObjType",
-                                          X0."DocEntry",
-                                          COALESCE(X1."OpenInvQty", X2."OpenInvQty", X3."InvQty") "OpenInvQty"
-                                   from (
-                                   """);
+        var sb = new StringBuilder(" select 1 from ( ");
 
         for (int i = 0; i < specificDocuments.Count; i++) {
             if (i > 0) sb.Append(" union ");
@@ -81,13 +74,12 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
                      or X3."LineNum" is not null
                   """);
 
-        var documentsResult = (await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader => new GoodsReceiptValidationDocumentResult {
-            Type     = reader.GetInt32(0),
-            Entry    = reader.GetInt32(1),
-            Quantity = (int)reader.GetDecimal(2)
-        })).ToArray();
-
-        response.Documents = documentsResult;
+        int validateDocuments = await dbService.QuerySingleAsync(sb.ToString(), parameters.ToArray(), reader => reader.GetInt32(0));
+        if (validateDocuments != 1) {
+            response.ReturnValue = -6;
+            response.IsValid     = false;
+            response.ErrorMessage = "Item was not found in any of the source documents";
+        }
 
         return await Task.FromResult(response);
     }

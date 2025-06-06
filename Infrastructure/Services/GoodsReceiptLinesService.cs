@@ -32,13 +32,6 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             };
         }
 
-        if (goodsReceipt.Type == GoodsReceiptType.SpecificOrders && validationResult.Documents.Length == 0) {
-            return new GoodsReceiptAddItemResponse {
-                Status       = ResponseStatus.Error,
-                ErrorMessage = "Item was not found in the specific documents",
-            };
-        }
-
         // Get item details
         var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
         var item  = items.FirstOrDefault();

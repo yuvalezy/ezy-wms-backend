@@ -4,13 +4,6 @@ public class GoodsReceiptValidationResult {
     public bool                                   IsValid      { get; set; }
     public string?                                ErrorMessage { get; set; }
     public int                                    ReturnValue  { get; set; }
-    public GoodsReceiptValidationDocumentResult[] Documents    { get; set; } = [];
-}
-
-public class GoodsReceiptValidationDocumentResult {
-    public int Type     { get; set; }
-    public int Entry    { get; set; }
-    public int Quantity { get; set; }
 }
 
 public class ProcessGoodsReceiptResult {
