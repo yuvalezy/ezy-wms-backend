@@ -51,7 +51,7 @@ public class SboAdapter(
         await generalRepository.ProcessTransfer(transferNumber, whsCode, comments, data);
 
     // Pick List
-    public async Task<IEnumerable<PickingDocument>> GetPickLists(PickListsRequest request, string warehouse) => await pickingRepository.GetPickLists(request, warehouse);
+    public async Task<IEnumerable<PickingDocument>> GetPickListsAsync(PickListsRequest request, string warehouse) => await pickingRepository.GetPickLists(request, warehouse);
 
     public async Task<IEnumerable<PickingDetail>> GetPickingDetails(Dictionary<string, object> parameters) => await pickingRepository.GetPickingDetails(parameters);
 

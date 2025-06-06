@@ -10,7 +10,7 @@ namespace Infrastructure.Services;
 
 public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter) : IPickListService {
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
-        var picks = await adapter.GetPickLists(request, warehouse);
+        var picks = await adapter.GetPickListsAsync(request, warehouse);
         var response = picks.Select(p => new PickListResponse {
                 Entry          = p.Entry,
                 Date           = p.Date,
@@ -43,7 +43,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
 
     public async Task<PickListResponse?> GetPickList(int absEntry, PickListDetailRequest request, string warehouse) {
         var pickListRequest = new PickListsRequest { ID = absEntry };
-        var picks           = await adapter.GetPickLists(pickListRequest, warehouse);
+        var picks           = await adapter.GetPickListsAsync(pickListRequest, warehouse);
         var pick            = picks.FirstOrDefault();
 
         if (pick == null)
