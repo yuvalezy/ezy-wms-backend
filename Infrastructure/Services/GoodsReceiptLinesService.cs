@@ -61,7 +61,15 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
             };
         }
 
-        line.Quantity        = request.Quantity;
+        decimal quantity = request.Quantity;
+        if (line.Unit != UnitType.Unit) {
+            var itemCheck = (await adapter.ItemCheckAsync(line.ItemCode, null)).First();
+            quantity *= itemCheck.NumInBuy;
+            if (line.Unit == UnitType.Pack) 
+                quantity *= itemCheck.PurPackUn;
+        }
+
+        line.Quantity        = quantity;
         line.UpdatedAt       = DateTime.UtcNow;
         line.UpdatedByUserId = session.Guid;
 

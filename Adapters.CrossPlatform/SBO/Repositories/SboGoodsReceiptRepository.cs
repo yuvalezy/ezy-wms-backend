@@ -8,10 +8,11 @@ using Core.DTOs.GoodsReceipt;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Repositories;
 
-public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany sboCompany) {
+public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany sboCompany, ILoggerFactory loggerFactory) {
     private readonly SourceDocumentRetrieval sourceDocumentRetrieval = new(dbService);
 
     public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, string warehouse, List<ObjectKey> specificDocuments) {
@@ -148,8 +149,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data, int series) {
-        using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
-        return await Task.FromResult(creation.Execute());
+        using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
+        return await creation.Execute();
     }
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
