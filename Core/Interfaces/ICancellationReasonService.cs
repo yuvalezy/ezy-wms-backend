@@ -1,6 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.Settings;
-using Core.Enums;
+﻿using Core.DTOs.Settings;
 
 namespace Core.Interfaces;
 

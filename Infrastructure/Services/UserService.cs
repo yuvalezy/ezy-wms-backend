@@ -1,12 +1,9 @@
 using Core;
-using Core.DTOs;
 using Core.DTOs.Settings;
 using Core.Entities;
 using Core.Interfaces;
-using Core.Models;
 using Core.Utils;
 using Infrastructure.DbContexts;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

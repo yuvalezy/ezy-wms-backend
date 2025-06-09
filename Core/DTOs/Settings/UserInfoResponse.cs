@@ -1,6 +1,5 @@
 ﻿using Core.DTOs.Items;
 using Core.Enums;
-using Core.Models;
 using Core.Models.Settings;
 
 namespace Core.DTOs.Settings;

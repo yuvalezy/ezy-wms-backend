@@ -1,4 +1,5 @@
-﻿using Core.Models.Settings;
+﻿using Core.Enums;
+using Core.Models.Settings;
 
 namespace Core.Interfaces;
 
@@ -11,4 +12,5 @@ public interface ISettings {
     public Filters                   Filters           { get; set; }
     public SessionManagementSettings SessionManagement { get; set; }
     public SboSettings?              SboSettings       { get; set; }
+    public ExternalAdapterType       ExternalAdapter   { get; set; }
 }

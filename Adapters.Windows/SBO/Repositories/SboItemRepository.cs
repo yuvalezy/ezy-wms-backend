@@ -2,11 +2,9 @@
 using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
-using Core.DTOs;
 using Core.DTOs.Items;
 using Core.DTOs.Settings;
 using Core.Interfaces;
-using Core.Models;
 using Microsoft.Data.SqlClient;
 
 namespace Adapters.Windows.SBO.Repositories;

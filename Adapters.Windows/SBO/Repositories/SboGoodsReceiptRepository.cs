@@ -1,9 +1,8 @@
 using System.Data;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
+using Adapters.Sbo.Utils;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
-using Adapters.Windows.Utils;
 using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
 using Core.Enums;

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Core.DTOs;
 using Core.Utils;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.Extensions.Logging;
 
 namespace Service.Middlewares;

@@ -3,7 +3,6 @@ using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.Utils;
-using Core.DTOs;
 using Core.DTOs.Items;
 using Core.DTOs.Transfer;
 using Core.Enums;

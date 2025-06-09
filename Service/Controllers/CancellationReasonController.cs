@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Core.DTOs;
 using Core.DTOs.Settings;
-using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;

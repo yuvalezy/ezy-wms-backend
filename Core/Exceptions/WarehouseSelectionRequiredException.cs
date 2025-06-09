@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using Core.DTOs.Items;
-using Core.Models;
 
 namespace Core.Exceptions;
 

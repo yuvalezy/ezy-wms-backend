@@ -1,5 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.Settings;
+﻿using Core.DTOs.Settings;
 using Core.Entities;
 using Core.Interfaces;
 using Infrastructure.DbContexts;

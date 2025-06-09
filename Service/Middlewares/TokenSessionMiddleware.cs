@@ -1,15 +1,11 @@
 using System;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Core;
-using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Identity.Client;
 
 namespace Service.Middlewares;
 

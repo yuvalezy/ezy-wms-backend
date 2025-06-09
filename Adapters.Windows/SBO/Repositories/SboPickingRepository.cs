@@ -1,17 +1,13 @@
 using System.Data;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
-using Core.DTOs;
 using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Microsoft.Data.SqlClient;
-using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Repositories;
 

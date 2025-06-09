@@ -1,10 +1,7 @@
 ﻿using System.Data;
 using System.Runtime.InteropServices;
-using System.Text;
 using Adapters.Windows.SBO.Services;
 using Core.Entities;
-using Core.Enums;
-using Core.Models;
 using Microsoft.Data.SqlClient;
 using SAPbobsCOM;
 

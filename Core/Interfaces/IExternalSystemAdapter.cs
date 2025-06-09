@@ -1,5 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.GoodsReceipt;
+﻿using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
 using Core.DTOs.PickList;

@@ -1,12 +1,7 @@
 using System;
-using Adapters.Windows.SBO;
-using Adapters.Windows.SBO.Repositories;
-using Adapters.Windows.SBO.Services;
-using Adapters.Windows.SBO.Utils;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models.Settings;
-using Infrastructure;
 using Infrastructure.Auth;
 using Infrastructure.DbContexts;
 using Infrastructure.Services;
@@ -50,17 +45,16 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
 
-        // External System Adapters for SBO 9.0
-        SboAssembly.RedirectAssembly();
-        services.AddSingleton<SboCompany>();
-        services.AddScoped<SboDatabaseService>();
-        services.AddScoped<SboEmployeeRepository>();
-        services.AddScoped<SboGeneralRepository>();
-        services.AddScoped<SboItemRepository>();
-        services.AddScoped<SboPickingRepository>();
-        services.AddScoped<SboInventoryCountingRepository>();
-        services.AddScoped<SboGoodsReceiptRepository>();
-        services.AddScoped<IExternalSystemAdapter, SboAdapter>();
+        switch (settings.ExternalAdapter) {
+            case ExternalAdapterType.SboWindows:
+                SboWindowsDependencyInjection.ConfigureServices(services);
+                break;
+            case ExternalAdapterType.SboServiceLayer:
+                SboServiceLayerDependencyInjection.ConfigureServices(services);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
 
         return services;
     }

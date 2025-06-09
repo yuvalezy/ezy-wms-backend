@@ -1,5 +1,4 @@
 ﻿using Adapters.Windows.SBO.Repositories;
-using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;

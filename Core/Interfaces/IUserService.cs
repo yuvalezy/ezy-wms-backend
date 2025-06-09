@@ -1,7 +1,5 @@
-using Core.DTOs;
 using Core.DTOs.Settings;
 using Core.Entities;
-using Core.Models;
 
 namespace Core.Interfaces;
 

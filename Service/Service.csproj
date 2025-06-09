@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net9.0-windows</TargetFramework>
@@ -54,6 +54,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Adapters.CrossPlatform\Adapters.CrossPlatform.csproj" />
         <ProjectReference Include="..\Adapters.Windows\Adapters.Windows.csproj"/>
         <ProjectReference Include="..\Core\Core.csproj"/>
         <ProjectReference Include="..\Infrastructure\Infrastructure.csproj"/>

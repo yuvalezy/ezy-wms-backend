@@ -6,7 +6,8 @@
       "Bash(./fix-controllers.sh)",
       "Bash(./fix_controllers.sh)",
       "Bash(sed:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

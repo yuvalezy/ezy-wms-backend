@@ -1,5 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.Transfer;
+﻿using Core.DTOs.Transfer;
 using Core.Models;
 
 namespace Core.Interfaces;

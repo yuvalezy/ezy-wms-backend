@@ -1,5 +1,3 @@
-using Azure.Core;
-using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
 using Core.Entities;
 using Core.Enums;

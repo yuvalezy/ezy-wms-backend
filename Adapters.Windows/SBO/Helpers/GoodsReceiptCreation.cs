@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs.GoodsReceipt;
-using Core.Models;
 using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;

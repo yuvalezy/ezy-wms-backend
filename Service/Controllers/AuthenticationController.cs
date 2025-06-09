@@ -7,7 +7,6 @@ using Core.DTOs;
 using Core.DTOs.Settings;
 using Core.Exceptions;
 using Core.Interfaces;
-using Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
