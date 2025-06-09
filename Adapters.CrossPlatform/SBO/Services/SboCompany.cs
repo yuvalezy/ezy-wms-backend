@@ -121,6 +121,35 @@ public class SboCompany(ISettings settings) {
         return response.IsSuccessStatusCode;
     }
     
+    public async Task<(bool success, string? errorMessage, T? result)> PostAsync<T>(string endpoint, object data) {
+        await ConnectCompany();
+        
+        var json = JsonSerializer.Serialize(data);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{url}/b1s/v1/{endpoint}");
+        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
+        request.Content = content;
+        
+        var response = await httpClient.SendAsync(request);
+        
+        if (response.IsSuccessStatusCode) {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<T>(responseContent, options);
+            return (true, null, result);
+        }
+        
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
+            return (false, errorResponse?.Error?.Message?.Value ?? "Unknown error", default);
+        }
+        
+        return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}", default);
+    }
+    
     private class LoginResponse {
         public string SessionId { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;

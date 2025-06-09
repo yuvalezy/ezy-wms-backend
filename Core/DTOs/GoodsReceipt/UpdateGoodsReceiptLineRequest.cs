@@ -8,7 +8,7 @@ public class UpdateGoodsReceiptLineRequest {
     public Guid Id { get; set; }
     
     [Required]
-    public Guid LineID { get; set; }
+    public Guid LineId { get; set; }
     
     public LineStatus? Status { get; set; }
     

@@ -4,10 +4,10 @@ namespace Core.DTOs.Transfer;
 
 public class TransferUpdateLineRequest {
     [Required]
-    public Guid ID { get; set; }
+    public Guid Id { get; set; }
     
     [Required]
-    public Guid LineID { get; set; }
+    public Guid LineId { get; set; }
     
     public string? Comment { get; set; }
     

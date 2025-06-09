@@ -162,7 +162,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         int       series           = await GetSeries(ObjectTypes.oStockTransfer);
         using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
         try {
-            return transferCreation.Execute();
+            return await transferCreation.Execute();
         }
         catch (Exception e) {
             return new ProcessTransferResponse {

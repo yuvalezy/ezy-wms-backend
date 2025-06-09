@@ -144,7 +144,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         try {
             // Validate counting exists and is in valid state
             var counting = await db.InventoryCountings
-                .Where(ic => ic.Id == request.ID)
+                .Where(ic => ic.Id == request.Id)
                 .Select(ic => new { ic.Status })
                 .FirstOrDefaultAsync();
 
@@ -162,7 +162,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
             // Find the line to update
             var line = await db.InventoryCountingLines
-                .Where(icl => icl.Id == request.LineID && icl.InventoryCountingId == request.ID)
+                .Where(icl => icl.Id == request.LineId && icl.InventoryCountingId == request.Id)
                 .FirstOrDefaultAsync();
 
             if (line == null) {

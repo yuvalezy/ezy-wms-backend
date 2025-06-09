@@ -403,7 +403,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             .ToListAsync();
 
         return lines.Select(line => new TransferContentTargetDetailResponse {
-            LineID        = line.Id,
+            LineId        = line.Id,
             CreatedByName = line.CreatedByUser?.FullName ?? "Unknown",
             TimeStamp     = line.Date,
             Quantity      = line.Quantity
@@ -424,8 +424,8 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
 
                     // Use existing UpdateLine validation logic
                     var updateRequest = new TransferUpdateLineRequest {
-                        ID       = request.ID,
-                        LineID   = change.Key,
+                        Id       = request.ID,
+                        LineId   = change.Key,
                         Quantity = change.Value
                     };
 

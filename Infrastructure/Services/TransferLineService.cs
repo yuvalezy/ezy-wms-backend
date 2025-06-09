@@ -55,7 +55,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return new TransferAddItemResponse { LineID = line.Id };
+            return new TransferAddItemResponse { LineId = line.Id };
         }
         catch {
             await transaction.RollbackAsync();
@@ -200,7 +200,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
         try {
             // Validate transfer exists and is in valid state
             var transfer = await db.Transfers
-                .Where(t => t.Id == request.ID)
+                .Where(t => t.Id == request.Id)
                 .Select(t => new { t.Status })
                 .FirstOrDefaultAsync();
 
@@ -218,7 +218,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
 
             // Find the line to update
             var line = await db.TransferLines
-                .Where(tl => tl.Id == request.LineID && tl.TransferId == request.ID)
+                .Where(tl => tl.Id == request.LineId && tl.TransferId == request.Id)
                 .FirstOrDefaultAsync();
 
             if (line == null) {
@@ -284,7 +284,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             // Find the line to update
             var line = await db.TransferLines
                 .Include(tl => tl.Transfer)
-                .Where(tl => tl.Id == request.LineID && tl.TransferId == request.ID)
+                .Where(tl => tl.Id == request.LineId && tl.TransferId == request.Id)
                 .FirstOrDefaultAsync();
                 
             if (line == null) {
@@ -324,7 +324,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
                 
                 // Calculate existing quantities for this item/bin excluding current line
                 int existingSourceQuantity = await db.TransferLines
-                    .Where(tl => tl.TransferId == request.ID &&
+                    .Where(tl => tl.TransferId == request.Id &&
                                  tl.ItemCode == line.ItemCode &&
                                  tl.BinEntry == line.BinEntry.Value &&
                                  tl.Type == SourceTarget.Source &&
@@ -343,7 +343,7 @@ public class TransferLineService(SystemDbContext db, IExternalSystemAdapter adap
             if (line.Type == SourceTarget.Target) {
                 // Validate that the source has enough quantity to support this target quantity
                 var allItemLines = await db.TransferLines
-                    .Where(tl => tl.TransferId == request.ID &&
+                    .Where(tl => tl.TransferId == request.Id &&
                                  tl.ItemCode == line.ItemCode &&
                                  tl.LineStatus != LineStatus.Closed)
                     .ToListAsync();

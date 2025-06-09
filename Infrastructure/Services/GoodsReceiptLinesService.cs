@@ -12,10 +12,10 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
         var line = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.Id == request.LineID);
+            .FirstOrDefaultAsync(l => l.Id == request.LineId);
 
         if (line == null) {
-            throw new KeyNotFoundException($"Line with ID {request.LineID} not found");
+            throw new KeyNotFoundException($"Line with ID {request.LineId} not found");
         }
 
         if (line.LineStatus == LineStatus.Closed) {
@@ -48,10 +48,10 @@ public class GoodsReceiptLinesService(SystemDbContext db, IExternalSystemAdapter
     public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request) {
         var line = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == request.Id && l.Id == request.LineID);
+            .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == request.Id && l.Id == request.LineId);
 
         if (line == null) {
-            throw new KeyNotFoundException($"Line with ID {request.LineID} not found");
+            throw new KeyNotFoundException($"Line with ID {request.LineId} not found");
         }
 
         if (line.LineStatus == LineStatus.Closed) {

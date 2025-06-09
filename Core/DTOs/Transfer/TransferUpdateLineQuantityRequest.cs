@@ -4,10 +4,10 @@ namespace Core.DTOs.Transfer;
 
 public class TransferUpdateLineQuantityRequest {
     [Required]
-    public Guid ID { get; set; }
+    public Guid Id { get; set; }
     
     [Required]
-    public Guid LineID { get; set; }
+    public Guid LineId { get; set; }
     
     [Required]
     [Range(1, int.MaxValue, ErrorMessage = "Quantity in Unit cannot be less than 1")]

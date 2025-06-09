@@ -7,7 +7,7 @@ public class UpdateGoodsReceiptLineQuantityRequest {
     public Guid Id { get; set; }
     
     [Required]
-    public Guid LineID { get; set; }
+    public Guid LineId { get; set; }
     
     [Required]
     public decimal Quantity { get; set; }
