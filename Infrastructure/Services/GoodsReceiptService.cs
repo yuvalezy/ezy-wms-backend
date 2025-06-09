@@ -273,6 +273,17 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
             if (!request.QuantityChanges.TryGetValue(line.Id, out decimal change))
                 continue;
+            if (line.Unit != UnitType.Unit) {
+                var itemData = (await adapter.ItemCheckAsync(line.ItemCode, null)).FirstOrDefault();
+                if (itemData == null) {
+                    throw new KeyNotFoundException($"Item with code {line.ItemCode} not found in external adapter");
+                }
+
+                change *= itemData.NumInBuy;
+                if (line.Unit == UnitType.Pack) {
+                    change *= itemData.PurPackUn;
+                }
+            }
             line.Quantity        = change;
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;

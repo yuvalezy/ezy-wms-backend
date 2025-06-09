@@ -70,8 +70,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
     public async Task<ExternalValue<string>?> GetVendorAsync(string cardCode) {
-        const string query = """select "CardCode", "CardName" from OCRD where "CardCode" = @CardCode and "CardType = 'S'""";
-        return await dbService.QuerySingleAsync(query, null, reader => new ExternalValue<string> {
+        const string query = """select "CardCode", "CardName" from OCRD where "CardCode" = @CardCode and "CardType" = 'S'""";
+        return await dbService.QuerySingleAsync(query, [new SqlParameter("@CardCode", SqlDbType.NVarChar, 50){Value = cardCode}], reader => new ExternalValue<string> {
             Id   = reader.GetString(0),
             Name = reader.GetString(1)
         });

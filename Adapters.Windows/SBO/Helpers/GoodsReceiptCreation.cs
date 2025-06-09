@@ -90,7 +90,7 @@ public class GoodsReceiptCreation(SboCompany sboCompany, int number, string whsC
             if (!string.IsNullOrEmpty(key.CardCode))
                 doc.CardCode = key.CardCode;
 
-            doc.UserFields.Fields.Item("U_LW_GR_NUMBER").Value = number.ToString();
+            doc.Reference2 = number.ToString();
             doc.Comments = $"Generated from WMS Goods Receipt #{number}";
 
             // Add lines

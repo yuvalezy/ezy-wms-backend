@@ -26,5 +26,20 @@
           <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\9.0.5\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
         </Reference>
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="lib\Interop.SAPbobsCOM_93.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="lib\Interop.SAPbobsCOM_100.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="lib\Interop.SAPbouiCOM_93.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="lib\Interop.SAPbouiCOM_100.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 
 </Project>

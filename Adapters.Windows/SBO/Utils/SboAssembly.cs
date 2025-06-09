@@ -30,12 +30,12 @@ public static class SboAssembly {
 
     private static string GetAssemblyPath(string name) {
         string? path;
-        if (Environment.UserInteractive)
-            path = Environment.CurrentDirectory;
-        else {
+        // if (Environment.UserInteractive)
+        //     path = Environment.CurrentDirectory;
+        // else {
             string processFileName = Process.GetCurrentProcess().MainModule.FileName;
             path = Path.GetDirectoryName(processFileName);
-        }
+        // }
 
         name = $"Interop.SAPbo{name}COM_{(!Legacy ? "100" : "93")}.dll";
         return Path.Combine(path, "lib", name);
