@@ -128,6 +128,28 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 throw new InvalidOperationException("Cannot process goods receipt if status is not Open or In Progress");
             }
 
+            // if configuration, just set status to finished
+            if (goodsReceipt.Type == GoodsReceiptType.SpecificReceipts) { 
+                goodsReceipt.Status          = ObjectStatus.Finished;
+                goodsReceipt.UpdatedAt       = DateTime.UtcNow;
+                goodsReceipt.UpdatedByUserId = session.Guid;
+
+                // Close all open lines
+                foreach (var line in goodsReceipt.Lines) {
+                    line.LineStatus      = LineStatus.Closed;
+                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.UpdatedByUserId = session.Guid;
+                }
+
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ProcessGoodsReceiptResponse {
+                    Status         = ResponseStatus.Ok,
+                    Success        = true,
+                };
+            }
+
             // Update status to Processing
             goodsReceipt.Status          = ObjectStatus.Processing;
             goodsReceipt.UpdatedAt       = DateTime.UtcNow;
@@ -161,14 +183,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                     DocumentNumber = result.DocumentNumber
                 };
             }
-            else {
-                await transaction.RollbackAsync();
-                return new ProcessGoodsReceiptResponse {
-                    Status       = ResponseStatus.Error,
-                    Success      = false,
-                    ErrorMessage = result.ErrorMessage
-                };
-            }
+
+            await transaction.RollbackAsync();
+            return new ProcessGoodsReceiptResponse {
+                Status       = ResponseStatus.Error,
+                Success      = false,
+                ErrorMessage = result.ErrorMessage
+            };
         }
         catch (Exception ex) {
             await transaction.RollbackAsync();
