@@ -11,7 +11,7 @@ public class GoodsReceiptValidateProcessDocumentsDataResponse {
 }
 
 public class GoodsReceiptValidateProcessDocumentsDataLineResponse {
-    public          int    LineNum          { get; set; }
+    public          int    LineNumber          { get; set; }
     public required string ItemCode         { get; set; }
     public required string ItemName         { get; set; }
     public          int    NumInBuy         { get; set; }

@@ -313,15 +313,16 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 var baseLine = (await sourcesQuery
                     .Where(v => v.SourceType == doc.ObjectType &&
                                 v.SourceEntry == doc.DocumentEntry &&
-                                v.SourceLine == docLine.LineNum)
+                                v.SourceLine == docLine.LineNumber)
                     .FirstOrDefaultAsync())?.GoodsReceiptLineId ?? Guid.Empty;
                 int sourceQuantity = (int)await sourcesQuery
                     .Where(v => v.SourceType == doc.ObjectType &&
                                 v.SourceEntry == doc.DocumentEntry &&
-                                v.SourceLine == docLine.LineNum)
+                                v.SourceLine == docLine.LineNumber)
                     .SumAsync(v => v.Quantity);
                 var lineValue = new GoodsReceiptValidateProcessLineResponse {
-                    LineNumber       = docLine.VisualLineNumber,
+                    VisualLineNumber = docLine.VisualLineNumber,
+                    LineNumber       = docLine.LineNumber,
                     ItemCode         = docLine.ItemCode,
                     ItemName         = docLine.ItemName,
                     Quantity         = sourceQuantity,
@@ -350,8 +351,23 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request) {
-        // This would need to query source documents from SAP
-        return await Task.FromResult(new List<GoodsReceiptValidateProcessLineDetailsResponse>());
+        var data =
+            await db.GoodsReceiptLines
+                .Where(v => v.GoodsReceiptId == request.ID)
+                .Include(a => a.Sources
+                    .Where(b => b.SourceType == request.BaseType &&
+                                b.SourceEntry == request.BaseEntry &&
+                                b.SourceLine == request.BaseLine))
+                .ThenInclude(v => v.CreatedByUser)
+                .ToArrayAsync();
+
+        return data.SelectMany(a => a.Sources.Select(b => new GoodsReceiptValidateProcessLineDetailsResponse {
+            TimeStamp         = b.CreatedAt,
+            CreatedByUserName = b.CreatedByUser!.FullName,
+            Quantity          = b.Quantity,
+            ScannedQuantity   = a.Quantity,
+            Unit              = a.Unit,
+        }));
     }
 
     // Helper methods
@@ -370,7 +386,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 ID                   = l.Id,
                 BarCode              = l.BarCode,
                 ItemCode             = l.ItemCode,
-                ItemName             = l.ItemCode, // Would need item master
+                ItemName             = l.ItemCode, // todo Would need item master
                 Quantity             = l.Quantity,
                 Unit                 = l.Unit,
                 LineStatus           = l.LineStatus,

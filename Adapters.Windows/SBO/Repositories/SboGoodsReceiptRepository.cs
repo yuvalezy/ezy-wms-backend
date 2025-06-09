@@ -257,7 +257,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
                 ItemName         = !reader.IsDBNull(4) ? reader.GetString(4) : reader.GetString(3),
                 BuyUnitMsr       = !reader.IsDBNull(6) ? reader.GetString(6) : string.Empty,
                 PurPackMsr       = !reader.IsDBNull(8) ? reader.GetString(8) : string.Empty,
-                LineNum          = reader.GetInt32(2),
+                LineNumber          = reader.GetInt32(2),
                 NumInBuy         = Convert.ToInt32(reader[5]),
                 PurPackUn        = Convert.ToInt32(reader[7]),
                 DocumentQuantity     = (int)reader.GetDecimal(9),

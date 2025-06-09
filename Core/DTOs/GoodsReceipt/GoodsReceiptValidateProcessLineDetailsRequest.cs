@@ -6,9 +6,7 @@ public class GoodsReceiptValidateProcessLineDetailsRequest {
     [Required]
     public Guid ID { get; set; }
     
-    [Required]
-    public Guid LineID { get; set; }
-    
-    public int? SourceType { get; set; }
-    public int? SourceEntry { get; set; }
+    public int BaseType  { get; set; }
+    public int BaseEntry { get; set; }
+    public int BaseLine { get; set; }
 }
