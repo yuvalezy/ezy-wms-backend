@@ -289,12 +289,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         var documentsQuery = db.GoodsReceiptDocuments
             .Where(v => v.GoodsReceiptId == id);
 
-        var docs = await sourcesQuery
-            .Select(v => new ObjectKey(v.SourceType, v.SourceEntry, null))
-            .Union(documentsQuery
-                .Select(v => new ObjectKey(v.ObjType, v.DocEntry, null)))
-            .Distinct()
+        var baseDocs = sourcesQuery
+            .Select(v => new { Type = v.SourceType, Entry = v.SourceEntry })
+            .Union(documentsQuery.Select(v => new { Type = v.ObjType, Entry = v.DocEntry }));
+        var docs = await baseDocs
+            .Distinct()                                        // still SQL-translatable
+            .Select(x => new ObjectKey(x.Type, x.Entry, null)) // custom projection
             .ToArrayAsync();
+
 
         var docsData = await adapter.GoodsReceiptValidateProcessDocumentsData(docs);
 
@@ -307,32 +309,44 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 BaseType       = doc.ObjectType,
                 BaseEntry      = doc.DocumentEntry,
             };
+            foreach (var docLine in doc.Lines) {
+                var baseLine = (await sourcesQuery
+                    .Where(v => v.SourceType == doc.ObjectType &&
+                                v.SourceEntry == doc.DocumentEntry &&
+                                v.SourceLine == docLine.LineNum)
+                    .FirstOrDefaultAsync())?.GoodsReceiptLineId ?? Guid.Empty;
+                int sourceQuantity = (int)await sourcesQuery
+                    .Where(v => v.SourceType == doc.ObjectType &&
+                                v.SourceEntry == doc.DocumentEntry &&
+                                v.SourceLine == docLine.LineNum)
+                    .SumAsync(v => v.Quantity);
+                var lineValue = new GoodsReceiptValidateProcessLineResponse {
+                    LineNumber       = docLine.VisualLineNumber,
+                    ItemCode         = docLine.ItemCode,
+                    ItemName         = docLine.ItemName,
+                    Quantity         = sourceQuantity,
+                    BaseLine         = baseLine,
+                    DocumentQuantity = docLine.DocumentQuantity,
+                    NumInBuy         = docLine.NumInBuy,
+                    BuyUnitMsr       = docLine.BuyUnitMsr,
+                    PurPackUn        = docLine.PurPackUn,
+                    PurPackMsr       = docLine.PurPackMsr,
+                    LineStatus       = GoodsReceiptValidateProcessLineStatus.OK
+                };
+                if (docLine.DocumentQuantity < sourceQuantity)
+                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.LessScan;
+                else if (docLine.DocumentQuantity > sourceQuantity)
+                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.MoreScan;
+                else if (sourceQuantity == 0)
+                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.NotReceived;
+
+                value.Lines!.Add(lineValue);
+            }
+
             response.Add(value);
         }
 
         return response;
-
-        // var lines = await db.GoodsReceiptLines
-        //     .Include(l => l.GoodsReceipt)
-        //     .Include(l => l.Sources)
-        //     .Where(l => l.GoodsReceiptId == id && l.LineStatus == LineStatus.Open)
-        //     .Select(l => new GoodsReceiptValidateProcessResponse {
-        //         LineID   = l.Id,
-        //         ItemCode = l.ItemCode,
-        //         ItemName = l.ItemCode, // Would need item master
-        //         BarCode  = l.BarCode,
-        //         Quantity = l.Quantity,
-        //         IsValid  = true, // Would need validation logic
-        //         Sources = l.Sources.Select(s => new GoodsReceiptSourceInfo {
-        //             SourceType  = s.SourceType,
-        //             SourceEntry = s.SourceEntry,
-        //             SourceLine  = s.SourceLine,
-        //             Quantity    = s.Quantity
-        //         }).ToList()
-        //     })
-        //     .ToListAsync();
-        //
-        // return lines;
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request) {
@@ -352,7 +366,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Type              = goodsReceipt.Type,
             WhsCode           = goodsReceipt.WhsCode,
             CreatedByUserName = goodsReceipt.CreatedByUser?.FullName,
-            Lines = goodsReceipt.Lines?.Select(l => new GoodsReceiptLineResponse {
+            Lines = goodsReceipt.Lines.Select(l => new GoodsReceiptLineResponse {
                 ID                   = l.Id,
                 BarCode              = l.BarCode,
                 ItemCode             = l.ItemCode,

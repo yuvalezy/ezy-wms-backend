@@ -17,13 +17,13 @@ public class GoodsReceiptValidateProcessLineResponse {
     public required string   ItemCode   { get; set; }
     public          string?  ItemName   { get; set; }
     public          decimal  Quantity   { get; set; }
-    public          int      BaseLine   { get; set; }
-    public          decimal  OpenInvQty { get; set; }
+    public          Guid      BaseLine   { get; set; }
+    public          decimal  DocumentQuantity { get; set; }
     public          int      NumInBuy   { get; set; }
     public          string?  BuyUnitMsr { get; set; }
     public          int      PurPackUn  { get; set; }
     public          string?  PurPackMsr { get; set; }
-    public          UnitType UnitType   { get; set; }
+    // public          UnitType UnitType   { get; set; }
 
     public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
 }

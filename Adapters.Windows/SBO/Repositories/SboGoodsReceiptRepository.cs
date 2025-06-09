@@ -195,31 +195,76 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
         if (docs.Length == 0)
             return [];
-        var parameters = new List<SqlParameter>();
-        var sb         = new StringBuilder();
-        sb.Append("select T0.\"ObjType\", T0.\"DocEntry\", COALESCE(T1.DocNum, T2.DocNum, T3.DocNum) \"DocNum\", ");
-        sb.Append("COALESCE(T1.CardCode, T2.CardCode, T3.CardCode) \"CardCode\", ");
-        sb.Append("COALESCE(T1.CardName, T2.CardName, T3.CardName) \"CardName\" ");
-        sb.Append("from (");
+        var sbDocs     = new StringBuilder();
+        var parameters = new SqlParameter[docs.Length * 2];
         for (int i = 0; i < docs.Length; i++) {
-            if (i > 0) sb.Append(" union ");
-            sb.Append($"select @ObjType{i} \"ObjType\", @DocEntry{i} \"DocEntry\" ");
-            parameters.Add(new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type });
-            parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry });
+            if (i > 0) sbDocs.Append(" union ");
+            sbDocs.Append($"select @ObjType{i} \"ObjType\", @DocEntry{i} \"DocEntry\" ");
+            parameters[i * 2]     = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type };
+            parameters[i * 2 + 1] = new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry };
         }
 
-        sb.Append(")");
-        sb.Append(
-            """
-            left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
-            left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
-            left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
-            """);
-        return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader => new GoodsReceiptValidateProcessDocumentsDataResponse {
-            ObjectType     = reader.GetInt32(0),
-            DocumentEntry  = reader.GetInt32(1),
-            DocumentNumber = reader.GetInt32(2),
-            Vendor         = new ExternalValue<string> { Id = reader.GetString(3), Name = reader[4]!.ToString() }
+        string query = $"""
+                        select T0."ObjType", T0."DocEntry", COALESCE(T1.DocNum, T2.DocNum, T3.DocNum) "DocNum", 
+                        COALESCE(T1.CardCode, T2.CardCode, T3.CardCode) "CardCode", 
+                        COALESCE(T1.CardName, T2.CardName, T3.CardName) "CardName"
+                        from ({sbDocs}) T0
+                        left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
+                        left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
+                        left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
+                        """;
+        var control = new Dictionary<(int Type, int Entry), GoodsReceiptValidateProcessDocumentsDataResponse>();
+        var response = await dbService.QueryAsync(query, parameters, reader => {
+            var value = new GoodsReceiptValidateProcessDocumentsDataResponse {
+                ObjectType     = reader.GetInt32(0),
+                DocumentEntry  = reader.GetInt32(1),
+                DocumentNumber = reader.GetInt32(2),
+                Vendor         = new ExternalValue<string> { Id = reader.GetString(3), Name = reader[4]!.ToString() }
+            };
+            control.Add((value.ObjectType, value.DocumentEntry), value);
+            return value;
         });
+
+        parameters = new SqlParameter[docs.Length * 2];
+        for (int i = 0; i < docs.Length; i++) {
+            parameters[i * 2]     = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type };
+            parameters[i * 2 + 1] = new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry };
+        }
+
+        query = $"""
+                 select T0."ObjType",
+                        T0."DocEntry",
+                        COALESCE(T1."LineNum", T2."LineNum", T3."LineNum")                                                              "LineNum",
+                        COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode")                                                           "ItemCode",
+                        T4."ItemName",
+                        COALESCE(T4."NumInBuy", 1)                                                                                      "NumInBuy",
+                        T4."BuyUnitMsr",
+                        COALESCE(T4."PurPackUn", 1)                                                                                     "PurPackUn",
+                        T4."PurPackMsr",
+                        COALESCE(T1."OpenInvQty", Case When T5."isIns" = 'Y' Then T2."OpenInvQty" Else T2."InvQty" End, T3."InvQty", 0) "OpenInvQty",
+                         COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder")+1                                                              "VisOrder"
+                 from ({sbDocs}) T0
+                          left outer join POR1 T1 on T1.DocEntry = T0.DocEntry and T1.ObjType = T0.ObjType
+                          left outer join PCH1 T2 on T2.DocEntry = T0.DocEntry and T2.ObjType = T0.ObjType
+                          left outer join PDN1 T3 on T3.DocEntry = T0.DocEntry and T3.ObjType = T0.ObjType
+                          inner join OITM T4 on T4."itemCode" = COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode")
+                          left outer join OPCH T5 on T5."DocEntry" = T2."DocEntry" and T5."ObjType" = T0."ObjType"
+                 """;
+        await dbService.ExecuteReaderAsync(query, parameters, reader => {
+            var value = control[(reader.GetInt32(0), reader.GetInt32(1))];
+            var item  = new GoodsReceiptValidateProcessDocumentsDataLineResponse {
+                ItemCode         = reader.GetString(3),
+                ItemName         = !reader.IsDBNull(4) ? reader.GetString(4) : reader.GetString(3),
+                BuyUnitMsr       = !reader.IsDBNull(6) ? reader.GetString(6) : string.Empty,
+                PurPackMsr       = !reader.IsDBNull(8) ? reader.GetString(8) : string.Empty,
+                LineNum          = reader.GetInt32(2),
+                NumInBuy         = Convert.ToInt32(reader[5]),
+                PurPackUn        = Convert.ToInt32(reader[7]),
+                DocumentQuantity     = (int)reader.GetDecimal(9),
+                VisualLineNumber = reader.GetInt32(10)
+            };
+            value.Lines.Add(item);
+        });
+        return response;
     }
 }
