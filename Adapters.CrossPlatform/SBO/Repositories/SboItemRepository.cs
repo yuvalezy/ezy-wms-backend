@@ -175,9 +175,9 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
         return response;
     }
 
-    public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
-        using var update = new ItemBarCodeUpdate(dbService, sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
-        return Task.FromResult(update.Execute());
+    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
+        using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
+        return await update.Execute();
     }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
