@@ -14,7 +14,7 @@ public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCom
         int       series           = await GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, whsCode, series, data, loggerFactory);
         try {
-            return creation.Execute();
+            return await creation.Execute();
         }
         catch (Exception e) {
             return new ProcessInventoryCountingResponse {

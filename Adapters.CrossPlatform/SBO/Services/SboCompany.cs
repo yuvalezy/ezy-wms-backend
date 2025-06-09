@@ -1,10 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using Core.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Services;
 
-public class SboCompany(ISettings settings) {
+public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     private readonly string url      = settings.SboSettings?.ServiceLayerUrl ?? throw new InvalidOperationException("SBO service layer URL is not configured.");
     private readonly string user     = settings.SboSettings.User ?? throw new InvalidOperationException("SBO user is not configured.");
     private readonly string password = settings.SboSettings.Password ?? throw new InvalidOperationException("SBO password is not configured.");
@@ -15,7 +16,7 @@ public class SboCompany(ISettings settings) {
     
     private static HttpClient CreateHttpClient() {
         var handler = new HttpClientHandler() {
-            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
         };
         return new HttpClient(handler);
     }
@@ -26,14 +27,19 @@ public class SboCompany(ISettings settings) {
 
     public async Task<bool> ConnectCompany() {
         if (IsConnected()) {
+            logger.LogDebug("Already connected to Service Layer with session {SessionId}", SessionId);
             return true;
         }
         
+        logger.LogDebug("Waiting for connection semaphore...");
         await connectionSemaphore.WaitAsync();
         try {
             if (IsConnected()) {
+                logger.LogDebug("Already connected after waiting for semaphore");
                 return true;
             }
+            
+            logger.LogInformation("Connecting to Service Layer at {Url}", url);
             
             var loginData = new {
                 CompanyDB = database,
@@ -44,19 +50,25 @@ public class SboCompany(ISettings settings) {
             var json = JsonSerializer.Serialize(loginData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
+            logger.LogDebug("POST {Url}/b1s/v1/Login\nBody: {Body}", url, json);
+            
             var response = await httpClient.PostAsync($"{url}/b1s/v1/Login", content);
             
             if (response.IsSuccessStatusCode) {
                 var responseContent = await response.Content.ReadAsStringAsync();
+                logger.LogDebug("Login response: {Response}", responseContent);
+                
                 var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent);
                 
                 if (loginResponse != null) {
                     SessionId = loginResponse.SessionId;
                     sessionExpiry = DateTime.UtcNow.AddMinutes(loginResponse.SessionTimeout);
+                    logger.LogInformation("Successfully connected to Service Layer. Session expires at {Expiry}", sessionExpiry);
                     return true;
                 }
             }
             
+            logger.LogError("Failed to connect to Service Layer. Status: {StatusCode}", response.StatusCode);
             return false;
         }
         finally {
@@ -71,17 +83,23 @@ public class SboCompany(ISettings settings) {
     public async Task<T?> GetAsync<T>(string endpoint) {
         await ConnectCompany();
         
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{url}/b1s/v1/{endpoint}");
+        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        logger.LogDebug("GET {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
+        
+        var request = new HttpRequestMessage(HttpMethod.Get, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         
         var response = await httpClient.SendAsync(request);
         
         if (response.IsSuccessStatusCode) {
             var content = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("GET response: {Response}", content);
+            
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<T>(content, options);
         }
         
+        logger.LogWarning("GET failed with status {StatusCode}: {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
         return default;
     }
     
@@ -91,33 +109,53 @@ public class SboCompany(ISettings settings) {
         var json = JsonSerializer.Serialize(data);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        var request = new HttpRequestMessage(HttpMethod.Patch, $"{url}/b1s/v1/{endpoint}");
+        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        logger.LogDebug("PATCH {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
+        
+        var request = new HttpRequestMessage(HttpMethod.Patch, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = content;
         
         var response = await httpClient.SendAsync(request);
         
         if (response.IsSuccessStatusCode) {
+            logger.LogInformation("PATCH successful for endpoint {Endpoint}", endpoint);
             return (true, null);
         }
         
         if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
             var errorContent = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("PATCH error response: {ErrorContent}", errorContent);
+            
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            return (false, errorResponse?.Error?.Message?.Value ?? "Unknown error");
+            var errorMessage = errorResponse?.Error?.Message?.Value ?? "Unknown error";
+            
+            logger.LogWarning("PATCH failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
+            return (false, errorMessage);
         }
         
+        logger.LogError("PATCH failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
     }
     
     public async Task<bool> DeleteAsync(string endpoint) {
         await ConnectCompany();
         
-        var request = new HttpRequestMessage(HttpMethod.Delete, $"{url}/b1s/v1/{endpoint}");
+        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        logger.LogDebug("DELETE {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
+        
+        var request = new HttpRequestMessage(HttpMethod.Delete, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         
         var response = await httpClient.SendAsync(request);
+        
+        if (response.IsSuccessStatusCode) {
+            logger.LogInformation("DELETE successful for endpoint {Endpoint}", endpoint);
+        } else {
+            logger.LogWarning("DELETE failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
+        }
+        
         return response.IsSuccessStatusCode;
     }
     
@@ -127,7 +165,10 @@ public class SboCompany(ISettings settings) {
         var json = JsonSerializer.Serialize(data);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{url}/b1s/v1/{endpoint}");
+        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        logger.LogDebug("POST {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
+        
+        var request = new HttpRequestMessage(HttpMethod.Post, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = content;
         
@@ -135,6 +176,9 @@ public class SboCompany(ISettings settings) {
         
         if (response.IsSuccessStatusCode) {
             var responseContent = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("POST response: {Response}", responseContent);
+            logger.LogInformation("POST successful for endpoint {Endpoint}", endpoint);
+            
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var result = JsonSerializer.Deserialize<T>(responseContent, options);
             return (true, null, result);
@@ -142,11 +186,17 @@ public class SboCompany(ISettings settings) {
         
         if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
             var errorContent = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("POST error response: {ErrorContent}", errorContent);
+            
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            return (false, errorResponse?.Error?.Message?.Value ?? "Unknown error", default);
+            var errorMessage = errorResponse?.Error?.Message?.Value ?? "Unknown error";
+            
+            logger.LogWarning("POST failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
+            return (false, errorMessage, default);
         }
         
+        logger.LogError("POST failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}", default);
     }
     

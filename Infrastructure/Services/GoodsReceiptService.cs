@@ -20,6 +20,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Status          = ObjectStatus.Open,
             WhsCode         = session.Warehouse,
             CreatedByUserId = session.Guid,
+            CreatedByUser = db.Users.First(u => u.Id == session.Guid),
             Documents = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
                 DocEntry        = d.DocumentEntry,
