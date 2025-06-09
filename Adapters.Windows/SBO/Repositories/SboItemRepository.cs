@@ -176,7 +176,7 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
     }
 
     public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
-        using var update = new ItemBarCodeUpdate(dbService, sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
+        using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
         return Task.FromResult(update.Execute());
     }
 
