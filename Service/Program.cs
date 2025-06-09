@@ -25,6 +25,9 @@ using Service.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure for Windows Service
+builder.Host.UseWindowsService();
+
 var settings = new Settings();
 builder.Configuration.Bind(settings);
 
@@ -107,6 +110,7 @@ if (builder.Environment.IsDevelopment()) {
 services.AddLogging(config => {
     config.AddConsole();
     config.AddDebug();
+    config.AddEventLog(); // Add Windows Event Log for service
 });
 services.ConfigureCorsPolicies();
 
@@ -183,7 +187,18 @@ if (allowedOrigins is { Length: > 0 }) {
 
 app.UseAuthentication();
 
-app.Services.EnsureDatabaseCreated();
+// Initialize database with error handling
+try {
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Starting database initialization...");
+    app.Services.EnsureDatabaseCreated();
+    logger.LogInformation("Database initialization completed.");
+}
+catch (Exception ex) {
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Database initialization failed: {Message}", ex.Message);
+    throw;
+}
 
 // Configure static files for React app
 app.UseDefaultFiles();
