@@ -8,13 +8,14 @@ using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Models;
 using Microsoft.Data.SqlClient;
 using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Repositories;
 
-public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany) {
+public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings) {
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
@@ -288,7 +289,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
     }
 
     public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
-        using var update = new PickingUpdate(absEntry, warehouse, data, dbService, sboCompany);
+        using var update = new PickingUpdate(absEntry, data, dbService, sboCompany, settings.Filters.PickReady);
         var result = new ProcessPickListResult {
             Success        = true,
             DocumentNumber = absEntry,

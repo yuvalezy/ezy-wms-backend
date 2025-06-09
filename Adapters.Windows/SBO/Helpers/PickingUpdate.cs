@@ -10,7 +10,7 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class PickingUpdate(int absEntry, string warehouse, List<PickList> data, SboDatabaseService dbService, SboCompany sboCompany) : IDisposable {
+public class PickingUpdate(int absEntry, List<PickList> data, SboDatabaseService dbService, SboCompany sboCompany, string? filtersPickReady) : IDisposable {
     private Recordset? rs;
 
     private readonly Dictionary<int, (string itemCode, int numInBuy, bool useBaseUnit)> additionalData = new();
@@ -72,6 +72,9 @@ public class PickingUpdate(int absEntry, string warehouse, List<PickList> data, 
     private void Process() {
         var pl = (PickLists)sboCompany.Company.GetBusinessObject(BoObjectTypes.oPickLists);
         try {
+            if (!pl.GetByKey(absEntry)) {
+                throw new Exception($"Could not find Pick List ${absEntry}");
+            }
             if (pl.Status == BoPickStatus.ps_Closed) {
                 throw new Exception($"Cannot process document if the Status is closed");
             }
@@ -92,8 +95,10 @@ public class PickingUpdate(int absEntry, string warehouse, List<PickList> data, 
             }
 
             //todo figure if it's needed
-            // if (pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value.ToString() == "Y")
-            //     return;
+            if (!string.IsNullOrWhiteSpace(filtersPickReady)) {
+                if (pl.UserFields.Fields.Item(filtersPickReady).Value.ToString() == "Y")
+                    return;
+            }
 
             if (pl.Status == BoPickStatus.ps_Closed) {
                 throw new Exception("Cannot process document if the Status is closed");
@@ -108,7 +113,10 @@ public class PickingUpdate(int absEntry, string warehouse, List<PickList> data, 
             }
 
 
-            // pl.UserFields.Fields.Item("U_LW_YUVAL08_READY").Value = "Y";
+            if (!string.IsNullOrWhiteSpace(filtersPickReady)) {
+                pl.UserFields.Fields.Item(filtersPickReady).Value = "Y";
+            }
+
             if (pl.UpdateReleasedAllocation() != 0) {
                 throw new Exception(sboCompany.Company.GetLastErrorDescription());
             }
