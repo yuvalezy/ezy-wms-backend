@@ -185,6 +185,10 @@ app.UseAuthentication();
 
 app.Services.EnsureDatabaseCreated();
 
+// Configure static files for React app
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 // Configure the HTTP request pipeline.
 app.UseRouting();
 
@@ -198,6 +202,9 @@ else {
 
 app.UseAuthorization();
 app.MapControllers();
+
+// Fallback route for React app (SPA)
+app.MapFallbackToFile("index.html");
 
 #if DEBUG
 app.Use(async (ctx, next) => {
