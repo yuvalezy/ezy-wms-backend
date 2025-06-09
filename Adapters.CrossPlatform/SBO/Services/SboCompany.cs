@@ -78,7 +78,8 @@ public class SboCompany(ISettings settings) {
         
         if (response.IsSuccessStatusCode) {
             var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<T>(content);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            return JsonSerializer.Deserialize<T>(content, options);
         }
         
         return default;
@@ -108,6 +109,16 @@ public class SboCompany(ISettings settings) {
         }
         
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
+    }
+    
+    public async Task<bool> DeleteAsync(string endpoint) {
+        await ConnectCompany();
+        
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"{url}/b1s/v1/{endpoint}");
+        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
+        
+        var response = await httpClient.SendAsync(request);
+        return response.IsSuccessStatusCode;
     }
     
     private class LoginResponse {
