@@ -8,10 +8,12 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Repositories;
 
-public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings) {
+public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings,
+    ILoggerFactory                                   loggerFactory) {
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
@@ -285,7 +287,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
     }
 
     public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
-        using var update = new PickingUpdate(absEntry, data, dbService, sboCompany, settings.Filters.PickReady);
+        using var update = new PickingUpdate(absEntry, data, dbService, sboCompany, settings.Filters.PickReady, loggerFactory);
         var result = new ProcessPickListResult {
             Success        = true,
             DocumentNumber = absEntry,
