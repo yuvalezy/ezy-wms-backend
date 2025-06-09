@@ -29,6 +29,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, SboCompany 
                 Else 0 End ValidationMessage
             from OITM T0
                 left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
+            where T0."ItemCode" = @ItemCode
             """;
         int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },

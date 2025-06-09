@@ -238,11 +238,11 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
             CASE 
                 WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
                 WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
-                WHEN PKL1."PickQtty" >= PKL1."RelQtty" THEN -3  -- Already picked
-                WHEN @Quantity > (PKL1."RelQtty" - PKL1."PickQtty") THEN -4  -- Too much quantity
+                WHEN PKL1."RelQtty" = 0 THEN -3  -- Already picked
+                WHEN @Quantity > PKL1."RelQtty" THEN -4  -- Too much quantity
                 ELSE 0  -- OK
             END AS "ValidationResult",
-            PKL1."RelQtty" - PKL1."PickQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) "OnHandQty"
+            PKL1."RelQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) "OnHandQty"
             FROM OPKL
             INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
             inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
@@ -252,6 +252,7 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
             AND PKL1."OrderEntry" = @SourceEntry
             AND T2."ItemCode" = @ItemCode
             order by 2 desc, 3 desc
+
             """;
 
         var sqlParams = new[] {
@@ -284,21 +285,21 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         return result.ToArray();
     }
 
-    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
-        using var update = new PickingUpdate(absEntry, data, dbService, sboCompany, settings.Filters.PickReady);
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
+        using var update = new PickingUpdate(absEntry, data, sboCompany, settings.Filters.PickReady);
         var result = new ProcessPickListResult {
             Success        = true,
             DocumentNumber = absEntry,
         };
         try {
-            update.Execute();
+            await update.Execute();
         }
         catch (Exception e) {
             result.ErrorMessage = e.Message;
             result.Success      = false;
         }
 
-        return Task.FromResult(result);
+        return result;
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {

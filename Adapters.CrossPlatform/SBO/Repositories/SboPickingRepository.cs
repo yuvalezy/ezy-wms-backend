@@ -286,21 +286,21 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         return result.ToArray();
     }
 
-    public Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
         using var update = new PickingUpdate(absEntry, data, dbService, sboCompany, settings.Filters.PickReady, loggerFactory);
         var result = new ProcessPickListResult {
             Success        = true,
             DocumentNumber = absEntry,
         };
         try {
-            update.Execute();
+            await update.Execute();
         }
         catch (Exception e) {
             result.ErrorMessage = e.Message;
             result.Success      = false;
         }
 
-        return Task.FromResult(result);
+        return result;
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {

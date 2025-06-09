@@ -35,7 +35,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             .ToArrayAsync();
         foreach (var r in response) {
             int pickedQuantity = dbPick.Where(p => p.AbsEntry == r.Entry).Sum(p => p.Quantity);
-            r.OpenQuantity -= pickedQuantity;
+            r.OpenQuantity   -= pickedQuantity;
             r.UpdateQuantity += pickedQuantity;
         }
 
@@ -256,6 +256,12 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             };
         }
 
+        if (!validationResults[0].IsValid)
+            return new PickListAddItemResponse {
+                ErrorMessage = validationResults[0].ErrorMessage,
+                Status       = ResponseStatus.Error
+            };
+
         int result = db.PickLists
             .Where(p => p.ItemCode == request.ItemCode && p.BinEntry == request.BinEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .Select(p => p.Quantity)
@@ -270,15 +276,15 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
 
         var dbPickedQuantity = await db.PickLists.Where(v => v.AbsEntry == request.ID && v.ItemCode == request.ItemCode && (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing))
             .GroupBy(v => v.PickEntry)
-            .Select(v => new {PickEntry = v.Key, Quantity = v.Sum(vv => vv.Quantity)})
+            .Select(v => new { PickEntry = v.Key, Quantity = v.Sum(vv => vv.Quantity) })
             .ToArrayAsync();
-        
-        var check = (from v in validationResults
-                    join p in dbPickedQuantity on v.PickEntry equals p.PickEntry into gj
-                    from sub in gj.DefaultIfEmpty()
-                    where v.OpenQuantity - (sub?.Quantity ?? 0) > 0
-                    select new { ValidationResult = v, PickedQuantity = sub?.Quantity ?? 0 })
-                   .FirstOrDefault();
+
+        var check = (from v in validationResults.Where(a => a.IsValid)
+                join p in dbPickedQuantity on v.PickEntry equals p.PickEntry into gj
+                from sub in gj.DefaultIfEmpty()
+                where v.OpenQuantity - (sub?.Quantity ?? 0) > 0
+                select new { ValidationResult = v, PickedQuantity = sub?.Quantity ?? 0 })
+            .FirstOrDefault();
         if (check == null) {
             return new PickListAddItemResponse {
                 Status       = ResponseStatus.Error,
@@ -327,10 +333,11 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
 
             // Update status to Processing
             foreach (var pickList in pickLists) {
-                pickList.Status = ObjectStatus.Processing;
-                pickList.UpdatedAt = DateTime.UtcNow;
+                pickList.Status          = ObjectStatus.Processing;
+                pickList.UpdatedAt       = DateTime.UtcNow;
                 pickList.UpdatedByUserId = sessionInfo.Guid;
             }
+
             await db.SaveChangesAsync();
 
             // Prepare data for SAP B1
@@ -345,15 +352,16 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             if (result.Success) {
                 // Update pick lists to Closed
                 foreach (var pickList in pickLists) {
-                    pickList.Status = ObjectStatus.Closed;
-                    pickList.UpdatedAt = DateTime.UtcNow;
+                    pickList.Status          = ObjectStatus.Closed;
+                    pickList.UpdatedAt       = DateTime.UtcNow;
                     pickList.UpdatedByUserId = sessionInfo.Guid;
                 }
+
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessPickListResponse {
-                    Status = ResponseStatus.Ok,
+                    Status         = ResponseStatus.Ok,
                     DocumentNumber = result.DocumentNumber
                 };
             }
@@ -368,8 +376,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
         catch (Exception ex) {
             await transaction.RollbackAsync();
             return new ProcessPickListResponse {
-                Status = ResponseStatus.Error,
-                Message = "Failed to process pick list",
+                Status       = ResponseStatus.Error,
+                Message      = "Failed to process pick list",
                 ErrorMessage = ex.Message
             };
         }

@@ -7,13 +7,10 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class PickingUpdate(int absEntry, List<PickList> data, SboDatabaseService dbService, SboCompany sboCompany, string? filtersPickReady) : IDisposable {
+public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboCompany, string? filtersPickReady) : IDisposable {
     private Recordset? rs;
 
-    private readonly Dictionary<int, (string itemCode, int numInBuy, bool useBaseUnit)> additionalData = new();
-
-    public void Execute() {
-        LoadAdditionalData();
+    public async Task Execute() {
         try {
             if (!sboCompany.TransactionMutex.WaitOne())
                 return;
@@ -33,36 +30,6 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboDatabaseService
             if (sboCompany.Company.InTransaction)
                 sboCompany.Company.EndTransaction(BoWfTransOpt.wf_RollBack);
             throw;
-        }
-    }
-
-    private async Task LoadAdditionalData() {
-        const string query =
-            """
-            select PKL1."PickEntry", T3."ItemCode", COALESCE(T3."NumInBuy", 1) "NumInBuy",
-                   CASE 
-                       WHEN T2."TransType" = 17 THEN T4."UseBaseUn"
-                       WHEN T2."TransType" = 13 THEN T5."UseBaseUn"
-            		   Else 'Y'
-                   END AS "UseBaseUn"
-            from PKL1
-            inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
-            inner join OITM T3 on T3."ItemCode" = T2."ItemCode" 
-            LEFT JOIN RDR1 T4 ON T2."TransType" = 17 
-                AND T4."DocEntry" = T2."DocEntry" 
-                AND T4."LineNum" = T2."DocLineNum"
-            LEFT JOIN INV1 T5 ON T2."TransType" = 13 
-                AND T5."DocEntry" = T2."DocEntry" 
-                AND T5."LineNum" = T2."DocLineNum"
-            where PKL1."AbsEntry" = @AbsEntry
-            """;
-        using var dt = await dbService.GetDataTableAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }]);
-        foreach (DataRow row in dt.Rows) {
-            int    pickEntry   = Convert.ToInt32(row["PickEntry"]);
-            string itemCode    = row["ItemCode"]!.ToString();
-            int    numInBuy    = Convert.ToInt32(row["NumInBuy"]);
-            bool   useBaseUnit = row["UseBaseUn"]!.ToString().Equals("Y");
-            additionalData.Add(pickEntry, (itemCode, numInBuy, useBaseUnit)!);
         }
     }
 
@@ -140,10 +107,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboDatabaseService
                 continue;
             }
 
-            (_, int numInBuy, bool useBaseUnit) = additionalData[value.PickEntry];
-
-            pl.Lines.PickedQuantity = value.Quantity / (useBaseUnit ? numInBuy : 1);
-            // pl.Lines.PickedQuantity = (double)value.Quantity / (value.Unit != UnitType.Unit ? value.NumInBuy : 1);
+            pl.Lines.PickedQuantity += value.Quantity;
 
             // Process bins
             var bins    = pl.Lines.BinAllocations;
@@ -167,7 +131,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboDatabaseService
                     control.Add(binEntry, bins.Count - 1);
                 }
 
-                bins.Quantity = binValue.Quantity;
+                bins.Quantity += binValue.Quantity;
             }
         }
 
