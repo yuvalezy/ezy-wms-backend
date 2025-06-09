@@ -11,13 +11,8 @@ public static class DatabaseExtensions {
         using var scope   = services.CreateScope();
         var       context = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
 
-        // Create database if it doesn't exist
-        context.Database.EnsureCreated();
-
-        // Apply pending migrations
-        if (context.Database.GetPendingMigrations().Any()) {
-            context.Database.Migrate();
-        }
+        // Apply migrations (this will create database if it doesn't exist)
+        context.Database.Migrate();
 
         // Seed default admin user
         SeedDefaultAdminUser(context);
