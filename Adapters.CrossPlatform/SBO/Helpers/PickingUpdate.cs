@@ -72,8 +72,15 @@ public class PickingUpdate(
 
             double pickedQuantity = matchingData.Quantity;
             pickLine.PreviouslyReleasedQuantity =  pickLine.ReleasedQuantity;
-            pickLine.ReleasedQuantity           += pickedQuantity;
-            pickLine.PickedQuantity             += pickedQuantity;
+            if (pickLine.PickedQuantity == 0) {
+                pickLine.ReleasedQuantity = pickedQuantity;
+                pickLine.PickedQuantity   = pickedQuantity;
+            }
+            else {
+                pickLine.ReleasedQuantity += pickedQuantity;
+                pickLine.PickedQuantity   += pickedQuantity;
+            }
+
             pickLine.PickStatus                 =  "ps_Picked";
 
             foreach (var bin in matchingData.Bins) {
