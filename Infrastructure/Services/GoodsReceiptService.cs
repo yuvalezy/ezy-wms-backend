@@ -20,7 +20,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Status          = ObjectStatus.Open,
             WhsCode         = session.Warehouse,
             CreatedByUserId = session.Guid,
-            CreatedByUser = db.Users.First(u => u.Id == session.Guid),
+            CreatedByUser   = db.Users.First(u => u.Id == session.Guid),
             Documents = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
                 DocEntry        = d.DocumentEntry,
@@ -54,8 +54,11 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             .Include(gr => gr.CreatedByUser)
             .Where(gr => gr.WhsCode == warehouse);
 
-        if (request.ID.HasValue)
-            query = query.Where(gr => gr.Number == request.ID.Value);
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            query = query.Where(r => EF.Functions.Like(r.Name.ToLower(), $"%{request.Name!.ToLower()}%"));
+
+        if (request.Number.HasValue)
+            query = query.Where(gr => gr.Number == request.Number);
 
         if (request.Date.HasValue)
             query = query.Where(gr => gr.Date.Date == request.Date.Value.Date);
@@ -128,7 +131,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             }
 
             // if configuration, just set status to finished
-            if (goodsReceipt.Type == GoodsReceiptType.SpecificReceipts) { 
+            if (goodsReceipt.Type == GoodsReceiptType.SpecificReceipts) {
                 goodsReceipt.Status          = ObjectStatus.Finished;
                 goodsReceipt.UpdatedAt       = DateTime.UtcNow;
                 goodsReceipt.UpdatedByUserId = session.Guid;
@@ -144,8 +147,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
-                    Status         = ResponseStatus.Ok,
-                    Success        = true,
+                    Status  = ResponseStatus.Ok,
+                    Success = true,
                 };
             }
 
@@ -283,6 +286,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                     change *= itemData.PurPackUn;
                 }
             }
+
             line.Quantity        = change;
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
