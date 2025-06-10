@@ -1,20 +1,14 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
-using Adapters.CrossPlatform.SBO.Helpers;
-using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Items;
 using Core.DTOs.PickList;
-using Core.Entities;
 using Core.Enums;
-using Core.Interfaces;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 
-namespace Adapters.CrossPlatform.SBO.Repositories;
+namespace Adapters.Common.SBO.Repositories;
 
-public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings,
-    ILoggerFactory                                   loggerFactory) {
+public class SboPickingRepository(SboDatabaseService dbService) {
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
@@ -300,23 +294,6 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         });
 
         return result.ToArray();
-    }
-
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
-        using var update = new PickingUpdate(absEntry, data, sboCompany, loggerFactory);
-        var result = new ProcessPickListResult {
-            Success        = true,
-            DocumentNumber = absEntry,
-        };
-        try {
-            await update.Execute();
-        }
-        catch (Exception e) {
-            result.ErrorMessage = e.Message;
-            result.Success      = false;
-        }
-
-        return result;
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {

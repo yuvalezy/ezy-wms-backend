@@ -1,67 +1,11 @@
 using System.Data;
 using Adapters.Common.SBO.Services;
-using Adapters.Windows.SBO.Helpers;
-using Adapters.Windows.SBO.Services;
 using Core.DTOs.InventoryCounting;
-using Core.Enums;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
-using SAPbobsCOM;
 
-namespace Adapters.Windows.SBO.Repositories;
+namespace Adapters.Common.SBO.Repositories;
 
-public class SboInventoryCountingRepository(SboDatabaseService dbService, SboCompany sboCompany, ILoggerFactory loggerFactory) {
-    
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string whsCode, Dictionary<string, InventoryCountingCreationDataResponse> data, int i) {
-        int       series           = await GetSeries("1470000065");
-        using var creation = new CountingCreation(sboCompany, countingNumber, whsCode, series, data, loggerFactory);
-        try {
-            return creation.Execute();
-        }
-        catch (Exception e) {
-            return new ProcessInventoryCountingResponse {
-                Success      = false,
-                Status       = ResponseStatus.Error,
-                ErrorMessage = e.Message
-            };
-        }
-        //todo send alert to sap
-//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
-//         try {
-//             using var alert = new Alert();
-//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
-//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
-//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
-//             alert.Columns.AddRange([transactionColumn, transferColumn]);
-//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
-//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
-//
-//             alert.Send(sendTo);
-//         }
-//         catch (Exception e) {
-//             //todo log error handler
-//         }
-//     }
-    }
-    
-    private async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
-
-    private async Task<int> GetSeries(string objectCode) {
-        const string query =
-            """
-            select top 1 T1."Series"
-            from OFPR T0
-                     inner join NNM1 T1 on T1."ObjectCode" = @ObjectCode and T1."Indicator" = T0."Indicator"
-            where (T1."LastNum" is null or T1."LastNum" >= "NextNumber")
-            and T0."F_RefDate" <= @Date and T0."T_RefDate" >= @Date
-            """;
-        var parameters = new[] {
-            new SqlParameter("@ObjectCode", SqlDbType.NVarChar, 50) { Value = objectCode },
-            new SqlParameter("@Date", SqlDbType.DateTime) { Value = DateTime.UtcNow }
-        };
-        return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
-    }
-    
+public class SboInventoryCountingRepository(SboDatabaseService dbService) {
     public async Task<IEnumerable<InventoryCountingContentResponse>> GetInventoryCountingContent(Guid countingId, int? binEntry) {
         var query = @"
 SELECT 

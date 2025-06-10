@@ -1,13 +1,12 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
-using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.GoodsReceipt;
 using Core.Enums;
 using Core.Models;
 using Microsoft.Data.SqlClient;
 
-namespace Adapters.CrossPlatform.SBO.Helpers;
+namespace Adapters.Common.SBO.Helpers;
 
 public class SourceDocumentRetrieval(SboDatabaseService dbService) {
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetPurchaseOrderSourceDocuments(

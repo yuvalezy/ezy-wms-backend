@@ -1,7 +1,6 @@
 ﻿using Adapters.Common.SBO.Repositories;
 using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO;
-using Adapters.CrossPlatform.SBO.Repositories;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;

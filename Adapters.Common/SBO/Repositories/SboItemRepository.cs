@@ -1,19 +1,14 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
-using Adapters.CrossPlatform.SBO.Helpers;
-using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Items;
-using Core.DTOs.Settings;
-using Core.Interfaces;
 using Microsoft.Data.SqlClient;
 
-namespace Adapters.CrossPlatform.SBO.Repositories;
+namespace Adapters.Common.SBO.Repositories;
 
-public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompany, ISettings settings) {
+public class SboItemRepository(SboDatabaseService dbService) {
     public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
-        string query;
-        query = !item
+        string query = !item
             ? """
               SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
               FROM OBCD T0
@@ -174,11 +169,6 @@ public class SboItemRepository(SboDatabaseService dbService, SboCompany sboCompa
                 return value;
             });
         return response;
-    }
-
-    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
-        using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
-        return await update.Execute();
     }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {

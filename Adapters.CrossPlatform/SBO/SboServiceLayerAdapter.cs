@@ -1,7 +1,6 @@
 ﻿using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Repositories;
 using Adapters.CrossPlatform.SBO.Helpers;
-using Adapters.CrossPlatform.SBO.Repositories;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
@@ -76,7 +75,10 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
     public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items)   => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
 
-    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) => await itemRepository.UpdateItemBarCode(request);
+    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
+        using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
+        return await update.Execute();
+    }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
@@ -125,14 +127,39 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) => await pickingRepository.ValidatePickingAddItem(request);
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) => await pickingRepository.ProcessPickList(absEntry, warehouse, data);
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
+        using var update = new PickingUpdate(absEntry, data, sboCompany, loggerFactory);
+        var result = new ProcessPickListResult {
+            Success        = true,
+            DocumentNumber = absEntry,
+        };
+        try {
+            await update.Execute();
+        }
+        catch (Exception e) {
+            result.ErrorMessage = e.Message;
+            result.Success      = false;
+        }
+
+        return result;
+    }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
 
     //Inventory Counting
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
         int series = await generalRepository.GetSeries("1470000065");
-        return await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse, data, series);
+        using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
+        try {
+            return await creation.Execute();
+        }
+        catch (Exception e) {
+            return new ProcessInventoryCountingResponse {
+                Success      = false,
+                Status       = ResponseStatus.Error,
+                ErrorMessage = e.Message
+            };
+        }
     }
 
     // Goods Receipt methods
@@ -142,7 +169,8 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
         int series = await generalRepository.GetSeries("20");
-        return await goodsReceiptRepository.ProcessGoodsReceipt(number, warehouse, data, series);
+        using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
+        return await creation.Execute();
     }
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {

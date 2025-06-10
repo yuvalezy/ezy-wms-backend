@@ -1,7 +1,6 @@
 ﻿using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Repositories;
 using Adapters.Windows.SBO.Helpers;
-using Adapters.Windows.SBO.Repositories;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
@@ -19,14 +18,14 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO;
 
 public class SboAdapter(
-    SboEmployeeRepository          employeeRepository,
-    SboGeneralRepository           generalRepository,
-    SboItemRepository              itemRepository,
-    SboPickingRepository           pickingRepository,
-    SboInventoryCountingRepository inventoryCountingRepository,
-    SboGoodsReceiptRepository      goodsReceiptRepository,
-    SboCompany                     sboCompany,
-    ILoggerFactory                 loggerFactory) : IExternalSystemAdapter {
+    SboEmployeeRepository     employeeRepository,
+    SboGeneralRepository      generalRepository,
+    SboItemRepository         itemRepository,
+    SboPickingRepository      pickingRepository,
+    SboGoodsReceiptRepository goodsReceiptRepository,
+    SboCompany                sboCompany,
+    ISettings                 settings,
+    ILoggerFactory            loggerFactory) : IExternalSystemAdapter {
     // General 
     public async Task<string?> GetCompanyNameAsync() => await generalRepository.GetCompanyNameAsync();
 
@@ -53,7 +52,10 @@ public class SboAdapter(
     public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
     public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items)   => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
 
-    public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) => await itemRepository.UpdateItemBarCode(request);
+    public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
+        using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
+        return Task.FromResult(update.Execute());
+    }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
@@ -102,14 +104,56 @@ public class SboAdapter(
 
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) => await pickingRepository.ValidatePickingAddItem(request);
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) => await pickingRepository.ProcessPickList(absEntry, warehouse, data);
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) {
+        using var update = new PickingUpdate(absEntry, data, sboCompany, settings.Filters.PickReady);
+        var result = new ProcessPickListResult {
+            Success        = true,
+            DocumentNumber = absEntry,
+        };
+        try {
+            await update.Execute();
+        }
+        catch (Exception e) {
+            result.ErrorMessage = e.Message;
+            result.Success      = false;
+        }
+
+        return result;
+    }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
 
     //Inventory Counting
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
-        int series = await generalRepository.GetSeries("1470000065");
-        return await inventoryCountingRepository.ProcessInventoryCounting(countingNumber, warehouse, data, series);
+        int       series   = await generalRepository.GetSeries("1470000065");
+        using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
+        try {
+            return creation.Execute();
+        }
+        catch (Exception e) {
+            return new ProcessInventoryCountingResponse {
+                Success      = false,
+                Status       = ResponseStatus.Error,
+                ErrorMessage = e.Message
+            };
+        }
+        //todo send alert to sap
+//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
+//         try {
+//             using var alert = new Alert();
+//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
+//             alert.Columns.AddRange([transactionColumn, transferColumn]);
+//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
+//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
+//
+//             alert.Send(sendTo);
+//         }
+//         catch (Exception e) {
+//             //todo log error handler
+//         }
+//     }
     }
 
     // Goods Receipt methods
@@ -118,8 +162,9 @@ public class SboAdapter(
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
-        int series = await generalRepository.GetSeries("20");
-        return await goodsReceiptRepository.ProcessGoodsReceipt(number, warehouse, data, series);
+        int       series   = await generalRepository.GetSeries("20");
+        using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
+        return await Task.FromResult(creation.Execute());
     }
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
