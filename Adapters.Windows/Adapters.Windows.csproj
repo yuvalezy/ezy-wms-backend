@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Adapters.Sbo\Adapters.Sbo.csproj" />
       <ProjectReference Include="..\Core\Core.csproj" />
     </ItemGroup>
 
