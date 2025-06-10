@@ -63,7 +63,7 @@ public class SboAdapter(
 
     public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) => await pickingRepository.GetPickingDetailItemsBins(parameters);
 
-    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) => await pickingRepository.ValidatePickingAddItem(request, userId);
+    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) => await pickingRepository.ValidatePickingAddItem(request);
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, string warehouse, List<PickList> data) => await pickingRepository.ProcessPickList(absEntry, warehouse, data);
 

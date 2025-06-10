@@ -204,15 +204,22 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
             select DISTINCT T2."ItemCode",
             T3."BinAbs" "BinEntry",
             T4."BinCode",
-            T3."OnHandQty"
+            T3."OnHandQty" - COALESCE(T5."BinQty", 0) "OnHandQty"
             from PKL1 T1
             inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
             inner join OIBQ T3 on T3."ItemCode" = T2."ItemCode" and T3."WhsCode" = T2."LocCode"
             inner join OBIN T4 on T4."AbsEntry" = T3."BinAbs"
+            left outer join (
+            	select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
+            	from PKL1 T0
+            	inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
+            	inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
+            	Group By T2."BinAbs"
+            ) T5 on T5."BinAbs" = T3."BinAbs"
             where T1."AbsEntry" = @AbsEntry
             and T1."BaseObject" = @Type
             and T1."OrderEntry" = @Entry
-            and T3."OnHandQty" > 0
+            and T3."OnHandQty" - COALESCE(T5."BinQty", 0) > 0
             """;
 
         if (parameters.ContainsKey("@BinEntry")) {
@@ -231,28 +238,35 @@ public class SboPickingRepository(SboDatabaseService dbService, SboCompany sboCo
         });
     }
 
-    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request, Guid userId) {
+    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) {
         const string query =
             """
             SELECT PKL1."PickEntry",
-            CASE 
-                WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
-                WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
-                WHEN PKL1."RelQtty" = 0 THEN -3  -- Already picked
-                WHEN @Quantity > PKL1."RelQtty" THEN -4  -- Too much quantity
-                ELSE 0  -- OK
-            END AS "ValidationResult",
-            PKL1."RelQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) "OnHandQty"
-            FROM OPKL
-            INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
-            inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
-            left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
-            WHERE OPKL."AbsEntry" = @ID
-            AND PKL1."BaseObject" = @SourceType
-            AND PKL1."OrderEntry" = @SourceEntry
-            AND T2."ItemCode" = @ItemCode
-            order by 2 desc, 3 desc
-
+                        CASE 
+                            WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
+                            WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
+                            WHEN PKL1."RelQtty" = 0 THEN -3  -- Already picked
+                            WHEN @Quantity > PKL1."RelQtty" THEN -4  -- Too much quantity
+                            ELSE 0  -- OK
+                        END AS "ValidationResult",
+                        PKL1."RelQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) - COALESCE(T5."BinQty", 0) "OnHandQty"
+                        FROM OPKL
+                        INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
+                        inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
+                        left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
+            			left outer join (
+            				select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
+            				from PKL1 T0
+            				inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
+            				inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
+            				where T2."BinAbs" = @BinEntry
+            				Group By T2."BinAbs"
+            			) T5 on T5."BinAbs" = T3."BinAbs"
+                        WHERE OPKL."AbsEntry" = @ID
+                        AND PKL1."BaseObject" = @SourceType
+                        AND PKL1."OrderEntry" = @SourceEntry
+                        AND T2."ItemCode" = @ItemCode
+                        order by 2 desc, 3 desc
             """;
 
         var sqlParams = new[] {
