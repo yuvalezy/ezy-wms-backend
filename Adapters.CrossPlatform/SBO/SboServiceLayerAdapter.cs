@@ -21,7 +21,6 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     private readonly SboGeneralRepository           generalRepository;
     private readonly SboItemRepository              itemRepository;
     private readonly SboPickingRepository           pickingRepository;
-    private readonly SboInventoryCountingRepository inventoryCountingRepository;
     private readonly SboGoodsReceiptRepository      goodsReceiptRepository;
     private readonly SboCompany                     sboCompany;
     private readonly ILoggerFactory                 loggerFactory;
@@ -30,7 +29,6 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         SboGeneralRepository                            generalRepository,
         SboItemRepository                               itemRepository,
         SboPickingRepository                            pickingRepository,
-        SboInventoryCountingRepository                  inventoryCountingRepository,
         SboGoodsReceiptRepository                       goodsReceiptRepository,
         ISettings                                       settings,
         SboCompany                                      sboCompany, 
@@ -39,7 +37,6 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         this.generalRepository           = generalRepository;
         this.itemRepository              = itemRepository;
         this.pickingRepository           = pickingRepository;
-        this.inventoryCountingRepository = inventoryCountingRepository;
         this.goodsReceiptRepository      = goodsReceiptRepository;
         this.sboCompany                  = sboCompany;
         this.loggerFactory               = loggerFactory;
@@ -111,7 +108,6 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 //             alert.Send(sendTo);
 //         }
 //         catch (Exception e) {
-//             //todo log error handler
 //         }
 //     }
     }

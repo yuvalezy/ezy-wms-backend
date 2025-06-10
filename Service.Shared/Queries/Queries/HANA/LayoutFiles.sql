@@ -1,1 +1,0 @@
-﻿select ID, "FileName", "Variable" from "{0}" T0 where "Type" = {1}
