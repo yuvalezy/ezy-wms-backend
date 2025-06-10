@@ -104,75 +104,11 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     }
 
     public async Task<(bool success, string? errorMessage)> PatchAsync<T>(string endpoint, T data) {
-        await ConnectCompany();
-
-        string json    = JsonSerializer.Serialize(data);
-        var    content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("PATCH {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
-
-        var request = new HttpRequestMessage(HttpMethod.Patch, fullUrl);
-        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
-        request.Content = content;
-
-        var response = await httpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode) {
-            logger.LogInformation("PATCH successful for endpoint {Endpoint}", endpoint);
-            return (true, null);
-        }
-
-        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
-            string errorContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("PATCH error response: {ErrorContent}", errorContent);
-
-            var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            string errorMessage  = errorResponse?.Error?.Message?.Value ?? "Unknown error";
-
-            logger.LogWarning("PATCH failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
-            return (false, errorMessage);
-        }
-
-        logger.LogError("PATCH failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
-        return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
+        return await ExecuteHttpRequestAsync(HttpMethod.Patch, endpoint, data);
     }
 
     public async Task<(bool success, string? errorMessage)> PutAsync<T>(string endpoint, T data) {
-        await ConnectCompany();
-
-        string json    = JsonSerializer.Serialize(data);
-        var    content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("PUT {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
-
-        var request = new HttpRequestMessage(HttpMethod.Put, fullUrl);
-        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
-        request.Content = content;
-
-        var response = await httpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode) {
-            logger.LogInformation("PUT successful for endpoint {Endpoint}", endpoint);
-            return (true, null);
-        }
-
-        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
-            string errorContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("PUT error response: {ErrorContent}", errorContent);
-
-            var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            string errorMessage  = errorResponse?.Error?.Message?.Value ?? "Unknown error";
-
-            logger.LogWarning("PUT failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
-            return (false, errorMessage);
-        }
-
-        logger.LogError("PUT failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
-        return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
+        return await ExecuteHttpRequestAsync(HttpMethod.Put, endpoint, data);
     }
 
     public async Task<bool> DeleteAsync(string endpoint) {
@@ -197,15 +133,52 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     }
 
     public async Task<(bool success, string? errorMessage, T? result)> PostAsync<T>(string endpoint, object data) {
+        return await ExecuteHttpRequestWithResponseAsync<T>(HttpMethod.Post, endpoint, data);
+    }
+
+    public async Task<(bool success, string? errorMessage)> PostAsync(string endpoint, object data) {
+        return await ExecuteHttpRequestAsync(HttpMethod.Post, endpoint, data);
+    }
+
+    private async Task<(bool success, string? errorMessage)> ExecuteHttpRequestAsync(HttpMethod httpMethod, string endpoint, object data) {
         await ConnectCompany();
 
         string json    = JsonSerializer.Serialize(data);
         var    content = new StringContent(json, Encoding.UTF8, "application/json");
 
         string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("POST {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
+        string methodName = httpMethod.Method;
+        logger.LogDebug("{Method} {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", methodName, fullUrl, SessionId, json);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, fullUrl);
+        var request = new HttpRequestMessage(httpMethod, fullUrl);
+        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
+        request.Content = content;
+
+        var response = await httpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode) {
+            if (httpMethod == HttpMethod.Post) {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                logger.LogDebug("{Method} response: {Response}", methodName, responseContent);
+            }
+            logger.LogInformation("{Method} successful for endpoint {Endpoint}", methodName, endpoint);
+            return (true, null);
+        }
+
+        return await HandleErrorResponse(response, methodName, endpoint);
+    }
+
+    private async Task<(bool success, string? errorMessage, T? result)> ExecuteHttpRequestWithResponseAsync<T>(HttpMethod httpMethod, string endpoint, object data) {
+        await ConnectCompany();
+
+        string json    = JsonSerializer.Serialize(data);
+        var    content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        string fullUrl = $"{url}/b1s/v2/{endpoint}";
+        string methodName = httpMethod.Method;
+        logger.LogDebug("{Method} {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", methodName, fullUrl, SessionId, json);
+
+        var request = new HttpRequestMessage(httpMethod, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = content;
 
@@ -213,66 +186,32 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         if (response.IsSuccessStatusCode) {
             string responseContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("POST response: {Response}", responseContent);
-            logger.LogInformation("POST successful for endpoint {Endpoint}", endpoint);
+            logger.LogDebug("{Method} response: {Response}", methodName, responseContent);
+            logger.LogInformation("{Method} successful for endpoint {Endpoint}", methodName, endpoint);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var result  = JsonSerializer.Deserialize<T>(responseContent, options);
             return (true, null, result);
         }
 
-        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
-            string errorContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("POST error response: {ErrorContent}", errorContent);
-
-            var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            string errorMessage  = errorResponse?.Error?.Message?.Value ?? "Unknown error";
-
-            logger.LogWarning("POST failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
-            return (false, errorMessage, default);
-        }
-
-        logger.LogError("POST failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
-        return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}", default);
+        var (success, errorMessage) = await HandleErrorResponse(response, methodName, endpoint);
+        return (success, errorMessage, default);
     }
 
-    public async Task<(bool success, string? errorMessage)> PostAsync(string endpoint, object data) {
-        await ConnectCompany();
-
-        string json    = JsonSerializer.Serialize(data);
-        var    content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("POST {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
-
-        var request = new HttpRequestMessage(HttpMethod.Post, fullUrl);
-        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
-        request.Content = content;
-
-        var response = await httpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode) {
-            string responseContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("POST response: {Response}", responseContent);
-            logger.LogInformation("POST successful for endpoint {Endpoint}", endpoint);
-
-            return (true, null);
-        }
-
+    private async Task<(bool success, string? errorMessage)> HandleErrorResponse(HttpResponseMessage response, string methodName, string endpoint) {
         if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
             string errorContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("POST error response: {ErrorContent}", errorContent);
+            logger.LogDebug("{Method} error response: {ErrorContent}", methodName, errorContent);
 
             var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
             string errorMessage  = errorResponse?.Error?.Message?.Value ?? "Unknown error";
 
-            logger.LogWarning("POST failed for {Endpoint}: {ErrorMessage}", endpoint, errorMessage);
+            logger.LogWarning("{Method} failed for {Endpoint}: {ErrorMessage}", methodName, endpoint, errorMessage);
             return (false, errorMessage);
         }
 
-        logger.LogError("POST failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", endpoint, response.StatusCode, response.ReasonPhrase);
+        logger.LogError("{Method} failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", methodName, endpoint, response.StatusCode, response.ReasonPhrase);
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
     }
 
