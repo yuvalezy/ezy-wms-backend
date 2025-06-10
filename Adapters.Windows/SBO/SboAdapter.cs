@@ -1,5 +1,8 @@
-﻿using Adapters.Common.SBO.Repositories;
+﻿using Adapters.Common.SBO.Enums;
+using Adapters.Common.SBO.Repositories;
+using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Repositories;
+using Adapters.Windows.SBO.Services;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
@@ -10,6 +13,8 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Microsoft.Extensions.Logging;
+using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO;
 
@@ -19,7 +24,9 @@ public class SboAdapter(
     SboItemRepository              itemRepository,
     SboPickingRepository           pickingRepository,
     SboInventoryCountingRepository inventoryCountingRepository,
-    SboGoodsReceiptRepository      goodsReceiptRepository) : IExternalSystemAdapter {
+    SboGoodsReceiptRepository      goodsReceiptRepository,
+    SboCompany                     sboCompany,
+    ILoggerFactory                 loggerFactory) : IExternalSystemAdapter {
     // General 
     public async Task<string?> GetCompanyNameAsync() => await generalRepository.GetCompanyNameAsync();
 
@@ -52,8 +59,37 @@ public class SboAdapter(
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) =>
-        await generalRepository.ProcessTransfer(transferNumber, whsCode, comments, data);
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
+        int       series           = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
+        using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
+        try {
+            return transferCreation.Execute();
+        }
+        catch (Exception e) {
+            return new ProcessTransferResponse {
+                Success      = false,
+                Status       = ResponseStatus.Error,
+                ErrorMessage = e.Message
+            };
+        }
+        //todo send alert to sap
+//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
+//         try {
+//             using var alert = new Alert();
+//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
+//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
+//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
+//             alert.Columns.AddRange([transactionColumn, transferColumn]);
+//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
+//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
+//
+//             alert.Send(sendTo);
+//         }
+//         catch (Exception e) {
+//             //todo log error handler
+//         }
+//     }
+    }
 
     // Pick List
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickListsAsync(PickListsRequest request, string warehouse) => await pickingRepository.GetPickLists(request, warehouse);

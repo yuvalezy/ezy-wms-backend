@@ -1,22 +1,17 @@
-﻿using System.Data;
+using System.Data;
 using System.Text;
+using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
-using Adapters.Windows.SBO.Helpers;
-using Adapters.Windows.SBO.Services;
 using Core.DTOs.Items;
-using Core.DTOs.Transfer;
-using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
-using SAPbobsCOM;
 
-namespace Adapters.Windows.SBO.Repositories;
+namespace Adapters.Common.SBO.Repositories;
 
-public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings, SboCompany sboCompany, ILoggerFactory loggerFactory) {
+public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings) {
     private readonly Filters filters = settings.Filters;
 
     public async Task<string?> GetCompanyNameAsync() {
@@ -140,7 +135,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
-    public async Task<int> GetSeries(BoObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
+    public async Task<int> GetSeries(ObjectTypes objectType) => await GetSeries(((int)objectType).ToString());
 
     public async Task<int> GetSeries(string objectCode) {
         const string query =
@@ -157,38 +152,4 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         };
         return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
     }
-
-
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
-        int       series           = await GetSeries(BoObjectTypes.oStockTransfer);
-        using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
-        try {
-            return transferCreation.Execute();
-        }
-        catch (Exception e) {
-            return new ProcessTransferResponse {
-                Success      = false,
-                Status       = ResponseStatus.Error,
-                ErrorMessage = e.Message
-            };
-        }
-        //todo send alert to sap
-//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
-//         try {
-//             using var alert = new Alert();
-//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
-//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
-//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
-//             alert.Columns.AddRange([transactionColumn, transferColumn]);
-//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
-//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
-//
-//             alert.Send(sendTo);
-//         }
-//         catch (Exception e) {
-//             //todo log error handler
-//         }
-//     }
-    }
-
 }
