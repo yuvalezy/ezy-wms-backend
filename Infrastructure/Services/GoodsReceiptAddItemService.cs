@@ -182,11 +182,11 @@ public class GoodsReceiptAddItemService(SystemDbContext db, IExternalSystemAdapt
 
         // Allocate quantities using FIFO
         logger.LogDebug("Allocating source documents using FIFO");
-        await AllocateSourceDocuments(sourceDocuments, quantity);
+        int unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
 
         // Handle over-receipt scenario
         logger.LogDebug("Handling over-receipt scenario");
-        await HandleOverReceiptScenario(sourceDocuments, quantity);
+        await HandleOverReceiptScenario(sourceDocuments, unallocatedSourceQuantity);
 
         if (sourceDocuments.Count == 0) {
             logger.LogWarning("No source documents available for item {ItemCode} after allocation", request.ItemCode);
@@ -201,7 +201,7 @@ public class GoodsReceiptAddItemService(SystemDbContext db, IExternalSystemAdapt
         return (null, sourceDocuments, quantity);
     }
 
-    private async Task AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
+    private async Task<int> AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
         logger.LogDebug("Starting FIFO allocation with {SourceCount} documents and required quantity {Quantity}", 
             sourceDocuments.Count, quantity);
         
@@ -238,6 +238,7 @@ public class GoodsReceiptAddItemService(SystemDbContext db, IExternalSystemAdapt
         }
         
         logger.LogDebug("FIFO allocation completed with {FinalSourceCount} allocated documents", sourceDocuments.Count);
+        return quantity;
     }
 
     private async Task HandleOverReceiptScenario(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {

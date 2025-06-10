@@ -50,9 +50,9 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
             var json = JsonSerializer.Serialize(loginData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
-            logger.LogDebug("POST {Url}/b1s/v1/Login\nBody: {Body}", url, json);
+            logger.LogDebug("POST {Url}/b1s/v2/Login\nBody: {Body}", url, json);
             
-            var response = await httpClient.PostAsync($"{url}/b1s/v1/Login", content);
+            var response = await httpClient.PostAsync($"{url}/b1s/v2/Login", content);
             
             if (response.IsSuccessStatusCode) {
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -83,7 +83,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     public async Task<T?> GetAsync<T>(string endpoint) {
         await ConnectCompany();
         
-        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        var fullUrl = $"{url}/b1s/v2/{endpoint}";
         logger.LogDebug("GET {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
         
         var request = new HttpRequestMessage(HttpMethod.Get, fullUrl);
@@ -109,7 +109,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         var json = JsonSerializer.Serialize(data);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        var fullUrl = $"{url}/b1s/v2/{endpoint}";
         logger.LogDebug("PATCH {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
         
         var request = new HttpRequestMessage(HttpMethod.Patch, fullUrl);
@@ -142,7 +142,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     public async Task<bool> DeleteAsync(string endpoint) {
         await ConnectCompany();
         
-        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        var fullUrl = $"{url}/b1s/v2/{endpoint}";
         logger.LogDebug("DELETE {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
         
         var request = new HttpRequestMessage(HttpMethod.Delete, fullUrl);
@@ -165,7 +165,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         var json = JsonSerializer.Serialize(data);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        var fullUrl = $"{url}/b1s/v1/{endpoint}";
+        var fullUrl = $"{url}/b1s/v2/{endpoint}";
         logger.LogDebug("POST {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", fullUrl, SessionId, json);
         
         var request = new HttpRequestMessage(HttpMethod.Post, fullUrl);
