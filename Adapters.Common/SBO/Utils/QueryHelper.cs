@@ -1,6 +1,6 @@
-﻿using Adapters.Windows.Enums;
+using Adapters.Common.SBO.Enums;
 
-namespace Adapters.Sbo.Utils;
+namespace Adapters.Common.SBO.Utils;
 
 public static class QueryHelper {
     public static string ObjectTable(int objectType) => ObjectTable((ObjectTypes)objectType);

@@ -1,6 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
-namespace Adapters.Windows.Utils;
+namespace Adapters.Common.Utils;
 
 public static class SqlQueryUtils {
     public static string BuildInClause(string columnName, string parameterPrefix, int valueCount) {

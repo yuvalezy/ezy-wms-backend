@@ -1,4 +1,4 @@
-namespace Adapters.CrossPlatform.SBO.Models;
+namespace Adapters.Common.SBO.Models;
 
 public class AlertColumn {
 

@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapters.Windows", "Adapter
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapters.CrossPlatform", "Adapters.CrossPlatform\Adapters.CrossPlatform.csproj", "{7EF367EE-0C49-4C85-B857-E3BC6CA21F05}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapters.Common", "Adapters.Common\Adapters.Common.csproj", "{68E03D1A-8966-4302-AA69-B9E11B92D9E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,12 @@ Global
 		{7EF367EE-0C49-4C85-B857-E3BC6CA21F05}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7EF367EE-0C49-4C85-B857-E3BC6CA21F05}.Test|Any CPU.ActiveCfg = Debug|Any CPU
 		{7EF367EE-0C49-4C85-B857-E3BC6CA21F05}.Test|Any CPU.Build.0 = Debug|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Test|Any CPU.ActiveCfg = Debug|Any CPU
+		{68E03D1A-8966-4302-AA69-B9E11B92D9E6}.Test|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

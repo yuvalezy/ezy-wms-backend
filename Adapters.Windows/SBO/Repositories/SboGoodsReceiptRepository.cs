@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text;
-using Adapters.Sbo.Utils;
+using Adapters.Common.SBO.Services;
+using Adapters.Common.SBO.Utils;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs;

@@ -1,9 +1,10 @@
 using System.Data;
 using System.Text;
-using Adapters.CrossPlatform.Enums;
+using Adapters.Common.SBO.Enums;
+using Adapters.Common.SBO.Services;
+using Adapters.Common.Utils;
 using Adapters.CrossPlatform.SBO.Helpers;
 using Adapters.CrossPlatform.SBO.Services;
-using Adapters.CrossPlatform.Utils;
 using Core.DTOs.Items;
 using Core.DTOs.Transfer;
 using Core.Enums;

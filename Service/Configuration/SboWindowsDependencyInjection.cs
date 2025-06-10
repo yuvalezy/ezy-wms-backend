@@ -1,4 +1,6 @@
-﻿using Adapters.Windows.SBO;
+﻿using Adapters.Common.SBO.Repositories;
+using Adapters.Common.SBO.Services;
+using Adapters.Windows.SBO;
 using Adapters.Windows.SBO.Repositories;
 using Adapters.Windows.SBO.Services;
 using Adapters.Windows.SBO.Utils;

@@ -1,8 +1,8 @@
-using Adapters.CrossPlatform.SBO.Services;
+using Adapters.Common.SBO.Services;
 using Core.Models;
 using Microsoft.Data.SqlClient;
 
-namespace Adapters.CrossPlatform.SBO.Repositories;
+namespace Adapters.Common.SBO.Repositories;
 
 public class SboEmployeeRepository(SboDatabaseService dbService) {
     public async Task<ExternalValue<string>?> GetByIdAsync(string id) {
@@ -12,7 +12,7 @@ public class SboEmployeeRepository(SboDatabaseService dbService) {
             query,
             [new SqlParameter("@id", id)],
             reader => new ExternalValue<string> {
-                Id       = reader.GetInt32(0).ToString(),
+                Id   = reader.GetInt32(0).ToString(),
                 Name = $"{reader.GetString(1)} {reader.GetString(2)}"
             });
     }
@@ -24,7 +24,7 @@ public class SboEmployeeRepository(SboDatabaseService dbService) {
             query,
             null,
             reader => new ExternalValue<string> {
-                Id       = reader.GetInt32(0).ToString(),
+                Id   = reader.GetInt32(0).ToString(),
                 Name = $"{reader.GetString(1)} {reader.GetString(2)}"
             });
     }

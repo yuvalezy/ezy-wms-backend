@@ -1,4 +1,5 @@
-﻿using Adapters.CrossPlatform.SBO.Repositories;
+﻿using Adapters.Common.SBO.Repositories;
+using Adapters.CrossPlatform.SBO.Repositories;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;

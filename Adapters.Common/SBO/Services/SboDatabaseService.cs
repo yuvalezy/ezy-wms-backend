@@ -2,7 +2,7 @@ using System.Data;
 using Core.Interfaces;
 using Microsoft.Data.SqlClient;
 
-namespace Adapters.CrossPlatform.SBO.Services;
+namespace Adapters.Common.SBO.Services;
 
 public class SboDatabaseService(ISettings settings) {
     private string ConnectionString => settings.ConnectionStrings.ExternalAdapterConnection;

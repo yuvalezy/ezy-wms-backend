@@ -1,4 +1,4 @@
-namespace Adapters.Windows.Enums;
+namespace Adapters.Common.SBO.Enums;
 
 /// <summary>
 /// Custom Object Types Enumeration
