@@ -39,7 +39,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<IPickListService, PickListService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
-        services.AddScoped<IGoodsReceiptLineItemService, GoodsReceiptLineItemService>();
+        services.AddScoped<IGoodsReceiptLineItemProcessService, GoodsReceiptLineItemProcessService>();
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();

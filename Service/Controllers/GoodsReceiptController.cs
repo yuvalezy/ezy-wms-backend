@@ -17,7 +17,7 @@ namespace Service.Controllers;
 [Authorize]
 public class GoodsReceiptController(
     IGoodsReceiptService        goodsReceiptService,
-    IGoodsReceiptLineItemService goodsReceiptLineItemService,
+    IGoodsReceiptLineItemProcessService goodsReceiptLineItemService,
     ISettings                   settings) : ControllerBase {
     // 1. Create Goods Receipt
     [HttpPost("create")]
@@ -71,7 +71,7 @@ public class GoodsReceiptController(
             }
         }
 
-        return await goodsReceiptLineItemService.AddItem(sessionInfo, request);
+        return await goodsReceiptService.AddItem(sessionInfo, request);
     }
 
     // 3. Update Line
@@ -125,7 +125,7 @@ public class GoodsReceiptController(
             }
         }
 
-        return await goodsReceiptLineItemService.UpdateLineQuantity(sessionInfo, request);
+        return await goodsReceiptService.UpdateLineQuantity(sessionInfo, request);
     }
 
     // 5. Cancel Goods Receipt

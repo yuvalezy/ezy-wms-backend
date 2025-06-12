@@ -23,4 +23,6 @@ public interface IGoodsReceiptService {
     Task<IEnumerable<GoodsReceiptValidateProcessResponse>>            GetGoodsReceiptValidateProcess(Guid id);
     Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request);
     Task<UpdateLineResponse>                                          UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request);
+    Task<GoodsReceiptAddItemResponse>                                 AddItem(SessionInfo            session, GoodsReceiptAddItemRequest            request);
+    Task<UpdateLineResponse>                                          UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request);
 }
