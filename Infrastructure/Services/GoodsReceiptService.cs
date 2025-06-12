@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter) : IGoodsReceiptService {
+public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineItemService goodsReceiptLineItemService) : IGoodsReceiptService {
     public async Task<GoodsReceiptResponse> CreateGoodsReceipt(CreateGoodsReceiptRequest request, SessionInfo session) {
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
         var now = DateTime.UtcNow;
@@ -257,44 +257,47 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         return lines;
     }
 
-    public async Task<bool> UpdateGoodsReceiptAll(UpdateGoodsReceiptAllRequest request, SessionInfo session) {
-        var goodsReceipt = await db.GoodsReceipts
-            .Include(gr => gr.Lines)
-            .FirstOrDefaultAsync(gr => gr.Id == request.Id);
+    public async Task<string?> UpdateGoodsReceiptAll(UpdateGoodsReceiptAllRequest request, SessionInfo sessionInfo) {
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try {
+            await RemoveRows(request.RemoveRows, sessionInfo);
 
-        if (goodsReceipt == null)
-            return false;
-        
-
-        foreach (var line in goodsReceipt.Lines) {
-            if (request.RemoveRows.Contains(line.Id)) {
-                line.UpdatedAt       = DateTime.UtcNow;
-                line.UpdatedByUserId = session.Guid;
-                line.LineStatus      = LineStatus.Closed;
-                continue;
-            }
-
-            if (!request.QuantityChanges.TryGetValue(line.Id, out decimal change))
-                continue;
-            if (line.Unit != UnitType.Unit) {
-                var itemData = (await adapter.ItemCheckAsync(line.ItemCode, null)).FirstOrDefault();
-                if (itemData == null) {
-                    throw new KeyNotFoundException($"Item with code {line.ItemCode} not found in external adapter");
-                }
-
-                change *= itemData.NumInBuy;
-                if (line.Unit == UnitType.Pack) {
-                    change *= itemData.PurPackUn;
+            foreach (var pair in request.QuantityChanges) {
+                var lineId   = pair.Key;
+                int quantity = (int)pair.Value;
+                var response = await goodsReceiptLineItemService.UpdateLineQuantity(sessionInfo, new UpdateGoodsReceiptLineQuantityRequest {
+                    Id       = request.Id,
+                    LineId   = lineId,
+                    Quantity = quantity
+                });
+                if (!string.IsNullOrWhiteSpace(response.ErrorMessage) || response.ReturnValue != UpdateLineReturnValue.Ok) {
+                    return !string.IsNullOrWhiteSpace(response.ErrorMessage) ? response.ErrorMessage : $"Return Value Code {response.ReturnValue} for Line ID {lineId}";
                 }
             }
 
-            line.Quantity        = change;
+            await transaction.CommitAsync();
+            return null;
+        }
+        catch (Exception e) {
+            await transaction.RollbackAsync();
+            return e.Message;
+        }
+    }
+
+    public async Task RemoveRows(Guid[] rows, SessionInfo session) {
+        if (rows.Length == 0)
+            return;
+        var lines = await db.GoodsReceiptLines.Where(v => rows.Contains(v.Id)).ToArrayAsync();
+        foreach (var line in lines) {
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
+            line.LineStatus      = LineStatus.Closed;
+            line.Deleted         = true;
+            line.DeletedAt       = DateTime.UtcNow;
+            db.GoodsReceiptLines.Update(line);
         }
 
         await db.SaveChangesAsync();
-        return true;
     }
 
     public async Task<IEnumerable<GoodsReceiptVSExitReportResponse>> GetGoodsReceiptVSExitReport(Guid id) {
@@ -469,6 +472,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         return data;
     }
+
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
         var line = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)

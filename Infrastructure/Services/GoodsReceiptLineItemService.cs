@@ -8,6 +8,7 @@ using Core.Models;
 using Core.Models.Settings;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
@@ -77,7 +78,13 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
     }
 
     public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request) {
-        await using var transaction = await db.Database.BeginTransactionAsync();
+        IDbContextTransaction? transaction      = null;
+        bool                   closeTransaction = false;
+        if (db.Database.CurrentTransaction == null) {
+            transaction      = await db.Database.BeginTransactionAsync();
+            closeTransaction = true;
+        }
+
         try {
             //Step 1: Load existing data
             var id     = request.Id;
@@ -85,7 +92,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             var line = await db.GoodsReceiptLines
                 .Include(l => l.GoodsReceipt)
                 .ThenInclude(v => v.Documents)
-                .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == id && l.Id == lineId);
+                .FirstOrDefaultAsync(l => l.Id == lineId);
 
             if (line == null) {
                 throw new KeyNotFoundException($"Line with ID {lineId} not found");
@@ -152,13 +159,18 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
 
             await db.SaveChangesAsync();
 
-            await transaction.CommitAsync();
+            if (closeTransaction && transaction != null) {
+                await transaction.CommitAsync();
+            }
 
             return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
         }
         catch (Exception e) {
             logger.LogError(e, "Failed to update line {LineId} for goods receipt {Id}", request.LineId, request.Id);
-            await transaction.RollbackAsync();
+            if (closeTransaction && transaction != null) {
+                await transaction.RollbackAsync();
+            }
+
             throw;
         }
     }

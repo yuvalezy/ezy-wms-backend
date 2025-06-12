@@ -17,7 +17,8 @@ public interface IGoodsReceiptService {
     // Report Operations
     Task<IEnumerable<GoodsReceiptReportAllResponse>>                  GetGoodsReceiptAllReport(Guid id, string warehouse);
     Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>>           GetGoodsReceiptAllReportDetails(Guid id, string itemCode);
-    Task<bool>                                                        UpdateGoodsReceiptAll(UpdateGoodsReceiptAllRequest request, SessionInfo session);
+    Task<string?>                                                     UpdateGoodsReceiptAll(UpdateGoodsReceiptAllRequest request, SessionInfo sessionInfo);
+    Task                                                              RemoveRows(Guid[] rows, SessionInfo session);
     Task<IEnumerable<GoodsReceiptVSExitReportResponse>>               GetGoodsReceiptVSExitReport(Guid id);
     Task<IEnumerable<GoodsReceiptValidateProcessResponse>>            GetGoodsReceiptValidateProcess(Guid id);
     Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request);

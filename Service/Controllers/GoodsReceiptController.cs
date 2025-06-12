@@ -291,8 +291,8 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        var result = await goodsReceiptService.UpdateGoodsReceiptAll(request, sessionInfo);
-        return Ok(result);
+        string? errorMessage = await goodsReceiptService.UpdateGoodsReceiptAll(request, sessionInfo);
+        return string.IsNullOrWhiteSpace(errorMessage) ? Ok(true) : BadRequest(errorMessage);
     }
 
     // 12. Get VS Exit Report
