@@ -15,7 +15,7 @@ namespace Adapters.Common.SBO.Repositories;
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFactory loggerFactory) {
     private readonly SourceDocumentRetrieval sourceDocumentRetrieval = new(dbService);
 
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, string warehouse, List<ObjectKey> specificDocuments) {
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, string warehouse, List<ObjectKey> specificDocuments) {
         var response = new GoodsReceiptValidationResult {
             IsValid      = true,
             ErrorMessage = null,
@@ -32,8 +32,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             where T0."ItemCode" = @ItemCode
             """;
         int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
-            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
-            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = request.BarCode }
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = barcode }
         ], reader => reader.GetInt32(0));
 
         switch (result) {
@@ -58,7 +58,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             return await Task.FromResult(response);
 
         var parameters = new List<SqlParameter> {
-            new("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
+            new("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
             new("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
         };
         var sb = new StringBuilder(" select 1 from ( ");

@@ -157,8 +157,8 @@ public class SboAdapter(
     }
 
     // Goods Receipt methods
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request, List<ObjectKey> specificDocuments, Guid userId, string warehouse) {
-        return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(request, warehouse, specificDocuments);
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse) {
+        return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(itemCode, barcode, warehouse, specificDocuments);
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {

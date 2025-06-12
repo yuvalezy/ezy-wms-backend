@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices.JavaScript;
+
 namespace Core.DTOs.GoodsReceipt;
 
 public class GoodsReceiptAddItemResponse {
@@ -12,4 +14,14 @@ public class GoodsReceiptAddItemResponse {
     public int     PurPackUn      { get; set; }
     public string? PurPackMsr     { get; set; }
     public string? ErrorMessage   { get; set; }
+
+    public GoodsReceiptAddItemResponse() {
+        
+    }
+
+    public GoodsReceiptAddItemResponse(string errorMessage, bool closedDocument = false) {
+        ErrorMessage = errorMessage;
+        ClosedDocument = closedDocument;
+    }
 }
+

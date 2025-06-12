@@ -44,9 +44,9 @@ public interface IExternalSystemAdapter {
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);
 
     // Goods Receipt methods
-    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(GoodsReceiptAddItemRequest request,   List<ObjectKey>  specificDocuments, Guid userId, string warehouse);
-    Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int                                number,    string           warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
-    Task                               ValidateGoodsReceiptDocuments(string                   warehouse, GoodsReceiptType type, List<DocumentParameter> documents);
+    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string   itemCode,  string           barcode,   List<ObjectKey> specificDocuments, string warehouse);
+    Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int              number,    string           warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    Task                               ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type,      List<DocumentParameter>                                    documents);
 
     Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode,
         List<ObjectKey>                                                                                            specificDocuments);

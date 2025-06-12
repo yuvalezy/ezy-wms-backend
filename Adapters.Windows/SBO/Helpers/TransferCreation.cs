@@ -23,24 +23,18 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
 
         logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} in warehouse {Warehouse}", 
             transferNumber, whsCode);
-        logger.LogDebug("Transfer data contains {ItemCount} items with series {Series}", data.Count, series);
 
         try {
-            logger.LogDebug("Waiting for transaction mutex...");
             sboCompany.TransactionMutex.WaitOne();
             
             try {
-                logger.LogDebug("Connecting to SAP B1 company...");
                 sboCompany.ConnectCompany();
                 company = sboCompany.Company!;
-                
-                logger.LogDebug("Starting SAP B1 transaction...");
                 company.StartTransaction();
 
                 CreateTransfer();
 
                 if (company.InTransaction) {
-                    logger.LogDebug("Committing SAP B1 transaction...");
                     company.EndTransaction(BoWfTransOpt.wf_Commit);
                 }
 
@@ -53,7 +47,6 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
                     Number, Entry, transferNumber);
             }
             finally {
-                logger.LogDebug("Releasing transaction mutex");
                 sboCompany.TransactionMutex.ReleaseMutex();
             }
         }
@@ -61,7 +54,6 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
             logger.LogError(ex, "Failed to create transfer for WMS transfer {TransferNumber}", transferNumber);
             
             if (company?.InTransaction == true) {
-                logger.LogDebug("Rolling back SAP B1 transaction due to error");
                 company.EndTransaction(BoWfTransOpt.wf_RollBack);
             }
             
@@ -76,7 +68,6 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
     }
 
     private void CreateTransfer() {
-        logger.LogDebug("Creating StockTransfer business object...");
         var company = sboCompany.Company!;
         transfer = (StockTransfer)company.GetBusinessObject(BoObjectTypes.oStockTransfer);
 
@@ -84,13 +75,11 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
         transfer.Series  = series;
 
         if (!string.IsNullOrWhiteSpace(comments)) {
-            logger.LogDebug("Setting transfer comments: {Comments}", comments);
             transfer.Comments = comments;
         }
 
         // Set reference to our transfer id
         transfer.Reference2 = transferNumber.ToString();
-        logger.LogDebug("Set transfer reference2 to WMS transfer number: {TransferNumber}", transferNumber);
 
         var lines = transfer.Lines;
 
@@ -155,31 +144,23 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
         }
 
         Entry = int.Parse(company.GetNewObjectKey());
-        logger.LogDebug("Transfer created successfully with DocEntry: {DocEntry}", Entry);
         
         rs    = (Recordset)company.GetBusinessObject(BoObjectTypes.BoRecordset);
         rs.DoQuery($"select \"DocNum\" from OWTR where \"DocEntry\" = {Entry}");
         Number = (int)rs.Fields.Item(0).Value;
-        
-        logger.LogDebug("Retrieved DocNum: {DocNum} for DocEntry: {DocEntry}", Number, Entry);
     }
 
     public void Dispose() {
-        logger.LogDebug("Disposing TransferCreation resources...");
         
         if (transfer != null) {
-            logger.LogDebug("Releasing StockTransfer COM object");
             Marshal.ReleaseComObject(transfer);
             transfer = null;
         }
 
         if (rs != null) {
-            logger.LogDebug("Releasing Recordset COM object");
             Marshal.ReleaseComObject(rs);
             rs = null;
         }
-
-        logger.LogDebug("Forcing garbage collection for COM cleanup");
         GC.Collect();
     }
 }

@@ -28,14 +28,11 @@ public class PickingUpdate(
     }
 
     private async Task LoadPickList() {
-        logger.LogDebug("Loading pick list for AbsEntry {AbsEntry}", absEntry);
         pickListResponse = await sboCompany.GetAsync<PickListResponse>($"PickLists({absEntry})");
         if (pickListResponse == null) {
             logger.LogError("Could not find Pick List {AbsEntry}", absEntry);
             throw new Exception($"Could not find Pick List {absEntry}");
         }
-
-        logger.LogDebug("Loaded pick list {AbsEntry} with status {Status}", absEntry, pickListResponse.Status);
         if (pickListResponse.Status == "ps_Closed") {
             logger.LogWarning("Cannot process pick list {AbsEntry} because status is closed", absEntry);
             throw new Exception("Cannot process document if the Status is closed");
@@ -43,20 +40,14 @@ public class PickingUpdate(
     }
 
     private async Task PreparePickList() {
-        logger.LogDebug("Preparing pick list {AbsEntry}", absEntry);
         
         if (pickListResponse.PickListsLines.Any(v => v.PickedQuantity > 0)) {
-            logger.LogDebug("Pick list {AbsEntry} already has picked quantities, skipping preparation", absEntry);
             return;
         }
-
-        logger.LogDebug("Clearing bin allocations for pick list {AbsEntry}", absEntry);
         // Clear all bin allocations first
         foreach (var line in pickListResponse.PickListsLines) {
             line.DocumentLinesBinAllocations = [];
         }
-
-        logger.LogDebug("Updating released allocation for pick list {AbsEntry}", absEntry);
         (bool success, string? errorMessage) = await sboCompany.PostAsync("PickListsService_UpdateReleasedAllocation", new {
             PickList = pickListResponse,
         });
@@ -65,12 +56,9 @@ public class PickingUpdate(
             logger.LogError("Failed to prepare pick list {AbsEntry}: {ErrorMessage}", absEntry, errorMessage);
             throw new Exception($"Failed to prepare pick list: {errorMessage}");
         }
-        
-        logger.LogDebug("Successfully prepared pick list {AbsEntry}", absEntry);
     }
 
     private async Task ProcessPickList() {
-        logger.LogDebug("Processing pick list {AbsEntry} with {DataCount} data entries", absEntry, data.Count);
         
         // Group data by pick entry
         var lines = data.GroupBy(v => v.PickEntry)
@@ -82,12 +70,9 @@ public class PickingUpdate(
                     .ToList()
             }).ToList();
 
-        logger.LogDebug("Grouped data into {LineCount} pick entries for pick list {AbsEntry}", lines.Count, absEntry);
-
         foreach (var pickLine in pickListResponse.PickListsLines) {
             var matchingData = lines.FirstOrDefault(v => v.PickEntry == pickLine.LineNumber);
             if (matchingData == null) {
-                logger.LogDebug("No matching data found for pick line {LineNumber} in pick list {AbsEntry}", pickLine.LineNumber, absEntry);
                 continue;
             }
 
@@ -133,16 +118,12 @@ public class PickingUpdate(
                 }
             }
         }
-
-        logger.LogDebug("Saving pick list {AbsEntry} updates", absEntry);
         (bool success, string? errorMessage) = await sboCompany.PutAsync($"PickLists({absEntry})", pickListResponse);
 
         if (!success) {
             logger.LogError("Could not update Pick List {AbsEntry}: {ErrorMessage}", absEntry, errorMessage);
             throw new Exception($"Could not update Pick List: {errorMessage}");
         }
-        
-        logger.LogDebug("Successfully processed pick list {AbsEntry}", absEntry);
     }
 
     public void Dispose() {

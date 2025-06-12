@@ -18,12 +18,10 @@ public class GoodsReceiptCreation(
 
     public async Task<ProcessGoodsReceiptResult> Execute() {
         logger.LogInformation("Starting goods receipt creation for WMS receipt {Number} in warehouse {Warehouse}", number, whsCode);
-        logger.LogDebug("Goods receipt data contains {ItemCount} items with series {Series}", data.Count, series);
 
         try {
             // Group data by source documents for batch creation
             var groupedData = GroupDataBySource();
-            logger.LogDebug("Grouped data into {GroupCount} documents", groupedData.Count);
 
             foreach (var group in groupedData) {
                 var result = await CreateDocument(group.Key, group.Value);
@@ -54,7 +52,6 @@ public class GoodsReceiptCreation(
     }
 
     private Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>> GroupDataBySource() {
-        logger.LogDebug("Grouping goods receipt data by source documents...");
 
         var grouped = new Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>>();
 
@@ -76,8 +73,6 @@ public class GoodsReceiptCreation(
                 if (!grouped.ContainsKey(key))
                     grouped[key] = new List<GoodsReceiptCreationDataResponse>();
                 grouped[key].Add(item);
-
-                logger.LogDebug("Added item {ItemCode} to general receipt group (no source)", item.ItemCode);
             }
         }
 
@@ -119,8 +114,6 @@ public class GoodsReceiptCreation(
                         WarehouseCode = whsCode,
                         FreeText      = item.Comments ?? ""
                     };
-
-                    logger.LogDebug("Added line for item {ItemCode} without source link", item.ItemCode);
                 }
 
                 lines.Add(line);
@@ -159,7 +152,6 @@ public class GoodsReceiptCreation(
     }
 
     public void Dispose() {
-        logger.LogDebug("Disposing GoodsReceiptCreation resources...");
     }
 
     private class DocumentLine {

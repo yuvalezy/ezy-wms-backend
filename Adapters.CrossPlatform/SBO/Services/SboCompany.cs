@@ -27,15 +27,11 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
     public async Task<bool> ConnectCompany() {
         if (IsConnected()) {
-            logger.LogDebug("Already connected to Service Layer with session {SessionId}", SessionId);
             return true;
         }
-
-        logger.LogDebug("Waiting for connection semaphore...");
         await connectionSemaphore.WaitAsync();
         try {
             if (IsConnected()) {
-                logger.LogDebug("Already connected after waiting for semaphore");
                 return true;
             }
 
@@ -50,13 +46,10 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
             string json    = JsonSerializer.Serialize(loginData);
             var    content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            logger.LogDebug("POST {Url}/b1s/v2/Login\nBody: {Body}", url, json);
-
             var response = await httpClient.PostAsync($"{url}/b1s/v2/Login", content);
 
             if (response.IsSuccessStatusCode) {
                 string responseContent = await response.Content.ReadAsStringAsync();
-                logger.LogDebug("Login response: {Response}", responseContent);
 
                 var loginResponse = JsonSerializer.Deserialize<LoginResponse>(responseContent);
 
@@ -84,7 +77,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         await ConnectCompany();
 
         string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("GET {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
 
         var request = new HttpRequestMessage(HttpMethod.Get, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
@@ -93,7 +85,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         if (response.IsSuccessStatusCode) {
             string content = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("GET response: {Response}", content);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<T>(content, options);
@@ -115,7 +106,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         await ConnectCompany();
 
         string fullUrl = $"{url}/b1s/v2/{endpoint}";
-        logger.LogDebug("DELETE {Url}\nCookie: B1SESSION={SessionId};", fullUrl, SessionId);
 
         var request = new HttpRequestMessage(HttpMethod.Delete, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
@@ -148,7 +138,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         string fullUrl = $"{url}/b1s/v2/{endpoint}";
         string methodName = httpMethod.Method;
-        logger.LogDebug("{Method} {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", methodName, fullUrl, SessionId, json);
 
         var request = new HttpRequestMessage(httpMethod, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
@@ -159,7 +148,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         if (response.IsSuccessStatusCode) {
             if (httpMethod == HttpMethod.Post) {
                 string responseContent = await response.Content.ReadAsStringAsync();
-                logger.LogDebug("{Method} response: {Response}", methodName, responseContent);
             }
             logger.LogInformation("{Method} successful for endpoint {Endpoint}", methodName, endpoint);
             return (true, null);
@@ -176,7 +164,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         string fullUrl = $"{url}/b1s/v2/{endpoint}";
         string methodName = httpMethod.Method;
-        logger.LogDebug("{Method} {Url}\nCookie: B1SESSION={SessionId};\nBody: {Body}", methodName, fullUrl, SessionId, json);
 
         var request = new HttpRequestMessage(httpMethod, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
@@ -186,7 +173,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         if (response.IsSuccessStatusCode) {
             string responseContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("{Method} response: {Response}", methodName, responseContent);
             logger.LogInformation("{Method} successful for endpoint {Endpoint}", methodName, endpoint);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -201,7 +187,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     private async Task<(bool success, string? errorMessage)> HandleErrorResponse(HttpResponseMessage response, string methodName, string endpoint) {
         if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
             string errorContent = await response.Content.ReadAsStringAsync();
-            logger.LogDebug("{Method} error response: {ErrorContent}", methodName, errorContent);
 
             var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);

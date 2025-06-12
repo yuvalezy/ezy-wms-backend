@@ -28,23 +28,17 @@ public class CountingCreation(
         
         logger.LogInformation("Starting inventory counting creation for WMS counting {CountingNumber} in warehouse {Warehouse}", 
             countingNumber, whsCode);
-        logger.LogDebug("Counting data contains {ItemCount} items with series {Series}", data.Count, series);
         
         try {
-            logger.LogDebug("Waiting for transaction mutex...");
             sboCompany.TransactionMutex.WaitOne();
             
             try {
-                logger.LogDebug("Connecting to SAP B1 company...");
                 sboCompany.ConnectCompany();
-                
-                logger.LogDebug("Starting SAP B1 transaction...");
                 sboCompany.Company!.StartTransaction();
                 
                 CreateCounting();
                 
                 if (sboCompany.Company.InTransaction) {
-                    logger.LogDebug("Committing SAP B1 transaction...");
                     sboCompany.Company.EndTransaction(BoWfTransOpt.wf_Commit);
                 }
                 
@@ -57,7 +51,6 @@ public class CountingCreation(
                     NewEntry.Number, NewEntry.Entry, countingNumber);
             }
             finally {
-                logger.LogDebug("Releasing transaction mutex");
                 sboCompany.TransactionMutex.ReleaseMutex();
             }
         }
@@ -65,7 +58,6 @@ public class CountingCreation(
             logger.LogError(e, "Failed to create inventory counting for WMS counting {CountingNumber}", countingNumber);
             
             if (sboCompany.Company?.InTransaction == true) {
-                logger.LogDebug("Rolling back SAP B1 transaction due to error");
                 sboCompany.Company.EndTransaction(BoWfTransOpt.wf_RollBack);
             }
             
@@ -77,18 +69,12 @@ public class CountingCreation(
     }
 
     private void CreateCounting() {
-        logger.LogDebug("Getting company service for inventory counting...");
         companyService      = sboCompany.Company!.GetCompanyService();
-        
-        logger.LogDebug("Getting inventory countings service...");
         service             = (InventoryCountingsService)companyService.GetBusinessService(ServiceTypes.InventoryCountingsService);
-        
-        logger.LogDebug("Creating inventory counting data interface...");
         counting            = (InventoryCounting)service.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting);
         
         counting.Series     = series;
         counting.Reference2 = countingNumber.ToString();
-        logger.LogDebug("Set counting reference2 to WMS counting number: {CountingNumber}", countingNumber);
         
         int totalLines = 0;
         foreach (var value in data) {
@@ -110,7 +96,6 @@ public class CountingCreation(
                 }
             }
             else {
-                logger.LogDebug("Processing item {ItemCode} without bins", value.Value.ItemCode);
                 
                 var line = counting.InventoryCountingLines.Add();
                 line.ItemCode        = value.Value.ItemCode;
@@ -133,33 +118,26 @@ public class CountingCreation(
     }
 
     public void Dispose() {
-        logger.LogDebug("Disposing CountingCreation resources...");
         
         if (counting != null) {
-            logger.LogDebug("Releasing InventoryCounting COM object");
             Marshal.ReleaseComObject(counting);
             counting = null;
         }
 
         if (service != null) {
-            logger.LogDebug("Releasing InventoryCountingsService COM object");
             Marshal.ReleaseComObject(service);
             service = null;
         }
 
         if (companyService != null) {
-            logger.LogDebug("Releasing CompanyService COM object");
             Marshal.ReleaseComObject(companyService);
             companyService = null;
         }
 
         if (rs != null) {
-            logger.LogDebug("Releasing Recordset COM object");
             Marshal.ReleaseComObject(rs);
             rs = null;
         }
-
-        logger.LogDebug("Forcing garbage collection for COM cleanup");
         GC.Collect();
     }
 }

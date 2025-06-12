@@ -25,7 +25,6 @@ public class TransferCreation(
 
         logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} in warehouse {Warehouse}", 
             transferNumber, whsCode);
-        logger.LogDebug("Transfer data contains {ItemCount} items with series {Series}", data.Count, series);
 
         try {
             var transferData = CreateTransferData();
@@ -65,7 +64,6 @@ public class TransferCreation(
     }
 
     private object CreateTransferData() {
-        logger.LogDebug("Creating transfer data for Service Layer...");
         
         var lines = new List<object>();
         
@@ -127,13 +125,10 @@ public class TransferCreation(
             Reference2 = transferNumber.ToString(),
             StockTransferLines = lines
         };
-        
-        logger.LogDebug("Created transfer data with {LineCount} lines", lines.Count);
         return transferData;
     }
 
     public void Dispose() {
-        logger.LogDebug("Disposing TransferCreation resources...");
     }
     
     private class StockTransferResponse {

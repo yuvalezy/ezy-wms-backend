@@ -23,7 +23,6 @@ public class CountingCreation(
         
         logger.LogInformation("Starting inventory counting creation for WMS counting {CountingNumber} in warehouse {Warehouse}", 
             countingNumber, whsCode);
-        logger.LogDebug("Counting data contains {ItemCount} items with series {Series}", data.Count, series);
 
         try {
             var countingData = CreateCountingData();
@@ -62,7 +61,6 @@ public class CountingCreation(
     }
 
     private (object Data, int TotalLines) CreateCountingData() {
-        logger.LogDebug("Creating inventory counting data for Service Layer...");
         
         var lines = new List<object>();
         int totalLines = 0;
@@ -87,7 +85,6 @@ public class CountingCreation(
                 }
             }
             else {
-                logger.LogDebug("Processing item {ItemCode} without bins", value.Value.ItemCode);
                 
                 lines.Add(new {
                     ItemCode = value.Value.ItemCode,
@@ -107,13 +104,10 @@ public class CountingCreation(
             Reference2 = countingNumber.ToString(),
             InventoryCountingLines = lines
         };
-        
-        logger.LogDebug("Created inventory counting data with {LineCount} lines", totalLines);
         return (countingData, totalLines);
     }
 
     public void Dispose() {
-        logger.LogDebug("Disposing CountingCreation resources...");
     }
     
     private class InventoryCountingResponse {
