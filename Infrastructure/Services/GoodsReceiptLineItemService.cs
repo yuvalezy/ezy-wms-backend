@@ -254,7 +254,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         int unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
 
         // Handle over-receipt scenario
-        await HandleOverReceiptScenario(sourceDocuments, unallocatedSourceQuantity);
+        await HandleOverReceiptScenario(linesIds, sourceDocuments, unallocatedSourceQuantity);
 
         if (sourceDocuments.Count == 0) {
             logger.LogWarning("No source documents available for item {ItemCode} after allocation", itemCode);
@@ -292,7 +292,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         return Task.FromResult(quantity);
     }
 
-    private async Task HandleOverReceiptScenario(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
+    private async Task HandleOverReceiptScenario(List<Guid> linesIds, List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
         if (quantity <= 0) {
             return;
         }
@@ -305,6 +305,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         }
         else {
             var fallback = await db.GoodsReceiptSources
+                .Where(v => linesIds.Contains(v.GoodsReceiptLineId))
                 .OrderBy(v => v.SourceType == 20 ? 'A' : v.SourceType == 22 ? 'B' : 'C')
                 .ThenByDescending(v => v.CreatedAt)
                 .FirstOrDefaultAsync();
