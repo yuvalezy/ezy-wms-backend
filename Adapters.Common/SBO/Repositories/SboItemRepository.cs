@@ -10,14 +10,14 @@ public class SboItemRepository(SboDatabaseService dbService) {
     public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
         string query = !item
             ? """
-              SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+              SELECT T0."ItemCode", T1."ItemName", T2."Father"
               FROM OBCD T0
                        INNER JOIN OITM T1 ON T0."ItemCode" = T1."ItemCode"
               left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
               WHERE T0."BcdCode" = @ScanCode
               """
             : """
-              SELECT T0."ItemCode", T1."ItemName", T2."Father", T1."U_LW_BOX_NUM" "BoxNumber"
+              SELECT T0."ItemCode", T1."ItemName", T2."Father"
               FROM OITM T1
                        left outer JOIN OBCD T0 ON T0."ItemCode" = T1."ItemCode"
               left outer join ITT1 T2 on T2."Code" = T0."ItemCode"
@@ -34,8 +34,6 @@ public class SboItemRepository(SboDatabaseService dbService) {
                 item.Name = reader.GetString(1);
             if (!reader.IsDBNull(2))
                 item.Father = reader.GetString(2);
-            if (!reader.IsDBNull(3))
-                item.BoxNumber = reader.GetInt32(3);
             return item;
         });
     }
