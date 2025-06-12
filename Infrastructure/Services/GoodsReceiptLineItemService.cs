@@ -1,4 +1,5 @@
-﻿using Core.DTOs.GoodsReceipt;
+﻿using Core.DTOs;
+using Core.DTOs.GoodsReceipt;
 using Core.DTOs.Items;
 using Core.Entities;
 using Core.Enums;
@@ -11,11 +12,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptAddItemService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings, ILogger<GoodsReceiptAddItemService> logger) : IGoodsReceiptAddItemService {
+public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings, ILogger<GoodsReceiptLineItemService> logger) : IGoodsReceiptLineItemService {
     private readonly Options options = settings.Options;
     public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo session, GoodsReceiptAddItemRequest request) {
-        var userId    = session.Guid;
-        string warehouse = session.Warehouse;
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var         userId    = session.Guid;
+        string      warehouse = session.Warehouse;
 
         logger.LogInformation("Adding item {ItemCode} (barcode: {BarCode}) to goods receipt {Id} for user {UserId} in warehouse {Warehouse}", 
             request.ItemCode, request.BarCode, request.Id, userId, warehouse);
@@ -75,15 +77,50 @@ public class GoodsReceiptAddItemService(SystemDbContext db, IExternalSystemAdapt
             logger.LogInformation("Successfully added item {ItemCode} to goods receipt {Id}. LineId: {LineId}, Quantity: {Quantity}", 
                 request.ItemCode, request.Id, line.Id, calculatedQuantity);
 
+            await transaction.CommitAsync();
+
             return response;
         }
         catch (Exception ex) {
             logger.LogError(ex, "Failed to add item {ItemCode} to goods receipt {Id} for user {UserId}", 
                 request.ItemCode, request.Id, userId);
+            await transaction.RollbackAsync();
             throw;
         }
     }
 
+    public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request) {
+        var line = await db.GoodsReceiptLines
+            .Include(l => l.GoodsReceipt)
+            .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == request.Id && l.Id == request.LineId);
+
+        if (line == null) {
+            throw new KeyNotFoundException($"Line with ID {request.LineId} not found");
+        }
+
+        if (line.LineStatus == LineStatus.Closed) {
+            return new UpdateLineResponse {
+                ReturnValue  = UpdateLineReturnValue.LineStatus,
+                ErrorMessage = "Cannot update closed line"
+            };
+        }
+
+        decimal quantity = request.Quantity;
+        if (line.Unit != UnitType.Unit) {
+            var itemCheck = (await adapter.ItemCheckAsync(line.ItemCode, null)).First();
+            quantity *= itemCheck.NumInBuy;
+            if (line.Unit == UnitType.Pack) 
+                quantity *= itemCheck.PurPackUn;
+        }
+
+        line.Quantity        = quantity;
+        line.UpdatedAt       = DateTime.UtcNow;
+        line.UpdatedByUserId = session.Guid;
+
+        await db.SaveChangesAsync();
+
+        return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
+    }
     private async Task<(GoodsReceiptAddItemResponse? ErrorResponse, GoodsReceipt? GoodsReceipt, ItemCheckResponse? Item, List<ObjectKey>? SpecificDocuments)>
         ValidateGoodsReceiptAndItem(GoodsReceiptAddItemRequest request, Guid userId, string warehouse) {
         
