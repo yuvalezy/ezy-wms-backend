@@ -128,6 +128,10 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         string?          cardCode,
         List<ObjectKey>  specificDocuments) {
         int[] entries = specificDocuments.Where(v => v.Type == 18).Select(v => v.Entry).ToArray();
+        
+        if (type != GoodsReceiptType.All && entries.Length == 0) {
+            return [];
+        }
 
         var parameters = new List<SqlParameter> {
             new("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse },
