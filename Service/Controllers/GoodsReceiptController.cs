@@ -15,10 +15,8 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class GoodsReceiptController(
-    IGoodsReceiptService        goodsReceiptService,
-    IGoodsReceiptLineItemProcessService goodsReceiptLineItemService,
-    ISettings                   settings) : ControllerBase {
+public class GoodsReceiptController(IGoodsReceiptService receiptService, IGoodsReceiptReportService receiptReportService, IGoodsReceiptLineService receiptLineService, ISettings settings)
+    : ControllerBase {
     // 1. Create Goods Receipt
     [HttpPost("create")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor)]
@@ -43,7 +41,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        var result = await goodsReceiptService.CreateGoodsReceipt(request, sessionInfo);
+        var result = await receiptService.CreateGoodsReceipt(request, sessionInfo);
         return Ok(result);
     }
 
@@ -53,7 +51,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(request.Id);
+        var document = await receiptService.GetGoodsReceipt(request.Id);
         if (document == null) {
             return NotFound();
         }
@@ -71,7 +69,7 @@ public class GoodsReceiptController(
             }
         }
 
-        return await goodsReceiptService.AddItem(sessionInfo, request);
+        return await receiptLineService.AddItem(sessionInfo, request);
     }
 
     // 3. Update Line
@@ -80,7 +78,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(request.Id);
+        var document = await receiptService.GetGoodsReceipt(request.Id);
         if (document == null) {
             return NotFound();
         }
@@ -98,7 +96,7 @@ public class GoodsReceiptController(
             }
         }
 
-        return await goodsReceiptService.UpdateLine(sessionInfo, request);
+        return await receiptLineService.UpdateLine(sessionInfo, request);
     }
 
     // 4. Update Line Quantity
@@ -107,7 +105,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(request.Id);
+        var document = await receiptService.GetGoodsReceipt(request.Id);
         if (document == null) {
             return NotFound();
         }
@@ -125,7 +123,7 @@ public class GoodsReceiptController(
             }
         }
 
-        return await goodsReceiptService.UpdateLineQuantity(sessionInfo, request);
+        return await receiptLineService.UpdateLineQuantity(sessionInfo, request);
     }
 
     // 5. Cancel Goods Receipt
@@ -134,7 +132,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -147,7 +145,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        bool result = await goodsReceiptService.CancelGoodsReceipt(id, sessionInfo);
+        bool result = await receiptService.CancelGoodsReceipt(id, sessionInfo);
         return Ok(result);
     }
 
@@ -157,7 +155,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -170,7 +168,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return await goodsReceiptService.ProcessGoodsReceipt(id, sessionInfo);
+        return await receiptService.ProcessGoodsReceipt(id, sessionInfo);
     }
 
     // 7. Get Documents (list) - Uses POST for complex filtering
@@ -195,7 +193,7 @@ public class GoodsReceiptController(
         }
 
         request.WhsCode = sessionInfo.Warehouse;
-        return Ok(await goodsReceiptService.GetGoodsReceipts(request, sessionInfo.Warehouse));
+        return Ok(await receiptService.GetGoodsReceipts(request, sessionInfo.Warehouse));
     }
 
     // 8. Get Document by ID
@@ -204,7 +202,7 @@ public class GoodsReceiptController(
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     public async Task<ActionResult<GoodsReceiptResponse>> GetGoodsReceipt(Guid id) {
         var sessionInfo = HttpContext.GetSession();
-        var document    = await goodsReceiptService.GetGoodsReceipt(id);
+        var document    = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -234,7 +232,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -247,7 +245,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptAllReport(id, sessionInfo.Warehouse));
+        return Ok(await receiptReportService.GetGoodsReceiptAllReport(id, sessionInfo.Warehouse));
     }
 
     // 10. Get All Report Details
@@ -256,7 +254,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -269,7 +267,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptAllReportDetails(id, itemCode));
+        return Ok(await receiptReportService.GetGoodsReceiptAllReportDetails(id, itemCode));
     }
 
     // 11. Update Goods Receipt All
@@ -278,7 +276,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(request.Id);
+        var document = await receiptService.GetGoodsReceipt(request.Id);
         if (document == null) {
             return NotFound();
         }
@@ -291,7 +289,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        string? errorMessage = await goodsReceiptService.UpdateGoodsReceiptAll(request, sessionInfo);
+        string? errorMessage = await receiptReportService.UpdateGoodsReceiptAll(request, sessionInfo);
         return string.IsNullOrWhiteSpace(errorMessage) ? Ok(true) : BadRequest(errorMessage);
     }
 
@@ -301,7 +299,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -314,7 +312,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptVSExitReport(id));
+        return Ok(await receiptReportService.GetGoodsReceiptVSExitReport(id));
     }
 
     // 13. Get Validate Process
@@ -323,7 +321,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(id);
+        var document = await receiptService.GetGoodsReceipt(id);
         if (document == null) {
             return NotFound();
         }
@@ -336,7 +334,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptValidateProcess(id));
+        return Ok(await receiptReportService.GetGoodsReceiptValidateProcess(id));
     }
 
     // 14. Get Validate Process Line Details
@@ -346,7 +344,7 @@ public class GoodsReceiptController(
         var sessionInfo = HttpContext.GetSession();
 
         // Get document type to determine required role
-        var document = await goodsReceiptService.GetGoodsReceipt(request.ID);
+        var document = await receiptService.GetGoodsReceipt(request.ID);
         if (document == null) {
             return NotFound();
         }
@@ -359,6 +357,6 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return Ok(await goodsReceiptService.GetGoodsReceiptValidateProcessLineDetails(request));
+        return Ok(await receiptReportService.GetGoodsReceiptValidateProcessLineDetails(request));
     }
 }
