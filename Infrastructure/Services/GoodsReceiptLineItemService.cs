@@ -39,7 +39,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             var specificDocuments = validationResult.SpecificDocuments!;
 
             // Step 2: Process source documents allocation
-            var sourceAllocationResult = await ProcessSourceDocumentsAllocation(request, warehouse, goodsReceipt, item, specificDocuments);
+            var sourceAllocationResult = await ProcessSourceDocumentsAllocation(request.ItemCode, request.Unit, warehouse, goodsReceipt, item, specificDocuments);
             if (sourceAllocationResult.ErrorResponse != null) {
                 logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);
                 return sourceAllocationResult.ErrorResponse;
@@ -52,7 +52,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             var line = await CreateGoodsReceiptLine(request, goodsReceipt, sourceDocuments, calculatedQuantity, userId);
 
             // Step 4: Update goods receipt status
-            await UpdateGoodsReceiptStatus(goodsReceipt);
+            UpdateGoodsReceiptStatus(goodsReceipt);
 
             // Step 5: Process target document allocation
             var targetAllocationResult = await ProcessTargetDocumentAllocation(request, warehouse, line, calculatedQuantity, userId);
@@ -62,8 +62,7 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             // Step 6: Build response
             var response = BuildAddItemResponse(line, item, targetAllocationResult.Fulfillment, targetAllocationResult.Showroom, calculatedQuantity);
 
-            logger.LogInformation("Successfully added item {ItemCode} to goods receipt {Id}. LineId: {LineId}, Quantity: {Quantity}",
-                itemCode, id, line.Id, calculatedQuantity);
+            logger.LogInformation("Successfully added item {ItemCode} to goods receipt {Id}. LineId: {LineId}, Quantity: {Quantity}", itemCode, id, line.Id, calculatedQuantity);
 
             await transaction.CommitAsync();
 
@@ -78,43 +77,95 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
     }
 
     public async Task<UpdateLineResponse> UpdateLineQuantity(SessionInfo session, UpdateGoodsReceiptLineQuantityRequest request) {
-        var id = request.Id;
-        var line = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == id && l.Id == request.LineId);
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try {
+            //Step 1: Load existing data
+            var id     = request.Id;
+            var lineId = request.LineId;
+            var line = await db.GoodsReceiptLines
+                .Include(l => l.GoodsReceipt)
+                .ThenInclude(v => v.Documents)
+                .FirstOrDefaultAsync(l => l.GoodsReceipt.Id == id && l.Id == lineId);
 
-        if (line == null) {
-            throw new KeyNotFoundException($"Line with ID {request.LineId} not found");
-        }
+            if (line == null) {
+                throw new KeyNotFoundException($"Line with ID {lineId} not found");
+            }
 
-        if (line.LineStatus == LineStatus.Closed) {
-            return new UpdateLineResponse {
-                ReturnValue  = UpdateLineReturnValue.LineStatus,
-                ErrorMessage = "Cannot update closed line"
-            };
-        }
+            if (line.LineStatus == LineStatus.Closed) {
+                return new UpdateLineResponse {
+                    ReturnValue  = UpdateLineReturnValue.LineStatus,
+                    ErrorMessage = "Cannot update closed line"
+                };
+            }
 
-        
-        decimal quantity = request.Quantity;
-        if (line.Unit != UnitType.Unit) {
-            var itemCheck = (await adapter.ItemCheckAsync(line.ItemCode, null)).First();
-            quantity *= itemCheck.NumInBuy;
-            if (line.Unit == UnitType.Pack) 
-                quantity *= itemCheck.PurPackUn;
+            string itemCode          = line.ItemCode;
+            var    goodsReceipt      = line.GoodsReceipt;
+            string warehouse         = goodsReceipt.WhsCode;
+            var    item              = (await adapter.ItemCheckAsync(line.ItemCode, null)).First();
+            var    unit              = line.Unit;
+            var    specificDocuments = goodsReceipt.Documents.Select(d => new ObjectKey(d.ObjType, d.DocEntry, d.DocNumber)).ToList();
+
+            // Step 2: Process source documents allocation
+            var sourceAllocationResult = await ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, (int)request.Quantity, lineId);
+            if (sourceAllocationResult.ErrorResponse != null) {
+                logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);
+                return new UpdateLineResponse {
+                    ErrorMessage = sourceAllocationResult.ErrorResponse.ErrorMessage,
+                };
+            }
+
+            var sourceDocuments    = sourceAllocationResult.SourceDocuments!;
+            int calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
+
+            // Step 3: Update line
+            line.Quantity        = calculatedQuantity;
+            line.UpdatedAt       = DateTime.UtcNow;
+            line.UpdatedByUserId = session.Guid;
+
+            // Step 4: Update source documents
+            var lineSources = await db.GoodsReceiptSources.Where(v => v.GoodsReceiptLineId == line.Id).ToArrayAsync();
+            foreach (var lineSource in lineSources) {
+                var check = sourceDocuments.FirstOrDefault(v => v.Type == lineSource.SourceType && v.Entry == lineSource.SourceEntry && v.LineNum == lineSource.SourceLine);
+                if (check != null) {
+                    lineSource.Quantity        = check.Quantity;
+                    lineSource.UpdatedAt       = DateTime.UtcNow;
+                    lineSource.UpdatedByUserId = session.Guid;
+                    check.Quantity             = 0;
+                    db.GoodsReceiptSources.Update(lineSource);
+                }
+                else {
+                    db.GoodsReceiptSources.Remove(lineSource);
+                }
+            }
+
+            foreach (var sourceDocument in sourceDocuments.Where(v => v.Quantity > 0)) {
+                var source = new GoodsReceiptSource {
+                    CreatedByUserId    = session.Guid,
+                    Quantity           = sourceDocument.Quantity,
+                    SourceEntry        = sourceDocument.Entry,
+                    SourceLine         = sourceDocument.LineNum,
+                    SourceType         = sourceDocument.Type,
+                    GoodsReceiptLineId = line.Id,
+                };
+                await db.GoodsReceiptSources.AddAsync(source);
+            }
+
+            await db.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
         }
-        
-        line.Quantity        = quantity;
-        line.UpdatedAt       = DateTime.UtcNow;
-        line.UpdatedByUserId = session.Guid;
-        
-        await db.SaveChangesAsync();
-        
-        return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
+        catch (Exception e) {
+            logger.LogError(e, "Failed to update line {LineId} for goods receipt {Id}", request.LineId, request.Id);
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
-    private async Task<(GoodsReceiptAddItemResponse? ErrorResponse, GoodsReceipt? GoodsReceipt, ItemCheckResponse? Item, List<ObjectKey>? SpecificDocuments)>
-        ValidateGoodsReceiptAndItem(GoodsReceiptAddItemRequest request, Guid userId, string warehouse) {
+    private record ValidateGoodsReceiptAndItemResponse(GoodsReceiptAddItemResponse? ErrorResponse, GoodsReceipt? GoodsReceipt, ItemCheckResponse? Item, List<ObjectKey>? SpecificDocuments);
 
+    private async Task<ValidateGoodsReceiptAndItemResponse> ValidateGoodsReceiptAndItem(GoodsReceiptAddItemRequest request, Guid userId, string warehouse) {
         var goodsReceipt = await db.GoodsReceipts
             .Include(gr => gr.Documents)
             .Include(gr => gr.Lines)
@@ -122,47 +173,49 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
 
         if (goodsReceipt == null) {
             logger.LogWarning("Goods receipt {Id} not found or already closed for user {UserId}", request.Id, userId);
-            return (new GoodsReceiptAddItemResponse {
+            return new ValidateGoodsReceiptAndItemResponse(new GoodsReceiptAddItemResponse {
                 ErrorMessage   = "Goods receipt not found or already closed",
                 ClosedDocument = true
             }, null, null, null);
         }
 
-        logger.LogDebug("Found goods receipt {Id} with status {Status}, {DocumentCount} documents, {LineCount} lines",
-            goodsReceipt.Id, goodsReceipt.Status, goodsReceipt.Documents.Count, goodsReceipt.Lines.Count);
 
         var specificDocuments = goodsReceipt.Documents.Select(d => new ObjectKey(d.ObjType, d.DocEntry, d.DocNumber)).ToList();
-        var validationResult = await adapter.ValidateGoodsReceiptAddItem(request.ItemCode, request.BarCode, specificDocuments, warehouse);
+        var validationResult  = await adapter.ValidateGoodsReceiptAddItem(request.ItemCode, request.BarCode, specificDocuments, warehouse);
         if (!validationResult.IsValid) {
             logger.LogWarning("External adapter validation failed for item {ItemCode}: {ErrorMessage}", request.ItemCode, validationResult.ErrorMessage);
-            return (new GoodsReceiptAddItemResponse {
+            return new ValidateGoodsReceiptAndItemResponse(new GoodsReceiptAddItemResponse {
                 ErrorMessage = validationResult.ErrorMessage,
             }, null, null, null);
         }
+
         var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
         var item  = items.FirstOrDefault();
         if (item == null) {
             logger.LogWarning("Item {ItemCode} with barcode {BarCode} not found", request.ItemCode, request.BarCode);
-            return (new GoodsReceiptAddItemResponse {
+            return new ValidateGoodsReceiptAndItemResponse(new GoodsReceiptAddItemResponse {
                 ErrorMessage = "Item not found"
             }, null, null, null);
         }
 
-        logger.LogDebug("Item validation successful: {ItemCode}, NumInBuy: {NumInBuy}, PurPackUn: {PurPackUn}",
-            item.ItemCode, item.NumInBuy, item.PurPackUn);
 
-        return (null, goodsReceipt, item, specificDocuments);
+        return new ValidateGoodsReceiptAndItemResponse(null, goodsReceipt, item, specificDocuments);
     }
 
-    private async Task<(GoodsReceiptAddItemResponse? ErrorResponse, List<GoodsReceiptAddItemSourceDocumentResponse>? SourceDocuments, int CalculatedQuantity)>
-        ProcessSourceDocumentsAllocation(GoodsReceiptAddItemRequest request, string          warehouse, GoodsReceipt goodsReceipt,
-            ItemCheckResponse                                       item,    List<ObjectKey> specificDocuments) {
-        logger.LogDebug("Processing source documents allocation for item {ItemCode} in goods receipt {GoodsReceiptId}",
-            request.ItemCode, goodsReceipt.Id);
+    private record ProcessSourceDocumentsAllocationResponse(GoodsReceiptAddItemResponse? ErrorResponse, List<GoodsReceiptAddItemSourceDocumentResponse>? SourceDocuments, int CalculatedQuantity);
 
+    private async Task<ProcessSourceDocumentsAllocationResponse> ProcessSourceDocumentsAllocation(
+        string            itemCode,
+        UnitType          unit,
+        string            warehouse,
+        GoodsReceipt      goodsReceipt,
+        ItemCheckResponse item,
+        List<ObjectKey>   specificDocuments,
+        int               quantity     = 1,
+        Guid?             updateLineId = null) {
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
 
-        var sourceDocuments = (await adapter.AddItemSourceDocuments(request, warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
+        var sourceDocuments = (await adapter.AddItemSourceDocuments(itemCode, unit, warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
 
         // Subtract already allocated quantities
         var goodsReceiptSources = await db.GoodsReceiptSources
@@ -173,28 +226,17 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             int selectedQuantity = (int)goodsReceiptSources
                 .Where(g => g.SourceType == sourceDocument.Type &&
                             g.SourceEntry == sourceDocument.Entry &&
-                            g.SourceLine == sourceDocument.LineNum)
+                            g.SourceLine == sourceDocument.LineNum
+                            && (updateLineId == null || g.GoodsReceiptLineId != updateLineId))
                 .Sum(g => g.Quantity);
 
-            int originalQuantity = sourceDocument.Quantity;
             sourceDocument.Quantity -= selectedQuantity;
-
-            if (selectedQuantity > 0) {
-                logger.LogDebug("Adjusted source document Type={Type}, Entry={Entry}, Line={Line}: {OriginalQuantity} - {AllocatedQuantity} = {RemainingQuantity}",
-                    sourceDocument.Type, sourceDocument.Entry, sourceDocument.LineNum, originalQuantity, selectedQuantity, sourceDocument.Quantity);
-            }
         }
 
-        int originalSourceCount = sourceDocuments.Count;
         sourceDocuments.RemoveAll(s => s.Quantity <= 0);
 
-        if (sourceDocuments.Count < originalSourceCount) {
-        }
-
         // Calculate required quantity
-        int quantity = 1 * (request.Unit != UnitType.Unit ? item.NumInBuy : 1) * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
-        logger.LogDebug("Calculated required quantity: {Quantity} (Unit: {Unit}, NumInBuy: {NumInBuy}, PurPackUn: {PurPackUn})",
-            quantity, request.Unit, item.NumInBuy, item.PurPackUn);
+        quantity = quantity * (unit != UnitType.Unit ? item.NumInBuy : 1) * (unit == UnitType.Pack ? item.PurPackUn : 1);
 
         // Allocate quantities using FIFO
         int unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
@@ -203,32 +245,22 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         await HandleOverReceiptScenario(sourceDocuments, unallocatedSourceQuantity);
 
         if (sourceDocuments.Count == 0) {
-            logger.LogWarning("No source documents available for item {ItemCode} after allocation", request.ItemCode);
-            return (new GoodsReceiptAddItemResponse {
-                ErrorMessage = $"No source documents found for item {request.ItemCode}"
+            logger.LogWarning("No source documents available for item {ItemCode} after allocation", itemCode);
+            return new ProcessSourceDocumentsAllocationResponse(new GoodsReceiptAddItemResponse {
+                ErrorMessage = $"No source documents found for item {itemCode}"
             }, null, 0);
         }
 
-        logger.LogDebug("Source allocation completed: {FinalSourceCount} source documents, total quantity: {TotalQuantity}",
-            sourceDocuments.Count, sourceDocuments.Sum(s => s.Quantity));
-
-        return (null, sourceDocuments, quantity);
+        return new ProcessSourceDocumentsAllocationResponse(null, sourceDocuments, quantity);
     }
 
-    private async Task<int> AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
-        logger.LogDebug("Starting FIFO allocation with {SourceCount} documents and required quantity {Quantity}",
-            sourceDocuments.Count, quantity);
-
+    private static Task<int> AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
         for (int i = 0; i < sourceDocuments.Count; i++) {
             var sourceDocument = sourceDocuments[i];
             int iQty           = sourceDocument.Quantity;
 
-            logger.LogDebug("Processing source document {Index}: Type={Type}, Entry={Entry}, Line={Line}, Quantity={Quantity}",
-                i, sourceDocument.Type, sourceDocument.Entry, sourceDocument.LineNum, iQty);
-
             if (iQty <= quantity) {
                 quantity -= iQty;
-
                 if (quantity == 0) {
                     int removedCount = sourceDocuments.Count - (i + 1);
                     sourceDocuments.RemoveRange(i + 1, removedCount);
@@ -236,57 +268,46 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
                 }
             }
             else {
-                int originalQuantity = sourceDocument.Quantity;
                 sourceDocument.Quantity = quantity;
                 int removedCount = sourceDocuments.Count - (i + 1);
                 sourceDocuments.RemoveRange(i + 1, removedCount);
-
-                logger.LogDebug("Partially allocated source document {Index}: {OriginalQuantity} -> {AllocatedQuantity}, removed {RemovedCount} excess documents",
-                    i, originalQuantity, quantity, removedCount);
 
                 quantity = 0;
                 break;
             }
         }
-        return quantity;
+
+        return Task.FromResult(quantity);
     }
 
     private async Task HandleOverReceiptScenario(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
-        if (quantity > 0) {
-            logger.LogInformation("Handling over-receipt scenario: {OverQuantity} units need allocation", quantity);
+        if (quantity <= 0) {
+            return;
+        }
 
-            if (sourceDocuments.Count > 0) {
-                var lastDocument     = sourceDocuments.Last();
-                int originalQuantity = lastDocument.Quantity;
-                lastDocument.Quantity += quantity;
+        logger.LogInformation("Handling over-receipt scenario: {OverQuantity} units need allocation", quantity);
 
-                logger.LogDebug("Added over-receipt quantity to last source document: Type={Type}, Entry={Entry}, Line={Line}, {OriginalQuantity} + {OverQuantity} = {NewQuantity}",
-                    lastDocument.Type, lastDocument.Entry, lastDocument.LineNum, originalQuantity, quantity, lastDocument.Quantity);
-            }
-            else {
-
-                var fallback = await db.GoodsReceiptSources
-                    .OrderBy(v => v.SourceType == 20 ? 'A' : v.SourceType == 22 ? 'B' : 'C')
-                    .ThenByDescending(v => v.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                if (fallback != null) {
-                    sourceDocuments.Add(new GoodsReceiptAddItemSourceDocumentResponse {
-                        Type     = fallback.SourceType,
-                        Entry    = fallback.SourceEntry,
-                        LineNum  = fallback.SourceLine,
-                        Quantity = quantity
-                    });
-
-                    logger.LogDebug("Created fallback source document for over-receipt: Type={Type}, Entry={Entry}, Line={Line}, Quantity={Quantity}",
-                        fallback.SourceType, fallback.SourceEntry, fallback.SourceLine, quantity);
-                }
-                else {
-                    logger.LogWarning("No fallback source document found for over-receipt scenario");
-                }
-            }
+        if (sourceDocuments.Count > 0) {
+            var lastDocument = sourceDocuments.Last();
+            lastDocument.Quantity += quantity;
         }
         else {
+            var fallback = await db.GoodsReceiptSources
+                .OrderBy(v => v.SourceType == 20 ? 'A' : v.SourceType == 22 ? 'B' : 'C')
+                .ThenByDescending(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (fallback != null) {
+                sourceDocuments.Add(new GoodsReceiptAddItemSourceDocumentResponse {
+                    Type     = fallback.SourceType,
+                    Entry    = fallback.SourceEntry,
+                    LineNum  = fallback.SourceLine,
+                    Quantity = quantity
+                });
+            }
+            else {
+                logger.LogWarning("No fallback source document found for over-receipt scenario");
+            }
         }
     }
 
@@ -294,10 +315,8 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         GoodsReceiptAddItemRequest                      request,
         GoodsReceipt                                    goodsReceipt,
         List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments,
-        int                                             quantity, Guid userId) {
-        logger.LogDebug("Creating goods receipt line for item {ItemCode} with quantity {Quantity} in goods receipt {GoodsReceiptId}",
-            request.ItemCode, quantity, goodsReceipt.Id);
-
+        int                                             quantity,
+        Guid                                            userId) {
         var line = new GoodsReceiptLine {
             GoodsReceiptId  = goodsReceipt.Id,
             ItemCode        = request.ItemCode,
@@ -322,27 +341,21 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
                 GoodsReceiptLineId = line.Id,
             };
             await db.GoodsReceiptSources.AddAsync(source);
-
-            logger.LogDebug("Added source allocation: Type={Type}, Entry={Entry}, Line={Line}, Quantity={Quantity}",
-                s.Type, s.Entry, s.LineNum, s.Quantity);
         }
+
         return line;
     }
 
-    private async Task UpdateGoodsReceiptStatus(GoodsReceipt goodsReceipt) {
-        if (goodsReceipt.Status != ObjectStatus.InProgress) {
-            var oldStatus = goodsReceipt.Status;
-            goodsReceipt.Status = ObjectStatus.InProgress;
-            db.GoodsReceipts
-                .Entry(goodsReceipt)
-                .Property(gr => gr.Status)
-                .IsModified = true;
+    private void UpdateGoodsReceiptStatus(GoodsReceipt goodsReceipt) {
+        if (goodsReceipt.Status == ObjectStatus.InProgress) {
+            return;
+        }
 
-            logger.LogDebug("Updated goods receipt {Id} status from {OldStatus} to {NewStatus}",
-                goodsReceipt.Id, oldStatus, ObjectStatus.InProgress);
-        }
-        else {
-        }
+        goodsReceipt.Status = ObjectStatus.InProgress;
+        db.GoodsReceipts
+            .Entry(goodsReceipt)
+            .Property(gr => gr.Status)
+            .IsModified = true;
     }
 
     private async Task<(int Fulfillment, int Showroom)> ProcessTargetDocumentAllocation(
@@ -351,7 +364,6 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
         GoodsReceiptLine           line,
         int                        quantity,
         Guid                       userId) {
-
         if (!options.GoodsReceiptTargetDocuments) {
             return (0, 0);
         }
@@ -404,17 +416,12 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
                 GoodsReceiptLineId = line.Id,
             });
 
-            logger.LogDebug("Allocated {Quantity} units to target document: Type={Type}, Entry={Entry}, Line={Line}",
-                insertQuantity, needingItem.Type, needingItem.Entry, needingItem.LineNum);
-
             switch (needingItem.Type) {
                 case 1250000001:
                     showroom += insertQuantity;
                     break;
                 case 13 or 17:
                     fulfillment += insertQuantity;
-                    break;
-                default:
                     break;
             }
 
@@ -423,18 +430,12 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             }
         }
 
-        logger.LogDebug("Target allocation completed: Fulfillment={Fulfillment}, Showroom={Showroom}, Remaining={Remaining}",
-            fulfillment, showroom, quantity);
-
         return (fulfillment, showroom);
     }
 
     private GoodsReceiptAddItemResponse BuildAddItemResponse(GoodsReceiptLine line,        ItemCheckResponse item,
         int                                                                   fulfillment, int               showroom, int quantity) {
         int warehouseQuantity = quantity - fulfillment - showroom;
-
-        logger.LogDebug("Building response: LineId={LineId}, Fulfillment={Fulfillment}, Showroom={Showroom}, Warehouse={Warehouse}",
-            line.Id, fulfillment > 0, showroom > 0, warehouseQuantity > 0);
 
         var response = new GoodsReceiptAddItemResponse {
             LineId      = line.Id,
@@ -447,9 +448,6 @@ public class GoodsReceiptLineItemService(SystemDbContext db, IExternalSystemAdap
             PurPackUn   = item.PurPackUn,
             PurPackMsr  = item.PurPackMsr
         };
-
-        logger.LogDebug("Response built successfully with allocation flags: Fulfillment={Fulfillment}, Showroom={Showroom}, Warehouse={Warehouse}",
-            response.Fulfillment, response.Showroom, response.Warehouse);
 
         return response;
     }

@@ -173,9 +173,9 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode,
-        List<ObjectKey>                                                                                                         specificDocuments) {
-        return await goodsReceiptRepository.AddItemSourceDocuments(request, warehouse, type, cardCode, specificDocuments);
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(string itemCode, UnitType unit, string warehouse, GoodsReceiptType type, string? cardCode,
+        List<ObjectKey>                                                                                     specificDocuments) {
+        return await goodsReceiptRepository.AddItemSourceDocuments(itemCode, unit, warehouse, type, cardCode, specificDocuments);
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {

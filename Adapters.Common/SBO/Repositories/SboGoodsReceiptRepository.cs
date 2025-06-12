@@ -91,18 +91,12 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(
-        GoodsReceiptAddItemRequest request,
-        string                     warehouse,
-        GoodsReceiptType           type,
-        string?                    cardCode,
-        List<ObjectKey>            specificDocuments) {
-        return await sourceDocumentRetrieval.GetAllSourceDocuments(
-            request.ItemCode,
-            warehouse,
-            request.Unit,
-            type,
-            cardCode,
-            specificDocuments);
+        string           itemCode, UnitType unit,
+        string           warehouse,
+        GoodsReceiptType type,
+        string?          cardCode,
+        List<ObjectKey>  specificDocuments) {
+        return await sourceDocumentRetrieval.GetAllSourceDocuments(itemCode, warehouse, unit, type, cardCode, specificDocuments);
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
@@ -248,15 +242,15 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                  """;
         await dbService.ExecuteReaderAsync(query, parameters, reader => {
             var value = control[(reader.GetInt32(0), reader.GetInt32(1))];
-            var item  = new GoodsReceiptValidateProcessDocumentsDataLineResponse {
+            var item = new GoodsReceiptValidateProcessDocumentsDataLineResponse {
                 ItemCode         = reader.GetString(3),
                 ItemName         = !reader.IsDBNull(4) ? reader.GetString(4) : reader.GetString(3),
                 BuyUnitMsr       = !reader.IsDBNull(6) ? reader.GetString(6) : string.Empty,
                 PurPackMsr       = !reader.IsDBNull(8) ? reader.GetString(8) : string.Empty,
-                LineNumber          = reader.GetInt32(2),
+                LineNumber       = reader.GetInt32(2),
                 NumInBuy         = Convert.ToInt32(reader[5]),
                 PurPackUn        = Convert.ToInt32(reader[7]),
-                DocumentQuantity     = (int)reader.GetDecimal(9),
+                DocumentQuantity = (int)reader.GetDecimal(9),
                 VisualLineNumber = reader.GetInt32(10)
             };
             value.Lines.Add(item);

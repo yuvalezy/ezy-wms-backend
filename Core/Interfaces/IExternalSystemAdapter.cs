@@ -46,10 +46,13 @@ public interface IExternalSystemAdapter {
     // Goods Receipt methods
     Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string   itemCode,  string           barcode,   List<ObjectKey> specificDocuments, string warehouse);
     Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int              number,    string           warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
-    Task                               ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type,      List<DocumentParameter>                                    documents);
+    Task                               ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type,      List<DocumentParameter> documents);
 
-    Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(GoodsReceiptAddItemRequest request, string warehouse, GoodsReceiptType type, string? cardCode,
-        List<ObjectKey>                                                                                            specificDocuments);
+    Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(string itemCode, UnitType unit,
+        string                                                                                 warehouse,
+        GoodsReceiptType                                                                       type,
+        string?                                                                                cardCode,
+        List<ObjectKey>                                                                        specificDocuments);
 
     Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>>       AddItemTargetDocuments(string                        warehouse, string itemCode);
     Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs);

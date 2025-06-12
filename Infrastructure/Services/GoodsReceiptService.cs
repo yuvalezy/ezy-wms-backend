@@ -264,7 +264,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (goodsReceipt == null)
             return false;
-
+        
 
         foreach (var line in goodsReceipt.Lines) {
             if (request.RemoveRows.Contains(line.Id)) {
