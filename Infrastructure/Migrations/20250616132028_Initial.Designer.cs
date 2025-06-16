@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250605194451_Initial")]
+    [Migration("20250616132028_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.5")
+                .HasAnnotation("ProductVersion", "9.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -356,6 +356,9 @@ namespace Infrastructure.Migrations
                     b.Property<int>("SourceLine")
                         .HasColumnType("int");
 
+                    b.Property<int>("SourceNumber")
+                        .HasColumnType("int");
+
                     b.Property<int>("SourceType")
                         .HasColumnType("int");
 
@@ -425,6 +428,11 @@ namespace Infrastructure.Migrations
 
                     b.Property<Guid?>("UpdatedByUserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WhsCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
 
                     b.HasKey("Id");
 

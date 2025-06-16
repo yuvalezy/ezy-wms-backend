@@ -128,6 +128,9 @@ public class GoodsReceiptSource : BaseEntity {
     public int SourceEntry { get; set; }
 
     [Required]
+    public int SourceNumber { get; set; }
+
+    [Required]
     public int SourceLine { get; set; }
 
     [Required]

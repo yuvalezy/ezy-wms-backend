@@ -442,6 +442,7 @@ namespace Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Quantity = table.Column<decimal>(type: "decimal(16,6)", precision: 16, scale: 6, nullable: false),
                     SourceEntry = table.Column<int>(type: "int", nullable: false),
+                    SourceNumber = table.Column<int>(type: "int", nullable: false),
                     SourceLine = table.Column<int>(type: "int", nullable: false),
                     SourceType = table.Column<int>(type: "int", nullable: false),
                     GoodsReceiptLineId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -481,6 +482,7 @@ namespace Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    WhsCode = table.Column<string>(type: "nvarchar(8)", maxLength: 8, nullable: false),
                     TargetEntry = table.Column<int>(type: "int", nullable: false),
                     TargetLine = table.Column<int>(type: "int", nullable: false),
                     TargetQuantity = table.Column<decimal>(type: "decimal(16,6)", precision: 16, scale: 6, nullable: false),

@@ -15,15 +15,15 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
         var now = DateTime.UtcNow;
         var goodsReceipt = new GoodsReceipt {
+            WhsCode         = session.Warehouse,
             Type            = request.Type,
             CardCode        = request.Type == GoodsReceiptType.All ? request.Vendor : null,
             Name            = request.Name,
             Date            = now,
             Status          = ObjectStatus.Open,
-            WhsCode         = session.Warehouse,
             CreatedByUserId = session.Guid,
             CreatedByUser   = db.Users.First(u => u.Id == session.Guid),
-            Documents = request.Documents.Select(d => new GoodsReceiptDocument {
+            Documents       = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
                 DocEntry        = d.DocumentEntry,
                 DocNumber       = d.DocumentNumber,
@@ -77,6 +77,19 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (request.Confirm.HasValue) {
             query = request.Confirm.Value ? query.Where(gr => gr.Type == GoodsReceiptType.SpecificReceipts) : query.Where(gr => gr.Type != GoodsReceiptType.SpecificReceipts);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.GoodsReceipt) && int.TryParse(request.GoodsReceipt, out int goodsReceipt)) {
+            query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == goodsReceipt && d.ObjType == 20));
+        }
+        if (!string.IsNullOrWhiteSpace(request.PurchaseInvoice) && int.TryParse(request.PurchaseInvoice, out int purchaseInvoice)) {
+            query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == purchaseInvoice && d.ObjType == 18));
+        }
+        if (!string.IsNullOrWhiteSpace(request.PurchaseOrder) && int.TryParse(request.PurchaseOrder, out int purchaseOrder)) {
+            query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == purchaseOrder && d.ObjType == 22));
+        }
+        if (!string.IsNullOrWhiteSpace(request.ReservedInvoice) && int.TryParse(request.ReservedInvoice, out int reservedInvoice)) {
+            query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == reservedInvoice && d.ObjType == 18));
         }
 
         var results = await query.AsNoTracking().OrderByDescending(gr => gr.CreatedAt).ToListAsync();
