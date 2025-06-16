@@ -11,13 +11,13 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace Infrastructure.Services;
 
 public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService) : IGoodsReceiptReportService {
-    public async Task<IEnumerable<GoodsReceiptReportAllResponse>> GetGoodsReceiptAllReport(Guid id, string warehouse) {
+    public async Task<GoodsReceiptReportAllResponse> GetGoodsReceiptAllReport(Guid id, string warehouse) {
         var response = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
             .Include(l => l.Targets)
-            .Where(l => l.GoodsReceiptId == id && l.LineStatus != LineStatus.Closed)
+            .Where(l => l.GoodsReceiptId == id)
             .GroupBy(l => new { l.ItemCode })
-            .Select(g => new GoodsReceiptReportAllResponse {
+            .Select(g => new GoodsReceiptReportAllResponseLine {
                 ItemCode = g.Key.ItemCode,
                 Quantity = g.Sum(a => a.Quantity),
                 Delivery = g.SelectMany(a => a.Targets
@@ -44,7 +44,12 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
             r.PurPackMsr = itemStockData.PurPackMsr;
         });
 
-        return response;
+        var status = (await db.GoodsReceipts.FirstAsync(v => v.Id == id)).Status;
+
+        return new GoodsReceiptReportAllResponse {
+            Status = status,
+            Lines = response,
+        };
     }
 
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
