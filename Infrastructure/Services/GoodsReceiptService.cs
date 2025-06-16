@@ -16,7 +16,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         var now = DateTime.UtcNow;
         var goodsReceipt = new GoodsReceipt {
             Type            = request.Type,
-            CardCode        = request.Type == GoodsReceiptType.All ? request.CardCode : null,
+            CardCode        = request.Type == GoodsReceiptType.All ? request.Vendor : null,
             Name            = request.Name,
             Date            = now,
             Status          = ObjectStatus.Open,
@@ -34,14 +34,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         await db.GoodsReceipts.AddAsync(goodsReceipt);
         await db.SaveChangesAsync();
 
-        return MapToResponse(goodsReceipt);
+        return await MapToResponse(goodsReceipt);
     }
 
     private async Task ValidateCreateGoodsReceiptRequest(string warehouse, CreateGoodsReceiptRequest request) {
-        if (!string.IsNullOrWhiteSpace(request.CardCode) && request.Type == GoodsReceiptType.All) {
-            var vendor = await adapter.GetVendorAsync(request.CardCode);
+        if (!string.IsNullOrWhiteSpace(request.Vendor) && request.Type == GoodsReceiptType.All) {
+            var vendor = await adapter.GetVendorAsync(request.Vendor);
             if (vendor == null) {
-                throw new ArgumentException($"Vendor with card code {request.CardCode} not found");
+                throw new ArgumentException($"Vendor with card code {request.Vendor} not found");
             }
         }
 
@@ -64,9 +64,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (request.Date.HasValue)
             query = query.Where(gr => gr.Date.Date == request.Date.Value.Date);
+        if (request.DateFrom.HasValue)
+            query = query.Where(gr => gr.Date.Date >= request.DateFrom.Value.Date);
+        if (request.DateTo.HasValue)
+            query = query.Where(gr => gr.Date.Date <= request.DateTo.Value.Date);
 
-        if (!string.IsNullOrEmpty(request.CardCode))
-            query = query.Where(gr => gr.CardCode == request.CardCode);
+        if (!string.IsNullOrEmpty(request.Vendor))
+            query = query.Where(gr => gr.CardCode == request.Vendor);
 
         if (request.Statuses?.Length > 0)
             query = query.Where(gr => request.Statuses.Contains(gr.Status));
@@ -76,7 +80,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         }
 
         var results = await query.AsNoTracking().OrderByDescending(gr => gr.CreatedAt).ToListAsync();
-        return results.Select(MapToResponse);
+        return await Task.WhenAll(results.Select(MapToResponse));
     }
 
     public async Task<GoodsReceiptResponse?> GetGoodsReceipt(Guid id) {
@@ -88,7 +92,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             .AsNoTracking()
             .FirstOrDefaultAsync(gr => gr.Id == id);
 
-        return goodsReceipt == null ? null : MapToResponse(goodsReceipt);
+        return goodsReceipt == null ? null : await MapToResponse(goodsReceipt);
     }
 
     public async Task<bool> CancelGoodsReceipt(Guid id, SessionInfo session) {
@@ -206,12 +210,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     }
 
     // Helper methods
-    private GoodsReceiptResponse MapToResponse(GoodsReceipt goodsReceipt) {
+    private async Task<GoodsReceiptResponse> MapToResponse(GoodsReceipt goodsReceipt) {
+        var vendor = !string.IsNullOrWhiteSpace(goodsReceipt.CardCode) ? await adapter.GetVendorAsync(goodsReceipt.CardCode) : null;
         return new GoodsReceiptResponse {
             ID                = goodsReceipt.Id,
             Number            = goodsReceipt.Number,
             Name              = goodsReceipt.Name,
-            CardCode          = goodsReceipt.CardCode,
+            Vendor            = vendor,
             Date              = goodsReceipt.Date,
             Status            = goodsReceipt.Status,
             Type              = goodsReceipt.Type,
@@ -268,5 +273,4 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         return data;
     }
-
 }

@@ -11,7 +11,7 @@ public class CreateGoodsReceiptRequest : IValidatableObject {
     public GoodsReceiptType Type { get; set; } = GoodsReceiptType.All;
 
     [StringLength(15)]
-    public string? CardCode { get; set; }
+    public string? Vendor { get; set; }
 
 
     public List<DocumentParameter> Documents { get; set; } = [];
