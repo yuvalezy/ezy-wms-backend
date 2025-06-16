@@ -156,6 +156,7 @@ public class GoodsReceiptLineItemProcessService(
                 sourceDocuments.Add(new GoodsReceiptAddItemSourceDocumentResponse {
                     Type     = fallback.SourceType,
                     Entry    = fallback.SourceEntry,
+                    Number   = fallback.SourceNumber,
                     LineNum  = fallback.SourceLine,
                     Quantity = quantity
                 });
@@ -191,6 +192,7 @@ public class GoodsReceiptLineItemProcessService(
                 CreatedByUserId    = userId,
                 Quantity           = s.Quantity,
                 SourceEntry        = s.Entry,
+                SourceNumber       = s.Number,
                 SourceLine         = s.LineNum,
                 SourceType         = s.Type,
                 GoodsReceiptLineId = line.Id,

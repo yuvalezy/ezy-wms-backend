@@ -183,6 +183,7 @@ public class GoodsReceiptLineService(SystemDbContext db, IExternalSystemAdapter 
                     CreatedByUserId    = session.Guid,
                     Quantity           = sourceDocument.Quantity,
                     SourceEntry        = sourceDocument.Entry,
+                    SourceNumber       = sourceDocument.Number,
                     SourceLine         = sourceDocument.LineNum,
                     SourceType         = sourceDocument.Type,
                     GoodsReceiptLineId = line.Id,

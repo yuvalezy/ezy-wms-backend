@@ -29,7 +29,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         var sb = new StringBuilder();
         sb.Append("""
-                  select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+                  select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty", T1."DocNum"
                   from POR1 T0
                   inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
                   """);
@@ -64,7 +64,8 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                 Type     = 22,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
-                Quantity = (int)reader.GetDecimal(3)
+                Quantity = (int)reader.GetDecimal(3),
+                Number   = reader.GetInt32(4),
             });
     }
 
@@ -87,7 +88,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         var sb = new StringBuilder();
         sb.Append("""
-                  select T0."ObjType", T0."DocEntry", T0."LineNum", T0."InvQty"
+                  select T0."ObjType", T0."DocEntry", T0."LineNum", T0."InvQty", T1."DocNum"
                   from PDN1 T0
                   inner join OPDN T1 on T1."DocEntry" = T0."DocEntry" and T1."CANCELED" not in ('C', 'Y')
                   """);
@@ -116,7 +117,8 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                 Type     = 20,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
-                Quantity = (int)reader.GetDecimal(3)
+                Quantity = (int)reader.GetDecimal(3),
+                Number   = reader.GetInt32(4),
             });
     }
 
@@ -128,7 +130,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         string?          cardCode,
         List<ObjectKey>  specificDocuments) {
         int[] entries = specificDocuments.Where(v => v.Type == 18).Select(v => v.Entry).ToArray();
-        
+
         if (type != GoodsReceiptType.All && entries.Length == 0) {
             return [];
         }
@@ -143,7 +145,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         var sb = new StringBuilder();
         sb.Append("""
                   select T0."ObjType", T0."DocEntry", T0."LineNum", 
-                         Case When @Type <> 2 Then T0."OpenInvQty" Else T0."InvQty" end
+                         Case When @Type <> 2 Then T0."OpenInvQty" Else T0."InvQty" end, T1."DocNum"
                   from PCH1 T0
                   inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and (
                            @Type <> 2 and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and T0."LineStatus" = 'O'
@@ -181,7 +183,8 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                 Type     = 18,
                 Entry    = reader.GetInt32(1),
                 LineNum  = reader.GetInt32(2),
-                Quantity = (int)reader.GetDecimal(3)
+                Quantity = (int)reader.GetDecimal(3),
+                Number   = reader.GetInt32(4),
             });
     }
 
