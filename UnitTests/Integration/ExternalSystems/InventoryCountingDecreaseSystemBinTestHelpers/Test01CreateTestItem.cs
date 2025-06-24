@@ -9,6 +9,7 @@ public class Test01CreateTestItem(SboCompany sboCompany, string testItem, string
         // Create item in SBO using service layer
         var itemData = new {
             ItemCode = testItem,
+            BarCode  = testItem,
             ItemName = $"Test Item {testItem}",
             ItemType = "itItems",
 

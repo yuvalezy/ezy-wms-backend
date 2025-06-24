@@ -190,7 +190,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
             var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            string errorMessage  = errorResponse?.Error?.Message?.Value ?? "Unknown error";
+            string errorMessage  = errorResponse?.Error?.Message ?? errorResponse?.Error?.Details?[0]?.Message ?? "Unknown error";
 
             logger.LogWarning("{Method} failed for {Endpoint}: {ErrorMessage}", methodName, endpoint, errorMessage);
             return (false, errorMessage);
@@ -199,7 +199,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         logger.LogError("{Method} failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", methodName, endpoint, response.StatusCode, response.ReasonPhrase);
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
     }
-
     private class LoginResponse {
         public string SessionId      { get; set; } = string.Empty;
         public string Version        { get; set; } = string.Empty;
@@ -211,12 +210,13 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     }
 
     private class ServiceLayerError {
-        public int                  Code    { get; set; }
-        public ServiceLayerMessage? Message { get; set; }
+        public string Code { get; set; }
+        public string Message { get; set; }
+        public List<ServiceLayerErrorDetail> Details { get; set; } = new();
     }
 
-    private class ServiceLayerMessage {
-        public string Lang  { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
+    private class ServiceLayerErrorDetail {
+        public string Code { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
     }
 }

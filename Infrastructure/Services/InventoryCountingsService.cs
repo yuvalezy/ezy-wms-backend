@@ -436,7 +436,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                         systemQuantity = (int)binContent.OnHand;
                     }
 
-                    binCode = group.Key.BinEntry.Value.ToString(); // We could enhance this to get actual bin code
+                    binCode = group.Key.BinEntry.Value.ToString(); // TODO: We could enhance this to get actual bin code
                 }
                 else {
                     // Get stock from warehouse if no specific bin
@@ -463,9 +463,9 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 SystemQuantity  = systemQuantity,
                 CountedQuantity = totalCountedQuantity,
                 Variance        = variance,
-                SystemValue     = 0, // Would need price information from SAP B1
-                CountedValue    = 0, // Would need price information from SAP B1
-                VarianceValue   = 0  // Would need price information from SAP B1
+                SystemValue     = 0,
+                CountedValue    = 0,
+                VarianceValue   = 0 
             });
         }
 

@@ -15,7 +15,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CountingController(IInventoryCountingsService inventoryCountingsService, ICancellationReasonService cancellationReasonService) : ControllerBase {
+public class CountingController(IInventoryCountingsService inventoryCountingsService) : ControllerBase {
     
     [HttpPost("create")]
     [RequireRolePermission(RoleType.CountingSupervisor)]

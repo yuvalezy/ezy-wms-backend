@@ -2,6 +2,7 @@
 using Core.DTOs.Items;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,49 +10,25 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class Test03CreateInventoryCounting(string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
-    private          Guid                                              id              = Guid.Empty;
-    private readonly int                                               testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
-    private          List<(int binEntry, int quantity, UnitType unit)> binEntries      = [];
+public class Test04AddItems(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
+    private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
 
-    public async Task<Guid> Execute() {
-        var response = await CreateCounting();
-        await ValidateGetCountings();
+    private readonly List<(int binEntry, string binCode, int quantity, UnitType unit)> binEntries = [];
+
+    private Guid lastLineId = Guid.Empty;
+    private int  lastBinEntry;
+
+    public async Task Execute() {
         await LoadBins();
         await AddItem();
-        return response.Id;
-    }
-
-
-    private async Task<InventoryCountingResponse> CreateCounting() {
-        using var scope                     = factory.Services.CreateScope();
-        var       inventoryCountingsService = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
-        var request = new CreateInventoryCountingRequest {
-            Name = $"Test {testItem}"
-        };
-        var response = await inventoryCountingsService.CreateCounting(request, TestConstants.SessionInfo);
-        Assert.That(response, Is.Not.Null);
-        Assert.That(!response.Error);
-        Assert.That(response.Status == ObjectStatus.Open);
-        id = response.Id;
-        return response;
-    }
-
-    private async Task ValidateGetCountings() {
-        using var scope                     = factory.Services.CreateScope();
-        var       inventoryCountingsService = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
-        var response = await inventoryCountingsService.GetCountings(new InventoryCountingsRequest {
-            Statuses = [
-                ObjectStatus.Open, ObjectStatus.InProgress
-            ]
-        }, TestConstants.SessionInfo.Warehouse);
-        Assert.That(response, Is.Not.Null);
-        Assert.That(response.Any(v => v.Id == id));
+        await ValidateCountingContent();
+        await UpdateItem();
+        await ValidateCountingContent(true);
     }
 
     private async Task LoadBins() {
         string connectionString = settings.ConnectionStrings.ExternalAdapterConnection;
-        string query            = $"select top 4 \"BinCode\" from OBIN where \"WhsCode\" = '{testWarehouse}' and \"AbsEntry\" <> {testBinLocation} order by NEWID()";
+        string query            = $"select top 4 \"AbsEntry\", \"BinCode\" from OBIN where \"WhsCode\" = '{testWarehouse}' and \"AbsEntry\" <> {testBinLocation} order by NEWID()";
         try {
             await using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync();
@@ -61,23 +38,20 @@ public class Test03CreateInventoryCounting(string testItem, string testWarehouse
             await using var dr = await command.ExecuteReaderAsync();
 
             // First bin 1 box
-            int binLocation = dr.GetInt32(0);
-            binEntries.Add((binLocation, 1, UnitType.Pack));
+            await dr.ReadAsync();
+            binEntries.Add((dr.GetInt32(0), dr.GetString(1), 1, UnitType.Pack));
 
             // Second bin 2 dozens
             await dr.ReadAsync();
-            binLocation = dr.GetInt32(0);
-            binEntries.Add((binLocation, 2, UnitType.Dozen));
+            binEntries.Add((dr.GetInt32(0), dr.GetString(1), 2, UnitType.Dozen));
 
             // Third bin 6 units
             await dr.ReadAsync();
-            binLocation = dr.GetInt32(0);
-            binEntries.Add((binLocation, 6, UnitType.Unit));
+            binEntries.Add((dr.GetInt32(0), dr.GetString(1), 6, UnitType.Unit));
 
             // Fourth bin 2 boxes
             await dr.ReadAsync();
-            binLocation = dr.GetInt32(0);
-            binEntries.Add((binLocation, 2, UnitType.Pack));
+            binEntries.Add((dr.GetInt32(0), dr.GetString(1), 2, UnitType.Pack));
 
             await TestContext.Out.WriteLineAsync($"Target bin locations loaded");
         }
@@ -88,14 +62,68 @@ public class Test03CreateInventoryCounting(string testItem, string testWarehouse
     }
 
     private async Task AddItem() {
-        using var scope                     = factory.Services.CreateScope();
-        var       inventoryCountingsService = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
-        await inventoryCountingsService.AddItem(TestConstants.SessionInfo, new InventoryCountingAddItemRequest() {
-            BarCode  = testItem,
-            ID       = id,
-            ItemCode = testItem,
+        foreach (var entry in binEntries) {
+            using var scope   = factory.Services.CreateScope();
+            var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+            var response = await service.AddItem(TestConstants.SessionInfo, new InventoryCountingAddItemRequest() {
+                BarCode  = testItem,
+                BinEntry = entry.binEntry,
+                ID       = id,
+                ItemCode = testItem,
+                Quantity = entry.quantity,
+                Unit     = entry.unit
+            });
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.LineId, Is.Not.Null);
+            Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok));
+            lastLineId = response.LineId.Value;
+            lastBinEntry = entry.binEntry;
+        }
+    }
+
+    private async Task ValidateCountingContent(bool afterUpdate = false) {
+        using var scope   = factory.Services.CreateScope();
+        var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+        var request = new InventoryCountingContentRequest {
+            ID = id,
+        };
+        const int systemQuantity   = 960;
+        var       responses        = await service.GetCountingContent(request);
+        foreach (var row in responses) {
+            var entry         = binEntries.First(b => b.binEntry == row.BinEntry);
+            // Assert.That(row.BinCode, Is.EqualTo(entry.binCode)); TODO: Bin Code is not loaded yet
+            Assert.That(row.ItemCode, Is.EqualTo(testItem));
+            Assert.That(row.ItemName, Is.EqualTo($"Test Item {testItem}"));
+            Assert.That(row.BuyUnitMsr, Is.EqualTo("Doz"));
+            Assert.That(row.NumInBuy, Is.EqualTo(12));
+            Assert.That(row.PurPackMsr, Is.EqualTo("Box"));
+            Assert.That(row.PurPackUn, Is.EqualTo(4));
+            
+            int entryQuantity = entry.quantity;
+            if (afterUpdate && entry.binEntry == lastBinEntry)
+                entryQuantity = 1;
+            if (entry.unit != UnitType.Unit)
+                entryQuantity *= row.NumInBuy;
+            if (entry.unit == UnitType.Pack)
+                entryQuantity *= row.PurPackUn;
+            
+            Assert.That(row.CountedQuantity, Is.EqualTo(entryQuantity));
+            Assert.That(row.SystemQuantity, Is.Zero);
+            Assert.That(row.Variance, Is.EqualTo(entryQuantity));
+        }
+    }
+
+    private async Task UpdateItem() {
+        using var scope   = factory.Services.CreateScope();
+        var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+        var request = new InventoryCountingUpdateLineRequest {
+            Id       = id,
+            LineId   = lastLineId,
             Quantity = 1,
-            Unit     = UnitType.Pack
-        });
+            Comment  = "Changed Quantity",
+        };
+        var response = await service.UpdateLine(TestConstants.SessionInfo, request);
+        Assert.That(response, Is.Not.Null);
+        Assert.That(response.ReturnValue, Is.EqualTo(UpdateLineReturnValue.Ok));
     }
 }
