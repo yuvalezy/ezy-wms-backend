@@ -324,8 +324,8 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         var countingData = new Dictionary<string, InventoryCountingCreationDataResponse>();
 
         foreach (var itemGroup in lines) {
-            var totalCountedQuantity = 0;
-            var systemQuantity = 0;
+            int totalCountedQuantity = 0;
+            int systemQuantity = 0;
             var countedBins = new List<InventoryCountingCreationBinResponse>();
 
             // Group by bins
@@ -335,8 +335,8 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 .ToList();
 
             foreach (var binGroup in binGroups) {
-                var binCountedQuantity = binGroup.Sum(l => l.Quantity);
-                var binSystemQuantity = 0;
+                int binCountedQuantity = binGroup.Sum(l => l.Quantity);
+                int binSystemQuantity = 0;
 
                 try {
                     // Get system quantity for this bin
@@ -361,13 +361,13 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             // Handle lines without bins
             var noBinLines = itemGroup.Lines.Where(l => !l.BinEntry.HasValue).ToList();
             if (noBinLines.Any()) {
-                var noBinCountedQuantity = noBinLines.Sum(l => l.Quantity);
+                int noBinCountedQuantity = noBinLines.Sum(l => l.Quantity);
                 totalCountedQuantity += noBinCountedQuantity;
 
                 try {
                     // Get warehouse stock for items without bins
                     var stocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
-                    var warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
+                    int warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
                     // Subtract quantities already counted in bins
                     systemQuantity += Math.Max(0, warehouseSystemQuantity - systemQuantity);
                 }
@@ -376,7 +376,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 }
             }
 
-            var variance = totalCountedQuantity - systemQuantity;
+            int variance = totalCountedQuantity - systemQuantity;
 
             var data = new InventoryCountingCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,

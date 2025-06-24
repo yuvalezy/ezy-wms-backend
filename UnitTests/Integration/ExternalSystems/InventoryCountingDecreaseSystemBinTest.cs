@@ -64,7 +64,7 @@ namespace UnitTests.Integration.ExternalSystems {
                 throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
             }
 
-            var helper = new Test02CreateGoodsReceipt(sboCompany, testItem, TestWarehouse, settings);
+            var helper = new Test02CreateGoodsReceipt(sboCompany, testItem, TestWarehouse, settings, factory);
             await helper.Execute();
         }
 
@@ -101,7 +101,7 @@ namespace UnitTests.Integration.ExternalSystems {
         [Test]
         [Order(6)]
         public async Task Test_06_VerifyInventoryCountingDocumentInSapB1_ShouldExistWithCorrectData() {
-            var helper = new Test06VerifyInventoryCountingDocumentInSapB1(countingEntry, sboCompany, testItem, TestWarehouse, binEntries);
+            var helper = new Test06VerifyInventoryCountingDocumentInSapB1(countingEntry, sboCompany, testItem, TestWarehouse, binEntries, settings);
             await helper.Execute();
         }
 

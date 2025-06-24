@@ -1,11 +1,14 @@
 ﻿using System.Text.Json;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
+using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class Test02CreateGoodsReceipt(SboCompany sboCompany, string testItem, string testWarehouse, ISettings settings) {
+public class Test02CreateGoodsReceipt(SboCompany sboCompany, string testItem, string testWarehouse, ISettings settings, WebApplicationFactory<Program> factory) {
     private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
 
     public async Task Execute() {
@@ -32,9 +35,9 @@ public class Test02CreateGoodsReceipt(SboCompany sboCompany, string testItem, st
             DocumentLines = new[] {
                 new {
                     ItemCode      = testItem,
-                    Quantity      = 80, 
+                    Quantity      = 80,
                     WarehouseCode = testWarehouse,
-                    UnitPrice     = 10.0, 
+                    UnitPrice     = 10.0,
                     UseBaseUnits  = "tNO",
                     BinAllocations = new[] {
                         new {
@@ -84,18 +87,18 @@ public class Test02CreateGoodsReceipt(SboCompany sboCompany, string testItem, st
     }
 
     private async Task ValidateBinStock() {
-        string connectionString = settings.ConnectionStrings.ExternalAdapterConnection;
-        string query            = $"select \"OnHandQty\" from OIBQ where \"BinAbs\" = {testBinLocation} and \"ItemCode\" = '{testItem}'";
+        using var scope            = factory.Services.CreateScope();
+        var       service          = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
 
         try {
-            await using var connection = new SqlConnection(connectionString);
-            await connection.OpenAsync();
-
-            await using var command     = new SqlCommand(query, connection);
-            decimal         binQuantity = (decimal)(await command.ExecuteScalarAsync() ?? -1);
-            Assert.That(binQuantity, Is.GreaterThan(0), $"Bin location {testBinLocation} should have stock");
-            Assert.That(binQuantity, Is.EqualTo(960m), $"Bin location {testBinLocation} should have 960 units (20 boxes * 4 units * 12 dozens)");
-            await TestContext.Out.WriteLineAsync($"Bin location {testBinLocation} stock: {binQuantity}");
+            var result = (await service.ItemStockAsync(testItem, testWarehouse)).ToArray();
+            Assert.That(result, Is.Not.Null, "Item stock information should be retrievable");
+            Assert.That(result.Length, Is.EqualTo(1), "Item stock information should contain only one record");
+            var row = result[0];
+            Assert.That(row.Quantity, Is.GreaterThan(0), $"Bin location {testBinLocation} should have stock");
+            Assert.That(row.Quantity, Is.EqualTo(960m), $"Bin location {testBinLocation} should have 960 units (20 boxes * 4 units * 12 dozens)");
+            Assert.That(row.BinEntry, Is.EqualTo(testBinLocation), $"Bin location {testBinLocation} should have correct bin entry");
+            await TestContext.Out.WriteLineAsync($"Bin location {testBinLocation} stock: {row.Quantity}");
         }
         catch (Exception ex) {
             await TestContext.Out.WriteLineAsync($"SQL query failed: {ex.Message}");

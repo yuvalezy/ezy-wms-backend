@@ -105,7 +105,7 @@ public class SboItemRepository(SboDatabaseService dbService) {
 
     public async Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode) {
         const string query = """
-                             select T1."BinCode", T0."OnHandQty"
+                             select T1."BinCode", T0."OnHandQty", T1."AbsEntry"
                              from OIBQ T0
                                       inner join OBIN T1 on T1."AbsEntry" = T0."BinAbs"
                              where T0."ItemCode" = @ItemCode
@@ -120,7 +120,8 @@ public class SboItemRepository(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(query, parameters, reader => new ItemBinStockResponse {
             BinCode  = reader.GetString(0),
-            Quantity = Convert.ToInt32(reader[1])
+            Quantity = Convert.ToInt32(reader[1]),
+            BinEntry  = reader.GetInt32(2),
         });
     }
 
