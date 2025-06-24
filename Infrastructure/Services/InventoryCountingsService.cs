@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapter adapter) : IInventoryCountingsService {
+public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings) : IInventoryCountingsService {
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
             Name            = request.Name,
@@ -322,6 +322,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             .ToListAsync();
 
         var countingData = new Dictionary<string, InventoryCountingCreationDataResponse>();
+        int? initialCountingBinEntry = settings.Filters.InitialCountingBinEntry;
 
         foreach (var itemGroup in lines) {
             int totalCountedQuantity = 0;
@@ -373,6 +374,39 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 }
                 catch {
                     // If external adapter fails, continue with existing system quantity
+                }
+            }
+
+            // Handle Initial Counting Bin Entry logic
+            if (initialCountingBinEntry.HasValue) {
+                // Check if we already have a counting entry for the system bin
+                bool hasSystemBinEntry = binGroups.Any(bg => bg.Key == initialCountingBinEntry.Value);
+                
+                if (!hasSystemBinEntry) {
+                    // Get the current stock in the system bin for this item
+                    int systemBinStock = 0;
+                    try {
+                        var systemBinStocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                        var systemBinStockResponse = systemBinStocks.FirstOrDefault(s => s.BinEntry == initialCountingBinEntry.Value);
+                        systemBinStock = systemBinStockResponse?.Quantity ?? 0;
+                    }
+                    catch {
+                        // If external adapter fails, continue with zero system bin stock
+                    }
+
+                    // Calculate the remaining quantity in system bin after accounting for items counted into other bins
+                    int systemBinCountedQuantity = Math.Max(0, systemBinStock - totalCountedQuantity);
+
+                    // Add system bin entry to the counted bins
+                    countedBins.Add(new InventoryCountingCreationBinResponse {
+                        BinEntry = initialCountingBinEntry.Value,
+                        CountedQuantity = systemBinCountedQuantity,
+                        SystemQuantity = systemBinStock
+                    });
+
+                    // Update totals to include system bin
+                    totalCountedQuantity += systemBinCountedQuantity;
+                    systemQuantity += systemBinStock;
                 }
             }
 
