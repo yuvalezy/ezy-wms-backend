@@ -1,9 +1,7 @@
 ﻿using System.Text.Json;
-using System.Data.SqlClient;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.Interfaces;
 using Microsoft.Data.SqlClient;
-using NUnit.Framework;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCountingDecreaseSystemBinTestHelpers;
 

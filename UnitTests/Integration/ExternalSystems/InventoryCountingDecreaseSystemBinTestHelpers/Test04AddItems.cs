@@ -1,8 +1,6 @@
 ﻿using Core.DTOs.InventoryCounting;
-using Core.DTOs.Items;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,12 +16,13 @@ public class Test04AddItems(Guid id, string testItem, string testWarehouse, WebA
     private Guid lastLineId = Guid.Empty;
     private int  lastBinEntry;
 
-    public async Task Execute() {
+    public async Task<List<(int binEntry, string binCode, int quantity, UnitType unit)>> Execute() {
         await LoadBins();
         await AddItem();
         await ValidateCountingContent();
         await UpdateItem();
         await ValidateCountingContent(true);
+        return binEntries;
     }
 
     private async Task LoadBins() {
@@ -87,7 +86,6 @@ public class Test04AddItems(Guid id, string testItem, string testWarehouse, WebA
         var request = new InventoryCountingContentRequest {
             ID = id,
         };
-        const int systemQuantity   = 960;
         var       responses        = await service.GetCountingContent(request);
         foreach (var row in responses) {
             var entry         = binEntries.First(b => b.binEntry == row.BinEntry);
@@ -125,5 +123,9 @@ public class Test04AddItems(Guid id, string testItem, string testWarehouse, WebA
         var response = await service.UpdateLine(TestConstants.SessionInfo, request);
         Assert.That(response, Is.Not.Null);
         Assert.That(response.ReturnValue, Is.EqualTo(UpdateLineReturnValue.Ok));
+
+        var lastEntry = binEntries.Last();
+        binEntries.Remove(lastEntry);
+        binEntries.Add((lastEntry.binEntry, lastEntry.binCode, 1, lastEntry.unit));
     }
 }
