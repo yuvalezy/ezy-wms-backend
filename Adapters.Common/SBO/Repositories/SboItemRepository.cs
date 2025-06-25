@@ -168,44 +168,57 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
             return new();
         }
 
+        var (query, customFields) = BuildItemsWarehouseStockQuery(items.Length);
+        
         var parameters = new List<SqlParameter> { new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse } };
-        var sb = new StringBuilder("""
-                                   select T0."ItemCode", T0."ItemName",
-                                          COALESCE(T1."OnHand", 0)        "OnHand",
-                                          COALESCE(T0."NumInBuy", 1)      "NumInBuy",
-                                          T0."BuyUnitMsr",
-                                          COALESCE(T0."PurPackUn", 1)     "PurPackUn",
-                                          T0."PurPackMsr"
-                                   from OITM T0
-                                   inner join OITW T1 on T1."ItemCode" = T0."ItemCode" and T1."whsCode" = @WhsCode
-                                   where T0."ItemCode" in (
-                                   """);
         for (int i = 0; i < items.Length; i++) {
-            if (i > 0) {
-                sb.Append(", ");
-            }
-
-            sb.Append($"@ItemCode{i}");
             parameters.Add(new($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] });
         }
 
-        sb.Append(")");
         var response = new Dictionary<string, ItemWarehouseStockResponse>();
-        await dbService.QueryAsync(sb.ToString(), parameters.ToArray(),
+        await dbService.QueryAsync(query, parameters.ToArray(),
             reader => {
                 var value = new ItemWarehouseStockResponse {
-                    ItemCode   = reader.GetString(0),
-                    ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-                    Stock      = (int)reader.GetDecimal(2),
-                    NumInBuy   = (int)reader.GetDecimal(3),
-                    BuyUnitMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
-                    PurPackUn  = (int)reader.GetDecimal(5),
-                    PurPackMsr = !reader.IsDBNull(6) ? reader.GetString(6) : "",
+                    Stock = (int)reader.GetDecimal("OnHand"),
                 };
+                ItemResponseHelper.PopulateItemResponse(reader, value);
+                CustomFieldsHelper.ReadCustomFields(reader, customFields, value);
                 response.Add(value.ItemCode, value);
                 return value;
             });
         return response;
+    }
+
+    private (string query, List<CustomField> customFields) BuildItemsWarehouseStockQuery(int itemCount) {
+        var queryBuilder = new StringBuilder();
+        queryBuilder.Append("""
+                           select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",
+                                  COALESCE(T1."OnHand", 0) as "OnHand",
+                                  COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
+                                  OITM."BuyUnitMsr" as "BuyUnitMsr",
+                                  COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                  OITM."PurPackMsr" as "PurPackMsr"
+                           """);
+
+        var customFields = GetCustomFields();
+        CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
+
+        queryBuilder.Append("""
+                           from OITM 
+                           inner join OITW T1 on T1."ItemCode" = OITM."ItemCode" and T1."whsCode" = @WhsCode
+                           where OITM."ItemCode" in (
+                           """);
+
+        for (int i = 0; i < itemCount; i++) {
+            if (i > 0) {
+                queryBuilder.Append(", ");
+            }
+            queryBuilder.Append($"@ItemCode{i}");
+        }
+
+        queryBuilder.Append(")");
+
+        return (queryBuilder.ToString(), customFields);
     }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {

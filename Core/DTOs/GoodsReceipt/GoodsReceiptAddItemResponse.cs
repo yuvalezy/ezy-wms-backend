@@ -14,6 +14,8 @@ public class GoodsReceiptAddItemResponse {
     public int     PurPackUn      { get; set; }
     public string? PurPackMsr     { get; set; }
     public string? ErrorMessage   { get; set; }
+    
+    public Dictionary<string, object> CustomFields { get; set; } = new();
 
     public GoodsReceiptAddItemResponse() {
         

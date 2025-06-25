@@ -42,6 +42,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
             r.BuyUnitMsr = itemStockData.BuyUnitMsr;
             r.PurPackUn  = itemStockData.PurPackUn;
             r.PurPackMsr = itemStockData.PurPackMsr;
+            r.CustomFields = itemStockData.CustomFields;
         });
 
         var status = (await db.GoodsReceipts.FirstAsync(v => v.Id == id)).Status;

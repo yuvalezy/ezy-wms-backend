@@ -299,15 +299,16 @@ public class GoodsReceiptLineItemProcessService(
         int warehouseQuantity = quantity - fulfillment - showroom;
 
         var response = new GoodsReceiptAddItemResponse {
-            LineId      = line.Id,
-            Fulfillment = fulfillment > 0,
-            Showroom    = showroom > 0,
-            Warehouse   = warehouseQuantity > 0,
-            Quantity    = 1,
-            NumInBuy    = item.NumInBuy,
-            BuyUnitMsr  = item.BuyUnitMsr,
-            PurPackUn   = item.PurPackUn,
-            PurPackMsr  = item.PurPackMsr
+            LineId       = line.Id,
+            Fulfillment  = fulfillment > 0,
+            Showroom     = showroom > 0,
+            Warehouse    = warehouseQuantity > 0,
+            Quantity     = 1,
+            NumInBuy     = item.NumInBuy,
+            BuyUnitMsr   = item.BuyUnitMsr,
+            PurPackUn    = item.PurPackUn,
+            PurPackMsr   = item.PurPackMsr,
+            CustomFields = item.CustomFields
         };
 
         return response;
