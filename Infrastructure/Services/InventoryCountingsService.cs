@@ -258,7 +258,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             var counting = await db.InventoryCountings
                 .Include(ic => ic.Lines.Where(l => l.LineStatus != LineStatus.Closed))
                 .FirstOrDefaultAsync(ic => ic.Id == id);
-                
+
             if (counting == null) {
                 throw new KeyNotFoundException($"Inventory counting with ID {id} not found.");
             }
@@ -321,13 +321,13 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             })
             .ToListAsync();
 
-        var countingData = new Dictionary<string, InventoryCountingCreationDataResponse>();
+        var  countingData            = new Dictionary<string, InventoryCountingCreationDataResponse>();
         int? initialCountingBinEntry = settings.Filters.InitialCountingBinEntry;
 
         foreach (var itemGroup in lines) {
             int totalCountedQuantity = 0;
-            int systemQuantity = 0;
-            var countedBins = new List<InventoryCountingCreationBinResponse>();
+            int systemQuantity       = 0;
+            var countedBins          = new List<InventoryCountingCreationBinResponse>();
 
             // Group by bins
             var binGroups = itemGroup.Lines
@@ -337,12 +337,12 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
             foreach (var binGroup in binGroups) {
                 int binCountedQuantity = binGroup.Sum(l => l.Quantity);
-                int binSystemQuantity = 0;
+                int binSystemQuantity  = 0;
 
                 try {
                     // Get system quantity for this bin
                     var binContents = await adapter.BinCheckAsync(binGroup.Key);
-                    var binContent = binContents.FirstOrDefault(bc => bc.ItemCode == itemGroup.ItemCode);
+                    var binContent  = binContents.FirstOrDefault(bc => bc.ItemCode == itemGroup.ItemCode);
                     binSystemQuantity = binContent != null ? (int)binContent.OnHand : 0;
                 }
                 catch {
@@ -350,13 +350,13 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 }
 
                 countedBins.Add(new InventoryCountingCreationBinResponse {
-                    BinEntry = binGroup.Key,
+                    BinEntry        = binGroup.Key,
                     CountedQuantity = binCountedQuantity,
-                    SystemQuantity = binSystemQuantity
+                    SystemQuantity  = binSystemQuantity
                 });
 
                 totalCountedQuantity += binCountedQuantity;
-                systemQuantity += binSystemQuantity;
+                systemQuantity       += binSystemQuantity;
             }
 
             // Handle lines without bins
@@ -367,7 +367,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
                 try {
                     // Get warehouse stock for items without bins
-                    var stocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                    var stocks                  = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
                     int warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
                     // Subtract quantities already counted in bins
                     systemQuantity += Math.Max(0, warehouseSystemQuantity - systemQuantity);
@@ -381,12 +381,12 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             if (initialCountingBinEntry.HasValue) {
                 // Check if we already have a counting entry for the system bin
                 bool hasSystemBinEntry = binGroups.Any(bg => bg.Key == initialCountingBinEntry.Value);
-                
+
                 if (!hasSystemBinEntry) {
                     // Get the current stock in the system bin for this item
                     int systemBinStock = 0;
                     try {
-                        var systemBinStocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                        var systemBinStocks        = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
                         var systemBinStockResponse = systemBinStocks.FirstOrDefault(s => s.BinEntry == initialCountingBinEntry.Value);
                         systemBinStock = systemBinStockResponse?.Quantity ?? 0;
                     }
@@ -399,25 +399,25 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
                     // Add system bin entry to the counted bins
                     countedBins.Add(new InventoryCountingCreationBinResponse {
-                        BinEntry = initialCountingBinEntry.Value,
+                        BinEntry        = initialCountingBinEntry.Value,
                         CountedQuantity = systemBinCountedQuantity,
-                        SystemQuantity = systemBinStock
+                        SystemQuantity  = systemBinStock
                     });
 
                     // Update totals to include system bin
                     totalCountedQuantity += systemBinCountedQuantity;
-                    systemQuantity += systemBinStock;
+                    systemQuantity       += systemBinStock;
                 }
             }
 
             int variance = totalCountedQuantity - systemQuantity;
 
             var data = new InventoryCountingCreationDataResponse {
-                ItemCode = itemGroup.ItemCode,
+                ItemCode        = itemGroup.ItemCode,
                 CountedQuantity = totalCountedQuantity,
-                SystemQuantity = systemQuantity,
-                Variance = variance,
-                CountedBins = countedBins
+                SystemQuantity  = systemQuantity,
+                Variance        = variance,
+                CountedBins     = countedBins
             };
 
             countingData[itemGroup.ItemCode] = data;
@@ -492,6 +492,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 NumInBuy        = item.NumInBuy,
                 PurPackMsr      = item.PurPackMsr,
                 PurPackUn       = item.PurPackUn,
+                CustomFields    = item.CustomFields,
                 BinEntry        = group.Key.BinEntry,
                 BinCode         = binCode,
                 SystemQuantity  = systemQuantity,
@@ -499,7 +500,7 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 Variance        = variance,
                 SystemValue     = 0,
                 CountedValue    = 0,
-                VarianceValue   = 0 
+                VarianceValue   = 0
             });
         }
 
@@ -515,9 +516,9 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             throw new KeyNotFoundException($"Inventory counting with ID {id} not found.");
         }
 
-        var lines          = counting.Lines ?? new List<InventoryCountingLine>();
+        var lines          = counting.Lines;
         int totalLines     = lines.Count;
-        int processedLines = lines.Count(l => l.LineStatus == LineStatus.Closed || l.LineStatus == LineStatus.Finished);
+        int processedLines = lines.Count(l => l.LineStatus is LineStatus.Closed or LineStatus.Finished);
 
         // Calculate variance lines and values by comparing with system quantities
         int     varianceLines     = 0;
@@ -571,14 +572,15 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
 
             // Add report line
             reportLines.Add(new InventoryCountingReportLine {
-                ItemCode   = group.Key.ItemCode,
-                ItemName   = itemName,
-                BinCode    = binCode,
-                Quantity   = totalCountedQuantity,
-                BuyUnitMsr = item?.BuyUnitMsr,
-                NumInBuy   = item?.NumInBuy ?? 1,
-                PurPackMsr = item?.PurPackMsr,
-                PurPackUn  = item?.PurPackUn ?? 1
+                ItemCode     = group.Key.ItemCode,
+                ItemName     = itemName,
+                BinCode      = binCode,
+                Quantity     = totalCountedQuantity,
+                BuyUnitMsr   = item?.BuyUnitMsr,
+                NumInBuy     = item?.NumInBuy ?? 1,
+                PurPackMsr   = item?.PurPackMsr,
+                PurPackUn    = item?.PurPackUn ?? 1,
+                CustomFields = item?.CustomFields,
             });
 
             // Note: For value calculations, we would need price information from SAP B1

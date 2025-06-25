@@ -15,4 +15,6 @@ public class InventoryCountingContentResponse {
     public int     NumInBuy        { get; set; }
     public string? PurPackMsr      { get; set; }
     public int     PurPackUn       { get; set; }
+
+    public Dictionary<string, object> CustomFields { get; set; } = new();
 }
