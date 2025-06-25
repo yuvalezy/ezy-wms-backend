@@ -26,7 +26,8 @@ public class GoodsReceiptValidateProcessLineResponse {
     public          string? PurPackMsr       { get; set; }
     // public          UnitType UnitType   { get; set; }
 
-    public GoodsReceiptValidateProcessLineStatus LineStatus { get; set; }
+    public          GoodsReceiptValidateProcessLineStatus LineStatus   { get; set; }
+    public required Dictionary<string, object>            CustomFields { get; set; }
 }
 
 public class GoodsReceiptValidateProcessLineDetails {

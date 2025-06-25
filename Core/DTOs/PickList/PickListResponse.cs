@@ -40,6 +40,8 @@ public class PickListDetailItemResponse {
     public string                             PurPackMsr    { get; set; } = string.Empty;
     public List<BinLocationQuantityResponse>? BinQuantities { get; set; }
     public int?                               Available     { get; set; }
+
+    public required Dictionary<string, object> CustomFields { get; set; }
 }
 
 public class BinLocationQuantityResponse {

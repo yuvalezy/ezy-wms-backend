@@ -137,7 +137,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
 
         foreach (var item in items) {
             PickListDetailItemResponse itemResponse;
-            if (!itemDict.ContainsKey(item.ItemCode)) {
+            if (!itemDict.TryGetValue(item.ItemCode, out var value)) {
                 itemResponse = new PickListDetailItemResponse {
                     ItemCode     = item.ItemCode,
                     ItemName     = item.ItemName,
@@ -147,13 +147,14 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
                     NumInBuy     = item.NumInBuy,
                     BuyUnitMsr   = item.BuyUnitMsr,
                     PurPackUn    = item.PurPackUn,
-                    PurPackMsr   = item.PurPackMsr
+                    PurPackMsr   = item.PurPackMsr,
+                    CustomFields = item.CustomFields
                 };
                 itemDict[item.ItemCode] = itemResponse;
                 responseDetail.Items!.Add(itemResponse);
             }
             else {
-                itemResponse              =  itemDict[item.ItemCode];
+                itemResponse              =  value;
                 itemResponse.Quantity     += item.Quantity;
                 itemResponse.Picked       += item.Picked;
                 itemResponse.OpenQuantity += item.OpenQuantity;

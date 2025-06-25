@@ -36,12 +36,12 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
         response.ForEach(r => {
             if (!itemsStockData.TryGetValue(r.ItemCode, out var itemStockData))
                 throw new InvalidOperationException($"Item {r.ItemCode} not found in stock data from external adapter");
-            r.ItemName   = itemStockData.ItemName;
-            r.Stock      = itemStockData.Stock;
-            r.NumInBuy   = itemStockData.NumInBuy;
-            r.BuyUnitMsr = itemStockData.BuyUnitMsr;
-            r.PurPackUn  = itemStockData.PurPackUn;
-            r.PurPackMsr = itemStockData.PurPackMsr;
+            r.ItemName     = itemStockData.ItemName;
+            r.Stock        = itemStockData.Stock;
+            r.NumInBuy     = itemStockData.NumInBuy;
+            r.BuyUnitMsr   = itemStockData.BuyUnitMsr;
+            r.PurPackUn    = itemStockData.PurPackUn;
+            r.PurPackMsr   = itemStockData.PurPackMsr;
             r.CustomFields = itemStockData.CustomFields;
         });
 
@@ -49,7 +49,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
 
         return new GoodsReceiptReportAllResponse {
             Status = status,
-            Lines = response,
+            Lines  = response,
         };
     }
 
@@ -167,6 +167,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
                     BuyUnitMsr       = docLine.BuyUnitMsr,
                     PurPackUn        = docLine.PurPackUn,
                     PurPackMsr       = docLine.PurPackMsr,
+                    CustomFields     = docLine.CustomFields,
                     LineStatus       = GoodsReceiptValidateProcessLineStatus.OK
                 };
                 if (docLine.DocumentQuantity < sourceQuantity)

@@ -1,3 +1,4 @@
+using Core.DTOs.Items;
 using Core.Models;
 
 namespace Core.DTOs.GoodsReceipt;
@@ -10,14 +11,8 @@ public class GoodsReceiptValidateProcessDocumentsDataResponse {
     public          ICollection<GoodsReceiptValidateProcessDocumentsDataLineResponse> Lines          { get; set; } = [];
 }
 
-public class GoodsReceiptValidateProcessDocumentsDataLineResponse {
+public class GoodsReceiptValidateProcessDocumentsDataLineResponse : ItemResponse {
     public          int    LineNumber          { get; set; }
-    public required string ItemCode         { get; set; }
-    public required string ItemName         { get; set; }
-    public          int    NumInBuy         { get; set; }
-    public required string BuyUnitMsr       { get; set; }
-    public          int    PurPackUn        { get; set; }
-    public required string PurPackMsr       { get; set; }
     public          int    DocumentQuantity     { get; set; }
     public          int    VisualLineNumber { get; set; }
 }
