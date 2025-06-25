@@ -148,7 +148,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             BinCode = reader["BinCode"] as string ?? string.Empty
         };
         ItemResponseHelper.PopulateItemResponse(reader, response);
-        CustomFieldsHelper.ReadCustomFields(reader, customFields, response, 8);
+        CustomFieldsHelper.ReadCustomFields(reader, customFields, response);
         return response;
     }
 

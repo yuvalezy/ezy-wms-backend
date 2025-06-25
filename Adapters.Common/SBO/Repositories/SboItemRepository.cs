@@ -124,7 +124,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         };
         
         ItemResponseHelper.PopulateItemResponse(reader, item);
-        CustomFieldsHelper.ReadCustomFields(reader, customFields, item, 6);
+        CustomFieldsHelper.ReadCustomFields(reader, customFields, item);
         return item;
     }
 
