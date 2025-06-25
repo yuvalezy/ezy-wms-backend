@@ -1,7 +1,7 @@
 ﻿namespace Core.DTOs.Items;
 
 public class ItemResponse {
-    public required string ItemCode { get; set; }
+    public string ItemCode { get; set; } = string.Empty;
 
     public string?                    ItemName     { get; set; }
     public int                        NumInBuy     { get; set; }

@@ -121,13 +121,13 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
     private (string query, List<CustomField> customFields) BuildBinCheckQuery() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
-                           select T1."ItemCode", OITM."ItemName", T1."OnHandQty" "OnHand", 
-                           COALESCE(OITM."NumInBuy", 1) "NumInBuy", OITM."BuyUnitMsr",
-                           COALESCE(OITM."PurPackUn", 1) "PurPackUn", OITM."PurPackMsr", T3."BinCode"
+                           select T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand", 
+                           COALESCE(OITM."NumInBuy", 1) as "NumInBuy", OITM."BuyUnitMsr" as "BuyUnitMsr",
+                           COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode"
                            """);
 
         var customFields = GetCustomFields();
-        AppendCustomFieldsToQuery(queryBuilder, customFields);
+        CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append("""
                            from OIBQ T1 
@@ -140,46 +140,16 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return (queryBuilder.ToString(), customFields);
     }
 
-    private List<CustomField> GetCustomFields() => settings.CustomFields?.TryGetValue("Items", out var itemCustomFields) == true ? itemCustomFields.ToList() : [];
-
-    private void AppendCustomFieldsToQuery(StringBuilder queryBuilder, List<CustomField> customFields) {
-        foreach (var field in customFields) {
-            queryBuilder.Append($", ({field.Query}) as \"{field.Key}\"");
-        }
-    }
+    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
     private BinContentResponse MapBinContentResponse(IDataReader reader, List<CustomField> customFields) {
         var response = new BinContentResponse {
-            ItemCode   = reader.GetString(0),
-            ItemName   = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-            OnHand     = Convert.ToInt32(reader[2]),
-            NumInBuy   = Convert.ToInt32(reader[3]),
-            BuyUnitMsr = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-            PurPackUn  = Convert.ToInt32(reader[5]),
-            PurPackMsr = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-            BinCode    = reader.GetString(7)
+            OnHand = Convert.ToDouble(reader["OnHand"]),
+            BinCode = reader["BinCode"] as string ?? string.Empty
         };
-
-        ReadCustomFields(reader, customFields, response);
-
+        ItemResponseHelper.PopulateItemResponse(reader, response);
+        CustomFieldsHelper.ReadCustomFields(reader, customFields, response, 8);
         return response;
-    }
-
-    private void ReadCustomFields(IDataReader reader, List<CustomField> customFields, BinContentResponse response) {
-        int fieldIndex = 8;
-        foreach (var field in customFields) {
-            if (!reader.IsDBNull(fieldIndex)) {
-                object value = field.Type switch {
-                    CustomFieldType.Text   => reader.GetString(fieldIndex),
-                    CustomFieldType.Number => reader.GetValue(fieldIndex),
-                    CustomFieldType.Date   => reader.GetDateTime(fieldIndex),
-                    _                      => reader.GetValue(fieldIndex)
-                };
-                response.CustomFields[field.Key] = value;
-            }
-
-            fieldIndex++;
-        }
     }
 
     public async Task<int> GetSeries(ObjectTypes objectType) => await GetSeries(((int)objectType).ToString());

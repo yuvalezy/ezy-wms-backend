@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
+using Adapters.Common.Utils;
 using Core.DTOs.Items;
 using Core.Interfaces;
 using Core.Models.Settings;
@@ -82,10 +83,10 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, List<CustomField> customFields) BuildItemQuery(string fromClause) {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append("""select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" """);
+        queryBuilder.Append("""select "ItemCode", "ItemName", "BuyUnitMsr", COALESCE("NumInBuy", 1) as "NumInBuy", "PurPackMsr", COALESCE("PurPackUn", 1) as "PurPackUn" """);
 
         var customFields = GetCustomFields();
-        AppendCustomFieldsToQuery(queryBuilder, customFields);
+        CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append(fromClause);
 
@@ -95,16 +96,16 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
     private (string query, List<CustomField> customFields) BuildItemQueryWithBarcode() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
-                            select OBCD."ItemCode"
-                                 , OITM."ItemName"
-                                 , OITM."BuyUnitMsr"
-                                 , COALESCE(OITM."NumInBuy", 1)  "NumInBuy"
-                                 , OITM."PurPackMsr"
-                                 , COALESCE(OITM."PurPackUn", 1) "PurPackUn"
+                            select OBCD."ItemCode" as "ItemCode"
+                                 , OITM."ItemName" as "ItemName"
+                                 , OITM."BuyUnitMsr" as "BuyUnitMsr"
+                                 , COALESCE(OITM."NumInBuy", 1) as "NumInBuy"
+                                 , OITM."PurPackMsr" as "PurPackMsr"
+                                 , COALESCE(OITM."PurPackUn", 1) as "PurPackUn"
                             """);
 
         var customFields = GetCustomFields();
-        AppendCustomFieldsToQuery(queryBuilder, customFields);
+        CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append("""
                             from OBCD 
@@ -115,44 +116,16 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return (queryBuilder.ToString(), customFields);
     }
 
-    private List<CustomField> GetCustomFields() => settings.CustomFields?.TryGetValue("Items", out var itemCustomFields) == true ? itemCustomFields.ToList() : [];
-
-    private void AppendCustomFieldsToQuery(StringBuilder queryBuilder, List<CustomField> customFields) {
-        foreach (var field in customFields) {
-            queryBuilder.Append($", ({field.Query}) as \"{field.Key}\"");
-        }
-    }
+    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
     private ItemCheckResponse MapItemCheckResponse(IDataReader reader, List<CustomField> customFields) {
         var item = new ItemCheckResponse {
-            ItemCode   = reader.GetString(0),
-            ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-            BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
-            NumInBuy   = (int)reader.GetDecimal(3),
-            PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
-            PurPackUn  = (int)reader.GetDecimal(5)
+            ItemCode = reader["ItemCode"] as string ?? string.Empty
         };
-
-        ReadCustomFields(reader, customFields, item);
-
+        
+        ItemResponseHelper.PopulateItemResponse(reader, item);
+        CustomFieldsHelper.ReadCustomFields(reader, customFields, item, 6);
         return item;
-    }
-
-    private void ReadCustomFields(IDataReader reader, List<CustomField> customFields, ItemCheckResponse item) {
-        int fieldIndex = 6;
-        foreach (var field in customFields) {
-            if (!reader.IsDBNull(fieldIndex)) {
-                object value = field.Type switch {
-                    CustomFieldType.Text   => reader.GetString(fieldIndex),
-                    CustomFieldType.Number => reader.GetValue(fieldIndex),
-                    CustomFieldType.Date   => reader.GetDateTime(fieldIndex),
-                    _                      => reader.GetValue(fieldIndex)
-                };
-                item.CustomFields[field.Key] = value;
-            }
-
-            fieldIndex++;
-        }
     }
 
     private async Task FetchBarcodesForItems(List<ItemCheckResponse> data, List<ItemCheckResponse> response) {
