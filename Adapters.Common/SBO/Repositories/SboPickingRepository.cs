@@ -1,14 +1,19 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
+using Adapters.Common.Utils;
 using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Enums;
+using Core.Interfaces;
+using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
 
 namespace Adapters.Common.SBO.Repositories;
 
-public class SboPickingRepository(SboDatabaseService dbService) {
+public class SboPickingRepository(SboDatabaseService dbService, ISettings settings) {
+    
+    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var sb = new StringBuilder(
             """
@@ -142,18 +147,40 @@ public class SboPickingRepository(SboDatabaseService dbService) {
     }
 
     public async Task<IEnumerable<PickingDetailItemResponse>> GetPickingDetailItems(Dictionary<string, object> parameters) {
-        const string query =
-            """
+        var (query, customFields) = BuildPickingDetailItemsQuery();
+        var sqlParams = ConvertToSqlParameters(parameters);
+
+        return await dbService.QueryAsync(query, sqlParams, reader => {
+            var item = new PickingDetailItemResponse {
+                Quantity     = (int)reader.GetDecimal("Quantity"),
+                Picked       = (int)reader.GetDecimal("Picked"),
+                OpenQuantity = (int)reader.GetDecimal("OpenQuantity")
+            };
+            ItemResponseHelper.PopulateItemResponse(reader, item);
+            CustomFieldsHelper.ReadCustomFields(reader, customFields, item);
+            return item;
+        });
+    }
+
+    private (string query, List<CustomField> customFields) BuildPickingDetailItemsQuery() {
+        var queryBuilder = new StringBuilder();
+        queryBuilder.Append("""
             SELECT 
-                T2."ItemCode",
-                OITM."ItemName",
+                T2."ItemCode" as "ItemCode",
+                OITM."ItemName" as "ItemName",
                 SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
                 SUM(PKL1."PickQtty") AS "Picked",
                 SUM(PKL1."RelQtty") AS "OpenQuantity",
                 COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
-                COALESCE(OITM."BuyUnitMsr", '') AS "BuyUnitMsr",
+                OITM."BuyUnitMsr" as "BuyUnitMsr",
                 COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
-                COALESCE(OITM."PurPackMsr", '') AS "PurPackMsr"
+                OITM."PurPackMsr" as "PurPackMsr"
+            """);
+
+        var customFields = GetCustomFields();
+        CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
+
+        queryBuilder.Append("""
             FROM PKL1
             INNER JOIN OILM T2 
                 ON T2."TransType" = PKL1."BaseObject" 
@@ -172,27 +199,18 @@ public class SboPickingRepository(SboDatabaseService dbService) {
             	OITM."BuyUnitMsr",
             	OITM."PurPackUn",
             	OITM."PurPackMsr"
-            ORDER BY 
+            """);
+
+        // Add custom fields to GROUP BY clause
+        CustomFieldsHelper.AppendCustomFieldsToGroupBy(queryBuilder, customFields);
+
+        queryBuilder.Append("""
+             ORDER BY 
                 CASE WHEN SUM(PKL1."RelQtty") = 0 THEN 1 ELSE 0 END,
-                T2."ItemCode";
-            """;
+                T2."ItemCode"
+            """);
 
-        var sqlParams = ConvertToSqlParameters(parameters);
-
-        return await dbService.QueryAsync(query, sqlParams, reader => {
-            var item = new PickingDetailItemResponse {
-                ItemCode     = reader.GetString(0),
-                ItemName     = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-                Quantity     = (int)reader.GetDecimal(2),
-                Picked       = (int)reader.GetDecimal(3),
-                OpenQuantity = (int)reader.GetDecimal(4),
-                NumInBuy     = (int)reader.GetDecimal(5),
-                BuyUnitMsr   = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-                PurPackUn    = (int)reader.GetDecimal(7),
-                PurPackMsr   = reader.IsDBNull(8) ? string.Empty : reader.GetString(8)
-            };
-            return item;
-        });
+        return (queryBuilder.ToString(), customFields);
     }
 
     public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {

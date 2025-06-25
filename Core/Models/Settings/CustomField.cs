@@ -10,6 +10,9 @@ public class CustomField {
 
     public required string          Description { get; set; }
     public required CustomFieldType Type        { get; set; }
+    
+    [JsonIgnore]
+    public string? GroupBy { get; set; }
 }
 
 public enum CustomFieldType {

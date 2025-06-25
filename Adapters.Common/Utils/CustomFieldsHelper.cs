@@ -35,9 +35,19 @@ public static class CustomFieldsHelper {
     /// <param name="customFields">List of custom fields to read</param>
     /// <param name="response">Response object that inherits from ItemResponse</param>
     public static void ReadCustomFields(IDataReader reader, List<CustomField> customFields, ItemResponse response) {
+        ReadCustomFields(reader, customFields, response.CustomFields);
+    }
+
+    /// <summary>
+    /// Reads custom field values from a data reader and populates the custom fields dictionary
+    /// </summary>
+    /// <param name="reader">Data reader containing the query results</param>
+    /// <param name="customFields">List of custom fields to read</param>
+    /// <param name="customFieldsDict">Dictionary to populate with custom field values</param>
+    public static void ReadCustomFields(IDataReader reader, List<CustomField> customFields, Dictionary<string, object> customFieldsDict) {
         foreach (var field in customFields) {
             string columnName = $"CustomField_{field.Key}";
-            if (reader[columnName] == DBNull.Value) 
+            if (reader[columnName] == DBNull.Value)
                 continue;
             object value = field.Type switch {
                 CustomFieldType.Text   => reader[columnName] as string ?? string.Empty,
@@ -45,7 +55,18 @@ public static class CustomFieldsHelper {
                 CustomFieldType.Date   => Convert.ToDateTime(reader[columnName]),
                 _                      => reader[columnName]
             };
-            response.CustomFields[field.Key] = value;
+            customFieldsDict[field.Key] = value;
+        }
+    }
+
+    /// <summary>
+    /// Appends custom fields to a GROUP BY clause
+    /// </summary>
+    /// <param name="queryBuilder">StringBuilder containing the SQL query</param>
+    /// <param name="customFields">List of custom fields to append to GROUP BY</param>
+    public static void AppendCustomFieldsToGroupBy(StringBuilder queryBuilder, List<CustomField> customFields) {
+        foreach (var field in customFields) {
+            queryBuilder.Append($", {field.GroupBy ?? field.Query}");
         }
     }
 }
