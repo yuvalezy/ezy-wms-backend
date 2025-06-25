@@ -253,14 +253,14 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             // Calculate the transfer quantity - should be the source quantity (what we're transferring)
             decimal sourceQuantity = sourceBins.Sum(s => s.Quantity);
             decimal targetQuantity = targetBins.Sum(t => t.Quantity);
-            
+
             // Use the maximum of source or target as the line quantity
             // In a proper transfer, these should be equal
             decimal transferQuantity = Math.Max(sourceQuantity, targetQuantity);
 
             var data = new TransferCreationDataResponse {
-                ItemCode = itemGroup.ItemCode,
-                Quantity = transferQuantity,
+                ItemCode   = itemGroup.ItemCode,
+                Quantity   = transferQuantity,
                 SourceBins = sourceBins,
                 TargetBins = targetBins
             };
@@ -308,14 +308,15 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             var item     = itemInfo.FirstOrDefault();
 
             var content = new TransferContentResponse {
-                Code       = group.ItemCode,
-                Name       = item?.ItemName ?? "",
-                Quantity   = group.Lines.Sum(l => l.Quantity),
-                NumInBuy   = item?.NumInBuy ?? 1,
-                BuyUnitMsr = item?.BuyUnitMsr ?? "",
-                PurPackUn  = item?.PurPackUn ?? 1,
-                PurPackMsr = item?.PurPackMsr ?? "",
-                Unit       = firstLine.UnitType
+                ItemCode     = group.ItemCode,
+                ItemName     = item?.ItemName ?? "",
+                Quantity     = group.Lines.Sum(l => l.Quantity),
+                NumInBuy     = item?.NumInBuy ?? 1,
+                BuyUnitMsr   = item?.BuyUnitMsr ?? "",
+                PurPackUn    = item?.PurPackUn ?? 1,
+                PurPackMsr   = item?.PurPackMsr ?? "",
+                CustomFields = item?.CustomFields,
+                Unit         = firstLine.UnitType
             };
 
             if (request.Type == SourceTarget.Target) {
@@ -347,7 +348,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             await AddBinInformation(result, request.ID);
         }
 
-        return result.OrderBy(r => r.Code);
+        return result.OrderBy(r => r.ItemCode);
     }
 
     private async Task AddBinInformation(List<TransferContentResponse> contents, Guid transferId) {
@@ -375,7 +376,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         var binCodeLookup = binInfos.ToDictionary(b => b.BinEntry, b => b.BinCode);
 
         foreach (var content in contents) {
-            var itemBins = binData.Where(b => b.ItemCode == content.Code).ToList();
+            var itemBins = binData.Where(b => b.ItemCode == content.ItemCode).ToList();
             if (itemBins.Any()) {
                 content.Bins = itemBins.Select(b => new TransferContentBin {
                     Entry    = b.BinEntry,
@@ -478,8 +479,8 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             // Add lines based on content
             foreach (var content in request.Contents) {
                 var line = new TransferLine {
-                    ItemCode        = content.Code,
-                    BarCode         = content.Code, // Using ItemCode as barcode for now
+                    ItemCode        = content.ItemCode,
+                    BarCode         = content.ItemCode, // Using ItemCode as barcode for now
                     Date            = DateTime.UtcNow,
                     Quantity        = content.Quantity,
                     Type            = SourceTarget.Source,
