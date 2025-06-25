@@ -2,11 +2,13 @@ using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
 using Core.DTOs.Items;
+using Core.Interfaces;
+using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
 
 namespace Adapters.Common.SBO.Repositories;
 
-public class SboItemRepository(SboDatabaseService dbService) {
+public class SboItemRepository(SboDatabaseService dbService, ISettings settings) {
     public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
         string query = !item
             ? """
@@ -45,52 +47,117 @@ public class SboItemRepository(SboDatabaseService dbService) {
 
         var data = new List<ItemCheckResponse>();
         if (!string.IsNullOrWhiteSpace(itemCode)) {
-            const string query =
-                """select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" from OITM where "ItemCode" = @ItemCode""";
-            var parameters = new[] {
-                new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
-            };
-            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
-                ItemCode   = reader.GetString(0),
-                ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-                BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
-                NumInBuy   = (int)reader.GetDecimal(3),
-                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
-                PurPackUn  = (int)reader.GetDecimal(5)
-            });
-            data.AddRange(items);
+            data.AddRange(await QueryItemsByItemCode(itemCode));
         }
         else if (!string.IsNullOrWhiteSpace(barcode)) {
-            const string query =
-                """
-                select T0."ItemCode"
-                     , T1."ItemName"
-                     , T1."BuyUnitMsr"
-                     , COALESCE(T1."NumInBuy", 1)  "NumInBuy"
-                     , T1."PurPackMsr"
-                     , COALESCE(T1."PurPackUn", 1) "PurPackUn"
-                from OBCD T0
-                         inner join OITM T1 on T1."ItemCode" = T0."ItemCode"
-                where T0."BcdCode" = @ScanCode
-                """;
-            var parameters = new[] {
-                new SqlParameter("@ScanCode", SqlDbType.NVarChar, 255) { Value = barcode }
-            };
-            var items = await dbService.QueryAsync(query, parameters, reader => new ItemCheckResponse {
-                ItemCode   = reader.GetString(0),
-                ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-                BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
-                NumInBuy   = (int)reader.GetDecimal(3),
-                PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
-                PurPackUn  = (int)reader.GetDecimal(5)
-            });
-            data.AddRange(items);
+            data.AddRange(await QueryItemsByBarcode(barcode));
         }
         else {
             throw new ArgumentException("Either itemCode or barcode must be provided.");
         }
 
+        await FetchBarcodesForItems(data, response);
+        return response;
+    }
+
+    private async Task<IEnumerable<ItemCheckResponse>> QueryItemsByItemCode(string itemCode) {
+        var (query, customFields) = BuildItemQuery(""" from OITM where "ItemCode" = @ItemCode""");
+
+        var parameters = new[] {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => MapItemCheckResponse(reader, customFields));
+    }
+
+    private async Task<IEnumerable<ItemCheckResponse>> QueryItemsByBarcode(string barcode) {
+        var (query, customFields) = BuildItemQueryWithBarcode();
+
+        var parameters = new[] {
+            new SqlParameter("@ScanCode", SqlDbType.NVarChar, 255) { Value = barcode }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => MapItemCheckResponse(reader, customFields));
+    }
+
+    private (string query, List<CustomField> customFields) BuildItemQuery(string fromClause) {
+        var queryBuilder = new StringBuilder();
+        queryBuilder.Append("""select "ItemCode", "ItemName", "BuyUnitMsr" , COALESCE("NumInBuy", 1)  "NumInBuy", "PurPackMsr" , COALESCE("PurPackUn", 1) "PurPackUn" """);
+
+        var customFields = GetCustomFields();
+        AppendCustomFieldsToQuery(queryBuilder, customFields);
+
+        queryBuilder.Append(fromClause);
+
+        return (queryBuilder.ToString(), customFields);
+    }
+
+    private (string query, List<CustomField> customFields) BuildItemQueryWithBarcode() {
+        var queryBuilder = new StringBuilder();
+        queryBuilder.Append("""
+                            select OBCD."ItemCode"
+                                 , OITM."ItemName"
+                                 , OITM."BuyUnitMsr"
+                                 , COALESCE(OITM."NumInBuy", 1)  "NumInBuy"
+                                 , OITM."PurPackMsr"
+                                 , COALESCE(OITM."PurPackUn", 1) "PurPackUn"
+                            """);
+
+        var customFields = GetCustomFields();
+        AppendCustomFieldsToQuery(queryBuilder, customFields);
+
+        queryBuilder.Append("""
+                            from OBCD 
+                                     inner join OITM on OITM."ItemCode" = OBCD."ItemCode"
+                            where OBCD."BcdCode" = @ScanCode
+                            """);
+
+        return (queryBuilder.ToString(), customFields);
+    }
+
+    private List<CustomField> GetCustomFields() => settings.CustomFields?.TryGetValue("Items", out var itemCustomFields) == true ? itemCustomFields.ToList() : [];
+
+    private void AppendCustomFieldsToQuery(StringBuilder queryBuilder, List<CustomField> customFields) {
+        foreach (var field in customFields) {
+            queryBuilder.Append($", ({field.Query}) as \"{field.Key}\"");
+        }
+    }
+
+    private ItemCheckResponse MapItemCheckResponse(IDataReader reader, List<CustomField> customFields) {
+        var item = new ItemCheckResponse {
+            ItemCode   = reader.GetString(0),
+            ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
+            BuyUnitMsr = !reader.IsDBNull(2) ? reader.GetString(2) : "",
+            NumInBuy   = (int)reader.GetDecimal(3),
+            PurPackMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
+            PurPackUn  = (int)reader.GetDecimal(5)
+        };
+
+        ReadCustomFields(reader, customFields, item);
+
+        return item;
+    }
+
+    private void ReadCustomFields(IDataReader reader, List<CustomField> customFields, ItemCheckResponse item) {
+        int fieldIndex = 6;
+        foreach (var field in customFields) {
+            if (!reader.IsDBNull(fieldIndex)) {
+                object value = field.Type switch {
+                    CustomFieldType.Text   => reader.GetString(fieldIndex),
+                    CustomFieldType.Number => reader.GetValue(fieldIndex),
+                    CustomFieldType.Date   => reader.GetDateTime(fieldIndex),
+                    _                      => reader.GetValue(fieldIndex)
+                };
+                item.CustomFields[field.Key] = value;
+            }
+
+            fieldIndex++;
+        }
+    }
+
+    private async Task FetchBarcodesForItems(List<ItemCheckResponse> data, List<ItemCheckResponse> response) {
         const string barcodeQuery = """select "BcdCode" from OBCD where "ItemCode" = @ItemCode""";
+
         foreach (var item in data) {
             var barcodeParameters = new[] {
                 new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = item.ItemCode }
@@ -99,8 +166,6 @@ public class SboItemRepository(SboDatabaseService dbService) {
             item.Barcodes.AddRange(barcodes);
             response.Add(item);
         }
-
-        return response;
     }
 
     public async Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode) {
@@ -121,7 +186,7 @@ public class SboItemRepository(SboDatabaseService dbService) {
         return await dbService.QueryAsync(query, parameters, reader => new ItemBinStockResponse {
             BinCode  = reader.GetString(0),
             Quantity = Convert.ToInt32(reader[1]),
-            BinEntry  = reader.GetInt32(2),
+            BinEntry = reader.GetInt32(2),
         });
     }
 
@@ -158,7 +223,7 @@ public class SboItemRepository(SboDatabaseService dbService) {
                 var value = new ItemWarehouseStockResponse {
                     ItemCode   = reader.GetString(0),
                     ItemName   = !reader.IsDBNull(1) ? reader.GetString(1) : "",
-                    Stock     = (int)reader.GetDecimal(2),
+                    Stock      = (int)reader.GetDecimal(2),
                     NumInBuy   = (int)reader.GetDecimal(3),
                     BuyUnitMsr = !reader.IsDBNull(4) ? reader.GetString(4) : "",
                     PurPackUn  = (int)reader.GetDecimal(5),
