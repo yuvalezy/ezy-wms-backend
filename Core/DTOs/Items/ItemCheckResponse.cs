@@ -8,4 +8,6 @@ public class ItemCheckResponse {
     public int          PurPackUn  { get; set; }
     public string       PurPackMsr { get; set; }
     public List<string> Barcodes   { get; set; } = [];
+
+    public Dictionary<string, object> CustomFields { get; set; } = new();
 }

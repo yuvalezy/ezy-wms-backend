@@ -1,5 +1,6 @@
 ﻿using Adapters.CrossPlatform.SBO.Services;
 using Core.Interfaces;
+using Core.Models.Settings;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -78,9 +79,27 @@ public class GeneralTest {
         Assert.That(validate.PurPackUn, Is.EqualTo(itemData.PurchaseQtyPerPackUnit));
         Assert.That(validate.PurPackMsr, Is.EqualTo(itemData.PurchasePackagingUnit));
         Assert.That(validate.Barcodes, Contains.Item(itemData.BarCode));
-        
-    }
 
+        settings.CustomFields.TryGetValue("Items", out var customFields);
+        foreach (var customField in customFields!) {
+            Assert.That(validate.CustomFields.TryGetValue(customField.Key, out object? customValue), Is.True);
+            Assert.That(customValue != null);
+            switch (customField.Type) {
+                case CustomFieldType.Text:
+                    Assert.That(customValue, Is.TypeOf<string>());
+                    Assert.That(!string.IsNullOrWhiteSpace(customValue as string));
+                    break;
+                case CustomFieldType.Number:
+                    Assert.That(customValue, Is.TypeOf<decimal>() | Is.TypeOf<double>() | Is.TypeOf<int>() | Is.TypeOf<long>());
+                    break;
+                case CustomFieldType.Date:
+                    Assert.That(customValue, Is.TypeOf<DateTime>());
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+    }
 
     [OneTimeTearDown]
     public void OneTimeTearDown() {
