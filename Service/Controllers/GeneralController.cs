@@ -51,7 +51,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
 
     [HttpGet("ItemByBarCode")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptConfirmation, RoleType.TransferRequest)]
-    public async Task<ActionResult<IEnumerable<ItemResponse>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
+    public async Task<ActionResult<IEnumerable<ItemInfoResponse>>> ScanItemBarCode([FromQuery] string scanCode, [FromQuery] bool item = false) {
         return Ok(await publicService.ScanItemBarCodeAsync(scanCode, item));
     }
 

@@ -9,7 +9,7 @@ using Microsoft.Data.SqlClient;
 namespace Adapters.Common.SBO.Repositories;
 
 public class SboItemRepository(SboDatabaseService dbService, ISettings settings) {
-    public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
+    public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
         string query = !item
             ? """
               SELECT T0."ItemCode", T1."ItemName", T2."Father"
@@ -31,7 +31,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         };
 
         return await dbService.QueryAsync(query, parameters, reader => {
-            var item = new ItemResponse(reader.GetString(0));
+            var item = new ItemInfoResponse(reader.GetString(0));
             if (!reader.IsDBNull(1))
                 item.Name = reader.GetString(1);
             if (!reader.IsDBNull(2))

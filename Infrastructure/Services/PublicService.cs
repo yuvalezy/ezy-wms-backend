@@ -63,7 +63,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) => await adapter.ScanBinLocationAsync(bin);
 
-    public async Task<IEnumerable<ItemResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await adapter.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await adapter.ScanItemBarCodeAsync(scanCode, item);
 
     public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await adapter.ItemCheckAsync(itemCode, barcode);
 

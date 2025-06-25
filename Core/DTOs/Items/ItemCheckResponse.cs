@@ -1,13 +1,5 @@
 namespace Core.DTOs.Items;
 
-public class ItemCheckResponse {
-    public string       ItemCode   { get; set; }
-    public string       ItemName   { get; set; }
-    public int          NumInBuy   { get; set; }
-    public string       BuyUnitMsr { get; set; }
-    public int          PurPackUn  { get; set; }
-    public string       PurPackMsr { get; set; }
-    public List<string> Barcodes   { get; set; } = [];
-
-    public Dictionary<string, object> CustomFields { get; set; } = new();
+public class ItemCheckResponse : ItemResponse {
+    public List<string> Barcodes { get; set; } = [];
 }

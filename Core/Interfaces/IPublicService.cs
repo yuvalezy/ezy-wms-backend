@@ -11,7 +11,7 @@ public interface IPublicService {
     Task<UserInfoResponse>                   GetUserInfoAsync(SessionInfo info);
     Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
     Task<BinLocationResponse?>               ScanBinLocationAsync(string bin);
-    Task<IEnumerable<ItemResponse>>          ScanItemBarCodeAsync(string scanCode, bool    item = false);
+    Task<IEnumerable<ItemInfoResponse>>          ScanItemBarCodeAsync(string scanCode, bool    item = false);
     Task<IEnumerable<ItemCheckResponse>>     ItemCheckAsync(string?      itemCode, string? barcode);
     Task<IEnumerable<BinContentResponse>>    BinCheckAsync(int           binEntry);
     Task<IEnumerable<ItemBinStockResponse>>  ItemStockAsync(string       itemCode, string               whsCode);
