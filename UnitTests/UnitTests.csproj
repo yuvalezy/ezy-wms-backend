@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0-windows</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
+<!--        <TargetFramework>net9.0-windows</TargetFramework>-->
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -30,7 +31,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Adapters.Common\Adapters.Common.csproj" />
       <ProjectReference Include="..\Adapters.CrossPlatform\Adapters.CrossPlatform.csproj" />
-      <ProjectReference Include="..\Adapters.Windows\Adapters.Windows.csproj" />
+<!--      <ProjectReference Include="..\Adapters.Windows\Adapters.Windows.csproj" />-->
       <ProjectReference Include="..\Core\Core.csproj" />
       <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
       <ProjectReference Include="..\Service\Service.csproj" />

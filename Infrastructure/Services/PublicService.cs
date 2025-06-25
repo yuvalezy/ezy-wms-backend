@@ -55,6 +55,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Warehouses       = await adapter.GetWarehousesAsync(info.SuperUser ? null : user!.Warehouses.ToArray()),
             SuperUser        = info.SuperUser,
             Settings         = settings.Options,
+            CustomFields = settings.CustomFields,
         };
     }
 
