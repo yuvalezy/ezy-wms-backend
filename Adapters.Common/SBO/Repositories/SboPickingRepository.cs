@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics;
 using System.Text;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
@@ -6,18 +7,19 @@ using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
 
 namespace Adapters.Common.SBO.Repositories;
 
 public class SboPickingRepository(SboDatabaseService dbService, ISettings settings) {
-    
     private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
+
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
+        var pickPackOnly = settings.Filters.PickPackOnly;
         var sb = new StringBuilder(
             """
-
             SELECT 
                 PICKS."AbsEntry",
                 PICKS."PickDate",
@@ -29,12 +31,24 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 COALESCE(SUM(PKL1."RelQtty" + PKL1."PickQtty"), 0) AS "Quantity",
                 COALESCE(SUM(PKL1."RelQtty"), 0) AS "OpenQuantity",
                 COALESCE(SUM(CASE WHEN PKL1."PickStatus" = 'Y' THEN PKL1."PickQtty" ELSE 0 END), 0) AS "UpdateQuantity"
-            FROM OPKL PICKS
-            LEFT JOIN PKL1 ON PKL1."AbsEntry" = PICKS."AbsEntry"
-            inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
-            WHERE T2."LocCode" = @WhsCode 
-            AND PICKS."Status" IN ('R', 'P', 'D')
             """);
+        if (pickPackOnly is not null) {
+            sb.Append($", Case When {pickPackOnly.Query} Then 1 Else 0 End \"PickPackOnly\" ");
+        }
+
+        sb.Append("""
+                  FROM OPKL PICKS
+                  LEFT JOIN PKL1 ON PKL1."AbsEntry" = PICKS."AbsEntry"
+                  inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
+                  """);
+        if (pickPackOnly is not null) {
+            sb.Append(""" inner join OCRD on OCRD."CardCode" = T2."BPCardCode" """);
+        }
+
+        sb.Append("""
+                  WHERE T2."LocCode" = @WhsCode 
+                  AND PICKS."Status" IN ('R', 'P', 'D')
+                  """);
 
         var parameters = new List<SqlParameter> {
             new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse }
@@ -59,10 +73,12 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             }
         }
 
-        sb.AppendLine("""
-                       GROUP BY PICKS."AbsEntry", PICKS."PickDate", Cast(PICKS."Remarks" as varchar(8000)), PICKS."Status"
-                      ORDER BY PICKS."AbsEntry" DESC
-                      """);
+        sb.AppendLine(""" GROUP BY PICKS."AbsEntry", PICKS."PickDate", Cast(PICKS."Remarks" as varchar(8000)), PICKS."Status" """);
+        if (pickPackOnly is not null) {
+            sb.Append($", {pickPackOnly.GroupBy} ");
+        }
+
+        sb.AppendLine(""" ORDER BY PICKS."AbsEntry" DESC""");
 
         var sqlParams = parameters.ToArray();
 
@@ -78,6 +94,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             document.Quantity       = (int)reader.GetDecimal(7);
             document.OpenQuantity   = (int)reader.GetDecimal(8);
             document.UpdateQuantity = (int)reader.GetDecimal(9);
+            document.PickPackOnly   = pickPackOnly is not null && Convert.ToBoolean(reader["PickPackOnly"]);
             return document;
         });
     }
@@ -165,50 +182,50 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     private (string query, List<CustomField> customFields) BuildPickingDetailItemsQuery() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
-            SELECT 
-                T2."ItemCode" as "ItemCode",
-                OITM."ItemName" as "ItemName",
-                SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
-                SUM(PKL1."PickQtty") AS "Picked",
-                SUM(PKL1."RelQtty") AS "OpenQuantity",
-                COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
-                OITM."BuyUnitMsr" as "BuyUnitMsr",
-                COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
-                OITM."PurPackMsr" as "PurPackMsr"
-            """);
+                            SELECT 
+                                T2."ItemCode" as "ItemCode",
+                                OITM."ItemName" as "ItemName",
+                                SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
+                                SUM(PKL1."PickQtty") AS "Picked",
+                                SUM(PKL1."RelQtty") AS "OpenQuantity",
+                                COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
+                                OITM."BuyUnitMsr" as "BuyUnitMsr",
+                                COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
+                                OITM."PurPackMsr" as "PurPackMsr"
+                            """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append("""
-            FROM PKL1
-            INNER JOIN OILM T2 
-                ON T2."TransType" = PKL1."BaseObject" 
-                AND T2."DocEntry" = PKL1."OrderEntry" 
-                AND T2."DocLineNum" = PKL1."OrderLine"
-            INNER JOIN OITM 
-                ON OITM."ItemCode" = T2."ItemCode"
-            WHERE 
-                PKL1."AbsEntry" = @AbsEntry
-                AND PKL1."BaseObject" = @Type
-                AND PKL1."OrderEntry" = @Entry
-            Group by 
-                T2."ItemCode",
-                OITM."ItemName",
-            	OITM."NumInBuy",
-            	OITM."BuyUnitMsr",
-            	OITM."PurPackUn",
-            	OITM."PurPackMsr"
-            """);
+                            FROM PKL1
+                            INNER JOIN OILM T2 
+                                ON T2."TransType" = PKL1."BaseObject" 
+                                AND T2."DocEntry" = PKL1."OrderEntry" 
+                                AND T2."DocLineNum" = PKL1."OrderLine"
+                            INNER JOIN OITM 
+                                ON OITM."ItemCode" = T2."ItemCode"
+                            WHERE 
+                                PKL1."AbsEntry" = @AbsEntry
+                                AND PKL1."BaseObject" = @Type
+                                AND PKL1."OrderEntry" = @Entry
+                            Group by 
+                                T2."ItemCode",
+                                OITM."ItemName",
+                            	OITM."NumInBuy",
+                            	OITM."BuyUnitMsr",
+                            	OITM."PurPackUn",
+                            	OITM."PurPackMsr"
+                            """);
 
         // Add custom fields to GROUP BY clause
         CustomFieldsHelper.AppendCustomFieldsToGroupBy(queryBuilder, customFields);
 
         queryBuilder.Append("""
-             ORDER BY 
-                CASE WHEN SUM(PKL1."RelQtty") = 0 THEN 1 ELSE 0 END,
-                T2."ItemCode"
-            """);
+                             ORDER BY 
+                                CASE WHEN SUM(PKL1."RelQtty") = 0 THEN 1 ELSE 0 END,
+                                T2."ItemCode"
+                            """);
 
         return (queryBuilder.ToString(), customFields);
     }
@@ -254,35 +271,53 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) {
-        const string query =
+        string? pickPackOnly = settings.Filters.PickPackOnly?.Query;
+
+        var sb = new StringBuilder(
             """
             SELECT PKL1."PickEntry",
-                        CASE 
-                            WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
-                            WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
-                            WHEN PKL1."RelQtty" = 0 THEN -3  -- Already picked
-                            WHEN @Quantity > PKL1."RelQtty" THEN -4  -- Too much quantity
-                            ELSE 0  -- OK
-                        END AS "ValidationResult",
-                        PKL1."RelQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) - COALESCE(T5."BinQty", 0) "OnHandQty"
-                        FROM OPKL
-                        INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
-                        inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
-                        left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
-            			left outer join (
-            				select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
-            				from PKL1 T0
-            				inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
-            				inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
-            				where T2."BinAbs" = @BinEntry
-            				Group By T2."BinAbs"
-            			) T5 on T5."BinAbs" = T3."BinAbs"
-                        WHERE OPKL."AbsEntry" = @ID
-                        AND PKL1."BaseObject" = @SourceType
-                        AND PKL1."OrderEntry" = @SourceEntry
-                        AND T2."ItemCode" = @ItemCode
-                        order by 2 desc, 3 desc
-            """;
+            CASE 
+                WHEN OPKL."Status" = 'C' THEN -6  -- Closed document
+                WHEN T2."ItemCode" <> @ItemCode THEN -2  -- Wrong item
+                WHEN PKL1."RelQtty" = 0 THEN -3  -- Already picked
+                WHEN @Quantity > PKL1."RelQtty" THEN -4  -- Too much quantity
+                ELSE 0  -- OK
+            END AS "ValidationResult",
+            PKL1."RelQtty" "OpenQuantity", COALESCE(T3."OnHandQty", 0) - COALESCE(T5."BinQty", 0) "OnHandQty"
+            """);
+
+        if (!string.IsNullOrWhiteSpace(pickPackOnly)) {
+            sb.Append($", Case When {pickPackOnly} Then 1 Else 0 End \"PickPackOnly\" ");
+        }
+
+        sb.Append("""
+                  FROM OPKL
+                  INNER JOIN PKL1 ON PKL1."AbsEntry" = OPKL."AbsEntry"
+                  inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
+                  left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
+                  left outer join (
+                      select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
+                      from PKL1 T0
+                      inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
+                      inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
+                      where T2."BinAbs" = @BinEntry
+                      Group By T2."BinAbs"
+                  ) T5 on T5."BinAbs" = T3."BinAbs"
+                  """);
+
+        if (!string.IsNullOrWhiteSpace(pickPackOnly)) {
+            sb.Append("inner join OCRD on OCRD.\"CardCode\" = T2.\"BPCardCode\" ");
+        }
+
+        sb.Append("""
+                  WHERE OPKL."AbsEntry" = @ID
+                  AND PKL1."BaseObject" = @SourceType
+                  AND PKL1."OrderEntry" = @SourceEntry
+                  AND T2."ItemCode" = @ItemCode
+                  order by 2 desc, 3 desc
+                  """);
+
+        string query = sb.ToString();
 
         var sqlParams = new[] {
             new SqlParameter("@ID", SqlDbType.Int) { Value                = request.ID },
@@ -295,6 +330,10 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         var result = await dbService.QueryAsync(query, sqlParams, reader => {
             int returnValue = reader.GetInt32(1);
+            if (!string.IsNullOrWhiteSpace(pickPackOnly) && Convert.ToBoolean(reader["PickPackOnly"]) && request.Unit != UnitType.Pack) {
+                returnValue = -5;
+            }
+
             return new PickingValidationResult {
                 PickEntry    = reader.IsDBNull(0) ? null : reader.GetInt32(0),
                 ReturnValue  = returnValue,
@@ -304,6 +343,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                     -2 => "Wrong item code",
                     -3 => "Item already fully picked",
                     -4 => "Quantity exceeds open quantity",
+                    -5 => "Customer is marked as pick pack only",
                     -6 => "Document is closed",
                     _  => null
                 },

@@ -14,6 +14,7 @@ public class PickListResponse {
     public int                           OpenQuantity   { get; set; }
     public int                           UpdateQuantity { get; set; }
     public List<PickListDetailResponse>? Detail         { get; set; }
+    public bool                          PickPackOnly   { get; set; }
 }
 
 public class PickListDetailResponse {

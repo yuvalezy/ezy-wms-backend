@@ -22,7 +22,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
                 Status         = p.Status,
                 Quantity       = p.Quantity,
                 OpenQuantity   = p.OpenQuantity,
-                UpdateQuantity = p.UpdateQuantity
+                UpdateQuantity = p.UpdateQuantity,
+                PickPackOnly   = p.PickPackOnly
             })
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
@@ -61,6 +62,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             Quantity       = pick.Quantity,
             OpenQuantity   = pick.OpenQuantity,
             UpdateQuantity = pick.UpdateQuantity,
+            PickPackOnly   = pick.PickPackOnly,
             Detail         = []
         };
 
