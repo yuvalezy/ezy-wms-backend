@@ -14,6 +14,4 @@ public static class Const {
     public const string Transfer                           = "Transferencia";
     public const string TransferSupervisor                 = "Supervisor Transfere";
     public const string TransferRequest                    = "Solicitud Transferen";
-
-    public static Guid DefaultUserId = new("00000000-0000-0000-0000-000000000000");
 }

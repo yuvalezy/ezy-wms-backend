@@ -10,9 +10,9 @@ public enum ObjectStatus {
 }
 
 public enum SyncStatus {
-    Pending = 0,
-    Syncing = 1,
-    Synced = 2,
-    Failed = 3,
-    Retry = 4
+    Pending    = 0,
+    Processing = 1,
+    Synced     = 2,
+    Failed     = 3,
+    Retry      = 4
 }

@@ -7,5 +7,8 @@ public interface IPickListService {
     Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request,     string                 warehouse);
     Task<PickListResponse?>             GetPickList(int               absEntry,    PickListDetailRequest  request, string warehouse);
     Task<PickListAddItemResponse>       AddItem(SessionInfo           sessionInfo, PickListAddItemRequest request);
-    Task<ProcessPickListResponse>       ProcessPickList(int           absEntry,    SessionInfo            sessionInfo);
+}
+public interface IPickListProcessService {
+    Task<ProcessPickListResponse>       ProcessPickList(int           absEntry,    Guid                   userId);
+    Task                                SyncPendingPickLists();
 }

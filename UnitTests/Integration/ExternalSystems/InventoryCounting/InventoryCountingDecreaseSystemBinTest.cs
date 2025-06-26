@@ -6,7 +6,8 @@ using Adapters.CrossPlatform.SBO.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
-using UnitTests.Integration.ExternalSystems.InventoryCountingDecreaseSystemBinTestHelpers;
+using UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
+using UnitTests.Integration.ExternalSystems.Shared;
 using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems;
@@ -52,7 +53,7 @@ public class InventoryCountingDecreaseSystemBinTest {
     [Test]
     [Order(1)]
     public async Task Test_01_CreateTestItem_ShouldSucceed() {
-        var helper = new Test01CreateTestItem(sboCompany);
+        var helper = new CreateTestItem(sboCompany);
         testItem = (await helper.Execute()).ItemCode;
     }
 

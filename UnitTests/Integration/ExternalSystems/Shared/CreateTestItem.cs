@@ -1,8 +1,8 @@
 ﻿using Adapters.CrossPlatform.SBO.Services;
 
-namespace UnitTests.Integration.ExternalSystems.InventoryCountingDecreaseSystemBinTestHelpers;
+namespace UnitTests.Integration.ExternalSystems.Shared;
 
-public class Test01CreateTestItem(SboCompany sboCompany) {
+public class CreateTestItem(SboCompany sboCompany) {
     private readonly string testItem      = $"TEST_ITEM_{Guid.NewGuid().ToString("N")[..8]}";
     private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
     public async Task<ItemData> Execute() {

@@ -149,7 +149,7 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
     public async Task<bool> DeleteUserAsync(Guid id, Guid currentUserId) {
         try {
             // Prevent deletion of default system user
-            if (id == Const.DefaultUserId) {
+            if (id == DatabaseExtensions.AdminUserId || id == DatabaseExtensions.SystemUserId) {
                 throw new InvalidOperationException("Cannot delete the default system user.");
             }
 

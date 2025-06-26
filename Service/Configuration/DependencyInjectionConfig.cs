@@ -9,6 +9,7 @@ using Infrastructure.SessionManager;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Service.Services;
 
 namespace Service.Configuration;
 
@@ -38,6 +39,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<IPickListService, PickListService>();
+        services.AddScoped<IPickListProcessService, PickListProcessService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<IGoodsReceiptReportService, GoodsReceiptReportService>();
         services.AddScoped<IGoodsReceiptLineService, GoodsReceiptLineService>();
@@ -45,6 +47,13 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
+
+        // Configure BackgroundPickListSyncService
+        services.Configure<BackgroundPickListSyncOptions>(
+            configuration.GetSection("BackgroundServices:PickListSync"));
+        services.AddSingleton<BackgroundPickListSyncService>();
+        services.AddHostedService<BackgroundPickListSyncService>(provider => 
+            provider.GetRequiredService<BackgroundPickListSyncService>());
 
         switch (settings.ExternalAdapter) {
             // case ExternalAdapterType.SboWindows:

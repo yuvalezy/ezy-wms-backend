@@ -36,8 +36,8 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<PickingDetailResponse>>           GetPickingDetails(Dictionary<string, object>         parameters);
     Task<IEnumerable<PickingDetailItemResponse>>       GetPickingDetailItems(Dictionary<string, object>     parameters);
     Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
-    Task<PickingValidationResult[]>                    ValidatePickingAddItem(PickListAddItemRequest        request,  Guid   userId);
-    Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, string warehouse, List<PickList> data);
+    Task<PickingValidationResult[]>                    ValidatePickingAddItem(PickListAddItemRequest        request);
+    Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, List<PickList> data);
     Task<Dictionary<int, bool>>                        GetPickListStatuses(int[]                            absEntries);
 
     // Inventory Counting methods
