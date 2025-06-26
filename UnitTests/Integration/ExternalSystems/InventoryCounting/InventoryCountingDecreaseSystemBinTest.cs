@@ -1,22 +1,22 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Core.Interfaces;
-using Core.Enums;
 using Adapters.CrossPlatform.SBO.Services;
+using Core.Enums;
+using Core.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 using UnitTests.Integration.ExternalSystems.Shared;
 using WebApi;
 
-namespace UnitTests.Integration.ExternalSystems;
+namespace UnitTests.Integration.ExternalSystems.InventoryCounting;
 
 [TestFixture]
 [Category("Integration")]
 [Category("ExternalSystem")]
 [Category("RequiresSapB1")]
-[Explicit("Requires SAP B1 test database connection")]
+
 public class InventoryCountingDecreaseSystemBinTest {
     private WebApplicationFactory<Program> factory;
 
@@ -64,21 +64,21 @@ public class InventoryCountingDecreaseSystemBinTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new Test02CreateGoodsReceipt(sboCompany, testItem, TestWarehouse, settings, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, testItem, TestWarehouse, settings, factory);
         await helper.Execute();
     }
 
     [Test]
     [Order(3)]
     public async Task Test_03_CreateInventoryCounting_ShouldInitializeCountingDocument() {
-        var helper = new Test03CreateInventoryCounting(testItem, factory);
+        var helper = new CreateInventoryCounting(testItem, factory);
         countingId = await helper.Execute();
     }
 
     [Test]
     [Order(4)]
     public async Task Test_04_AddItemToInventoryCounting_ShouldIncludeTestItem() {
-        var helper = new Test04AddItems(countingId, testItem, TestWarehouse, factory, settings);
+        var helper = new AddItems(countingId, testItem, TestWarehouse, factory, settings);
         binEntries = await helper.Execute();
     }
 
@@ -101,7 +101,7 @@ public class InventoryCountingDecreaseSystemBinTest {
     [Test]
     [Order(6)]
     public async Task Test_06_VerifyInventoryCountingDocumentInSapB1_ShouldExistWithCorrectData() {
-        var helper = new Test06VerifyInventoryCountingDocumentInSapB1(countingEntry, sboCompany, testItem, TestWarehouse, binEntries, settings);
+        var helper = new VerifyResult(countingEntry, sboCompany, testItem, TestWarehouse, binEntries, settings);
         await helper.Execute();
     }
 

@@ -4,7 +4,7 @@ using Core.Interfaces;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class Test06VerifyInventoryCountingDocumentInSapB1(
+public class VerifyResult(
     int                                                               countingEntry,
     SboCompany                                                        sboCompany,
     string                                                            testItem,

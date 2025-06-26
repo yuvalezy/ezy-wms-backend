@@ -7,7 +7,7 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class Test03CreateInventoryCounting(string testItem, WebApplicationFactory<Program> factory) {
+public class CreateInventoryCounting(string testItem, WebApplicationFactory<Program> factory) {
     private Guid id = Guid.Empty;
 
     public async Task<Guid> Execute() {

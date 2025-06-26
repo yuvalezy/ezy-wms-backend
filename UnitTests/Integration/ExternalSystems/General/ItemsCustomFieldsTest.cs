@@ -15,8 +15,8 @@ namespace UnitTests.Integration.ExternalSystems.General;
 [Category("Integration")]
 [Category("ExternalSystem")]
 [Category("RequiresSapB1")]
-[Explicit("Requires SAP B1 test database connection")]
-public class CustomFieldsTest {
+
+public class ItemsCustomFieldsTest {
     private WebApplicationFactory<Program> factory;
     private ISettings                      settings;
     private SboCompany                     sboCompany;

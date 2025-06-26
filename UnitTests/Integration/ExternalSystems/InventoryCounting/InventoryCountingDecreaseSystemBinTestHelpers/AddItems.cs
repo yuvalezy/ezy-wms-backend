@@ -8,7 +8,7 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class AddItemsToCounting(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
+public class AddItems(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
     private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
 
     private readonly List<(int binEntry, string binCode, int quantity, UnitType unit)> binEntries = [];
