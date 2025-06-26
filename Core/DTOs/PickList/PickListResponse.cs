@@ -10,6 +10,7 @@ public class PickListResponse {
     public int                           Transfers      { get; set; }
     public string?                       Remarks        { get; set; }
     public ObjectStatus                  Status         { get; set; }
+    public SyncStatus                    SyncStatus     { get; set; }
     public int                           Quantity       { get; set; }
     public int                           OpenQuantity   { get; set; }
     public int                           UpdateQuantity { get; set; }

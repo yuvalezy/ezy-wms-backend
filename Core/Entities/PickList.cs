@@ -26,4 +26,7 @@ public class PickList : BaseEntity {
 
     [Required]
     public ObjectStatus Status { get; set; } = ObjectStatus.Open;
+    public SyncStatus SyncStatus { get; set; } = SyncStatus.Synced;
+    public DateTime?  SyncedAt   { get; set; }
+    public string?    SyncError  { get; set; }
 }

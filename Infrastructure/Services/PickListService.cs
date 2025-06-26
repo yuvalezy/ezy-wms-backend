@@ -23,7 +23,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
                 Quantity       = p.Quantity,
                 OpenQuantity   = p.OpenQuantity,
                 UpdateQuantity = p.UpdateQuantity,
-                PickPackOnly   = p.PickPackOnly
+                PickPackOnly   = p.PickPackOnly,
+                SyncStatus     = SyncStatus.Synced,
             })
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
@@ -35,9 +36,12 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
         foreach (var r in response) {
-            int pickedQuantity = dbPick.Where(p => p.AbsEntry == r.Entry).Sum(p => p.Quantity);
+            var values      = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
+            int pickedQuantity = values.Sum(p => p.Quantity);
             r.OpenQuantity   -= pickedQuantity;
             r.UpdateQuantity += pickedQuantity;
+            if (values.Any(v => v.SyncStatus is SyncStatus.Pending or SyncStatus.Failed))
+                r.SyncStatus = SyncStatus.Pending;
         }
 
         return response;
@@ -312,6 +316,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter)
             BinEntry        = request.BinEntry,
             Unit            = request.Unit,
             Status          = ObjectStatus.Open,
+            SyncStatus      = SyncStatus.Pending,
             CreatedAt       = DateTime.UtcNow,
             CreatedByUserId = sessionInfo.Guid
         };
