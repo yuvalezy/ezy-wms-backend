@@ -219,4 +219,170 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         public string Code { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
     }
+
+    public async Task<(bool success, string? errorMessage, List<BatchOperationResult> responses)> ExecuteBatchAsync(params BatchOperation[] operations) {
+        await ConnectCompany();
+
+        string batchBoundary = $"batch_{Guid.NewGuid()}";
+        string changeSetBoundary = $"changeset_{Guid.NewGuid()}";
+
+        var batchContent = new MultipartContent("mixed", batchBoundary);
+        batchContent.Headers.ContentType!.Parameters.Clear();
+        batchContent.Headers.ContentType.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("boundary", batchBoundary));
+
+        // Create changeset content
+        var changeSetBuilder = new StringBuilder();
+        changeSetBuilder.AppendLine($"--{changeSetBoundary}");
+
+        for (int i = 0; i < operations.Length; i++) {
+            var operation = operations[i];
+            
+            changeSetBuilder.AppendLine($"Content-Type: application/http");
+            changeSetBuilder.AppendLine($"Content-Transfer-Encoding: binary");
+            changeSetBuilder.AppendLine($"Content-ID: {i + 1}");
+            changeSetBuilder.AppendLine();
+
+            changeSetBuilder.AppendLine($"{operation.Method} /b1s/v2/{operation.Endpoint} HTTP/1.1");
+            changeSetBuilder.AppendLine("Content-Type: application/json");
+            changeSetBuilder.AppendLine($"Content-Length: {operation.Body.Length}");
+            changeSetBuilder.AppendLine();
+            changeSetBuilder.AppendLine(operation.Body);
+            
+            if (i < operations.Length - 1) {
+                changeSetBuilder.AppendLine($"--{changeSetBoundary}");
+            }
+        }
+        
+        changeSetBuilder.AppendLine($"--{changeSetBoundary}--");
+
+        var changeSetContent = new StringContent(changeSetBuilder.ToString());
+        changeSetContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/mixed");
+        changeSetContent.Headers.ContentType.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("boundary", changeSetBoundary));
+
+        batchContent.Add(changeSetContent);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{url}/b1s/v2/$batch");
+        request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
+        request.Content = batchContent;
+
+        var response = await httpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode) {
+            string responseContent = await response.Content.ReadAsStringAsync();
+            logger.LogInformation("Batch operation successful");
+            
+            // Parse the multipart batch response
+            var results = ParseBatchResponse(responseContent);
+            
+            // Check if all operations succeeded
+            bool allSucceeded = results.All(r => r.StatusCode >= 200 && r.StatusCode < 300);
+            if (!allSucceeded) {
+                var firstError = results.FirstOrDefault(r => r.StatusCode >= 400);
+                return (false, firstError?.ErrorMessage ?? "One or more batch operations failed", results);
+            }
+            
+            return (true, null, results);
+        }
+
+        var (success, errorMessage) = await HandleBatchErrorResponse(response);
+        return (success, errorMessage, new List<BatchOperationResult>());
+    }
+
+    private async Task<(bool success, string? errorMessage)> HandleBatchErrorResponse(HttpResponseMessage response) {
+        string errorContent = await response.Content.ReadAsStringAsync();
+        
+        // Parse batch response to find the specific error
+        // This is a simplified version - in production you'd parse the multipart response properly
+        if (errorContent.Contains("\"error\"")) {
+            try {
+                // Extract JSON error from multipart response
+                int startIndex = errorContent.IndexOf("{");
+                int endIndex = errorContent.LastIndexOf("}") + 1;
+                if (startIndex >= 0 && endIndex > startIndex) {
+                    string jsonError = errorContent.Substring(startIndex, endIndex - startIndex);
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(jsonError, options);
+                    string errorMessage = errorResponse?.Error?.Message ?? "Unknown batch error";
+                    logger.LogError("Batch operation failed: {ErrorMessage}", errorMessage);
+                    return (false, errorMessage);
+                }
+            }
+            catch {
+                // Fall back to generic error handling
+            }
+        }
+
+        logger.LogError("Batch operation failed with status {StatusCode}", response.StatusCode);
+        return (false, $"Batch operation failed: HTTP {response.StatusCode}");
+    }
+
+    private List<BatchOperationResult> ParseBatchResponse(string responseContent) {
+        var results = new List<BatchOperationResult>();
+        
+        // Split by changeset boundaries
+        var parts = responseContent.Split(new[] { "--changesetresponse_" }, StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var part in parts.Skip(1)) { // Skip the first part which is before the first boundary
+            if (part.Contains("HTTP/1.1")) {
+                var result = new BatchOperationResult();
+                
+                // Extract status line
+                var httpLineStart = part.IndexOf("HTTP/1.1");
+                var httpLineEnd = part.IndexOf("\r\n", httpLineStart);
+                if (httpLineEnd == -1) httpLineEnd = part.IndexOf("\n", httpLineStart);
+                
+                if (httpLineStart >= 0 && httpLineEnd > httpLineStart) {
+                    var statusLine = part.Substring(httpLineStart, httpLineEnd - httpLineStart);
+                    var statusParts = statusLine.Split(' ');
+                    if (statusParts.Length >= 3) {
+                        result.StatusCode = int.Parse(statusParts[1]);
+                        result.StatusText = string.Join(" ", statusParts.Skip(2));
+                    }
+                }
+                
+                // Extract Content-ID
+                var contentIdMatch = System.Text.RegularExpressions.Regex.Match(part, @"Content-ID:\s*(\d+)");
+                if (contentIdMatch.Success) {
+                    result.ContentId = int.Parse(contentIdMatch.Groups[1].Value);
+                }
+                
+                // Extract JSON body if present
+                var jsonStart = part.IndexOf("{");
+                var jsonEnd = part.LastIndexOf("}");
+                if (jsonStart >= 0 && jsonEnd > jsonStart) {
+                    result.Body = part.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    
+                    // Parse error if status indicates failure
+                    if (result.StatusCode >= 400) {
+                        try {
+                            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                            var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(result.Body, options);
+                            result.ErrorMessage = errorResponse?.Error?.Message;
+                        }
+                        catch {
+                            // Ignore parsing errors
+                        }
+                    }
+                }
+                
+                results.Add(result);
+            }
+        }
+        
+        return results;
+    }
+
+    public class BatchOperation {
+        public string Method { get; set; } = "POST";
+        public required string Endpoint { get; set; }
+        public required string Body { get; set; }
+    }
+    
+    public class BatchOperationResult {
+        public int ContentId { get; set; }
+        public int StatusCode { get; set; }
+        public string StatusText { get; set; } = string.Empty;
+        public string? Body { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
 }
