@@ -5,7 +5,7 @@ public class Filters {
     public FilterQuery? PickPackOnly            { get; set; }
     public string?      PickReady               { get; set; }
     public int?         InitialCountingBinEntry { get; set; }
-    public int          CancelPickingEntry      { get; set; }
+    public int          CancelPickingBinEntry      { get; set; }
 }
 
 public class FilterQuery {

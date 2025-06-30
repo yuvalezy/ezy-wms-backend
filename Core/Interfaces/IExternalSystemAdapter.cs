@@ -22,7 +22,7 @@ public interface IExternalSystemAdapter {
     Task<bool>                                           ValidateVendorsAsync(string id);
     Task<BinLocationResponse?>                           ScanBinLocationAsync(string bin);
     Task<string?>                                        GetBinCodeAsync(int binEntry);
-    Task<IEnumerable<ItemInfoResponse>>                      ScanItemBarCodeAsync(string scanCode, bool item = false);
+    Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string scanCode, bool item = false);
     Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string? itemCode, string? barcode);
     Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int binEntry);
     Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string itemCode, string whsCode);
@@ -39,6 +39,8 @@ public interface IExternalSystemAdapter {
     Task<PickingValidationResult[]>                    ValidatePickingAddItem(PickListAddItemRequest        request);
     Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, List<PickList> data);
     Task<Dictionary<int, bool>>                        GetPickListStatuses(int[]                            absEntries);
+    Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int                              absEntry);
+    Task<ProcessPickListResponse>                      CancelPickListTransfer(int                           absEntry, IEnumerable<ItemBinLocationResponseQuantity> selection);
 
     // Inventory Counting methods
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);

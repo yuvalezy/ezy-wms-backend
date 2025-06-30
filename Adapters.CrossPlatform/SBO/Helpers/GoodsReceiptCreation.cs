@@ -11,7 +11,7 @@ public class GoodsReceiptCreation(
     string                                                     whsCode,
     int                                                        series,
     Dictionary<string, List<GoodsReceiptCreationDataResponse>> data,
-    ILoggerFactory                                             loggerFactory) : IDisposable {
+    ILoggerFactory                                             loggerFactory)  {
     private readonly ILogger<GoodsReceiptCreation> logger = loggerFactory.CreateLogger<GoodsReceiptCreation>();
 
     private List<(int Entry, int Number)> NewEntries { get; } = [];
@@ -149,9 +149,6 @@ public class GoodsReceiptCreation(
             logger.LogError(ex, "Exception while creating goods receipt document");
             return (false, ex.Message);
         }
-    }
-
-    public void Dispose() {
     }
 
     private class DocumentLine {

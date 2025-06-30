@@ -1,14 +1,8 @@
-using Adapters.CrossPlatform.SBO.Services;
 using Core.Enums;
 using Core.Interfaces;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 using UnitTests.Integration.ExternalSystems.Shared;
-using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting;
 
@@ -17,13 +11,10 @@ namespace UnitTests.Integration.ExternalSystems.InventoryCounting;
 [Category("ExternalSystem")]
 [Category("RequiresSapB1")]
 
-public class InventoryCountingDecreaseSystemBinTest {
-    private WebApplicationFactory<Program> factory;
+public class InventoryCountingDecreaseSystemBinTest : BaseExternalTest {
 
     private const string TestWarehouse = "SM";
 
-    private ISettings  settings;
-    private SboCompany sboCompany;
     private Guid       countingId;
     private int        countingEntry;
 
@@ -31,24 +22,6 @@ public class InventoryCountingDecreaseSystemBinTest {
 
     private string testItem = string.Empty;
 
-    [OneTimeSetUp]
-    public void OneTimeSetUp() {
-        factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => {
-                builder.UseEnvironment("IntegrationTests");
-
-                var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .Build();
-            });
-
-        // Create a service scope and resolve the service from it
-        using var scope = factory.Services.CreateScope();
-        settings = scope.ServiceProvider.GetRequiredService<ISettings>();
-        Assert.That(settings.SboSettings != null, "settings.SboSettings != null");
-        sboCompany = new SboCompany(settings, factory.Services.GetRequiredService<ILogger<SboCompany>>());
-    }
 
     [Test]
     [Order(1)]
@@ -64,7 +37,7 @@ public class InventoryCountingDecreaseSystemBinTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, TestWarehouse, settings, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory);
         await helper.Execute();
     }
 
@@ -103,15 +76,5 @@ public class InventoryCountingDecreaseSystemBinTest {
     public async Task Test_06_VerifyInventoryCountingDocumentInSapB1_ShouldExistWithCorrectData() {
         var helper = new VerifyResult(countingEntry, sboCompany, testItem, TestWarehouse, binEntries, settings);
         await helper.Execute();
-    }
-
-    [OneTimeTearDown]
-    public async Task OneTimeTearDown() {
-        try {
-            await factory.DisposeAsync();
-        }
-        catch (Exception ex) {
-            await TestContext.Out.WriteLineAsync($"Cleanup failed: {ex.Message}");
-        }
     }
 }

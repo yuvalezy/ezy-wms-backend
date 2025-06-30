@@ -7,8 +7,9 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.Shared;
 
-public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, string testWarehouse, ISettings settings, WebApplicationFactory<Program> factory) {
+public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISettings settings, int series, WebApplicationFactory<Program> factory) {
     private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
 
     public async Task Execute() {
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
@@ -21,8 +22,6 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, string t
     }
 
     private async Task CreateDocument() {
-        // Get document series for current period for new Inventory Goods Receipt
-        const int series = 129;
 
         // Generate an Inventory Goods Receipt: 20 boxes into testWarehouse with testItem into testBinLocation
         var goodsReceiptData = new {

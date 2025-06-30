@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListProcessService> logger) : IPickListProcessService {
+public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings, ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
         try {
@@ -166,5 +166,21 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
             logger.LogError(ex, "Failed to update sync status for AbsEntry {AbsEntry}", absEntry);
             throw;
         }
+    }
+
+    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, Guid userId) {
+        //Process the picking in case something has not been synced into sbo
+        var response = await ProcessPickList(absEntry, userId);
+        if (response.Status != ResponseStatus.Ok && response.ErrorMessage != $"No open pick list items found for AbsEntry {absEntry}") {
+            return response;
+        }
+        //Get a picked selection for bin locations
+        int initialCountingBinEntry = settings.Filters.CancelPickingBinEntry;
+        if (initialCountingBinEntry == 0) {
+            throw new Exception($"Initial Counting Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
+        }
+
+        var  selection               = await adapter.GetPickingSelection(absEntry);
+        return await adapter.CancelPickListTransfer(absEntry, selection);
     }
 }

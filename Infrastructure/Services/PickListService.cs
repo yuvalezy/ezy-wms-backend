@@ -259,9 +259,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         if (validationResults.Length == 0) {
             return new PickListAddItemResponse {
-                ErrorMessage   = "Pick entry not found",
+                ErrorMessage   = "Item entry not found in pick",
                 Status         = ResponseStatus.Error,
-                ClosedDocument = true
             };
         }
 
@@ -291,7 +290,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         var check = (from v in validationResults.Where(a => a.IsValid)
                 join p in dbPickedQuantity on v.PickEntry equals p.PickEntry into gj
                 from sub in gj.DefaultIfEmpty()
-                where v.OpenQuantity - (sub?.Quantity ?? 0) > 0
+                where v.OpenQuantity - (sub?.Quantity ?? 0) >= 0
                 select new { ValidationResult = v, PickedQuantity = sub?.Quantity ?? 0 })
             .FirstOrDefault();
         if (check == null) {

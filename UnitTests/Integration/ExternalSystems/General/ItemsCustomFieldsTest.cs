@@ -16,32 +16,11 @@ namespace UnitTests.Integration.ExternalSystems.General;
 [Category("ExternalSystem")]
 [Category("RequiresSapB1")]
 
-public class ItemsCustomFieldsTest {
-    private WebApplicationFactory<Program> factory;
-    private ISettings                      settings;
-    private SboCompany                     sboCompany;
+public class ItemsCustomFieldsTest : BaseExternalTest {
     private ItemData                       itemData;
 
     private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
 
-    [OneTimeSetUp]
-    public void OneTimeSetUp() {
-        factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => {
-                builder.UseEnvironment("IntegrationTests");
-
-                var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .Build();
-            });
-
-        // Create a service scope and resolve the service from it
-        using var scope = factory.Services.CreateScope();
-        settings = scope.ServiceProvider.GetRequiredService<ISettings>();
-        Assert.That(settings.SboSettings != null, "settings.SboSettings != null");
-        sboCompany = new SboCompany(settings, factory.Services.GetRequiredService<ILogger<SboCompany>>());
-    }
 
     [Test]
     [Order(1)]
@@ -58,7 +37,7 @@ public class ItemsCustomFieldsTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, itemData.ItemCode, testWarehouse, settings, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, itemData.ItemCode, settings, goodsReceiptSeries, factory);
         await helper.Execute();
     }
 
@@ -105,10 +84,5 @@ public class ItemsCustomFieldsTest {
                 }
             }
         }
-    }
-
-    [OneTimeTearDown]
-    public void OneTimeTearDown() {
-        factory.Dispose();
     }
 }

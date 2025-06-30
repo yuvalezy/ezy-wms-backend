@@ -8,7 +8,3 @@ public interface IPickListService {
     Task<PickListResponse?>             GetPickList(int               absEntry,    PickListDetailRequest  request, string warehouse);
     Task<PickListAddItemResponse>       AddItem(SessionInfo           sessionInfo, PickListAddItemRequest request);
 }
-public interface IPickListProcessService {
-    Task<ProcessPickListResponse>       ProcessPickList(int           absEntry,    Guid                   userId);
-    Task                                SyncPendingPickLists();
-}

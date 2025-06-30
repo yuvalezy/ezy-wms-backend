@@ -46,7 +46,7 @@ public class SboAdapter(
     public async Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string       warehouse)                      => await generalRepository.GetItemAndBinCountAsync(warehouse);
     public async Task<BinLocationResponse?>                           ScanBinLocationAsync(string     bin)                            => await generalRepository.ScanBinLocationAsync(bin);
     public async Task<string?>                                        GetBinCodeAsync(int             binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);
-    public async Task<IEnumerable<ItemInfoResponse>>                      ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
     public async Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?          itemCode, string? barcode)      => await itemRepository.ItemCheckAsync(itemCode, barcode);
     public async Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int               binEntry)                    => await generalRepository.BinCheckAsync(binEntry);
     public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
@@ -121,7 +121,13 @@ public class SboAdapter(
         return result;
     }
 
-    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<Dictionary<int, bool>>                        GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
+
+    public Task<ProcessPickListResponse> CancelPickListTransfer(int absEntry, IEnumerable<ItemBinLocationResponseQuantity> selection) {
+        var helper = new PickingCancellation(sboCompany, absEntry, loggerFactory);
+        return Task.FromResult(helper.Execute());
+    }
 
     //Inventory Counting
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {

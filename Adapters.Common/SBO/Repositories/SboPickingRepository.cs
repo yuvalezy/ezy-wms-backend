@@ -1,5 +1,4 @@
 using System.Data;
-using System.Diagnostics;
 using System.Text;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
@@ -7,7 +6,6 @@ using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Core.Models.Settings;
 using Microsoft.Data.SqlClient;
 
@@ -242,12 +240,13 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             inner join OIBQ T3 on T3."ItemCode" = T2."ItemCode" and T3."WhsCode" = T2."LocCode"
             inner join OBIN T4 on T4."AbsEntry" = T3."BinAbs"
             left outer join (
-            	select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
+            	select T2."BinAbs", T3."ItemCode", Sum(T2."PickQtty") "BinQty"
             	from PKL1 T0
             	inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
             	inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
-            	Group By T2."BinAbs"
-            ) T5 on T5."BinAbs" = T3."BinAbs"
+                inner join OILM T3 on T3.TransType = T0.BaseObject and T3.DocEntry = T0.OrderEntry and T3.DocLineNum = T0.OrderLine
+            	Group By T2."BinAbs", T3."ItemCode"
+            ) T5 on T5."BinAbs" = T3."BinAbs" and T5."ItemCode" = T3."ItemCode"
             where T1."AbsEntry" = @AbsEntry
             and T1."BaseObject" = @Type
             and T1."OrderEntry" = @Entry
@@ -268,6 +267,28 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             Code     = reader.GetString(2),
             Quantity = (int)reader.GetDecimal(3)
         });
+    }
+
+    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int absEntry) {
+        const string query =
+            """
+            select T2."ItemCode",
+                   T3."BinAbs",
+                   Sum(T3."PickQtty") "Quantity"
+            from PKL1 T1
+                     inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
+                     inner join PKL2 T3 on T3.AbsEntry = T1.AbsEntry and T3.PickEntry = T1.PickEntry
+            where T1."AbsEntry" = @AbsEntry
+            GROUP BY T2."ItemCode", T3."BinAbs"
+            """;
+
+        return await dbService.QueryAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }],
+            reader => new ItemBinLocationResponseQuantity {
+                ItemCode = reader.GetString(0),
+                Entry    = reader.GetInt32(1),
+                Quantity = Convert.ToInt32(reader[2]),
+                Code = string.Empty,
+            });
     }
 
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) {
@@ -296,13 +317,14 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                   inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
                   left outer join OIBQ T3 on T3."BinAbs" = @BinEntry and T3."ItemCode" = @ItemCode
                   left outer join (
-                      select T2."BinAbs", Sum(T2."PickQtty") "BinQty"
+                      select T2."BinAbs", T3."ItemCode", Sum(T2."PickQtty") "BinQty"
                       from PKL1 T0
                       inner join OPKL T1 on T1."AbsEntry" = T0."AbsEntry" and T1."Status" = 'P'
                       inner join PKL2 T2 on T2."AbsEntry" = T0."AbsEntry" and T2."PickEntry" = T0."PickEntry"
+                      inner join OILM T3 on T3.TransType = T0.BaseObject and T3.DocEntry = T0.OrderEntry and T3.DocLineNum = T0.OrderLine
                       where T2."BinAbs" = @BinEntry
-                      Group By T2."BinAbs"
-                  ) T5 on T5."BinAbs" = T3."BinAbs"
+                      Group By T2."BinAbs", T3."ItemCode"
+                  ) T5 on T5."BinAbs" = T3."BinAbs" and T5."ItemCode" = T2."ItemCode"
                   """);
 
         if (!string.IsNullOrWhiteSpace(pickPackOnly)) {
@@ -431,4 +453,5 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             return param;
         }).ToArray();
     }
+
 }

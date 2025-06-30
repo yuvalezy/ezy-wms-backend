@@ -17,13 +17,13 @@ using Microsoft.Extensions.Logging;
 namespace Adapters.CrossPlatform.SBO;
 
 public class SboServiceLayerAdapter : IExternalSystemAdapter {
-    private readonly SboEmployeeRepository          employeeRepository;
-    private readonly SboGeneralRepository           generalRepository;
-    private readonly SboItemRepository              itemRepository;
-    private readonly SboPickingRepository           pickingRepository;
-    private readonly SboGoodsReceiptRepository      goodsReceiptRepository;
-    private readonly SboCompany                     sboCompany;
-    private readonly ILoggerFactory                 loggerFactory;
+    private readonly SboEmployeeRepository     employeeRepository;
+    private readonly SboGeneralRepository      generalRepository;
+    private readonly SboItemRepository         itemRepository;
+    private readonly SboPickingRepository      pickingRepository;
+    private readonly SboGoodsReceiptRepository goodsReceiptRepository;
+    private readonly SboCompany                sboCompany;
+    private readonly ILoggerFactory            loggerFactory;
 
     public SboServiceLayerAdapter(SboEmployeeRepository employeeRepository,
         SboGeneralRepository                            generalRepository,
@@ -31,15 +31,15 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         SboPickingRepository                            pickingRepository,
         SboGoodsReceiptRepository                       goodsReceiptRepository,
         ISettings                                       settings,
-        SboCompany                                      sboCompany, 
-        ILoggerFactory loggerFactory) {
-        this.employeeRepository          = employeeRepository;
-        this.generalRepository           = generalRepository;
-        this.itemRepository              = itemRepository;
-        this.pickingRepository           = pickingRepository;
-        this.goodsReceiptRepository      = goodsReceiptRepository;
-        this.sboCompany                  = sboCompany;
-        this.loggerFactory               = loggerFactory;
+        SboCompany                                      sboCompany,
+        ILoggerFactory                                  loggerFactory) {
+        this.employeeRepository     = employeeRepository;
+        this.generalRepository      = generalRepository;
+        this.itemRepository         = itemRepository;
+        this.pickingRepository      = pickingRepository;
+        this.goodsReceiptRepository = goodsReceiptRepository;
+        this.sboCompany             = sboCompany;
+        this.loggerFactory          = loggerFactory;
         if (string.IsNullOrWhiteSpace(settings.SboSettings?.ServiceLayerUrl)) {
             throw new Exception("Service Layer Url is not set");
         }
@@ -66,7 +66,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string       warehouse)                      => await generalRepository.GetItemAndBinCountAsync(warehouse);
     public async Task<BinLocationResponse?>                           ScanBinLocationAsync(string     bin)                            => await generalRepository.ScanBinLocationAsync(bin);
     public async Task<string?>                                        GetBinCodeAsync(int             binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);
-    public async Task<IEnumerable<ItemInfoResponse>>                      ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
     public async Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?          itemCode, string? barcode)      => await itemRepository.ItemCheckAsync(itemCode, barcode);
     public async Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int               binEntry)                    => await generalRepository.BinCheckAsync(binEntry);
     public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
@@ -140,11 +140,18 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         return result;
     }
 
-    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<Dictionary<int, bool>>                        GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
+
+    public async Task<ProcessPickListResponse> CancelPickListTransfer(int absEntry, IEnumerable<ItemBinLocationResponseQuantity> selection) {
+        var pickingCancellation = new PickingCancellation(sboCompany, absEntry, loggerFactory);
+        return await pickingCancellation.Execute();
+    }
+        
 
     //Inventory Counting
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
-        int series = await generalRepository.GetSeries("1470000065");
+        int       series   = await generalRepository.GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
         try {
             return await creation.Execute();
@@ -164,8 +171,8 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
-        int series = await generalRepository.GetSeries("20");
-        using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
+        int       series   = await generalRepository.GetSeries("20");
+        var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
         return await creation.Execute();
     }
 
