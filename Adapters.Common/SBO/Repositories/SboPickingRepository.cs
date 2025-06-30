@@ -287,30 +287,13 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             """;
 
         return await dbService.QueryAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }],
-            reader => {
-                decimal quantity = Convert.ToDecimal(reader["Quantity"]);
-                decimal numInBuy = Convert.ToDecimal(reader["NumInBuy"]);
-                decimal packUn   = Convert.ToDecimal(reader["PurPackUn"]);
-
-                //Calculate packs
-                int packs = (int)Math.Floor(quantity / (numInBuy * packUn));
-
-                //Calculate dozens
-                int remainderAfterPacks = (int)(quantity - packs * numInBuy * packUn);
-                int dozens              = (int)Math.Floor(remainderAfterPacks / numInBuy);
-
-
-                //Calculate units
-                int units = (int)(remainderAfterPacks % numInBuy);
-
-                return new PickingSelectionResponse {
-                    ItemCode = (string)reader["ItemCode"],
-                    CodeBars = (string)reader["CodeBars"],
-                    BinEntry = (int)reader["BinAbs"],
-                    Packs    = packs,
-                    Dozens   = dozens,
-                    Units    = units
-                };
+            reader => new PickingSelectionResponse {
+                ItemCode = (string)reader["ItemCode"],
+                CodeBars = (string)reader["CodeBars"],
+                BinEntry = (int)reader["BinAbs"],
+                Quantity = Convert.ToDecimal(reader["Quantity"]),
+                NumInBuy = Convert.ToDecimal(reader["NumInBuy"]),
+                PackUn   = Convert.ToDecimal(reader["PurPackUn"])
             });
     }
 

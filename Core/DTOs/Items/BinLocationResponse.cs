@@ -16,10 +16,10 @@ public class ItemBinLocationResponseQuantity : BinLocationResponseQuantity {
 }
 
 public class PickingSelectionResponse {
-    public required string ItemCode { get; set; }
-    public          int    BinEntry { get; set; }
-    public          int    Packs    { get; set; }
-    public          int    Dozens   { get; set; }
-    public          int    Units    { get; set; }
-    public required string CodeBars { get; set; }
+    public required string  ItemCode { get; set; }
+    public          int     BinEntry { get; set; }
+    public          decimal Quantity { get; set; }
+    public required string  CodeBars { get; set; }
+    public          decimal NumInBuy { get; set; }
+    public          decimal PackUn   { get; set; }
 }

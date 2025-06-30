@@ -186,8 +186,8 @@ public class PickListProcessService(
         }
 
         //Get a picked selection for bin locations
-        int initialCountingBinEntry = settings.Filters.CancelPickingBinEntry;
-        if (initialCountingBinEntry == 0) {
+        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
+        if (cancelBinEntry == 0) {
             throw new Exception($"Initial Counting Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
         }
 
@@ -195,7 +195,7 @@ public class PickListProcessService(
         var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
 
         //Cancel Pick List
-        response = await adapter.CancelPickList(absEntry, selection, settings.Filters.CancelPickingBinEntry);
+        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry);
         if (selection.Length == 0)
             return response.ToCancelResponse();
 
@@ -206,34 +206,48 @@ public class PickListProcessService(
         }, sessionInfo);
 
         //Add items into transfer
-        var items = selection.GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars });
+        var items = selection
+            .GroupBy(v => new { v.ItemCode, BarCode                                                  = v.CodeBars, v.NumInBuy, v.PackUn })
+            .Select(v => new { v.Key.ItemCode, v.Key.BarCode, v.Key.NumInBuy, v.Key.PackUn, Quantity = v.Sum(w => w.Quantity) });
         foreach (var item in items) {
             var addRequest = new TransferAddItemRequest {
                 //TODO: add additional validations, don't know which yet
                 ID       = transfer.Id,
-                ItemCode = item.Key.ItemCode,
-                BarCode  = item.Key.BarCode,
-                Type     = SourceTarget.Source
+                ItemCode = item.ItemCode,
+                BarCode  = item.BarCode,
+                Type     = SourceTarget.Source,
             };
-            foreach (var selectionResponse in item) {
-                addRequest.BinEntry = selectionResponse.BinEntry;
-                if (selectionResponse.Packs > 0) {
-                    addRequest.Quantity = selectionResponse.Packs;
-                    addRequest.Unit     = UnitType.Pack;
-                    await transferLineService.AddItem(sessionInfo, addRequest);
-                }
 
-                if (selectionResponse.Dozens > 0) {
-                    addRequest.Quantity = selectionResponse.Dozens;
-                    addRequest.Unit     = UnitType.Dozen;
-                    await transferLineService.AddItem(sessionInfo, addRequest);
-                }
+            decimal quantity = item.Quantity;
+            decimal numInBuy = item.NumInBuy;
+            decimal packUn   = item.PackUn;
+            //Calculate packs
+            int packs = (int)Math.Floor(quantity / (numInBuy * packUn));
 
-                if (selectionResponse.Dozens > 0) {
-                    addRequest.Quantity = selectionResponse.Units;
-                    addRequest.Unit     = UnitType.Unit;
-                    await transferLineService.AddItem(sessionInfo, addRequest);
-                }
+            //Calculate dozens
+            int remainderAfterPacks = (int)(quantity - packs * numInBuy * packUn);
+            int dozens              = (int)Math.Floor(remainderAfterPacks / numInBuy);
+
+            //Calculate units
+            int units = (int)(remainderAfterPacks % numInBuy);
+
+            addRequest.BinEntry = cancelBinEntry;
+            if (packs > 0) {
+                addRequest.Quantity = packs;
+                addRequest.Unit     = UnitType.Pack;
+                await transferLineService.AddItem(sessionInfo, addRequest);
+            }
+
+            if (dozens > 0) {
+                addRequest.Quantity = dozens;
+                addRequest.Unit     = UnitType.Dozen;
+                await transferLineService.AddItem(sessionInfo, addRequest);
+            }
+
+            if (units > 0) {
+                addRequest.Quantity = units;
+                addRequest.Unit     = UnitType.Unit;
+                await transferLineService.AddItem(sessionInfo, addRequest);
             }
         }
 
