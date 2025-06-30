@@ -3,6 +3,7 @@ using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpers;
 using UnitTests.Integration.ExternalSystems.Shared;
 
 namespace UnitTests.Integration.ExternalSystems.Picking;
@@ -13,6 +14,7 @@ public class PickingCancellation : BaseExternalTest {
     private string testCustomer = string.Empty;
     private int    salesEntry   = -1;
     private int    pickEntry    = -1;
+    private Guid   transferId   = Guid.Empty;
 
     private PickingSelectionResponse[] selection = [];
 
@@ -48,37 +50,8 @@ public class PickingCancellation : BaseExternalTest {
     [Test]
     [Order(2)]
     public async Task PickAll() {
-        var scope    = factory.Services.CreateScope();
-        var service  = scope.ServiceProvider.GetRequiredService<IPickListService>();
         int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
-        var request = new PickListAddItemRequest {
-            ID       = pickEntry,
-            Type     = 17,
-            Entry    = salesEntry,
-            ItemCode = testItem,
-            BinEntry = binEntry,
-            Unit     = UnitType.Pack
-        };
-        //Pick 20 boxes
-        for (int i = 0; i < 20; i++) {
-            request.Quantity = 1;
-            var response = await service.AddItem(TestConstants.SessionInfo, request);
-            Assert.That(response, Is.Not.Null);
-            Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
-        }
-
-        //Test exceed error
-        request.Quantity = 1;
-        var errorResponse = await service.AddItem(TestConstants.SessionInfo, request);
-        Assert.That(errorResponse, Is.Not.Null);
-        Assert.That(errorResponse.Status, Is.EqualTo(ResponseStatus.Error), errorResponse.ErrorMessage ?? "No error message");
-        Assert.That(errorResponse.ErrorMessage, Is.EqualTo("Quantity exceeds bin available stock"));
-
-        //Process
-        var processService  = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-        var processResponse = await processService.ProcessPickList(pickEntry, TestConstants.SessionInfo.Guid);
-        Assert.That(processResponse, Is.Not.Null);
-        Assert.That(processResponse.Status, Is.EqualTo(ResponseStatus.Ok), processResponse.ErrorMessage ?? "No error message");
+        await PickAllHelper.PickAll(pickEntry, selection, factory, binEntry, salesEntry, testItem);
     }
 
     [Test]
@@ -89,18 +62,21 @@ public class PickingCancellation : BaseExternalTest {
         //save selection for validation
         var adapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
         selection = (await adapter.GetPickingSelection(pickEntry)).ToArray();
-        
+
         //Cancel pick list
         var service  = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
         var response = await service.CancelPickList(pickEntry, TestConstants.SessionInfo);
         Assert.That(response, Is.Not.Null);
         Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
         Assert.That(response.TransferId.HasValue);
+        transferId = response.TransferId.Value;
     }
 
     [Test]
     [Order(6)]
-    public void CheckTransfer() {
-        
+    public async Task CheckTransfer() {
+        int binEntry = settings.Filters.CancelPickingBinEntry;
+        var helper   = new CheckTransferHelper(pickEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
+        await helper.Validate();
     }
 }

@@ -217,7 +217,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
         }
     }
 
-    private async Task<Dictionary<string, TransferCreationDataResponse>> PrepareTransferData(Guid transferId) {
+    public async Task<Dictionary<string, TransferCreationDataResponse>> PrepareTransferData(Guid transferId) {
         var lines = await db.TransferLines
             .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
             .GroupBy(tl => tl.ItemCode)

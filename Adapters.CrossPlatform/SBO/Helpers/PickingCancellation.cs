@@ -52,13 +52,13 @@ public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSel
             var closePickListOperation = new SboCompany.BatchOperation {
                 Method = "POST",
                 Endpoint = "PickListsService_Close",
-                Body = System.Text.Json.JsonSerializer.Serialize(closePickListData)
+                Body = JsonSerializer.Serialize(closePickListData)
             };
 
             var transferOperation = new SboCompany.BatchOperation {
                 Method = "POST",
                 Endpoint = "StockTransfers",
-                Body = System.Text.Json.JsonSerializer.Serialize(transferData)
+                Body = JsonSerializer.Serialize(transferData)
             };
 
             (bool success, string? errorMessage, var responses) = await sboCompany.ExecuteBatchAsync(closePickListOperation, transferOperation);
