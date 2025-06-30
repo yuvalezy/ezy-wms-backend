@@ -269,25 +269,48 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
-    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int absEntry) {
+    public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) {
         const string query =
             """
             select T2."ItemCode",
                    T3."BinAbs",
-                   Sum(T3."PickQtty") "Quantity"
+                   Sum(T3."PickQtty") "Quantity",
+                    T4."NumInBuy",
+                    T4.PurPackUn,
+                    T4."CodeBars"
             from PKL1 T1
                      inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
                      inner join PKL2 T3 on T3.AbsEntry = T1.AbsEntry and T3.PickEntry = T1.PickEntry
+                    inner join OITM T4 on T4."ItemCode" = T2."ItemCode"
             where T1."AbsEntry" = @AbsEntry
-            GROUP BY T2."ItemCode", T3."BinAbs"
+            GROUP BY T2."ItemCode", T3."BinAbs", T4."NumInBuy", T4.PurPackUn, T4."CodeBars"
             """;
 
         return await dbService.QueryAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }],
-            reader => new ItemBinLocationResponseQuantity {
-                ItemCode = reader.GetString(0),
-                Entry    = reader.GetInt32(1),
-                Quantity = Convert.ToInt32(reader[2]),
-                Code = string.Empty,
+            reader => {
+                decimal quantity = Convert.ToDecimal(reader["Quantity"]);
+                decimal numInBuy = Convert.ToDecimal(reader["NumInBuy"]);
+                decimal packUn   = Convert.ToDecimal(reader["PurPackUn"]);
+
+                //Calculate packs
+                int packs = (int)Math.Floor(quantity / (numInBuy * packUn));
+
+                //Calculate dozens
+                int remainderAfterPacks = (int)(quantity - packs * numInBuy * packUn);
+                int dozens              = (int)Math.Floor(remainderAfterPacks / numInBuy);
+
+
+                //Calculate units
+                int units = (int)(remainderAfterPacks % numInBuy);
+
+                return new PickingSelectionResponse {
+                    ItemCode = (string)reader["ItemCode"],
+                    CodeBars = (string)reader["CodeBars"],
+                    BinEntry = (int)reader["BinAbs"],
+                    Packs    = packs,
+                    Dozens   = dozens,
+                    Units    = units
+                };
             });
     }
 
@@ -453,5 +476,4 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             return param;
         }).ToArray();
     }
-
 }

@@ -140,11 +140,11 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         return result;
     }
 
-    public async Task<Dictionary<int, bool>>                        GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
-    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
+    public async Task<Dictionary<int, bool>>                 GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
 
-    public async Task<ProcessPickListResponse> CancelPickListTransfer(int absEntry, IEnumerable<ItemBinLocationResponseQuantity> selection) {
-        var pickingCancellation = new PickingCancellation(sboCompany, absEntry, loggerFactory);
+    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, int transferBinEntry) {
+        var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, transferBinEntry, loggerFactory);
         return await pickingCancellation.Execute();
     }
         

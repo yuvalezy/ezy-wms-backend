@@ -5,3 +5,7 @@ public class ProcessPickListResponse : ResponseBase {
     public string? ErrorMessage   { get; set; }
     public string? Message        { get; set; }
 }
+
+public class ProcessPickListCancelResponse : ProcessPickListResponse {
+    public Guid? TransferId { get; set; }
+}

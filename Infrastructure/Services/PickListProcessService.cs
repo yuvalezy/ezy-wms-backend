@@ -1,14 +1,23 @@
 using Core;
 using Core.DTOs.PickList;
+using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Mappers.PickList;
+using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings, ILogger<PickListProcessService> logger) : IPickListProcessService {
+public class PickListProcessService(
+    SystemDbContext                 db,
+    ITransferService                transferService,
+    ITransferLineService            transferLineService,
+    IExternalSystemAdapter          adapter,
+    ISettings                       settings,
+    ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
         try {
@@ -54,7 +63,7 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
             if (result.Success) {
                 // Update pick lists to Closed and Synced
                 await UpdatePickListsSyncStatus(absEntry, SyncStatus.Synced, null, userId);
-                
+
                 return new ProcessPickListResponse {
                     Status         = ResponseStatus.Ok,
                     DocumentNumber = result.DocumentNumber
@@ -63,7 +72,7 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
 
             // Update pick lists to Failed
             await UpdatePickListsSyncStatus(absEntry, SyncStatus.Failed, result.ErrorMessage, userId);
-            
+
             return new ProcessPickListResponse {
                 Status       = ResponseStatus.Error,
                 Message      = "Failed to process pick list",
@@ -72,10 +81,10 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
         }
         catch (Exception ex) {
             logger.LogError(ex, "Failed to process pick list for AbsEntry {AbsEntry}", absEntry);
-            
+
             // Update pick lists to Failed
             await UpdatePickListsSyncStatus(absEntry, SyncStatus.Failed, ex.Message, userId);
-            
+
             return new ProcessPickListResponse {
                 Status       = ResponseStatus.Error,
                 Message      = "Failed to process pick list",
@@ -88,8 +97,8 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
         try {
             // Get distinct pick entries with pending or failed sync status
             var pendingPickEntries = await db.PickLists
-                .Where(p => (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) && 
-                           (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                .Where(p => (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
+                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
                 .Select(p => p.AbsEntry)
                 .Distinct()
                 .ToArrayAsync();
@@ -104,24 +113,25 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
             // Process each pick entry sequentially
             foreach (var absEntry in pendingPickEntries) {
                 logger.LogInformation("Processing pick list AbsEntry {AbsEntry}", absEntry);
-                
+
                 // Check if pick lists are still pending/failed before processing
                 var hasPendingItems = await db.PickLists
-                    .AnyAsync(p => p.AbsEntry == absEntry && 
-                              (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
-                              (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
-                
+                    .AnyAsync(p => p.AbsEntry == absEntry &&
+                                   (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
+                                   (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
+
                 if (!hasPendingItems) {
                     logger.LogDebug("No pending pick lists found for AbsEntry {AbsEntry}", absEntry);
                     continue;
                 }
-                
+
                 // Use the existing ProcessPickList method with system user ID
                 var result = await ProcessPickList(absEntry, DatabaseExtensions.SystemUserId);
-                
+
                 if (result.Status == ResponseStatus.Ok) {
                     logger.LogInformation("Successfully synced pick list AbsEntry {AbsEntry}", absEntry);
-                } else {
+                }
+                else {
                     logger.LogWarning("Failed to sync pick list AbsEntry {AbsEntry}: {Error}", absEntry, result.ErrorMessage);
                 }
             }
@@ -141,15 +151,15 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
 
             foreach (var pickList in pickLists) {
                 pickList.SyncStatus = syncStatus;
-                pickList.UpdatedAt = DateTime.UtcNow;
-                
+                pickList.UpdatedAt  = DateTime.UtcNow;
+
                 if (syncStatus == SyncStatus.Synced) {
-                    pickList.Status = ObjectStatus.Closed;
-                    pickList.SyncedAt = DateTime.UtcNow;
+                    pickList.Status    = ObjectStatus.Closed;
+                    pickList.SyncedAt  = DateTime.UtcNow;
                     pickList.SyncError = null;
                 }
                 else if (syncStatus == SyncStatus.Failed) {
-                    pickList.Status = ObjectStatus.Open; // Revert to Open on failure
+                    pickList.Status    = ObjectStatus.Open; // Revert to Open on failure
                     pickList.SyncError = errorMessage;
                 }
 
@@ -168,19 +178,65 @@ public class PickListProcessService(SystemDbContext db, IExternalSystemAdapter a
         }
     }
 
-    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, Guid userId) {
+    public async Task<ProcessPickListCancelResponse> CancelPickList(int absEntry, SessionInfo sessionInfo) {
         //Process the picking in case something has not been synced into sbo
-        var response = await ProcessPickList(absEntry, userId);
+        var response = await ProcessPickList(absEntry, sessionInfo.Guid);
         if (response.Status != ResponseStatus.Ok && response.ErrorMessage != $"No open pick list items found for AbsEntry {absEntry}") {
-            return response;
+            return response.ToCancelResponse();
         }
+
         //Get a picked selection for bin locations
         int initialCountingBinEntry = settings.Filters.CancelPickingBinEntry;
         if (initialCountingBinEntry == 0) {
             throw new Exception($"Initial Counting Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
         }
 
-        var  selection               = await adapter.GetPickingSelection(absEntry);
-        return await adapter.CancelPickListTransfer(absEntry, selection);
+        //Get current picked data
+        var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
+
+        //Cancel Pick List
+        response = await adapter.CancelPickList(absEntry, selection, settings.Filters.CancelPickingBinEntry);
+        if (selection.Length == 0)
+            return response.ToCancelResponse();
+
+        //Create a new transfer with source selection for cancelled pick list
+        var transfer = await transferService.CreateTransfer(new CreateTransferRequest {
+            Name     = $"Cancelación Picking {absEntry}", //TODO: multi language
+            Comments = "Reubicación de artículos de picking"
+        }, sessionInfo);
+
+        //Add items into transfer
+        var items = selection.GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars });
+        foreach (var item in items) {
+            var addRequest = new TransferAddItemRequest {
+                //TODO: add additional validations, don't know which yet
+                ID       = transfer.Id,
+                ItemCode = item.Key.ItemCode,
+                BarCode  = item.Key.BarCode,
+                Type     = SourceTarget.Source
+            };
+            foreach (var selectionResponse in item) {
+                addRequest.BinEntry = selectionResponse.BinEntry;
+                if (selectionResponse.Packs > 0) {
+                    addRequest.Quantity = selectionResponse.Packs;
+                    addRequest.Unit     = UnitType.Pack;
+                    await transferLineService.AddItem(sessionInfo, addRequest);
+                }
+
+                if (selectionResponse.Dozens > 0) {
+                    addRequest.Quantity = selectionResponse.Dozens;
+                    addRequest.Unit     = UnitType.Dozen;
+                    await transferLineService.AddItem(sessionInfo, addRequest);
+                }
+
+                if (selectionResponse.Dozens > 0) {
+                    addRequest.Quantity = selectionResponse.Units;
+                    addRequest.Unit     = UnitType.Unit;
+                    await transferLineService.AddItem(sessionInfo, addRequest);
+                }
+            }
+        }
+
+        return response.ToCancelResponse(transfer.Id);
     }
 }

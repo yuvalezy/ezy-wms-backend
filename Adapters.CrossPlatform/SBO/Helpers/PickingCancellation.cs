@@ -1,11 +1,12 @@
 ﻿using Adapters.CrossPlatform.SBO.Services;
+using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Helpers;
 
-public class PickingCancellation(SboCompany sboCompany, int absEntry, ILoggerFactory loggerFactory) {
+public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSelectionResponse[] selection, int transferBinEntry, ILoggerFactory loggerFactory) {
     private readonly ILogger<PickingCancellation> logger = loggerFactory.CreateLogger<PickingCancellation>();
 
     public async Task<ProcessPickListResponse> Execute() {
