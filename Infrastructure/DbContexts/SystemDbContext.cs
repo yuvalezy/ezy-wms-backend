@@ -27,6 +27,13 @@ public class SystemDbContext : DbContext {
     public DbSet<InventoryCountingLine> InventoryCountingLines { get; set; }
     public DbSet<TransferLine>          TransferLines          { get; set; }
 
+    // Package Entities
+    public DbSet<Package>                Packages                { get; set; }
+    public DbSet<PackageContent>         PackageContents         { get; set; }
+    public DbSet<PackageTransaction>     PackageTransactions     { get; set; }
+    public DbSet<PackageLocationHistory> PackageLocationHistory  { get; set; }
+    public DbSet<PackageInconsistency>   PackageInconsistencies  { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
@@ -42,6 +49,13 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
+        
+        // Package configurations
+        modelBuilder.ApplyConfiguration(new PackageConfiguration());
+        modelBuilder.ApplyConfiguration(new PackageContentConfiguration());
+        modelBuilder.ApplyConfiguration(new PackageTransactionConfiguration());
+        modelBuilder.ApplyConfiguration(new PackageLocationHistoryConfiguration());
+        modelBuilder.ApplyConfiguration(new PackageInconsistencyConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
             if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
