@@ -2,6 +2,7 @@ using System;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models.Settings;
+using Core.Services;
 using Infrastructure.Auth;
 using Infrastructure.DbContexts;
 using Infrastructure.Services;
@@ -47,6 +48,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
+
+        // Package Management Services
+        services.AddScoped<IPackageService, PackageService>();
 
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(

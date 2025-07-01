@@ -4,8 +4,7 @@ using Core.Enums;
 
 namespace Core.Entities;
 
-public class Package : BaseEntity
-{
+public class Package : BaseEntity {
     [Required]
     [StringLength(50)]
     public required string Barcode { get; set; }
@@ -23,13 +22,11 @@ public class Package : BaseEntity
     public string? BinCode { get; set; }
 
     [Required]
-    [StringLength(50)]
-    public required string CreatedBy { get; set; }
+    public required Guid CreatedBy { get; set; }
 
     public DateTime? ClosedAt { get; set; }
 
-    [StringLength(50)]
-    public string? ClosedBy { get; set; }
+    public Guid? ClosedBy { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }
@@ -39,13 +36,12 @@ public class Package : BaseEntity
     public string? CustomAttributes { get; set; }
 
     // Navigation properties
-    public virtual ICollection<PackageContent> Contents { get; set; } = new List<PackageContent>();
-    public virtual ICollection<PackageTransaction> Transactions { get; set; } = new List<PackageTransaction>();
+    public virtual ICollection<PackageContent>         Contents        { get; set; } = new List<PackageContent>();
+    public virtual ICollection<PackageTransaction>     Transactions    { get; set; } = new List<PackageTransaction>();
     public virtual ICollection<PackageLocationHistory> LocationHistory { get; set; } = new List<PackageLocationHistory>();
 }
 
-public class PackageContent : BaseEntity
-{
+public class PackageContent : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -59,8 +55,7 @@ public class PackageContent : BaseEntity
     public decimal Quantity { get; set; }
 
     [Required]
-    [StringLength(10)]
-    public required string UnitCode { get; set; }
+    public required UnitType UnitType { get; set; }
 
     [StringLength(50)]
     public string? BatchNo { get; set; }
@@ -81,15 +76,13 @@ public class PackageContent : BaseEntity
     public string? BinCode { get; set; }
 
     [Required]
-    [StringLength(50)]
-    public required string CreatedBy { get; set; }
+    public required Guid CreatedBy { get; set; }
 
     // Navigation property
     public virtual Package Package { get; set; } = null!;
 }
 
-public class PackageTransaction : BaseEntity
-{
+public class PackageTransaction : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -106,8 +99,7 @@ public class PackageTransaction : BaseEntity
     public decimal Quantity { get; set; } // Positive for Add, Negative for Remove
 
     [Required]
-    [StringLength(10)]
-    public required string UnitCode { get; set; }
+    public required UnitType UnitType { get; set; }
 
     [StringLength(50)]
     public string? BatchNo { get; set; }
@@ -116,16 +108,14 @@ public class PackageTransaction : BaseEntity
     public string? SerialNo { get; set; }
 
     [Required]
-    [StringLength(20)]
-    public required string SourceOperationType { get; set; } // GoodsReceipt, Counting, Transfer, Picking
+    public ObjectType SourceOperationType { get; set; } // GoodsReceipt, Counting, Transfer, Picking, Package
 
     public Guid? SourceOperationId { get; set; }
 
     public Guid? SourceOperationLineId { get; set; }
 
     [Required]
-    [StringLength(50)]
-    public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
 
     [Required]
     public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
@@ -137,8 +127,7 @@ public class PackageTransaction : BaseEntity
     public virtual Package Package { get; set; } = null!;
 }
 
-public class PackageLocationHistory : BaseEntity
-{
+public class PackageLocationHistory : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -164,14 +153,12 @@ public class PackageLocationHistory : BaseEntity
     public string? ToBinCode { get; set; }
 
     [Required]
-    [StringLength(20)]
-    public required string SourceOperationType { get; set; } // GoodsReceipt, Transfer
+    public ObjectType SourceOperationType { get; set; } // GoodsReceipt, Transfer, Package
 
     public Guid? SourceOperationId { get; set; }
 
     [Required]
-    [StringLength(50)]
-    public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
 
     [Required]
     public DateTime MovementDate { get; set; } = DateTime.UtcNow;
@@ -183,8 +170,7 @@ public class PackageLocationHistory : BaseEntity
     public virtual Package Package { get; set; } = null!;
 }
 
-public class PackageInconsistency : BaseEntity
-{
+public class PackageInconsistency : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }

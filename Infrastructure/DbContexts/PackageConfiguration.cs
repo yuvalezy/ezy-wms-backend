@@ -48,7 +48,7 @@ public class PackageConfiguration : IEntityTypeConfiguration<Package>
         builder.HasIndex(p => p.Status)
             .HasDatabaseName("IX_Package_Status");
 
-        builder.HasIndex(p => new { p.WhsCode, p.BinEntry })
+        builder.HasIndex(p => new { WhsCode = p.WhsCode, p.BinEntry })
             .HasDatabaseName("IX_Package_Location");
 
         builder.HasIndex(p => p.CreatedAt)
@@ -91,9 +91,8 @@ public class PackageContentConfiguration : IEntityTypeConfiguration<PackageConte
             .IsRequired()
             .HasPrecision(18, 6);
 
-        builder.Property(c => c.UnitCode)
-            .IsRequired()
-            .HasMaxLength(10);
+        builder.Property(c => c.UnitType)
+            .IsRequired();
 
         builder.Property(c => c.BatchNo)
             .HasMaxLength(50);
@@ -150,9 +149,8 @@ public class PackageTransactionConfiguration : IEntityTypeConfiguration<PackageT
             .IsRequired()
             .HasPrecision(18, 6);
 
-        builder.Property(t => t.UnitCode)
-            .IsRequired()
-            .HasMaxLength(10);
+        builder.Property(t => t.UnitType)
+            .IsRequired();
 
         builder.Property(t => t.BatchNo)
             .HasMaxLength(50);
