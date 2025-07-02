@@ -20,22 +20,23 @@ public static class PackageExtensions {
             ClosedBy         = package.ClosedBy,
             Notes            = package.Notes,
             CustomAttributes = ParseCustomAttributes(package.CustomAttributes),
-            Contents         = package.Contents.Select(async c => await c.ToDto(adapter)).ToList()
+            Contents         = await Task.WhenAll(package.Contents.Select(async c => await c.ToDto(adapter))),
+            LocationHistory  = await Task.WhenAll(package.LocationHistory.Select(async c => await c.ToDto(adapter)))
         };
     }
 
     public static async Task<PackageContentDto> ToDto(this PackageContent content, IExternalSystemAdapter adapter) {
         return new PackageContentDto {
-            Id         = content.Id,
-            PackageId  = content.PackageId,
-            ItemCode   = content.ItemCode,
-            ItemName   = null,
-            Quantity   = content.Quantity,
-            UnitType   = content.UnitType,
-            WhsCode    = content.WhsCode,
-            BinCode    = await GetBinCodeAsync(content.BinEntry, adapter),
-            CreatedAt  = content.CreatedAt,
-            CreatedBy  = content.CreatedBy
+            Id        = content.Id,
+            PackageId = content.PackageId,
+            ItemCode  = content.ItemCode,
+            ItemName  = null,
+            Quantity  = content.Quantity,
+            UnitType  = content.UnitType,
+            WhsCode   = content.WhsCode,
+            BinCode   = await GetBinCodeAsync(content.BinEntry, adapter),
+            CreatedAt = content.CreatedAt,
+            CreatedBy = content.CreatedBy
         };
     }
 

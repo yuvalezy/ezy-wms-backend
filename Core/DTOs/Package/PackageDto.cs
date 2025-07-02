@@ -15,5 +15,6 @@ public class PackageDto {
     public          Guid?                       ClosedBy         { get; set; }
     public          string?                     Notes            { get; set; }
     public          Dictionary<string, object>? CustomAttributes { get; set; } = [];
-    public          List<Task<PackageContentDto>>                      Contents         { get; set; } = [];
+    public          PackageContentDto[]         Contents         { get; set; } = [];
+    public          PackageLocationHistoryDto[] LocationHistory  { get; set; } = [];
 }

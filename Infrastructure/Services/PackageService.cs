@@ -59,10 +59,13 @@ public class PackageService(
             .FirstOrDefaultAsync(p => p.Id == packageId && !p.Deleted);
     }
 
-    public async Task<Package?> GetPackageByBarcodeAsync(string barcode) {
-        return await context.Packages
-            .Include(p => p.Contents)
-            .FirstOrDefaultAsync(p => p.Barcode == barcode && !p.Deleted);
+    public async Task<Package?> GetPackageByBarcodeAsync(string barcode, bool content, bool history) {
+        var query = context.Packages.AsQueryable();
+        if (content)
+            query = query.Include(c => c.Contents);
+        if (history)
+            query = query.Include(c => c.LocationHistory);
+        return await query.FirstOrDefaultAsync(p => p.Barcode == barcode && !p.Deleted);
     }
 
     public async Task<IEnumerable<Package>> GetActivePackagesAsync(string? whsCode = null) {
