@@ -19,7 +19,8 @@ public class GoodsReceiptLineService(
     IGoodsReceiptLineItemProcessService lineItemProcessService,
     ILogger<GoodsReceiptLineService>    logger,
     ISettings                           settings,
-    IPackageService                     packageService)
+    IPackageService                     packageService,
+    IPackageContentService              contentService)
     : IGoodsReceiptLineService {
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
         var line = await db.GoodsReceiptLines
@@ -113,7 +114,7 @@ public class GoodsReceiptLineService(
 
             // Step 6: Add item to package if package operation is active
             if (request.PackageId.HasValue) {
-                await packageService.AddItemToPackageAsync(new AddItemToPackageRequest {
+                await contentService.AddItemToPackageAsync(new AddItemToPackageRequest {
                     PackageId             = request.PackageId.Value,
                     ItemCode              = request.ItemCode,
                     Quantity              = line.Quantity,
@@ -125,12 +126,11 @@ public class GoodsReceiptLineService(
                 }, sessionInfo);
             }
 
-
             await db.SaveChangesAsync();
 
             // Step 7: Build response
             var response = lineItemProcessService.BuildAddItemResponse(line, item, targetAllocationResult.Fulfillment, targetAllocationResult.Showroom, calculatedQuantity);
-            
+
             // Step 8: Return enhanced response with package info
             if (request.StartNewPackage && settings.Options.EnablePackages && request.PackageId.HasValue) {
                 response.PackageId      = request.PackageId;

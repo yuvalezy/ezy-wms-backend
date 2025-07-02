@@ -208,15 +208,6 @@ public class PackageService(
         return await contentService.AddItemToPackageAsync(request, sessionInfo);
     }
 
-    public async Task<IEnumerable<PackageContent>> GetPackageContentsAsync(Guid packageId) => await contentService.GetPackageContentsAsync(packageId);
-
-    // Barcode Generation - used internally for package creation
-    public async Task<string> GeneratePackageBarcodeAsync() => await validationService.GeneratePackageBarcodeAsync();
-
-    // Transaction Logging - used internally by other services
-    public async Task LogPackageTransactionAsync(LogPackageTransactionRequest request) => await contentService.LogPackageTransactionAsync(request);
-
-
     private string? SerializeCustomAttributes(Dictionary<string, object>? attributes) {
         if (attributes == null || !attributes.Any())
             return null;

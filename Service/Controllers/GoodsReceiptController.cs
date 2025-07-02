@@ -6,11 +6,9 @@ using Core.DTOs.GoodsReceipt;
 using Core.DTOs.Package;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -22,9 +20,7 @@ public class GoodsReceiptController(
     IGoodsReceiptService       receiptService,
     IGoodsReceiptReportService receiptReportService,
     IGoodsReceiptLineService   receiptLineService,
-    ISettings                  settings,
-    IPackageService            packageService,
-    IConfiguration             configuration)
+    ISettings                  settings)
     : ControllerBase {
     // 1. Create Goods Receipt
     [HttpPost("create")]

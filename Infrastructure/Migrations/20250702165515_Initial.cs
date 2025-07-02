@@ -171,6 +171,44 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Packages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Barcode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    WhsCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    BinEntry = table.Column<int>(type: "int", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: false),
+                    ClosedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ClosedBy = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CustomAttributes = table.Column<string>(type: "NVARCHAR(MAX)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Packages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Packages_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Packages_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PickLists",
                 columns: table => new
                 {
@@ -183,6 +221,9 @@ namespace Infrastructure.Migrations
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     Unit = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
+                    SyncStatus = table.Column<int>(type: "int", nullable: false),
+                    SyncedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    SyncError = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -377,6 +418,194 @@ namespace Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_InventoryCountingLines_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PackageContents",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PackageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Quantity = table.Column<decimal>(type: "DECIMAL(18,6)", precision: 18, scale: 6, nullable: false),
+                    UnitType = table.Column<int>(type: "int", nullable: false),
+                    WhsCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    BinEntry = table.Column<int>(type: "int", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PackageContents", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PackageContents_Packages_PackageId",
+                        column: x => x.PackageId,
+                        principalTable: "Packages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PackageContents_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PackageContents_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PackageInconsistencies",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PackageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PackageBarcode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    BatchNo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    SerialNo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    WhsCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    BinEntry = table.Column<int>(type: "int", nullable: true),
+                    SapQuantity = table.Column<decimal>(type: "DECIMAL(18,6)", precision: 18, scale: 6, nullable: true),
+                    WmsQuantity = table.Column<decimal>(type: "DECIMAL(18,6)", precision: 18, scale: 6, nullable: true),
+                    PackageQuantity = table.Column<decimal>(type: "DECIMAL(18,6)", precision: 18, scale: 6, nullable: true),
+                    InconsistencyType = table.Column<int>(type: "int", nullable: false),
+                    Severity = table.Column<int>(type: "int", nullable: false),
+                    DetectedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsResolved = table.Column<bool>(type: "bit", nullable: false),
+                    ResolvedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ResolvedBy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ResolutionAction = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PackageInconsistencies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PackageInconsistencies_Packages_PackageId",
+                        column: x => x.PackageId,
+                        principalTable: "Packages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PackageInconsistencies_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PackageInconsistencies_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PackageLocationHistory",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PackageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MovementType = table.Column<int>(type: "int", nullable: false),
+                    FromWhsCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    FromBinEntry = table.Column<int>(type: "int", nullable: true),
+                    ToWhsCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ToBinEntry = table.Column<int>(type: "int", nullable: true),
+                    SourceOperationType = table.Column<int>(type: "int", maxLength: 20, nullable: false),
+                    SourceOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: false),
+                    MovementDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PackageLocationHistory", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PackageLocationHistory_Packages_PackageId",
+                        column: x => x.PackageId,
+                        principalTable: "Packages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PackageLocationHistory_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PackageLocationHistory_Users_UpdatedByUserId",
+                        column: x => x.UpdatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PackageTransactions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PackageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TransactionType = table.Column<int>(type: "int", nullable: false),
+                    ItemCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Quantity = table.Column<decimal>(type: "DECIMAL(18,6)", precision: 18, scale: 6, nullable: false),
+                    UnitType = table.Column<int>(type: "int", nullable: false),
+                    SourceOperationType = table.Column<int>(type: "int", maxLength: 20, nullable: false),
+                    SourceOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    SourceOperationLineId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: false),
+                    TransactionDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Deleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PackageTransactions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PackageTransactions_Packages_PackageId",
+                        column: x => x.PackageId,
+                        principalTable: "Packages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PackageTransactions_Users_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PackageTransactions_Users_UpdatedByUserId",
                         column: x => x.UpdatedByUserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -650,6 +879,137 @@ namespace Infrastructure.Migrations
                 column: "UpdatedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PackageContent_Item",
+                table: "PackageContents",
+                column: "ItemCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageContent_Location",
+                table: "PackageContents",
+                columns: new[] { "WhsCode", "BinEntry" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageContent_Package",
+                table: "PackageContents",
+                column: "PackageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageContents_CreatedByUserId",
+                table: "PackageContents",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageContents_UpdatedByUserId",
+                table: "PackageContents",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistencies_CreatedByUserId",
+                table: "PackageInconsistencies",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistencies_UpdatedByUserId",
+                table: "PackageInconsistencies",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistency_DetectedAt",
+                table: "PackageInconsistencies",
+                column: "DetectedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistency_IsResolved",
+                table: "PackageInconsistencies",
+                column: "IsResolved");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistency_Package",
+                table: "PackageInconsistencies",
+                column: "PackageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageInconsistency_TypeSeverity",
+                table: "PackageInconsistencies",
+                columns: new[] { "InconsistencyType", "Severity" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageLocationHistory_CreatedByUserId",
+                table: "PackageLocationHistory",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageLocationHistory_Date",
+                table: "PackageLocationHistory",
+                column: "MovementDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageLocationHistory_Package",
+                table: "PackageLocationHistory",
+                column: "PackageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageLocationHistory_UpdatedByUserId",
+                table: "PackageLocationHistory",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Package_Barcode",
+                table: "Packages",
+                column: "Barcode",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Package_CreatedAt",
+                table: "Packages",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Package_Location",
+                table: "Packages",
+                columns: new[] { "WhsCode", "BinEntry" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Package_Status",
+                table: "Packages",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Packages_CreatedByUserId",
+                table: "Packages",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Packages_UpdatedByUserId",
+                table: "Packages",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageTransaction_Date",
+                table: "PackageTransactions",
+                column: "TransactionDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageTransaction_Operation",
+                table: "PackageTransactions",
+                columns: new[] { "SourceOperationType", "SourceOperationId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageTransaction_Package",
+                table: "PackageTransactions",
+                column: "PackageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageTransactions_CreatedByUserId",
+                table: "PackageTransactions",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PackageTransactions_UpdatedByUserId",
+                table: "PackageTransactions",
+                column: "UpdatedByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PickLists_CreatedByUserId",
                 table: "PickLists",
                 column: "CreatedByUserId");
@@ -735,6 +1095,18 @@ namespace Infrastructure.Migrations
                 name: "InventoryCountingLines");
 
             migrationBuilder.DropTable(
+                name: "PackageContents");
+
+            migrationBuilder.DropTable(
+                name: "PackageInconsistencies");
+
+            migrationBuilder.DropTable(
+                name: "PackageLocationHistory");
+
+            migrationBuilder.DropTable(
+                name: "PackageTransactions");
+
+            migrationBuilder.DropTable(
                 name: "PickLists");
 
             migrationBuilder.DropTable(
@@ -745,6 +1117,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "InventoryCountings");
+
+            migrationBuilder.DropTable(
+                name: "Packages");
 
             migrationBuilder.DropTable(
                 name: "Transfers");
