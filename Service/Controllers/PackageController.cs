@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Core.DTOs.Package;
 using Core.Enums;
 using Core.Extensions;
+using Core.Interfaces;
 using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +19,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PackageController(IPackageService packageService, ILogger<PackageController> logger, IConfiguration configuration)
+public class PackageController(IPackageService packageService, IExternalSystemAdapter adapter, ILogger<PackageController> logger, ISettings settings)
     : ControllerBase {
     [HttpPost]
     [RequireAnyRole(RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
@@ -34,7 +35,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
             }
 
             var package = await packageService.CreatePackageAsync(sessionInfo, request);
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error creating package");
@@ -49,7 +50,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
 
-        return Ok(package.ToDto());
+        return Ok(package.ToDto(adapter));
     }
 
     [HttpGet("barcode/{barcode}")]
@@ -59,14 +60,14 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
 
-        return Ok(package.ToDto());
+        return Ok(package.ToDto(adapter));
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PackageDto>>> GetActivePackages() {
         var sessionInfo = HttpContext.GetSession();
         var packages    = await packageService.GetActivePackagesAsync(sessionInfo.Warehouse);
-        return Ok(packages.Select(p => p.ToDto()));
+        return Ok(packages.Select(p => p.ToDto(adapter)));
     }
 
     [HttpPost("{id:guid}/close")]
@@ -81,11 +82,11 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
 
             var package = await packageService.ClosePackageAsync(id, sessionInfo);
 
-            if (IsLabelPrintingEnabled()) {
+            if (settings.Package.Label.AutoPrint) {
                 await TriggerLabelPrintingAsync(package);
             }
 
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error closing package {PackageId}", id);
@@ -99,7 +100,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.CancelPackageAsync(id, sessionInfo, request.Reason);
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error cancelling package {PackageId}", id);
@@ -112,7 +113,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.LockPackageAsync(id, sessionInfo, request.Reason);
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error locking package {PackageId}", id);
@@ -126,7 +127,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.UnlockPackageAsync(id, sessionInfo);
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error unlocking package {PackageId}", id);
@@ -149,7 +150,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
 
             request.PackageId = id;
             var content = await packageService.AddItemToPackageAsync(request, sessionInfo);
-            return Ok(content.ToDto());
+            return Ok(content.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error adding item to package {PackageId}", id);
@@ -172,7 +173,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
 
             request.PackageId = id;
             var content = await packageService.RemoveItemFromPackageAsync(request, sessionInfo);
-            return Ok(content.ToDto());
+            return Ok(content.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error removing item from package {PackageId}", id);
@@ -182,9 +183,8 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
 
     [HttpGet("{id}/contents")]
     public async Task<ActionResult<IEnumerable<PackageContentDto>>> GetPackageContents(Guid id) {
-        var sessionInfo = HttpContext.GetSession();
         var contents    = await packageService.GetPackageContentsAsync(id);
-        return Ok(contents.Select(c => c.ToDto()));
+        return Ok(contents.Select(c => c.ToDto(adapter)));
     }
 
     [HttpGet("{id}/transactions")]
@@ -196,13 +196,13 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
     [HttpGet("{id}/movements")]
     public async Task<ActionResult<IEnumerable<PackageLocationHistoryDto>>> GetPackageMovements(Guid id) {
         var movements = await packageService.GetPackageLocationHistoryAsync(id);
-        return Ok(movements.Select(m => m.ToDto()));
+        return Ok(movements.Select(m => m.ToDto(adapter)));
     }
 
     [HttpPost("validate-consistency")]
     public async Task<ActionResult<IEnumerable<PackageInconsistencyDto>>> ValidateConsistency([FromQuery] string? whsCode = null) {
         var inconsistencies = await packageService.DetectInconsistenciesAsync(whsCode);
-        return Ok(inconsistencies.Select(i => i.ToDto()));
+        return Ok(inconsistencies.Select(i => i.ToDto(adapter)));
     }
 
     [HttpPost("generate-barcode")]
@@ -227,7 +227,7 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
             request.PackageId = id;
             request.UserId    = sessionInfo.Guid;
             var package = await packageService.MovePackageAsync(request);
-            return Ok(package.ToDto());
+            return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error moving package {PackageId}", id);
@@ -241,12 +241,8 @@ public class PackageController(IPackageService packageService, ILogger<PackageCo
         return Ok(result);
     }
 
-    private bool IsLabelPrintingEnabled() {
-        return configuration.GetValue("Package:Label:AutoPrint", false);
-    }
-
     private async Task TriggerLabelPrintingAsync(Core.Entities.Package package) {
-        logger.LogInformation("Triggering label print for package {Barcode}", package.Barcode);
+        logger.LogError("Triggering label print for package {Barcode}", package.Barcode);
         // TODO: Implement label printing integration
         await Task.CompletedTask;
     }

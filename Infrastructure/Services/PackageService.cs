@@ -5,15 +5,15 @@ using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Core.Interfaces;
 
 namespace Infrastructure.Services;
 
-public class PackageService(SystemDbContext context, IConfiguration configuration, ILogger<PackageService> logger) : IPackageService {
+public class PackageService(SystemDbContext context, ISettings settings, ILogger<PackageService> logger) : IPackageService {
     public async Task<Package> CreatePackageAsync(SessionInfo sessionInfo, CreatePackageRequest request) {
-        if (!IsPackageFeatureEnabled()) {
+        if (!settings.Options.EnablePackages) {
             throw new InvalidOperationException("Package feature is not enabled");
         }
 
@@ -27,7 +27,6 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             Status           = PackageStatus.Init,
             WhsCode          = whsCode,
             BinEntry         = request.BinEntry,
-            BinCode          = request.BinCode,
             CreatedBy        = userId,
             ClosedAt         = null,
             ClosedBy         = null,
@@ -38,7 +37,7 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         context.Packages.Add(package);
 
         await LogLocationMovementAsync(package.Id, PackageMovementType.Created,
-            null, null, null, whsCode, request.BinEntry, request.BinCode,
+            null, null, whsCode, request.BinEntry,
             request.SourceOperationType ?? ObjectType.Package, request.SourceOperationId, userId);
 
         await context.SaveChangesAsync();
@@ -69,6 +68,41 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         }
 
         return await query.ToListAsync();
+    }
+
+    public async Task<IEnumerable<Package>> GetActivePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId) {
+        return await context.Packages
+            .Include(p => p.Contents)
+            .Where(p => (p.Status == PackageStatus.Init || p.Status == PackageStatus.Active) &&
+                        !p.Deleted &&
+                        p.CustomAttributes != null &&
+                        p.CustomAttributes.Contains($"\"SourceOperationType\":{(int)sourceOperationType}") &&
+                        p.CustomAttributes.Contains($"\"SourceOperationId\":\"{sourceOperationId}\""))
+            .ToListAsync();
+    }
+
+    public async Task<int> ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo) {
+        var packages     = await GetActivePackagesBySourceAsync(sourceOperationType, sourceOperationId);
+        var initPackages = packages.Where(p => p.Status == PackageStatus.Init).ToList();
+
+        int activatedCount = 0;
+        foreach (var package in initPackages) {
+            if (package.Contents?.Any() == true) {
+                package.Status          = PackageStatus.Active;
+                package.UpdatedAt       = DateTime.UtcNow;
+                package.UpdatedByUserId = sessionInfo.Guid;
+                activatedCount++;
+
+                logger.LogInformation("Package {Barcode} activated for {SourceOperationType} operation {SourceOperationId}",
+                    package.Barcode, sourceOperationType, sourceOperationId);
+            }
+        }
+
+        if (activatedCount > 0) {
+            await context.SaveChangesAsync();
+        }
+
+        return activatedCount;
     }
 
     public async Task<Package> ClosePackageAsync(Guid packageId, SessionInfo sessionInfo) {
@@ -182,10 +216,7 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         }
 
         var existingContent = await context.PackageContents
-            .FirstOrDefaultAsync(c => c.PackageId == request.PackageId &&
-                                      c.ItemCode == request.ItemCode &&
-                                      c.BatchNo == request.BatchNo &&
-                                      c.SerialNo == request.SerialNo);
+            .FirstOrDefaultAsync(c => c.PackageId == request.PackageId && c.ItemCode == request.ItemCode);
 
         if (existingContent != null) {
             existingContent.Quantity        += request.Quantity;
@@ -198,8 +229,6 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
                 ItemCode              = request.ItemCode,
                 Quantity              = request.Quantity,
                 UnitType              = request.UnitType,
-                BatchNo               = request.BatchNo,
-                SerialNo              = request.SerialNo,
                 SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
                 SourceOperationId     = request.SourceOperationId,
                 SourceOperationLineId = request.SourceOperationLineId,
@@ -212,18 +241,14 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         }
 
         var content = new PackageContent {
-            Id         = Guid.NewGuid(),
-            PackageId  = request.PackageId,
-            ItemCode   = request.ItemCode,
-            Quantity   = request.Quantity,
-            UnitType   = request.UnitType,
-            BatchNo    = request.BatchNo,
-            SerialNo   = request.SerialNo,
-            ExpiryDate = request.ExpiryDate,
-            WhsCode    = sessionInfo.Warehouse,
-            BinEntry   = request.BinEntry,
-            BinCode    = request.BinCode,
-            CreatedBy  = sessionInfo.Guid,
+            Id        = Guid.NewGuid(),
+            PackageId = request.PackageId,
+            ItemCode  = request.ItemCode,
+            Quantity  = request.Quantity,
+            UnitType  = request.UnitType,
+            WhsCode   = sessionInfo.Warehouse,
+            BinEntry  = request.BinEntry,
+            CreatedBy = sessionInfo.Guid,
         };
 
         context.PackageContents.Add(content);
@@ -239,8 +264,6 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             ItemCode              = request.ItemCode,
             Quantity              = request.Quantity,
             UnitType              = request.UnitType,
-            BatchNo               = request.BatchNo,
-            SerialNo              = request.SerialNo,
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,
             SourceOperationLineId = request.SourceOperationLineId,
@@ -267,10 +290,7 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         }
 
         var content = await context.PackageContents
-            .FirstOrDefaultAsync(c => c.PackageId == request.PackageId &&
-                                      c.ItemCode == request.ItemCode &&
-                                      c.BatchNo == request.BatchNo &&
-                                      c.SerialNo == request.SerialNo);
+            .FirstOrDefaultAsync(c => c.PackageId == request.PackageId && c.ItemCode == request.ItemCode);
 
         if (content == null) {
             throw new InvalidOperationException($"Item {request.ItemCode} not found in package {package.Barcode}");
@@ -296,8 +316,6 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             ItemCode            = request.ItemCode,
             Quantity            = -request.Quantity,
             UnitType            = content.UnitType,
-            BatchNo             = request.BatchNo,
-            SerialNo            = request.SerialNo,
             SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId   = request.SourceOperationId,
             UserId              = sessionInfo.Guid,
@@ -325,7 +343,7 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
     }
 
     public async Task<Package> MovePackageAsync(MovePackageRequest request) {
-        throw new Exception("TODO: Not implemented, need to take into consideration SBO stock");
+        // throw new Exception("TODO: Not implemented, need to take into consideration SBO stock");
         var package = await GetPackageAsync(request.PackageId);
         if (package == null) {
             throw new InvalidOperationException($"Package {request.PackageId} not found");
@@ -335,33 +353,30 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             throw new InvalidOperationException($"Package {package.Barcode} is locked");
         }
 
-        string  fromWhsCode  = package.WhsCode;
-        int?    fromBinEntry = package.BinEntry;
-        string? fromBinCode  = package.BinCode;
+        string fromWhsCode  = package.WhsCode;
+        int?   fromBinEntry = package.BinEntry;
 
         package.WhsCode   = request.ToWhsCode;
         package.BinEntry  = request.ToBinEntry;
-        package.BinCode   = request.ToBinCode;
         package.UpdatedAt = DateTime.UtcNow;
 
         var contents = await GetPackageContentsAsync(request.PackageId);
         foreach (var content in contents) {
             content.WhsCode   = request.ToWhsCode;
             content.BinEntry  = request.ToBinEntry;
-            content.BinCode   = request.ToBinCode;
             content.UpdatedAt = DateTime.UtcNow;
         }
 
         await LogLocationMovementAsync(request.PackageId, PackageMovementType.Moved,
-            fromWhsCode, fromBinEntry, fromBinCode,
-            request.ToWhsCode, request.ToBinEntry, request.ToBinCode,
+            fromWhsCode, fromBinEntry,
+            request.ToWhsCode, request.ToBinEntry,
             request.SourceOperationType ?? ObjectType.Package, request.SourceOperationId, request.UserId);
-        
+
 
         await context.SaveChangesAsync();
 
-        logger.LogInformation("Package {Barcode} moved from {FromWhsCode}/{FromBinCode} to {ToWhsCode}/{ToBinCode} by user {UserId}",
-            package.Barcode, fromWhsCode, fromBinCode, request.ToWhsCode, request.ToBinCode, request.UserId);
+        logger.LogInformation("Package {Barcode} moved from {FromWhsCode} to {ToWhsCode} by user {UserId}",
+            package.Barcode, fromWhsCode, request.ToWhsCode, request.UserId);
 
         return package;
     }
@@ -381,14 +396,14 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
     }
 
     public async Task<string> GeneratePackageBarcodeAsync() {
-        var  settings   = GetPackageBarcodeSettings();
-        long lastNumber = await GetLastPackageNumberAsync();
-        long nextNumber = lastNumber + 1;
+        var  barcodeSettings = settings.Package.Barcode;
+        long lastNumber      = await GetLastPackageNumberAsync();
+        long nextNumber      = lastNumber + 1;
 
         string numberPart = nextNumber.ToString().PadLeft(
-            settings.Length - settings.Prefix.Length - settings.Suffix.Length, '0');
+            barcodeSettings.Length - barcodeSettings.Prefix.Length - barcodeSettings.Suffix.Length, '0');
 
-        return $"{settings.Prefix}{numberPart}{settings.Suffix}";
+        return $"{barcodeSettings.Prefix}{numberPart}{barcodeSettings.Suffix}";
     }
 
     public async Task<bool> ValidatePackageBarcodeAsync(string barcode) {
@@ -442,8 +457,6 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             ItemCode              = request.ItemCode,
             Quantity              = request.Quantity,
             UnitType              = request.UnitType,
-            BatchNo               = request.BatchNo,
-            SerialNo              = request.SerialNo,
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,
             SourceOperationLineId = request.SourceOperationLineId,
@@ -456,9 +469,9 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
     }
 
     private async Task<long> GetLastPackageNumberAsync() {
-        var    settings = GetPackageBarcodeSettings();
-        string prefix   = settings.Prefix;
-        string suffix   = settings.Suffix;
+        var     barcodeSettings = settings.Package.Barcode;
+        string? prefix          = barcodeSettings.Prefix;
+        string? suffix          = barcodeSettings.Suffix;
 
         var lastPackage = await context.Packages
             .Where(p => p.Barcode.StartsWith(prefix) && p.Barcode.EndsWith(suffix) && !p.Deleted)
@@ -466,39 +479,19 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             .FirstOrDefaultAsync();
 
         if (lastPackage == null) {
-            return settings.StartNumber - 1;
+            return barcodeSettings.StartNumber - 1;
         }
 
-        string numberPart = lastPackage.Barcode.Substring(prefix.Length,
-            lastPackage.Barcode.Length - prefix.Length - suffix.Length);
+        string numberPart = lastPackage.Barcode.Substring(prefix.Length, lastPackage.Barcode.Length - prefix.Length - suffix.Length);
 
         if (long.TryParse(numberPart, out long number)) {
             return number;
         }
 
-        return settings.StartNumber - 1;
+        return barcodeSettings.StartNumber - 1;
     }
 
-    private PackageBarcodeSettings GetPackageBarcodeSettings() {
-        var     settings    = new PackageBarcodeSettings();
-        string? prefix      = configuration["Package:Barcode:Prefix"];
-        string? length      = configuration["Package:Barcode:Length"];
-        string? suffix      = configuration["Package:Barcode:Suffix"];
-        string? startNumber = configuration["Package:Barcode:StartNumber"];
-
-        if (!string.IsNullOrEmpty(prefix)) settings.Prefix                                                         = prefix;
-        if (!string.IsNullOrEmpty(length) && int.TryParse(length, out int len)) settings.Length                    = len;
-        if (!string.IsNullOrEmpty(suffix)) settings.Suffix                                                         = suffix;
-        if (!string.IsNullOrEmpty(startNumber) && long.TryParse(startNumber, out long start)) settings.StartNumber = start;
-
-        return settings;
-    }
-
-    private bool IsPackageFeatureEnabled() {
-        return configuration.GetSection("Options:enablePackages").Value?.ToLower() == "true";
-    }
-
-    private string SerializeCustomAttributes(Dictionary<string, object> attributes) {
+    private string? SerializeCustomAttributes(Dictionary<string, object>? attributes) {
         if (attributes == null || !attributes.Any())
             return null;
 
@@ -510,10 +503,8 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
         PackageMovementType movementType,
         string?             fromWhsCode,
         int?                fromBinEntry,
-        string?             fromBinCode,
         string              toWhsCode,
         int?                toBinEntry,
-        string?             toBinCode,
         ObjectType          sourceOperationType,
         Guid?               sourceOperationId, Guid userId) {
         var movement = new PackageLocationHistory {
@@ -522,10 +513,8 @@ public class PackageService(SystemDbContext context, IConfiguration configuratio
             MovementType        = movementType,
             FromWhsCode         = fromWhsCode,
             FromBinEntry        = fromBinEntry,
-            FromBinCode         = fromBinCode,
             ToWhsCode           = toWhsCode,
             ToBinEntry          = toBinEntry,
-            ToBinCode           = toBinCode,
             SourceOperationType = sourceOperationType,
             SourceOperationId   = sourceOperationId,
             UserId              = userId,

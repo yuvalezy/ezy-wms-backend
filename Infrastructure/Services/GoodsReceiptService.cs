@@ -3,12 +3,13 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter) : IGoodsReceiptService {
+public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter, IPackageService packageService, ISettings settings) : IGoodsReceiptService {
     public async Task<GoodsReceiptResponse> CreateGoodsReceipt(CreateGoodsReceiptRequest request, SessionInfo session) {
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
         var now = DateTime.UtcNow;
@@ -160,12 +161,19 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                     line.UpdatedByUserId = session.Guid;
                 }
 
+                // Activate any packages created during this operation if package feature is enabled
+                int activatedPackagesCount = 0;
+                if (settings.Options.EnablePackages) {
+                    activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
+                }
+                
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
                     Status  = ResponseStatus.Ok,
                     Success = true,
+                    ActivatedPackages = activatedPackagesCount
                 };
             }
 
@@ -193,13 +201,20 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                     line.UpdatedByUserId = session.Guid;
                 }
 
+                // Activate any packages created during this operation if package feature is enabled
+                int activatedPackagesCount = 0;
+                if (settings.Options.EnablePackages) {
+                    activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
+                }
+
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
                     Status         = ResponseStatus.Ok,
                     Success        = true,
-                    DocumentNumber = result.DocumentNumber
+                    DocumentNumber = result.DocumentNumber,
+                    ActivatedPackages = activatedPackagesCount
                 };
             }
 

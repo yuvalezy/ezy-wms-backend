@@ -18,9 +18,6 @@ public class Package : BaseEntity {
 
     public int? BinEntry { get; set; }
 
-    [StringLength(50)]
-    public string? BinCode { get; set; }
-
     [Required]
     public required Guid CreatedBy { get; set; }
 
@@ -57,23 +54,11 @@ public class PackageContent : BaseEntity {
     [Required]
     public required UnitType UnitType { get; set; }
 
-    [StringLength(50)]
-    public string? BatchNo { get; set; }
-
-    [StringLength(50)]
-    public string? SerialNo { get; set; }
-
-    [Column(TypeName = "DATE")]
-    public DateTime? ExpiryDate { get; set; }
-
     [Required]
     [StringLength(50)]
     public required string WhsCode { get; set; }
 
     public int? BinEntry { get; set; }
-
-    [StringLength(50)]
-    public string? BinCode { get; set; }
 
     [Required]
     public required Guid CreatedBy { get; set; }
@@ -100,12 +85,6 @@ public class PackageTransaction : BaseEntity {
 
     [Required]
     public required UnitType UnitType { get; set; }
-
-    [StringLength(50)]
-    public string? BatchNo { get; set; }
-
-    [StringLength(50)]
-    public string? SerialNo { get; set; }
 
     [Required]
     public ObjectType SourceOperationType { get; set; } // GoodsReceipt, Counting, Transfer, Picking, Package
@@ -140,17 +119,11 @@ public class PackageLocationHistory : BaseEntity {
 
     public int? FromBinEntry { get; set; }
 
-    [StringLength(50)]
-    public string? FromBinCode { get; set; }
-
     [Required]
     [StringLength(50)]
     public required string ToWhsCode { get; set; }
 
     public int? ToBinEntry { get; set; }
-
-    [StringLength(50)]
-    public string? ToBinCode { get; set; }
 
     [Required]
     public ObjectType SourceOperationType { get; set; } // GoodsReceipt, Transfer, Package
@@ -191,8 +164,7 @@ public class PackageInconsistency : BaseEntity {
     [StringLength(50)]
     public string? WhsCode { get; set; }
 
-    [StringLength(50)]
-    public string? BinCode { get; set; }
+    public int? BinEntry { get; set; }
 
     [Column(TypeName = "DECIMAL(18,6)")]
     public decimal? SapQuantity { get; set; }

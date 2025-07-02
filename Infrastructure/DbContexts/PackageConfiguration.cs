@@ -24,9 +24,6 @@ public class PackageConfiguration : IEntityTypeConfiguration<Package>
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(p => p.BinCode)
-            .HasMaxLength(50);
-
         builder.Property(p => p.CreatedBy)
             .IsRequired()
             .HasMaxLength(50);
@@ -94,20 +91,8 @@ public class PackageContentConfiguration : IEntityTypeConfiguration<PackageConte
         builder.Property(c => c.UnitType)
             .IsRequired();
 
-        builder.Property(c => c.BatchNo)
-            .HasMaxLength(50);
-
-        builder.Property(c => c.SerialNo)
-            .HasMaxLength(50);
-
-        builder.Property(c => c.ExpiryDate)
-            .HasColumnType("DATE");
-
         builder.Property(c => c.WhsCode)
             .IsRequired()
-            .HasMaxLength(50);
-
-        builder.Property(c => c.BinCode)
             .HasMaxLength(50);
 
         builder.Property(c => c.CreatedBy)
@@ -151,12 +136,6 @@ public class PackageTransactionConfiguration : IEntityTypeConfiguration<PackageT
 
         builder.Property(t => t.UnitType)
             .IsRequired();
-
-        builder.Property(t => t.BatchNo)
-            .HasMaxLength(50);
-
-        builder.Property(t => t.SerialNo)
-            .HasMaxLength(50);
 
         builder.Property(t => t.SourceOperationType)
             .IsRequired()
@@ -202,14 +181,8 @@ public class PackageLocationHistoryConfiguration : IEntityTypeConfiguration<Pack
         builder.Property(h => h.FromWhsCode)
             .HasMaxLength(50);
 
-        builder.Property(h => h.FromBinCode)
-            .HasMaxLength(50);
-
         builder.Property(h => h.ToWhsCode)
             .IsRequired()
-            .HasMaxLength(50);
-
-        builder.Property(h => h.ToBinCode)
             .HasMaxLength(50);
 
         builder.Property(h => h.SourceOperationType)
@@ -260,9 +233,6 @@ public class PackageInconsistencyConfiguration : IEntityTypeConfiguration<Packag
             .HasMaxLength(50);
 
         builder.Property(i => i.WhsCode)
-            .HasMaxLength(50);
-
-        builder.Property(i => i.BinCode)
             .HasMaxLength(50);
 
         builder.Property(i => i.SapQuantity)

@@ -11,6 +11,8 @@ public interface IPackageService {
     Task<Package?>             GetPackageAsync(Guid            packageId);
     Task<Package?>             GetPackageByBarcodeAsync(string barcode);
     Task<IEnumerable<Package>> GetActivePackagesAsync(string?  whsCode = null);
+    Task<IEnumerable<Package>> GetActivePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId);
+    Task<int>                  ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo);
     Task<Package>              ClosePackageAsync(Guid          packageId, SessionInfo sessionInfo);
     Task<Package>              CancelPackageAsync(Guid         packageId, SessionInfo sessionInfo, string  reason);
     Task<Package>              LockPackageAsync(Guid           packageId, SessionInfo sessionInfo, string? reason);

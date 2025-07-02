@@ -1,29 +1,30 @@
 using Core.DTOs.Package;
 using Core.Entities;
 using System.Text.Json;
+using Core.Interfaces;
 
 namespace Core.Extensions;
 
 public static class PackageExtensions {
-    public static PackageDto ToDto(this Package package) {
+    public static async Task<PackageDto> ToDto(this Package package, IExternalSystemAdapter adapter) {
         return new PackageDto {
             Id               = package.Id,
             Barcode          = package.Barcode,
             Status           = package.Status,
             WhsCode          = package.WhsCode,
             BinEntry         = package.BinEntry,
-            BinCode          = package.BinCode,
+            BinCode          = await GetBinCodeAsync(package.BinEntry, adapter),
             CreatedBy        = package.CreatedBy,
             CreatedAt        = package.CreatedAt,
             ClosedAt         = package.ClosedAt,
             ClosedBy         = package.ClosedBy,
             Notes            = package.Notes,
             CustomAttributes = ParseCustomAttributes(package.CustomAttributes),
-            Contents         = package.Contents.Select(c => c.ToDto()).ToList()
+            Contents         = package.Contents.Select(async c => await c.ToDto(adapter)).ToList()
         };
     }
 
-    public static PackageContentDto ToDto(this PackageContent content) {
+    public static async Task<PackageContentDto> ToDto(this PackageContent content, IExternalSystemAdapter adapter) {
         return new PackageContentDto {
             Id         = content.Id,
             PackageId  = content.PackageId,
@@ -31,11 +32,8 @@ public static class PackageExtensions {
             ItemName   = null,
             Quantity   = content.Quantity,
             UnitType   = content.UnitType,
-            BatchNo    = content.BatchNo,
-            SerialNo   = content.SerialNo,
-            ExpiryDate = content.ExpiryDate,
             WhsCode    = content.WhsCode,
-            BinCode    = content.BinCode,
+            BinCode    = await GetBinCodeAsync(content.BinEntry, adapter),
             CreatedAt  = content.CreatedAt,
             CreatedBy  = content.CreatedBy
         };
@@ -49,8 +47,6 @@ public static class PackageExtensions {
             ItemCode              = transaction.ItemCode,
             Quantity              = transaction.Quantity,
             UnitType              = transaction.UnitType,
-            BatchNo               = transaction.BatchNo,
-            SerialNo              = transaction.SerialNo,
             SourceOperationType   = transaction.SourceOperationType,
             SourceOperationId     = transaction.SourceOperationId,
             SourceOperationLineId = transaction.SourceOperationLineId,
@@ -60,17 +56,17 @@ public static class PackageExtensions {
         };
     }
 
-    public static PackageLocationHistoryDto ToDto(this PackageLocationHistory history) {
+    public static async Task<PackageLocationHistoryDto> ToDto(this PackageLocationHistory history, IExternalSystemAdapter adapter) {
         return new PackageLocationHistoryDto {
             Id                  = history.Id,
             PackageId           = history.PackageId,
             MovementType        = history.MovementType,
             FromWhsCode         = history.FromWhsCode,
             FromBinEntry        = history.FromBinEntry,
-            FromBinCode         = history.FromBinCode,
+            FromBinCode         = await GetBinCodeAsync(history.FromBinEntry, adapter),
             ToWhsCode           = history.ToWhsCode,
             ToBinEntry          = history.ToBinEntry,
-            ToBinCode           = history.ToBinCode,
+            ToBinCode           = await GetBinCodeAsync(history.ToBinEntry, adapter),
             SourceOperationType = history.SourceOperationType,
             SourceOperationId   = history.SourceOperationId,
             UserId              = history.UserId,
@@ -79,7 +75,7 @@ public static class PackageExtensions {
         };
     }
 
-    public static PackageInconsistencyDto ToDto(this PackageInconsistency inconsistency) {
+    public static async Task<PackageInconsistencyDto> ToDto(this PackageInconsistency inconsistency, IExternalSystemAdapter adapter) {
         return new PackageInconsistencyDto {
             Id                = inconsistency.Id,
             PackageId         = inconsistency.PackageId,
@@ -88,7 +84,7 @@ public static class PackageExtensions {
             BatchNo           = inconsistency.BatchNo,
             SerialNo          = inconsistency.SerialNo,
             WhsCode           = inconsistency.WhsCode,
-            BinCode           = inconsistency.BinCode,
+            BinCode           = await GetBinCodeAsync(inconsistency.BinEntry, adapter),
             SapQuantity       = inconsistency.SapQuantity,
             WmsQuantity       = inconsistency.WmsQuantity,
             PackageQuantity   = inconsistency.PackageQuantity,
@@ -116,4 +112,6 @@ public static class PackageExtensions {
             return new Dictionary<string, object>();
         }
     }
+
+    private static async Task<string?> GetBinCodeAsync(int? binEntry, IExternalSystemAdapter adapter) => binEntry.HasValue ? await adapter.GetBinCodeAsync(binEntry.Value) : null;
 }

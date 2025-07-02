@@ -6,4 +6,5 @@ public record Options {
     public bool GoodsReceiptCreateSupervisorRequired        { get; init; }
     public bool GoodsReceiptTargetDocuments                 { get; set; }
     public bool TransferTargetItems                         { get; init; }
+    public bool EnablePackages                              { get; set; }
 }

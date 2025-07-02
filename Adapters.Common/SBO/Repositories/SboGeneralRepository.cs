@@ -21,7 +21,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter) {
-        string          query      = "select \"WhsCode\", \"WhsName\", \"BinActivat\" from OWHS";
+        string          query      = "select \"WhsCode\", \"WhsName\", \"BinActivat\", \"DftBinAbs\" from OWHS";
         SqlParameter[]? parameters = null;
 
         if (filter?.Length > 0) {
@@ -32,7 +32,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return await dbService.QueryAsync(query, parameters, reader => new WarehouseResponse(
             reader.GetString(0),
             reader.GetString(1),
-            reader.GetString(2) == "Y"
+            reader.GetString(2) == "Y",
+            reader[3] != DBNull.Value ? reader.GetInt32(3) : null
         ));
     }
 
@@ -98,14 +99,22 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
+    private Dictionary<int, string> BinCodes = new();
     public async Task<string?> GetBinCodeAsync(int binEntry) {
+        if (BinCodes.TryGetValue(binEntry, out string? binCode))
+            return binCode;
+        
         const string query = """select "BinCode" from OBIN where "AbsEntry" = @BinEntry""";
 
         var parameters = new[] {
             new SqlParameter("@BinEntry", SqlDbType.Int) { Value = binEntry }
         };
 
-        return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
+        binCode = await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
+        if (!string.IsNullOrWhiteSpace(binCode)) {
+            BinCodes.Add(binEntry, binCode);
+        }
+        return binCode;
     }
 
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {

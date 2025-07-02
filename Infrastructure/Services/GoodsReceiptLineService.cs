@@ -1,9 +1,11 @@
 ﻿using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
+using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -11,7 +13,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptLineService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineItemProcessService lineItemProcessService, ILogger<GoodsReceiptLineService> logger)
+public class GoodsReceiptLineService(
+    SystemDbContext                     db,
+    IExternalSystemAdapter              adapter,
+    IGoodsReceiptLineItemProcessService lineItemProcessService,
+    ILogger<GoodsReceiptLineService>    logger,
+    ISettings                           settings,
+    IPackageService                     packageService)
     : IGoodsReceiptLineService {
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
         var line = await db.GoodsReceiptLines
@@ -49,10 +57,10 @@ public class GoodsReceiptLineService(SystemDbContext db, IExternalSystemAdapter 
         return new UpdateLineResponse { ReturnValue = UpdateLineReturnValue.Ok };
     }
 
-    public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo session, GoodsReceiptAddItemRequest request) {
+    public async Task<GoodsReceiptAddItemResponse> AddItem(SessionInfo sessionInfo, GoodsReceiptAddItemRequest request) {
         await using var transaction = await db.Database.BeginTransactionAsync();
-        var             userId      = session.Guid;
-        string          warehouse   = session.Warehouse;
+        var             userId      = sessionInfo.Guid;
+        string          warehouse   = sessionInfo.Warehouse;
         var             id          = request.Id;
         string          itemCode    = request.ItemCode;
         string          barcode     = request.BarCode;
@@ -60,6 +68,19 @@ public class GoodsReceiptLineService(SystemDbContext db, IExternalSystemAdapter 
         logger.LogInformation("Adding item {ItemCode} (barcode: {BarCode}) to goods receipt {Id} for user {UserId} in warehouse {Warehouse}", itemCode, barcode, id, userId, warehouse);
 
         try {
+            // Step 0: Create new package for this operation if enabled
+            string? packageBarcode = null;
+            if (request.StartNewPackage && settings.Options.EnablePackages) {
+                var package = await packageService.CreatePackageAsync(sessionInfo, new CreatePackageRequest {
+                    BinEntry            = sessionInfo.DefaultBinLocation,
+                    SourceOperationType = ObjectType.GoodsReceipt,
+                    SourceOperationId   = request.Id
+                });
+
+                request.PackageId = package.Id;
+                packageBarcode    = package.Barcode;
+            }
+
             // Step 1: Validate goods receipt and item
             var validationResult = await lineItemProcessService.ValidateGoodsReceiptAndItem(request, userId, warehouse);
             if (validationResult.ErrorResponse != null) {
@@ -90,10 +111,31 @@ public class GoodsReceiptLineService(SystemDbContext db, IExternalSystemAdapter 
             // Step 5: Process target document allocation
             var targetAllocationResult = await lineItemProcessService.ProcessTargetDocumentAllocation(request, warehouse, line, calculatedQuantity, userId);
 
+            // Step 6: Add item to package if package operation is active
+            if (request.PackageId.HasValue) {
+                await packageService.AddItemToPackageAsync(new AddItemToPackageRequest {
+                    PackageId             = request.PackageId.Value,
+                    ItemCode              = request.ItemCode,
+                    Quantity              = line.Quantity,
+                    UnitType              = line.Unit,
+                    BinEntry              = sessionInfo.DefaultBinLocation,
+                    SourceOperationType   = ObjectType.GoodsReceipt,
+                    SourceOperationId     = request.Id,
+                    SourceOperationLineId = line.Id
+                }, sessionInfo);
+            }
+
+
             await db.SaveChangesAsync();
 
-            // Step 6: Build response
+            // Step 7: Build response
             var response = lineItemProcessService.BuildAddItemResponse(line, item, targetAllocationResult.Fulfillment, targetAllocationResult.Showroom, calculatedQuantity);
+            
+            // Step 8: Return enhanced response with package info
+            if (request.StartNewPackage && settings.Options.EnablePackages && request.PackageId.HasValue) {
+                response.PackageId      = request.PackageId;
+                response.PackageBarcode = packageBarcode;
+            }
 
             logger.LogInformation("Successfully added item {ItemCode} to goods receipt {Id}. LineId: {LineId}, Quantity: {Quantity}", itemCode, id, line.Id, calculatedQuantity);
 

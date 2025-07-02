@@ -6,7 +6,7 @@ public class PackageLocationHistoryDto {
     public          Guid                Id                  { get; set; }
     public          Guid                PackageId           { get; set; }
     public          PackageMovementType MovementType        { get; set; }
-    public required string              FromWhsCode         { get; set; }
+    public          string?             FromWhsCode         { get; set; }
     public          int?                FromBinEntry        { get; set; }
     public          string?             FromBinCode         { get; set; }
     public required string              ToWhsCode           { get; set; }

@@ -16,6 +16,10 @@ public class GoodsReceiptAddItemResponse {
     public string? ErrorMessage   { get; set; }
     
     public Dictionary<string, object> CustomFields { get; set; } = new();
+    
+    // Package-related properties
+    public Guid? PackageId { get; set; }
+    public string? PackageBarcode { get; set; }
 
     public GoodsReceiptAddItemResponse() {
         

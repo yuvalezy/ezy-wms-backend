@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Core.DTOs;
 using Core.DTOs.Items;
 using Core.Enums;
@@ -101,6 +102,7 @@ public class AuthenticationService(
                 Roles              = authorizations,
                 Warehouse          = selectedWarehouse!,
                 EnableBinLocations = warehouse!.EnableBinLocations,
+                DefaultBinLocation = warehouse!.DefaultBinLocation,
                 Token              = token,
                 ExpiresAt          = expiresAt
             };

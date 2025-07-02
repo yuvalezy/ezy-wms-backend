@@ -14,4 +14,5 @@ public interface ISettings {
     public SessionManagementSettings          SessionManagement { get; set; }
     public SboSettings?                       SboSettings       { get; set; }
     public ExternalAdapterType                ExternalAdapter   { get; set; }
+    public PackageSettings                    Package           { get; set; }
 }

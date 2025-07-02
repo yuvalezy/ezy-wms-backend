@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
+using Core.DTOs.Package;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -15,7 +18,13 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class GoodsReceiptController(IGoodsReceiptService receiptService, IGoodsReceiptReportService receiptReportService, IGoodsReceiptLineService receiptLineService, ISettings settings)
+public class GoodsReceiptController(
+    IGoodsReceiptService       receiptService,
+    IGoodsReceiptReportService receiptReportService,
+    IGoodsReceiptLineService   receiptLineService,
+    ISettings                  settings,
+    IPackageService            packageService,
+    IConfiguration             configuration)
     : ControllerBase {
     // 1. Create Goods Receipt
     [HttpPost("create")]
@@ -69,7 +78,15 @@ public class GoodsReceiptController(IGoodsReceiptService receiptService, IGoodsR
             }
         }
 
-        return await receiptLineService.AddItem(sessionInfo, request);
+        try {
+            // Standard goods receipt line creation
+            var response = await receiptLineService.AddItem(sessionInfo, request);
+
+            return response;
+        }
+        catch (Exception ex) {
+            return new GoodsReceiptAddItemResponse(ex.Message);
+        }
     }
 
     // 3. Update Line
@@ -359,4 +376,5 @@ public class GoodsReceiptController(IGoodsReceiptService receiptService, IGoodsR
 
         return Ok(await receiptReportService.GetGoodsReceiptValidateProcessLineDetails(request));
     }
+
 }
