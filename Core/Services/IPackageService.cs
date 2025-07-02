@@ -18,25 +18,13 @@ public interface IPackageService {
     Task<Package>              LockPackageAsync(Guid           packageId, SessionInfo sessionInfo, string? reason);
     Task<Package>              UnlockPackageAsync(Guid         packageId, SessionInfo sessionInfo);
 
-    // Content Management
-    Task<PackageContent>              AddItemToPackageAsync(AddItemToPackageRequest           request, SessionInfo sessionInfo);
-    Task<PackageContent>              RemoveItemFromPackageAsync(RemoveItemFromPackageRequest request, SessionInfo sessionInfo);
-    Task<IEnumerable<PackageContent>> GetPackageContentsAsync(Guid                            packageId);
-    Task<decimal>                     GetItemQuantityInPackageAsync(Guid                      packageId, string itemCode);
+    // Content Management (used internally and by other services)
+    Task<PackageContent>              AddItemToPackageAsync(AddItemToPackageRequest request, SessionInfo sessionInfo);
+    Task<IEnumerable<PackageContent>> GetPackageContentsAsync(Guid                  packageId);
 
-    // Location Management
-    Task<Package>                             MovePackageAsync(MovePackageRequest request);
-    Task<IEnumerable<PackageLocationHistory>> GetPackageLocationHistoryAsync(Guid packageId);
-
-    // Validation & Consistency
-    Task<PackageValidationResult>           ValidatePackageConsistencyAsync(Guid packageId);
-    Task<IEnumerable<PackageInconsistency>> DetectInconsistenciesAsync(string?   whsCode = null);
-
-    // Barcode Management
+    // Barcode Management (used internally for package creation)
     Task<string> GeneratePackageBarcodeAsync();
-    Task<bool>   ValidatePackageBarcodeAsync(string barcode);
 
-    // Transaction History
-    Task<IEnumerable<PackageTransaction>> GetPackageTransactionHistoryAsync(Guid                  packageId);
-    Task                                  LogPackageTransactionAsync(LogPackageTransactionRequest request);
+    // Transaction Logging (used internally by other services)
+    Task LogPackageTransactionAsync(LogPackageTransactionRequest request);
 }

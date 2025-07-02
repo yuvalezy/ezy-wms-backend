@@ -1,1 +1,0 @@
-# Phase 7: Bar code generation next number will be in database

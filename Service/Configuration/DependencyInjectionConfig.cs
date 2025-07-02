@@ -50,6 +50,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
 
         // Package Management Services
+        services.AddScoped<IPackageContentService, PackageContentService>();
+        services.AddScoped<IPackageValidationService, PackageValidationService>();
+        services.AddScoped<IPackageLocationService, PackageLocationService>();
         services.AddScoped<IPackageService, PackageService>();
 
         // Configure BackgroundPickListSyncService

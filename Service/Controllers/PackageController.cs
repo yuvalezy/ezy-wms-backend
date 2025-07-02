@@ -19,7 +19,14 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PackageController(IPackageService packageService, IExternalSystemAdapter adapter, ILogger<PackageController> logger, ISettings settings)
+public class PackageController(
+    IPackageService packageService, 
+    IPackageContentService contentService,
+    IPackageValidationService validationService,
+    IPackageLocationService locationService,
+    IExternalSystemAdapter adapter, 
+    ILogger<PackageController> logger, 
+    ISettings settings)
     : ControllerBase {
     [HttpPost]
     [RequireAnyRole(RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
@@ -149,7 +156,7 @@ public class PackageController(IPackageService packageService, IExternalSystemAd
             }
 
             request.PackageId = id;
-            var content = await packageService.AddItemToPackageAsync(request, sessionInfo);
+            var content = await contentService.AddItemToPackageAsync(request, sessionInfo);
             return Ok(content.ToDto(adapter));
         }
         catch (Exception ex) {
@@ -172,7 +179,7 @@ public class PackageController(IPackageService packageService, IExternalSystemAd
             }
 
             request.PackageId = id;
-            var content = await packageService.RemoveItemFromPackageAsync(request, sessionInfo);
+            var content = await contentService.RemoveItemFromPackageAsync(request, sessionInfo);
             return Ok(content.ToDto(adapter));
         }
         catch (Exception ex) {
@@ -183,31 +190,31 @@ public class PackageController(IPackageService packageService, IExternalSystemAd
 
     [HttpGet("{id}/contents")]
     public async Task<ActionResult<IEnumerable<PackageContentDto>>> GetPackageContents(Guid id) {
-        var contents    = await packageService.GetPackageContentsAsync(id);
+        var contents = await contentService.GetPackageContentsAsync(id);
         return Ok(contents.Select(c => c.ToDto(adapter)));
     }
 
     [HttpGet("{id}/transactions")]
     public async Task<ActionResult<IEnumerable<PackageTransactionDto>>> GetPackageTransactions(Guid id) {
-        var transactions = await packageService.GetPackageTransactionHistoryAsync(id);
+        var transactions = await contentService.GetPackageTransactionHistoryAsync(id);
         return Ok(transactions.Select(t => t.ToDto()));
     }
 
     [HttpGet("{id}/movements")]
     public async Task<ActionResult<IEnumerable<PackageLocationHistoryDto>>> GetPackageMovements(Guid id) {
-        var movements = await packageService.GetPackageLocationHistoryAsync(id);
+        var movements = await locationService.GetPackageLocationHistoryAsync(id);
         return Ok(movements.Select(m => m.ToDto(adapter)));
     }
 
     [HttpPost("validate-consistency")]
     public async Task<ActionResult<IEnumerable<PackageInconsistencyDto>>> ValidateConsistency([FromQuery] string? whsCode = null) {
-        var inconsistencies = await packageService.DetectInconsistenciesAsync(whsCode);
+        var inconsistencies = await validationService.DetectInconsistenciesAsync(whsCode);
         return Ok(inconsistencies.Select(i => i.ToDto(adapter)));
     }
 
     [HttpPost("generate-barcode")]
     public async Task<ActionResult<object>> GenerateBarcode() {
-        string barcode = await packageService.GeneratePackageBarcodeAsync();
+        string barcode = await validationService.GeneratePackageBarcodeAsync();
         return Ok(new { barcode });
     }
 
@@ -226,7 +233,7 @@ public class PackageController(IPackageService packageService, IExternalSystemAd
 
             request.PackageId = id;
             request.UserId    = sessionInfo.Guid;
-            var package = await packageService.MovePackageAsync(request);
+            var package = await locationService.MovePackageAsync(request);
             return Ok(package.ToDto(adapter));
         }
         catch (Exception ex) {
@@ -237,7 +244,7 @@ public class PackageController(IPackageService packageService, IExternalSystemAd
 
     [HttpGet("{id}/validate")]
     public async Task<ActionResult<PackageValidationResult>> ValidatePackage(Guid id) {
-        var result = await packageService.ValidatePackageConsistencyAsync(id);
+        var result = await validationService.ValidatePackageConsistencyAsync(id);
         return Ok(result);
     }
 

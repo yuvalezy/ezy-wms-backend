@@ -16,7 +16,15 @@
       "Suffix": "",
       "StartNumber": 1,
       "CheckDigit": false,
-      "CheckDigitAlgorithm": "Modulo10"
+      "CheckDigitAlgorithm": "Modulo10",
+      "CounterSettings": {
+        "UseCounterTable": true,
+        "ResetPolicy": "Never", // Never, Daily, Monthly, Yearly
+        "CounterName": "Default",
+        "BatchSize": 100,
+        "MaxRetries": 3,
+        "LockTimeoutMs": 5000
+      }
     },
     "Label": {
       "AutoPrint": false,
@@ -215,6 +223,17 @@ public class PackageBarcodeSettings
     public long StartNumber { get; set; } = 1;
     public bool CheckDigit { get; set; } = false;
     public string CheckDigitAlgorithm { get; set; } = "Modulo10";
+    public PackageBarcodeCounterSettings CounterSettings { get; set; } = new();
+}
+
+public class PackageBarcodeCounterSettings
+{
+    public bool UseCounterTable { get; set; } = true;
+    public string ResetPolicy { get; set; } = "Never"; // Never, Daily, Monthly, Yearly
+    public string CounterName { get; set; } = "Default";
+    public int BatchSize { get; set; } = 100;
+    public int MaxRetries { get; set; } = 3;
+    public int LockTimeoutMs { get; set; } = 5000;
 }
 
 public class PackageLabelSettings
@@ -1128,6 +1147,391 @@ public class PackageEventNotification
     public DateTime Timestamp { get; set; }
     public string UserId { get; set; }
     public Dictionary<string, object> Data { get; set; } = new();
+}
+```
+
+## 6.3.5 Barcode Counter System
+
+### Database Schema
+
+```sql
+CREATE TABLE PackageBarcodeCounter (
+    CounterName NVARCHAR(50) NOT NULL PRIMARY KEY,
+    CurrentValue BIGINT NOT NULL DEFAULT 0,
+    BatchSize INT NOT NULL DEFAULT 100,
+    ResetPolicy NVARCHAR(20) NOT NULL DEFAULT 'Never', -- Never, Daily, Monthly, Yearly
+    LastResetDate DATETIME2 NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    LockedBy NVARCHAR(255) NULL,
+    LockedAt DATETIME2 NULL,
+    LockExpiresAt DATETIME2 NULL,
+    
+    INDEX IX_PackageBarcodeCounter_CounterName (CounterName),
+    INDEX IX_PackageBarcodeCounter_LockedBy (LockedBy),
+    INDEX IX_PackageBarcodeCounter_LockExpiresAt (LockExpiresAt)
+);
+
+-- Initialize default counter
+INSERT INTO PackageBarcodeCounter (CounterName, CurrentValue) 
+VALUES ('Default', 0);
+```
+
+### Entity Model
+
+```csharp
+public class PackageBarcodeCounter
+{
+    public string CounterName { get; set; }
+    public long CurrentValue { get; set; }
+    public int BatchSize { get; set; } = 100;
+    public string ResetPolicy { get; set; } = "Never";
+    public DateTime? LastResetDate { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public string? LockedBy { get; set; }
+    public DateTime? LockedAt { get; set; }
+    public DateTime? LockExpiresAt { get; set; }
+}
+```
+
+### Counter Service Implementation
+
+```csharp
+public interface IPackageBarcodeCounterService
+{
+    Task<long> GetNextNumberAsync(string counterName = "Default");
+    Task<IEnumerable<long>> GetNextNumberBatchAsync(int count, string counterName = "Default");
+    Task ResetCounterAsync(string counterName, long newValue = 0);
+    Task<PackageBarcodeCounter> GetCounterStatusAsync(string counterName);
+    Task InitializeCounterAsync(string counterName, long startValue = 0);
+}
+
+public class PackageBarcodeCounterService : IPackageBarcodeCounterService
+{
+    private readonly IDbContext _context;
+    private readonly IPackageConfigurationService _configService;
+    private readonly ILogger<PackageBarcodeCounterService> _logger;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    
+    public PackageBarcodeCounterService(
+        IDbContext context,
+        IPackageConfigurationService configService,
+        ILogger<PackageBarcodeCounterService> logger)
+    {
+        _context = context;
+        _configService = configService;
+        _logger = logger;
+    }
+    
+    public async Task<long> GetNextNumberAsync(string counterName = "Default")
+    {
+        var batch = await GetNextNumberBatchAsync(1, counterName);
+        return batch.First();
+    }
+    
+    public async Task<IEnumerable<long>> GetNextNumberBatchAsync(int count, string counterName = "Default")
+    {
+        var config = _configService.GetConfiguration();
+        var settings = config.Barcode.CounterSettings;
+        
+        if (!settings.UseCounterTable)
+        {
+            // Fallback to old method
+            return await GetNextNumbersLegacyAsync(count);
+        }
+        
+        await _semaphore.WaitAsync();
+        try
+        {
+            return await GetNextNumbersWithLockingAsync(count, counterName, settings);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+    
+    private async Task<IEnumerable<long>> GetNextNumbersWithLockingAsync(
+        int count, 
+        string counterName, 
+        PackageBarcodeCounterSettings settings)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var lockId = Guid.NewGuid().ToString();
+            var lockExpiry = DateTime.UtcNow.AddMilliseconds(settings.LockTimeoutMs);
+            
+            // Try to acquire lock with timeout
+            var lockAcquired = await TryAcquireLockAsync(counterName, lockId, lockExpiry, settings);
+            if (!lockAcquired)
+            {
+                throw new InvalidOperationException($"Could not acquire lock for counter '{counterName}' within timeout");
+            }
+            
+            try
+            {
+                // Get or create counter
+                var counter = await _context.PackageBarcodeCounters
+                    .FirstOrDefaultAsync(c => c.CounterName == counterName);
+                
+                if (counter == null)
+                {
+                    counter = new PackageBarcodeCounter
+                    {
+                        CounterName = counterName,
+                        CurrentValue = 0,
+                        BatchSize = settings.BatchSize,
+                        ResetPolicy = settings.ResetPolicy
+                    };
+                    _context.PackageBarcodeCounters.Add(counter);
+                }
+                
+                // Check if reset is needed
+                await CheckAndApplyResetPolicyAsync(counter);
+                
+                // Generate range of numbers
+                var startValue = counter.CurrentValue + 1;
+                var endValue = counter.CurrentValue + count;
+                var numbers = Enumerable.Range((int)startValue, count).Select(i => (long)i);
+                
+                // Update counter
+                counter.CurrentValue = endValue;
+                counter.UpdatedAt = DateTime.UtcNow;
+                
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                
+                _logger.LogDebug("Generated {Count} barcode numbers from {Start} to {End} for counter {CounterName}", 
+                    count, startValue, endValue, counterName);
+                
+                return numbers;
+            }
+            finally
+            {
+                // Release lock
+                await ReleaseLockAsync(counterName, lockId);
+            }
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error generating barcode numbers for counter {CounterName}", counterName);
+            throw;
+        }
+    }
+    
+    private async Task<bool> TryAcquireLockAsync(
+        string counterName, 
+        string lockId, 
+        DateTime lockExpiry, 
+        PackageBarcodeCounterSettings settings)
+    {
+        for (int attempt = 0; attempt < settings.MaxRetries; attempt++)
+        {
+            try
+            {
+                // Clean up expired locks first
+                await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE PackageBarcodeCounter SET LockedBy = NULL, LockedAt = NULL, LockExpiresAt = NULL " +
+                    "WHERE CounterName = {0} AND LockExpiresAt < {1}", 
+                    counterName, DateTime.UtcNow);
+                
+                // Try to acquire lock
+                var rowsAffected = await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE PackageBarcodeCounter SET LockedBy = {0}, LockedAt = {1}, LockExpiresAt = {2} " +
+                    "WHERE CounterName = {3} AND LockedBy IS NULL",
+                    lockId, DateTime.UtcNow, lockExpiry, counterName);
+                
+                if (rowsAffected > 0)
+                {
+                    return true;
+                }
+                
+                // Wait before retry
+                if (attempt < settings.MaxRetries - 1)
+                {
+                    await Task.Delay(100 * (attempt + 1)); // Exponential backoff
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Attempt {Attempt} to acquire lock failed for counter {CounterName}", 
+                    attempt + 1, counterName);
+            }
+        }
+        
+        return false;
+    }
+    
+    private async Task ReleaseLockAsync(string counterName, string lockId)
+    {
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE PackageBarcodeCounter SET LockedBy = NULL, LockedAt = NULL, LockExpiresAt = NULL " +
+                "WHERE CounterName = {0} AND LockedBy = {1}",
+                counterName, lockId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to release lock for counter {CounterName}", counterName);
+        }
+    }
+    
+    private async Task CheckAndApplyResetPolicyAsync(PackageBarcodeCounter counter)
+    {
+        if (counter.ResetPolicy == "Never")
+            return;
+        
+        var now = DateTime.UtcNow;
+        var shouldReset = counter.ResetPolicy switch
+        {
+            "Daily" => counter.LastResetDate?.Date != now.Date,
+            "Monthly" => counter.LastResetDate?.Month != now.Month || counter.LastResetDate?.Year != now.Year,
+            "Yearly" => counter.LastResetDate?.Year != now.Year,
+            _ => false
+        };
+        
+        if (shouldReset)
+        {
+            _logger.LogInformation("Resetting counter {CounterName} due to {ResetPolicy} policy", 
+                counter.CounterName, counter.ResetPolicy);
+            
+            counter.CurrentValue = 0;
+            counter.LastResetDate = now;
+        }
+    }
+    
+    private async Task<IEnumerable<long>> GetNextNumbersLegacyAsync(int count)
+    {
+        // Fallback to querying last package - less efficient but maintains compatibility
+        var lastPackage = await _context.Packages
+            .OrderByDescending(p => p.CreatedAt)
+            .FirstOrDefaultAsync();
+        
+        var lastNumber = ExtractNumberFromBarcode(lastPackage?.Barcode) ?? 0;
+        return Enumerable.Range((int)(lastNumber + 1), count).Select(i => (long)i);
+    }
+    
+    private long? ExtractNumberFromBarcode(string barcode)
+    {
+        if (string.IsNullOrEmpty(barcode))
+            return null;
+        
+        var config = _configService.GetConfiguration();
+        var prefix = config.Barcode.Prefix;
+        var suffix = config.Barcode.Suffix;
+        
+        if (barcode.StartsWith(prefix) && barcode.EndsWith(suffix))
+        {
+            var numberPart = barcode.Substring(prefix.Length, 
+                barcode.Length - prefix.Length - suffix.Length);
+            
+            if (long.TryParse(numberPart, out var number))
+                return number;
+        }
+        
+        return null;
+    }
+    
+    public async Task ResetCounterAsync(string counterName, long newValue = 0)
+    {
+        var counter = await _context.PackageBarcodeCounters
+            .FirstOrDefaultAsync(c => c.CounterName == counterName);
+        
+        if (counter != null)
+        {
+            counter.CurrentValue = newValue;
+            counter.LastResetDate = DateTime.UtcNow;
+            counter.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Counter {CounterName} reset to {NewValue}", counterName, newValue);
+        }
+    }
+    
+    public async Task<PackageBarcodeCounter> GetCounterStatusAsync(string counterName)
+    {
+        return await _context.PackageBarcodeCounters
+            .FirstOrDefaultAsync(c => c.CounterName == counterName);
+    }
+    
+    public async Task InitializeCounterAsync(string counterName, long startValue = 0)
+    {
+        var existingCounter = await _context.PackageBarcodeCounters
+            .FirstOrDefaultAsync(c => c.CounterName == counterName);
+        
+        if (existingCounter == null)
+        {
+            var counter = new PackageBarcodeCounter
+            {
+                CounterName = counterName,
+                CurrentValue = startValue,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            _context.PackageBarcodeCounters.Add(counter);
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Initialized counter {CounterName} with start value {StartValue}", 
+                counterName, startValue);
+        }
+    }
+}
+```
+
+### Updated GeneratePackageBarcodeAsync Implementation
+
+```csharp
+public class PackageService : IPackageService
+{
+    private readonly IPackageBarcodeCounterService _counterService;
+    
+    public async Task<string> GeneratePackageBarcodeAsync()
+    {
+        var barcodeSettings = settings.Package.Barcode;
+        long nextNumber;
+        
+        if (barcodeSettings.CounterSettings.UseCounterTable)
+        {
+            // Use efficient counter-based approach
+            nextNumber = await _counterService.GetNextNumberAsync(barcodeSettings.CounterSettings.CounterName);
+        }
+        else
+        {
+            // Fallback to legacy approach for backward compatibility
+            long lastNumber = await GetLastPackageNumberAsync();
+            nextNumber = lastNumber + 1;
+        }
+
+        string numberPart = nextNumber.ToString().PadLeft(
+            barcodeSettings.Length - barcodeSettings.Prefix.Length - barcodeSettings.Suffix.Length, '0');
+
+        var barcode = $"{barcodeSettings.Prefix}{numberPart}{barcodeSettings.Suffix}";
+        
+        // Add check digit if enabled
+        if (barcodeSettings.CheckDigit)
+        {
+            var checkDigit = CalculateCheckDigit(barcode, barcodeSettings.CheckDigitAlgorithm);
+            barcode += checkDigit;
+        }
+        
+        return barcode;
+    }
+    
+    private async Task<long> GetLastPackageNumberAsync()
+    {
+        // Legacy method - kept for backward compatibility
+        var lastPackage = await context.Packages
+            .OrderByDescending(p => p.CreatedAt)
+            .FirstOrDefaultAsync();
+            
+        return ExtractNumberFromBarcode(lastPackage?.Barcode) ?? 0;
+    }
 }
 ```
 
