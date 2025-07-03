@@ -1,5 +1,6 @@
 ﻿using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
+using Core.DTOs.Items;
 using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
@@ -20,6 +21,7 @@ public class GoodsReceiptLineService(
     ILogger<GoodsReceiptLineService>    logger,
     ISettings                           settings,
     IPackageService                     packageService,
+    IPackageContentService              packageContentService,
     IPackageContentService              contentService)
     : IGoodsReceiptLineService {
     public async Task<UpdateLineResponse> UpdateLine(SessionInfo session, UpdateGoodsReceiptLineRequest request) {
@@ -117,7 +119,8 @@ public class GoodsReceiptLineService(
                 await contentService.AddItemToPackageAsync(new AddItemToPackageRequest {
                     PackageId             = request.PackageId.Value,
                     ItemCode              = request.ItemCode,
-                    Quantity              = line.Quantity,
+                    Quantity              = 1.0m,
+                    UnitQuantity          = line.Quantity,
                     UnitType              = line.Unit,
                     BinEntry              = sessionInfo.DefaultBinLocation,
                     SourceOperationType   = ObjectType.GoodsReceipt,
@@ -161,7 +164,6 @@ public class GoodsReceiptLineService(
 
         try {
             //Step 1: Load existing data
-            var id     = request.Id;
             var lineId = request.LineId;
             var line = await db.GoodsReceiptLines
                 .Include(l => l.GoodsReceipt)
@@ -200,6 +202,7 @@ public class GoodsReceiptLineService(
             int calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
             // Step 3: Update line
+            decimal diff = line.Quantity - calculatedQuantity;
             line.Quantity        = calculatedQuantity;
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
@@ -233,6 +236,9 @@ public class GoodsReceiptLineService(
                 await db.GoodsReceiptSources.AddAsync(source);
             }
 
+            // Step 5: Add/Remove difference from the package
+            await UpdatePackageContentBasedOnLineQuantity(session, line, item, diff);
+
             await db.SaveChangesAsync();
 
             if (closeTransaction && transaction != null) {
@@ -251,10 +257,69 @@ public class GoodsReceiptLineService(
         }
     }
 
+    private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, GoodsReceiptLine line, ItemCheckResponse item, decimal diff) {
+        if (diff == 0) {
+            return;
+        }
+
+        var transaction = await db
+            .PackageTransactions
+            .Include(v => v.Package)
+            .FirstOrDefaultAsync(v => v.SourceOperationLineId == line.Id);
+
+        if (transaction == null) {
+            return;
+        }
+
+        decimal diffUnit = diff;
+        if (line.Unit != UnitType.Unit) {
+            diffUnit /= item.NumInBuy;
+            if (line.Unit == UnitType.Pack)
+                diffUnit /= item.PurPackUn;
+        }
+
+        switch (diff) {
+            case > 0: {
+                var addRequest = new AddItemToPackageRequest {
+                    PackageId             = transaction.PackageId,
+                    ItemCode              = line.ItemCode,
+                    Quantity              = diff,
+                    UnitQuantity          = diffUnit,
+                    UnitType              = line.Unit,
+                    BinEntry              = transaction.Package.BinEntry,
+                    SourceOperationType   = ObjectType.GoodsReceipt,
+                    SourceOperationId     = line.GoodsReceiptId,
+                    SourceOperationLineId = line.Id
+                };
+                await packageContentService.AddItemToPackageAsync(addRequest, session);
+                break;
+            }
+            case < 0: {
+                var removeRequest = new RemoveItemFromPackageRequest {
+                    PackageId           = transaction.PackageId,
+                    ItemCode            = line.ItemCode,
+                    Quantity            = diff * -1,
+                    UnitQuantity        = diffUnit * -1,
+                    UnitType            = line.Unit,
+                    SourceOperationType = ObjectType.GoodsReceipt,
+                    SourceOperationId   = line.GoodsReceiptId
+                };
+                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
+                break;
+            }
+        }
+    }
+
     public async Task RemoveRows(Guid[] rows, SessionInfo session) {
         if (rows.Length == 0)
             return;
         var lines = await db.GoodsReceiptLines.Where(v => rows.Contains(v.Id)).ToArrayAsync();
+
+        var packageTransactions = await db
+            .PackageTransactions
+            .Where(v => v.SourceOperationLineId != null && rows.Contains(v.SourceOperationLineId.Value))
+            .ToArrayAsync();
+
         foreach (var line in lines) {
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
@@ -262,6 +327,28 @@ public class GoodsReceiptLineService(
             line.Deleted         = true;
             line.DeletedAt       = DateTime.UtcNow;
             db.GoodsReceiptLines.Update(line);
+
+            var transaction = packageTransactions.FirstOrDefault(v => v.SourceOperationLineId == line.Id);
+            if (transaction == null)
+                continue;
+            decimal removeQuantity = line.Quantity;
+            if (line.Unit != UnitType.Unit) {
+                var data = await adapter.GetItemPurchaseUnits(line.ItemCode);
+                removeQuantity /= data.QuantityInUnit;
+                if (line.Unit == UnitType.Pack)
+                    removeQuantity /= data.QuantityInPack;
+            }
+
+            var removeRequest = new RemoveItemFromPackageRequest {
+                PackageId           = transaction.PackageId,
+                ItemCode            = line.ItemCode,
+                Quantity            = removeQuantity,
+                UnitQuantity        = line.Quantity,
+                UnitType            = line.Unit,
+                SourceOperationType = ObjectType.GoodsReceipt,
+                SourceOperationId   = line.GoodsReceiptId
+            };
+            await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
         }
 
         await db.SaveChangesAsync();

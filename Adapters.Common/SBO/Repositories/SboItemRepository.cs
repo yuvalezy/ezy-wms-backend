@@ -122,7 +122,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         var item = new ItemCheckResponse {
             ItemCode = reader["ItemCode"] as string ?? string.Empty
         };
-        
+
         ItemResponseHelper.PopulateItemResponse(reader, item);
         CustomFieldsHelper.ReadCustomFields(reader, customFields, item);
         return item;
@@ -169,7 +169,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         }
 
         var (query, customFields) = BuildItemsWarehouseStockQuery(items.Length);
-        
+
         var parameters = new List<SqlParameter> { new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse } };
         for (int i = 0; i < items.Length; i++) {
             parameters.Add(new($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] });
@@ -192,27 +192,28 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
     private (string query, List<CustomField> customFields) BuildItemsWarehouseStockQuery(int itemCount) {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
-                           select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",
-                                  COALESCE(T1."OnHand", 0) as "OnHand",
-                                  COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
-                                  OITM."BuyUnitMsr" as "BuyUnitMsr",
-                                  COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
-                                  OITM."PurPackMsr" as "PurPackMsr"
-                           """);
+                            select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",
+                                   COALESCE(T1."OnHand", 0) as "OnHand",
+                                   COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
+                                   OITM."BuyUnitMsr" as "BuyUnitMsr",
+                                   COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                   OITM."PurPackMsr" as "PurPackMsr"
+                            """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append("""
-                           from OITM 
-                           inner join OITW T1 on T1."ItemCode" = OITM."ItemCode" and T1."whsCode" = @WhsCode
-                           where OITM."ItemCode" in (
-                           """);
+                            from OITM 
+                            inner join OITW T1 on T1."ItemCode" = OITM."ItemCode" and T1."whsCode" = @WhsCode
+                            where OITM."ItemCode" in (
+                            """);
 
         for (int i = 0; i < itemCount; i++) {
             if (i > 0) {
                 queryBuilder.Append(", ");
             }
+
             queryBuilder.Append($"@ItemCode{i}");
         }
 
@@ -304,5 +305,30 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         }
 
         return result;
+    }
+
+    public async Task<ItemUnitResponse> GetItemPurchaseUnits(string itemCode) {
+        const string query =
+            """
+                 select
+                 COALESCE("NumInBuy", 1) as "NumInBuy",
+                 "BuyUnitMsr" as "BuyUnitMsr",
+                 COALESCE("PurPackUn", 1) as "PurPackUn",
+                 "PurPackMsr" as "PurPackMsr"
+                 from OITM 
+                 where "ItemCode" = @ItemCode
+            """;
+        var parameters = new[] {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
+        };
+        var response = await dbService.QuerySingleAsync(query, parameters, reader => new ItemUnitResponse {
+            UnitMeasure    = reader["BuyUnitMsr"].ToString()??string.Empty,
+            QuantityInUnit = Convert.ToInt32(reader["NumInBuy"]),
+            PackMeasure    = reader["PurPackMsr"].ToString()??string.Empty,
+            QuantityInPack = Convert.ToInt32(reader["PurPackUn"])
+        });
+        if (response == null)
+            throw new KeyNotFoundException($"Item with code {itemCode} not found.");
+        return response;
     }
 }

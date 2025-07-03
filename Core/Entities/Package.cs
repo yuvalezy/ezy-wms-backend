@@ -52,9 +52,6 @@ public class PackageContent : BaseEntity {
     public decimal Quantity { get; set; }
 
     [Required]
-    public required UnitType UnitType { get; set; }
-
-    [Required]
     [StringLength(50)]
     public required string WhsCode { get; set; }
 
@@ -82,6 +79,10 @@ public class PackageTransaction : BaseEntity {
     [Required]
     [Column(TypeName = "DECIMAL(18,6)")]
     public decimal Quantity { get; set; } // Positive for Add, Negative for Remove
+
+    [Required]
+    [Column(TypeName = "DECIMAL(18,6)")]
+    public decimal UnitQuantity { get; set; } // Positive for Add, Negative for Remove
 
     [Required]
     public required UnitType UnitType { get; set; }

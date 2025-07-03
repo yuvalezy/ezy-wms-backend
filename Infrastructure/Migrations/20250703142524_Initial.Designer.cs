@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250702165515_Initial")]
+    [Migration("20250703142524_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -702,9 +702,6 @@ namespace Infrastructure.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("DECIMAL(18,6)");
 
-                    b.Property<int>("UnitType")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -982,6 +979,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("TransactionType")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("UnitQuantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("DECIMAL(18,6)");
 
                     b.Property<int>("UnitType")
                         .HasColumnType("int");

@@ -32,7 +32,6 @@ public static class PackageExtensions {
             ItemCode  = content.ItemCode,
             ItemName  = null,
             Quantity  = content.Quantity,
-            UnitType  = content.UnitType,
             WhsCode   = content.WhsCode,
             BinCode   = await GetBinCodeAsync(content.BinEntry, adapter),
             CreatedAt = content.CreatedAt,

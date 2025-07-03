@@ -29,6 +29,7 @@ public interface IExternalSystemAdapter {
     Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items);
     Task<UpdateItemBarCodeResponse>                      UpdateItemBarCode(UpdateBarCodeRequest request);
     Task<ValidateAddItemResult>                          GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
+    Task<ItemUnitResponse>                               GetItemPurchaseUnits(string itemCode);
     Task<ProcessTransferResponse>                        ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
 
     // Picking methods
@@ -40,7 +41,7 @@ public interface IExternalSystemAdapter {
     Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, List<PickList> data);
     Task<Dictionary<int, bool>>                        GetPickListStatuses(int[]                            absEntries);
     Task<IEnumerable<PickingSelectionResponse>>        GetPickingSelection(int                              absEntry);
-    Task<ProcessPickListResponse>                      CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry);
+    Task<ProcessPickListResponse>                      CancelPickList(int                                   absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry);
 
     // Inventory Counting methods
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);

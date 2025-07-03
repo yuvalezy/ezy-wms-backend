@@ -80,6 +80,8 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
 
+    public async Task<ItemUnitResponse> GetItemPurchaseUnits(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
+
     // Transfers
     public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
         int       series           = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);

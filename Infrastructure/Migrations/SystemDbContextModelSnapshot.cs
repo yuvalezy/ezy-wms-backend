@@ -699,9 +699,6 @@ namespace Infrastructure.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("DECIMAL(18,6)");
 
-                    b.Property<int>("UnitType")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -979,6 +976,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("TransactionType")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("UnitQuantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("DECIMAL(18,6)");
 
                     b.Property<int>("UnitType")
                         .HasColumnType("int");

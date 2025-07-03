@@ -88,9 +88,6 @@ public class PackageContentConfiguration : IEntityTypeConfiguration<PackageConte
             .IsRequired()
             .HasPrecision(18, 6);
 
-        builder.Property(c => c.UnitType)
-            .IsRequired();
-
         builder.Property(c => c.WhsCode)
             .IsRequired()
             .HasMaxLength(50);
@@ -131,6 +128,10 @@ public class PackageTransactionConfiguration : IEntityTypeConfiguration<PackageT
             .HasMaxLength(50);
 
         builder.Property(t => t.Quantity)
+            .IsRequired()
+            .HasPrecision(18, 6);
+
+        builder.Property(t => t.UnitQuantity)
             .IsRequired()
             .HasPrecision(18, 6);
 

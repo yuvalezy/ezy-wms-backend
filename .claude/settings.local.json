@@ -10,7 +10,8 @@
       "Bash(mkdir:*)",
       "Bash(git add:*)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet ef migrations:*)"
+      "Bash(dotnet ef migrations:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

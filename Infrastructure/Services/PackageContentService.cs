@@ -1,6 +1,8 @@
+using Core.DTOs.Items;
 using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -9,13 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PackageContentService(SystemDbContext context, ILogger<PackageContentService> logger) : IPackageContentService {
-    
+public class PackageContentService(SystemDbContext context, IExternalSystemAdapter adapter, ILogger<PackageContentService> logger) : IPackageContentService {
     public async Task<PackageContent> AddItemToPackageAsync(AddItemToPackageRequest request, SessionInfo sessionInfo) {
         var package = await context.Packages
             .Include(p => p.Contents)
             .FirstOrDefaultAsync(p => p.Id == request.PackageId && !p.Deleted);
-            
+
         if (package == null || package.WhsCode != sessionInfo.Warehouse) {
             throw new InvalidOperationException($"Package {request.PackageId} not found");
         }
@@ -35,8 +36,20 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
         var existingContent = await context.PackageContents
             .FirstOrDefaultAsync(c => c.PackageId == request.PackageId && c.ItemCode == request.ItemCode);
 
+        var      unit         = request.UnitType;
+        decimal? unitQuantity = request.UnitQuantity;
+        if (unitQuantity == null) {
+            unitQuantity = request.Quantity;
+            if (unit != UnitType.Unit) {
+                var data = await adapter.GetItemPurchaseUnits(request.ItemCode);
+                unitQuantity *= data.QuantityInUnit;
+                if (unit == UnitType.Pack)
+                    unitQuantity *= data.QuantityInPack;
+            }
+        }
+
         if (existingContent != null) {
-            existingContent.Quantity        += request.Quantity;
+            existingContent.Quantity        += unitQuantity.Value;
             existingContent.UpdatedAt       =  DateTime.UtcNow;
             existingContent.UpdatedByUserId =  sessionInfo.Guid;
 
@@ -45,7 +58,8 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
                 TransactionType       = PackageTransactionType.Add,
                 ItemCode              = request.ItemCode,
                 Quantity              = request.Quantity,
-                UnitType              = request.UnitType,
+                UnitQuantity          = unitQuantity.Value,
+                UnitType              = unit,
                 SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
                 SourceOperationId     = request.SourceOperationId,
                 SourceOperationLineId = request.SourceOperationLineId,
@@ -61,8 +75,7 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
             Id        = Guid.NewGuid(),
             PackageId = request.PackageId,
             ItemCode  = request.ItemCode,
-            Quantity  = request.Quantity,
-            UnitType  = request.UnitType,
+            Quantity  = unitQuantity.Value,
             WhsCode   = sessionInfo.Warehouse,
             BinEntry  = request.BinEntry,
             CreatedBy = sessionInfo.Guid,
@@ -81,7 +94,8 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
             TransactionType       = PackageTransactionType.Add,
             ItemCode              = request.ItemCode,
             Quantity              = request.Quantity,
-            UnitType              = request.UnitType,
+            UnitQuantity          = unitQuantity.Value,
+            UnitType              = unit,
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,
             SourceOperationLineId = request.SourceOperationLineId,
@@ -92,7 +106,7 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
         await context.SaveChangesAsync();
 
         logger.LogInformation("Item {ItemCode} added to package {Barcode}: {Quantity} {UnitCode}",
-            request.ItemCode, package.Barcode, request.Quantity, request.UnitType);
+            request.ItemCode, package.Barcode, request.Quantity, unit);
 
         return content;
     }
@@ -100,7 +114,7 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
     public async Task<PackageContent> RemoveItemFromPackageAsync(RemoveItemFromPackageRequest request, SessionInfo sessionInfo) {
         var package = await context.Packages
             .FirstOrDefaultAsync(p => p.Id == request.PackageId && !p.Deleted);
-            
+
         if (package == null) {
             throw new InvalidOperationException($"Package {request.PackageId} not found");
         }
@@ -116,11 +130,33 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
             throw new InvalidOperationException($"Item {request.ItemCode} not found in package {package.Barcode}");
         }
 
-        if (content.Quantity < request.Quantity) {
-            throw new InvalidOperationException($"Insufficient quantity. Available: {content.Quantity}, Requested: {request.Quantity}");
+        decimal?           unitQuantity = request.UnitQuantity;
+        var               unit         = request.UnitType;
+        ItemUnitResponse? data         = null;
+
+        if (unitQuantity == null) {
+            unitQuantity = request.Quantity;
+            if (unit != UnitType.Unit) {
+                data         =  await adapter.GetItemPurchaseUnits(request.ItemCode);
+                unitQuantity *= data.QuantityInUnit;
+                if (unit == UnitType.Pack)
+                    unitQuantity *= data.QuantityInPack;
+            }
         }
 
-        content.Quantity -= request.Quantity;
+
+        if (content.Quantity < unitQuantity.Value) {
+            decimal availableQuantity = content.Quantity;
+            if (unit != UnitType.Unit) {
+                availableQuantity /= data!.QuantityInUnit;
+                if (unit == UnitType.Pack)
+                    availableQuantity /= data.QuantityInPack;
+            }
+
+            throw new InvalidOperationException($"Insufficient quantity. Available: {availableQuantity}, Requested: {request.Quantity}");
+        }
+
+        content.Quantity -= unitQuantity.Value;
 
         if (content.Quantity == 0) {
             context.PackageContents.Remove(content);
@@ -135,7 +171,8 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
             TransactionType     = PackageTransactionType.Remove,
             ItemCode            = request.ItemCode,
             Quantity            = -request.Quantity,
-            UnitType            = content.UnitType,
+            UnitQuantity        = unitQuantity.Value,
+            UnitType            = request.UnitType,
             SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId   = request.SourceOperationId,
             UserId              = sessionInfo.Guid,
@@ -145,7 +182,7 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
         await context.SaveChangesAsync();
 
         logger.LogInformation("Item {ItemCode} removed from package {Barcode}: {Quantity} {UnitCode}",
-            request.ItemCode, package.Barcode, request.Quantity, content.UnitType);
+            request.ItemCode, package.Barcode, request.Quantity, request.UnitType);
 
         return content;
     }
@@ -176,6 +213,7 @@ public class PackageContentService(SystemDbContext context, ILogger<PackageConte
             TransactionType       = request.TransactionType,
             ItemCode              = request.ItemCode,
             Quantity              = request.Quantity,
+            UnitQuantity          = request.UnitQuantity,
             UnitType              = request.UnitType,
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,

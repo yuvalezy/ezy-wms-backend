@@ -84,11 +84,13 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
             foreach (var pair in request.QuantityChanges) {
                 var lineId   = pair.Key;
                 int quantity = (int)pair.Value;
-                var response = await lineService.UpdateLineQuantity(sessionInfo, new UpdateGoodsReceiptLineQuantityRequest {
+                var updateRequest = new UpdateGoodsReceiptLineQuantityRequest {
                     Id       = request.Id,
                     LineId   = lineId,
                     Quantity = quantity
-                });
+                };
+                var updateGoodsReceiptLineQuantityRequest = updateRequest;
+                var response = await lineService.UpdateLineQuantity(sessionInfo, updateGoodsReceiptLineQuantityRequest);
                 if (!string.IsNullOrWhiteSpace(response.ErrorMessage) || response.ReturnValue != UpdateLineReturnValue.Ok) {
                     return !string.IsNullOrWhiteSpace(response.ErrorMessage) ? response.ErrorMessage : $"Return Value Code {response.ReturnValue} for Line ID {lineId}";
                 }
