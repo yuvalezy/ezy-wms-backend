@@ -1,5 +1,6 @@
 ﻿using Core.DTOs;
 using Core.DTOs.Items;
+using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.DTOs.Settings;
 using Core.Enums;
@@ -17,30 +18,30 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
     }
 
     public async Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse) {
-        var itemAndBinCountTask = adapter.GetItemAndBinCount(warehouse);
+        var itemAndBinCountTask  = adapter.GetItemAndBinCount(warehouse);
         var pickingDocumentsTask = adapter.GetPickListsAsync(new PickListsRequest(), warehouse);
 
         var goodsReceiptResult = db.GoodsReceipts
             .Where(a => a.Status == ObjectStatus.Open || a.Status == ObjectStatus.InProgress);
-        int goodsReceiptCount = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
+        int goodsReceiptCount        = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
         int receiptConfirmationCount = await goodsReceiptResult.CountAsync(v => v.Type == GoodsReceiptType.SpecificReceipts);
 
-        int countingCount = await db.InventoryCountings.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
+        int countingCount  = await db.InventoryCountings.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
         int transfersCount = await db.Transfers.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
 
         await Task.WhenAll(itemAndBinCountTask, pickingDocumentsTask);
 
-        var response = await itemAndBinCountTask;
+        var response         = await itemAndBinCountTask;
         var pickingDocuments = await pickingDocumentsTask;
 
         return new HomeInfoResponse {
-            BinCheck = response.binCount,
-            ItemCheck = response.itemCount,
-            GoodsReceipt = goodsReceiptCount,
+            BinCheck            = response.binCount,
+            ItemCheck           = response.itemCount,
+            GoodsReceipt        = goodsReceiptCount,
             ReceiptConfirmation = receiptConfirmationCount,
-            Picking = pickingDocuments.Count(),
-            Counting = countingCount,
-            Transfers = transfersCount
+            Picking             = pickingDocuments.Count(),
+            Counting            = countingCount,
+            Transfers           = transfersCount
         };
     }
 
@@ -55,7 +56,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Warehouses       = await adapter.GetWarehousesAsync(info.SuperUser ? null : user!.Warehouses.ToArray()),
             SuperUser        = info.SuperUser,
             Settings         = settings.Options,
-            CustomFields = settings.CustomFields,
+            CustomFields     = settings.CustomFields,
         };
     }
 
@@ -69,7 +70,25 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) => await adapter.BinCheckAsync(binEntry);
 
-    public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await adapter.ItemStockAsync(itemCode, whsCode);
+    public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
+        var   response = (await adapter.ItemStockAsync(itemCode, whsCode)).ToArray();
+        int[] bins     = response.Select(v => v.BinEntry).ToArray();
+        var packages = await db.PackageContents
+            .Include(v => v.Package)
+            .Where(v => v.BinEntry.HasValue && bins.Contains(v.BinEntry.Value) && v.ItemCode == itemCode)
+            .OrderBy(v => v.Package.CreatedAt)
+            .ToArrayAsync();
+        
+        foreach (var value in response) {
+            var binPackages = packages.Where(v => v.BinEntry!.Value == value.BinEntry).ToArray();
+            if (binPackages.Length > 0)
+                value.Packages = binPackages
+                    .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, (int)v.Quantity))
+                    .ToArray();
+        }
+
+        return response;
+    }
 
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(string userId, UpdateBarCodeRequest request) {
         if (request.AddBarcodes != null) {
