@@ -183,6 +183,8 @@ namespace Infrastructure.Migrations
                     ClosedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ClosedBy = table.Column<Guid>(type: "uniqueidentifier", maxLength: 50, nullable: true),
                     Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    SourceOperationType = table.Column<int>(type: "int", nullable: false),
+                    SourceOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CustomAttributes = table.Column<string>(type: "NVARCHAR(MAX)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),

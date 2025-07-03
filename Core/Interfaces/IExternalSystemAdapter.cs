@@ -30,6 +30,8 @@ public interface IExternalSystemAdapter {
     Task<UpdateItemBarCodeResponse>                      UpdateItemBarCode(UpdateBarCodeRequest request);
     Task<ValidateAddItemResult>                          GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
     Task<ItemUnitResponse>                               GetItemPurchaseUnits(string itemCode);
+    Task                                                 LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    // Transfer
     Task<ProcessTransferResponse>                        ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
 
     // Picking methods

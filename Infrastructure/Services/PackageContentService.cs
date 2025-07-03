@@ -83,12 +83,6 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
 
         context.PackageContents.Add(content);
 
-        // Auto-activate package when first item is added
-        if (package.Status == PackageStatus.Init) {
-            package.Status    = PackageStatus.Active;
-            package.UpdatedAt = DateTime.UtcNow;
-        }
-
         await LogPackageTransactionAsync(new LogPackageTransactionRequest {
             PackageId             = request.PackageId,
             TransactionType       = PackageTransactionType.Add,

@@ -22,7 +22,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             Status          = ObjectStatus.Open,
             CreatedByUserId = session.Guid,
             CreatedByUser   = db.Users.First(u => u.Id == session.Guid),
-            Documents       = request.Documents.Select(d => new GoodsReceiptDocument {
+            Documents = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
                 DocEntry        = d.DocumentEntry,
                 DocNumber       = d.DocumentNumber,
@@ -81,12 +81,15 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         if (!string.IsNullOrWhiteSpace(request.GoodsReceipt) && int.TryParse(request.GoodsReceipt, out int goodsReceipt)) {
             query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == goodsReceipt && d.ObjType == 20));
         }
+
         if (!string.IsNullOrWhiteSpace(request.PurchaseInvoice) && int.TryParse(request.PurchaseInvoice, out int purchaseInvoice)) {
             query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == purchaseInvoice && d.ObjType == 18));
         }
+
         if (!string.IsNullOrWhiteSpace(request.PurchaseOrder) && int.TryParse(request.PurchaseOrder, out int purchaseOrder)) {
             query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == purchaseOrder && d.ObjType == 22));
         }
+
         if (!string.IsNullOrWhiteSpace(request.ReservedInvoice) && int.TryParse(request.ReservedInvoice, out int reservedInvoice)) {
             query = query.Where(gr => gr.Documents.Any(d => d.DocNumber == reservedInvoice && d.ObjType == 18));
         }
@@ -129,6 +132,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             line.UpdatedByUserId = session.Guid;
         }
 
+        var packages = await db
+            .Packages
+            .Where(v => v.SourceOperationId == id)
+            .ToArrayAsync();
+        foreach (var package in packages) {
+            await packageService.CancelPackageAsync(package.Id, session, "Goods receipt cancelled");
+        }
+
         await db.SaveChangesAsync();
         return true;
     }
@@ -166,13 +177,13 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 if (settings.Options.EnablePackages) {
                     activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
                 }
-                
+
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
-                    Status  = ResponseStatus.Ok,
-                    Success = true,
+                    Status            = ResponseStatus.Ok,
+                    Success           = true,
                     ActivatedPackages = activatedPackagesCount
                 };
             }
@@ -211,9 +222,9 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
-                    Status         = ResponseStatus.Ok,
-                    Success        = true,
-                    DocumentNumber = result.DocumentNumber,
+                    Status            = ResponseStatus.Ok,
+                    Success           = true,
+                    DocumentNumber    = result.DocumentNumber,
                     ActivatedPackages = activatedPackagesCount
                 };
             }
@@ -274,7 +285,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         foreach (var line in goodsReceipt.Lines) {
             if (!data.ContainsKey(line.ItemCode))
-                data[line.ItemCode] = new List<GoodsReceiptCreationDataResponse>();
+                data[line.ItemCode] = [];
 
             var sources = await db.GoodsReceiptSources
                 .Where(s => s.GoodsReceiptLineId == line.Id)
@@ -287,15 +298,17 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 .ToListAsync();
 
             data[line.ItemCode].Add(new GoodsReceiptCreationDataResponse {
-                ItemCode = line.ItemCode,
-                BarCode  = line.BarCode,
-                Quantity = line.Quantity,
-                Unit     = line.Unit,
-                Date     = line.Date,
-                Comments = line.Comments,
-                Sources  = sources
+                ItemCode    = line.ItemCode,
+                BarCode     = line.BarCode,
+                Quantity    = line.Quantity,
+                UseBaseUnit = line.Unit == UnitType.Unit,
+                Date        = line.Date,
+                Comments    = line.Comments,
+                Sources     = sources
             });
         }
+
+        await adapter.LoadGoodsReceiptItemData(data);
 
         return data;
     }

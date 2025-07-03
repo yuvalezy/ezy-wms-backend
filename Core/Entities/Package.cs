@@ -27,6 +27,11 @@ public class Package : BaseEntity {
 
     [StringLength(500)]
     public string? Notes { get; set; }
+    
+    [Required]
+    public required ObjectType SourceOperationType { get; set; } // GoodsReceipt, Counting, Transfer, Picking, Package
+
+    public Guid? SourceOperationId { get; set; }
 
     // JSON field for custom attributes
     [Column(TypeName = "NVARCHAR(MAX)")]

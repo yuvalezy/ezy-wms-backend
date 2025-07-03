@@ -2,6 +2,7 @@ using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
+using Core.DTOs.GoodsReceipt;
 using Core.DTOs.Items;
 using Core.Interfaces;
 using Core.Models.Settings;
@@ -331,4 +332,5 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
             throw new KeyNotFoundException($"Item with code {itemCode} not found.");
         return response;
     }
+
 }

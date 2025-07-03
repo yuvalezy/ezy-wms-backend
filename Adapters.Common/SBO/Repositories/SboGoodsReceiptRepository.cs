@@ -17,7 +17,7 @@ namespace Adapters.Common.SBO.Repositories;
 
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFactory loggerFactory, ISettings settings) {
     private readonly SourceDocumentRetrieval sourceDocumentRetrieval = new(dbService);
-    
+
     private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
     public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, string warehouse, List<ObjectKey> specificDocuments) {
@@ -190,7 +190,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
         if (docs.Length == 0)
             return [];
-        
+
         var (query, customFields) = BuildProcessDocumentsDataQuery(docs);
         var parameters = new SqlParameter[docs.Length * 2];
         for (int i = 0; i < docs.Length; i++) {
@@ -238,42 +238,76 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         }
 
         string headerQuery = $"""
-                        select T0."ObjType", T0."DocEntry", COALESCE(T1.DocNum, T2.DocNum, T3.DocNum) "DocNum", 
-                        COALESCE(T1.CardCode, T2.CardCode, T3.CardCode) "CardCode", 
-                        COALESCE(T1.CardName, T2.CardName, T3.CardName) "CardName"
-                        from ({sbDocs}) T0
-                        left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
-                        left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
-                        left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
-                        """;
+                              select T0."ObjType", T0."DocEntry", COALESCE(T1.DocNum, T2.DocNum, T3.DocNum) "DocNum", 
+                              COALESCE(T1.CardCode, T2.CardCode, T3.CardCode) "CardCode", 
+                              COALESCE(T1.CardName, T2.CardName, T3.CardName) "CardName"
+                              from ({sbDocs}) T0
+                              left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
+                              left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
+                              left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
+                              """;
 
         var queryBuilder = new StringBuilder();
         queryBuilder.Append($"""
-                 select T0."ObjType" as "ObjType",
-                        T0."DocEntry" as "DocEntry",
-                        COALESCE(T1."LineNum", T2."LineNum", T3."LineNum") as "LineNum",
-                        COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode") as "ItemCode",
-                        OITM."ItemName" as "ItemName",
-                        COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
-                        OITM."BuyUnitMsr" as "BuyUnitMsr",
-                        COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
-                        OITM."PurPackMsr" as "PurPackMsr",
-                        COALESCE(T1."OpenInvQty", Case When T5."isIns" = 'Y' Then T2."OpenInvQty" Else T2."InvQty" End, T3."InvQty", 0) as "OpenInvQty",
-                        COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder")+1 as "VisOrder"
-                 """);
+                             select T0."ObjType" as "ObjType",
+                                    T0."DocEntry" as "DocEntry",
+                                    COALESCE(T1."LineNum", T2."LineNum", T3."LineNum") as "LineNum",
+                                    COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode") as "ItemCode",
+                                    OITM."ItemName" as "ItemName",
+                                    COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
+                                    OITM."BuyUnitMsr" as "BuyUnitMsr",
+                                    COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                    OITM."PurPackMsr" as "PurPackMsr",
+                                    COALESCE(T1."OpenInvQty", Case When T5."isIns" = 'Y' Then T2."OpenInvQty" Else T2."InvQty" End, T3."InvQty", 0) as "OpenInvQty",
+                                    COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder")+1 as "VisOrder"
+                             """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append($"""
-                 from ({sbDocs}) T0
-                          left outer join POR1 T1 on T1.DocEntry = T0.DocEntry and T1.ObjType = T0.ObjType
-                          left outer join PCH1 T2 on T2.DocEntry = T0.DocEntry and T2.ObjType = T0.ObjType
-                          left outer join PDN1 T3 on T3.DocEntry = T0.DocEntry and T3.ObjType = T0.ObjType
-                          inner join OITM on OITM."itemCode" = COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode")
-                          left outer join OPCH T5 on T5."DocEntry" = T2."DocEntry" and T5."ObjType" = T0."ObjType"
-                 """);
+                             from ({sbDocs}) T0
+                                      left outer join POR1 T1 on T1.DocEntry = T0.DocEntry and T1.ObjType = T0.ObjType
+                                      left outer join PCH1 T2 on T2.DocEntry = T0.DocEntry and T2.ObjType = T0.ObjType
+                                      left outer join PDN1 T3 on T3.DocEntry = T0.DocEntry and T3.ObjType = T0.ObjType
+                                      inner join OITM on OITM."itemCode" = COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode")
+                                      left outer join OPCH T5 on T5."DocEntry" = T2."DocEntry" and T5."ObjType" = T0."ObjType"
+                             """);
 
         return ((headerQuery, queryBuilder.ToString()), customFields);
     }
+
+    public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
+        if (data.Count == 0)
+            return;
+        string[] items      = data.Select(v => v.Key).Distinct().ToArray();
+        var parameters = new SqlParameter[items.Length];
+        var sb = new StringBuilder(
+            $"""
+             select "ItemCode",
+                    COALESCE("NumInBuy", 1) as "NumInBuy",
+                    COALESCE("PurPackUn", 1) as "PurPackUn"
+                    from OITM
+                    where "ItemCode" in (
+             """);
+        for (int i = 0; i < items.Length; i++) {
+            if (i > 0)
+                sb.Append(" , ");
+            sb.Append($"@ItemCode{i}");
+            parameters[i] = new SqlParameter($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] };
+        }
+
+        sb.Append(")");
+
+        await dbService.ExecuteReaderAsync(sb.ToString(), parameters, reader => {
+            var itemData = data[reader.GetString("ItemCode")];
+            foreach (var value in itemData.Where(value => !value.UseBaseUnit)) {
+                value.Quantity /= Convert.ToInt32(reader["NumInBuy"]);
+                foreach (var source in value.Sources) {
+                    source.Quantity /= Convert.ToInt32(reader["NumInBuy"]);
+                }
+            }
+        });
+    }
+    
 }

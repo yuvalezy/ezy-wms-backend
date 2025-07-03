@@ -149,7 +149,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, warehouse, transferBinEntry, loggerFactory);
         return await pickingCancellation.Execute();
     }
-        
+
 
     //Inventory Counting
     public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
@@ -173,7 +173,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
-        int       series   = await generalRepository.GetSeries("20");
+        int series   = await generalRepository.GetSeries("20");
         var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
         return await creation.Execute();
     }
@@ -182,16 +182,21 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(string itemCode, UnitType unit, string warehouse, GoodsReceiptType type, string? cardCode,
-        List<ObjectKey>                                                                                     specificDocuments) {
+    public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(
+        string           itemCode,
+        UnitType         unit,
+        string           warehouse,
+        GoodsReceiptType type,
+        string?          cardCode,
+        List<ObjectKey>  specificDocuments) {
         return await goodsReceiptRepository.AddItemSourceDocuments(itemCode, unit, warehouse, type, cardCode, specificDocuments);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
-        return await goodsReceiptRepository.AddItemTargetDocuments(warehouse, itemCode);
-    }
+    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) =>
+        await goodsReceiptRepository.AddItemTargetDocuments(warehouse, itemCode);
 
-    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
-        return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
-    }
+    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) =>
+        await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
+
+    public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
 }

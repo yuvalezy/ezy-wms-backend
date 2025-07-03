@@ -11,7 +11,7 @@ public class GoodsReceiptCreation(
     string                                                     whsCode,
     int                                                        series,
     Dictionary<string, List<GoodsReceiptCreationDataResponse>> data,
-    ILoggerFactory                                             loggerFactory)  {
+    ILoggerFactory                                             loggerFactory) {
     private readonly ILogger<GoodsReceiptCreation> logger = loggerFactory.CreateLogger<GoodsReceiptCreation>();
 
     private List<(int Entry, int Number)> NewEntries { get; } = [];
@@ -52,7 +52,6 @@ public class GoodsReceiptCreation(
     }
 
     private Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>> GroupDataBySource() {
-
         var grouped = new Dictionary<(string? CardCode, int Type, int Entry), List<GoodsReceiptCreationDataResponse>>();
 
         foreach (var item in data.SelectMany(kvp => kvp.Value)) {
@@ -60,7 +59,7 @@ public class GoodsReceiptCreation(
                 foreach (var source in item.Sources) {
                     var key = (CardCode: (string?)null, source.SourceType, source.SourceEntry);
                     if (!grouped.ContainsKey(key))
-                        grouped[key] = new List<GoodsReceiptCreationDataResponse>();
+                        grouped[key] = [];
                     grouped[key].Add(item);
 
                     logger.LogDebug("Added item {ItemCode} to group with source type {SourceType}, entry {SourceEntry}",
@@ -71,7 +70,7 @@ public class GoodsReceiptCreation(
                 // Items without sources go into a general receipt
                 var key = (CardCode: (string?)null, Type: 0, Entry: 0);
                 if (!grouped.ContainsKey(key))
-                    grouped[key] = new List<GoodsReceiptCreationDataResponse>();
+                    grouped[key] = [];
                 grouped[key].Add(item);
             }
         }
@@ -80,43 +79,56 @@ public class GoodsReceiptCreation(
     }
 
     private async Task<(bool success, string? errorMessage)> CreateDocument(
-        (string? CardCode, int Type, int Entry) key,
-        List<GoodsReceiptCreationDataResponse>  items) {
-        logger.LogDebug("Creating goods receipt document for group: CardCode={CardCode}, Type={Type}, Entry={Entry} with {ItemCount} items",
-            key.CardCode, key.Type, key.Entry, items.Count);
+        (string? CardCode, int Type, int Entry) key, List<GoodsReceiptCreationDataResponse> items) {
+        logger.LogDebug("Creating goods receipt document for group: CardCode={CardCode}, Type={Type}, Entry={Entry}",
+            key.CardCode, key.Type, key.Entry);
 
         try {
+            var control = new Dictionary<(int entry, int line, string itemCode, bool useBaseUnit), DocumentLine>();
+
             var lines = new List<DocumentLine>();
 
             foreach (var item in items) {
-                DocumentLine line;
-
                 // Add source document linking if applicable
-                if (item.Sources.Any()) {
-                    var source = item.Sources.First();
-                    line = new DocumentLine {
-                        ItemCode      = item.ItemCode,
-                        Quantity      = item.Quantity,
-                        WarehouseCode = whsCode,
-                        FreeText      = item.Comments ?? "",
-                        BaseType      = source.SourceType,
-                        BaseEntry     = source.SourceEntry,
-                        BaseLine      = source.SourceLine
-                    };
-
-                    logger.LogDebug("Added line for item {ItemCode} with source link: Type={BaseType}, Entry={BaseEntry}, Line={BaseLine}",
-                        item.ItemCode, source.SourceType, source.SourceEntry, source.SourceLine);
+                if (item.Sources.Count > 0) {
+                    foreach (var source in item.Sources) {
+                        var controlKey = (source.SourceEntry, source.SourceLine, item.ItemCode, item.UseBaseUnit);
+                        if (!control.TryGetValue(controlKey, out var line)) {
+                            line = new DocumentLine {
+                                ItemCode      = item.ItemCode,
+                                Quantity      = item.Quantity,
+                                WarehouseCode = whsCode,
+                                FreeText      = item.Comments ?? "",
+                                BaseType      = source.SourceType,
+                                BaseEntry     = source.SourceEntry,
+                                BaseLine      = source.SourceLine,
+                                UseBaseUnits  = item.UseBaseUnit ? "tYES" : "tNO"
+                            };
+                            lines.Add(line);
+                            control.Add(controlKey, line);
+                        }
+                        else {
+                            line.Quantity += item.Quantity;
+                        }
+                    }
                 }
                 else {
-                    line = new DocumentLine {
-                        ItemCode      = item.ItemCode,
-                        Quantity      = item.Quantity,
-                        WarehouseCode = whsCode,
-                        FreeText      = item.Comments ?? ""
-                    };
+                    var controlKey = (-1, -1, item.ItemCode, item.UseBaseUnit);
+                    if (!control.TryGetValue(controlKey, out var line)) {
+                        line = new DocumentLine {
+                            ItemCode      = item.ItemCode,
+                            Quantity      = item.Quantity,
+                            WarehouseCode = whsCode,
+                            FreeText      = item.Comments ?? "",
+                            UseBaseUnits  = item.UseBaseUnit ? "tYES" : "tNO"
+                        };
+                        lines.Add(line);
+                        control.Add(controlKey, line);
+                    }
+                    else {
+                        line.Quantity += item.Quantity;
+                    }
                 }
-
-                lines.Add(line);
             }
 
             var documentData = new {
@@ -159,6 +171,7 @@ public class GoodsReceiptCreation(
         public int?    BaseType      { get; set; }
         public int?    BaseEntry     { get; set; }
         public int?    BaseLine      { get; set; }
+        public string  UseBaseUnits  { get; set; } = "tNO";
     }
 
     private class PurchaseDeliveryNoteResponse {

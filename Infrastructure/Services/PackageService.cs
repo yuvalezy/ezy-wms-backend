@@ -12,7 +12,7 @@ using Core.Interfaces;
 namespace Infrastructure.Services;
 
 public class PackageService(
-    SystemDbContext           context,
+    SystemDbContext           db,
     ISettings                 settings,
     ILogger<PackageService>   logger,
     IPackageContentService    contentService,
@@ -37,16 +37,18 @@ public class PackageService(
             ClosedAt         = null,
             ClosedBy         = null,
             Notes            = null,
+            SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
+            SourceOperationId = request.SourceOperationId,
             CustomAttributes = SerializeCustomAttributes(request.CustomAttributes)
         };
 
-        context.Packages.Add(package);
+        db.Packages.Add(package);
 
         await locationService.LogLocationMovementAsync(package.Id, PackageMovementType.Created,
             null, null, whsCode, request.BinEntry,
             request.SourceOperationType ?? ObjectType.Package, request.SourceOperationId, userId);
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         logger.LogInformation("Package created: {Barcode} by user {UserId}", barcode, userId);
 
@@ -54,13 +56,13 @@ public class PackageService(
     }
 
     public async Task<Package?> GetPackageAsync(Guid packageId) {
-        return await context.Packages
+        return await db.Packages
             .Include(p => p.Contents)
             .FirstOrDefaultAsync(p => p.Id == packageId && !p.Deleted);
     }
 
     public async Task<Package?> GetPackageByBarcodeAsync(string barcode, bool content, bool history) {
-        var query = context.Packages.AsQueryable();
+        var query = db.Packages.AsQueryable();
         if (content)
             query = query.Include(c => c.Contents);
         if (history)
@@ -69,7 +71,7 @@ public class PackageService(
     }
 
     public async Task<IEnumerable<Package>> GetActivePackagesAsync(string? whsCode = null) {
-        var query = context.Packages
+        var query = db.Packages
             .Where(p => p.Status == PackageStatus.Active && !p.Deleted);
 
         if (!string.IsNullOrEmpty(whsCode)) {
@@ -79,36 +81,21 @@ public class PackageService(
         return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<Package>> GetActivePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId) {
-        return await context.Packages
-            .Include(p => p.Contents)
-            .Where(p => (p.Status == PackageStatus.Init || p.Status == PackageStatus.Active) &&
-                        !p.Deleted &&
-                        p.CustomAttributes != null &&
-                        p.CustomAttributes.Contains($"\"SourceOperationType\":{(int)sourceOperationType}") &&
-                        p.CustomAttributes.Contains($"\"SourceOperationId\":\"{sourceOperationId}\""))
-            .ToListAsync();
-    }
-
     public async Task<int> ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo) {
-        var packages     = await GetActivePackagesBySourceAsync(sourceOperationType, sourceOperationId);
+        var packages     = await db.Packages.Where(v => v.SourceOperationId == sourceOperationId).Include(package => package.Contents).ToListAsync();
         var initPackages = packages.Where(p => p.Status == PackageStatus.Init).ToList();
 
         int activatedCount = 0;
         foreach (var package in initPackages) {
-            if (package.Contents?.Any() == true) {
-                package.Status          = PackageStatus.Active;
-                package.UpdatedAt       = DateTime.UtcNow;
-                package.UpdatedByUserId = sessionInfo.Guid;
-                activatedCount++;
+            if (package.Contents.Count <= 0) 
+                continue;
+            package.Status          = PackageStatus.Active;
+            package.UpdatedAt       = DateTime.UtcNow;
+            package.UpdatedByUserId = sessionInfo.Guid;
+            activatedCount++;
 
-                logger.LogInformation("Package {Barcode} activated for {SourceOperationType} operation {SourceOperationId}",
-                    package.Barcode, sourceOperationType, sourceOperationId);
-            }
-        }
-
-        if (activatedCount > 0) {
-            await context.SaveChangesAsync();
+            logger.LogInformation("Package {Barcode} activated for {SourceOperationType} operation {SourceOperationId}",
+                package.Barcode, sourceOperationType, sourceOperationId);
         }
 
         return activatedCount;
@@ -134,20 +121,20 @@ public class PackageService(
         package.UpdatedAt       = DateTime.UtcNow;
         package.UpdatedByUserId = sessionInfo.Guid;
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         logger.LogInformation("Package closed: {Barcode} by user {UserId}", package.Barcode, sessionInfo);
 
         return package;
     }
 
-    public async Task<Package> CancelPackageAsync(Guid packageId, SessionInfo sessionInfo, string reason) {
+    public async Task<Package> CancelPackageAsync(Guid packageId, SessionInfo sessionInfo, string? reason) {
         var package = await GetPackageAsync(packageId);
         if (package == null || sessionInfo.Warehouse != package.WhsCode) {
             throw new InvalidOperationException($"Package {packageId} not found");
         }
 
-        if (package.Contents.Count > 0) {
+        if (package.Status != PackageStatus.Init && package.Contents.Count > 0) {
             throw new InvalidOperationException($"Package {package.Barcode} has items");
         }
 
@@ -158,7 +145,7 @@ public class PackageService(
         package.UpdatedAt       = DateTime.UtcNow;
         package.UpdatedByUserId = sessionInfo.Guid;
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         logger.LogInformation("Package cancelled: {Barcode} by user {UserId} - Reason: {Reason}",
             package.Barcode, sessionInfo, reason);
@@ -177,7 +164,7 @@ public class PackageService(
         package.UpdatedAt       = DateTime.UtcNow;
         package.UpdatedByUserId = sessionInfo.Guid;
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         logger.LogWarning("Package locked: {Barcode} - Reason: {Reason}", package.Barcode, reason);
 
@@ -199,7 +186,7 @@ public class PackageService(
         package.UpdatedAt       = DateTime.UtcNow;
         package.UpdatedByUserId = sessionInfo.Guid;
 
-        await context.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         logger.LogInformation("Package unlocked: {Barcode} by user {UserId}", package.Barcode, sessionInfo);
 

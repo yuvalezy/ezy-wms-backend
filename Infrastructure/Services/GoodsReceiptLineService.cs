@@ -202,7 +202,7 @@ public class GoodsReceiptLineService(
             int calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
             // Step 3: Update line
-            decimal diff = line.Quantity - calculatedQuantity;
+            decimal diff = calculatedQuantity - line.Quantity;
             line.Quantity        = calculatedQuantity;
             line.UpdatedAt       = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
@@ -257,8 +257,8 @@ public class GoodsReceiptLineService(
         }
     }
 
-    private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, GoodsReceiptLine line, ItemCheckResponse item, decimal diff) {
-        if (diff == 0) {
+    private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, GoodsReceiptLine line, ItemCheckResponse item, decimal unitQuantity) {
+        if (unitQuantity == 0) {
             return;
         }
 
@@ -271,20 +271,20 @@ public class GoodsReceiptLineService(
             return;
         }
 
-        decimal diffUnit = diff;
+        decimal quantity = unitQuantity;
         if (line.Unit != UnitType.Unit) {
-            diffUnit /= item.NumInBuy;
+            quantity /= item.NumInBuy;
             if (line.Unit == UnitType.Pack)
-                diffUnit /= item.PurPackUn;
+                quantity /= item.PurPackUn;
         }
 
-        switch (diff) {
+        switch (unitQuantity) {
             case > 0: {
                 var addRequest = new AddItemToPackageRequest {
                     PackageId             = transaction.PackageId,
                     ItemCode              = line.ItemCode,
-                    Quantity              = diff,
-                    UnitQuantity          = diffUnit,
+                    Quantity              = quantity,
+                    UnitQuantity          = unitQuantity,
                     UnitType              = line.Unit,
                     BinEntry              = transaction.Package.BinEntry,
                     SourceOperationType   = ObjectType.GoodsReceipt,
@@ -298,8 +298,8 @@ public class GoodsReceiptLineService(
                 var removeRequest = new RemoveItemFromPackageRequest {
                     PackageId           = transaction.PackageId,
                     ItemCode            = line.ItemCode,
-                    Quantity            = diff * -1,
-                    UnitQuantity        = diffUnit * -1,
+                    Quantity            = quantity * -1,
+                    UnitQuantity        = unitQuantity * -1,
                     UnitType            = line.Unit,
                     SourceOperationType = ObjectType.GoodsReceipt,
                     SourceOperationId   = line.GoodsReceiptId
