@@ -2,8 +2,8 @@ using Core;
 using Core.DTOs.PickList;
 using Core.DTOs.Transfer;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
-using Core.Mappers.PickList;
 using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
@@ -182,7 +182,7 @@ public class PickListProcessService(
         //Process the picking in case something has not been synced into sbo
         var response = await ProcessPickList(absEntry, sessionInfo.Guid);
         if (response.Status != ResponseStatus.Ok && response.ErrorMessage != $"No open pick list items found for AbsEntry {absEntry}") {
-            return response.ToCancelResponse();
+            return response.ToDto();
         }
 
         //Get a picked selection for bin locations
@@ -197,7 +197,7 @@ public class PickListProcessService(
         //Cancel Pick List
         response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry);
         if (selection.Length == 0)
-            return response.ToCancelResponse();
+            return response.ToDto();
 
         //Create a new transfer with source selection for cancelled pick list
         var transfer = await transferService.CreateTransfer(new CreateTransferRequest {
@@ -251,6 +251,6 @@ public class PickListProcessService(
             }
         }
 
-        return response.ToCancelResponse(transfer.Id);
+        return response.ToDto(transfer.Id);
     }
 }

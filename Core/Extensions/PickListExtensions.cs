@@ -1,11 +1,9 @@
 ﻿using Core.DTOs.PickList;
 
-namespace Core.Mappers.PickList;
+namespace Core.Extensions;
 
-public static class ProcessPickListResponseMapper {
-    public static ProcessPickListCancelResponse ToCancelResponse(
-        this ProcessPickListResponse source,
-        Guid?                   transferId = null) {
+public static class PickListExtensions {
+    public static ProcessPickListCancelResponse ToDto(this ProcessPickListResponse source, Guid? transferId = null) {
         return new ProcessPickListCancelResponse {
             DocumentNumber = source.DocumentNumber,
             ErrorMessage   = source.ErrorMessage,

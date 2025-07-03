@@ -1,13 +1,17 @@
 ﻿using Core.DTOs.GoodsReceipt;
+using Core.DTOs.Package;
+using Core.Entities;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService) : IGoodsReceiptReportService {
+public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService, IPackageService packageService) : IGoodsReceiptReportService {
     public async Task<GoodsReceiptReportAllResponse> GetGoodsReceiptAllReport(Guid id, string warehouse) {
         var response = await db.GoodsReceiptLines
             .Include(l => l.GoodsReceipt)
@@ -51,20 +55,26 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
     }
 
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
-        var lines = await db.GoodsReceiptLines
+        var values = await db.GoodsReceiptLines
             .Include(l => l.CreatedByUser)
             .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
-            .Select(l => new GoodsReceiptReportAllDetailsResponse {
-                LineId            = l.Id,
-                CreatedByUserName = l.CreatedByUser!.FullName,
-                TimeStamp         = l.UpdatedAt ?? l.CreatedAt,
-                Quantity          = l.Quantity,
-                Unit              = l.Unit
-            })
+            .Select(l => l.TotReportAllDetailsResponseDto())
             .ToListAsync();
+        var packagesTransactions = await db.PackageTransactions
+            .Include(v => v.Package)
+            .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.GoodsReceipt && v.ItemCode == itemCode)
+            .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
+            .ToArrayAsync();
 
-        return lines;
+        values.ForEach(v => {
+            var package = packagesTransactions.FirstOrDefault(p => p.SourceOperationLineId == v.LineId);
+            if (package != null)
+                v.Package = new PackageValueResponse(package.PackageId, package.Barcode);
+        });
+
+        return values;
     }
+
 
     public async Task<string?> UpdateGoodsReceiptAll(UpdateGoodsReceiptAllRequest request, SessionInfo sessionInfo) {
         await using var transaction = await db.Database.BeginTransactionAsync();
@@ -152,28 +162,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
                                 v.SourceEntry == doc.DocumentEntry &&
                                 v.SourceLine == docLine.LineNumber)
                     .SumAsync(v => v.Quantity);
-                var lineValue = new GoodsReceiptValidateProcessLineResponse {
-                    VisualLineNumber = docLine.VisualLineNumber,
-                    LineNumber       = docLine.LineNumber,
-                    ItemCode         = docLine.ItemCode,
-                    ItemName         = docLine.ItemName,
-                    Quantity         = sourceQuantity,
-                    BaseLine         = baseLine,
-                    DocumentQuantity = docLine.DocumentQuantity,
-                    NumInBuy         = docLine.NumInBuy,
-                    BuyUnitMsr       = docLine.BuyUnitMsr,
-                    PurPackUn        = docLine.PurPackUn,
-                    PurPackMsr       = docLine.PurPackMsr,
-                    CustomFields     = docLine.CustomFields,
-                    LineStatus       = GoodsReceiptValidateProcessLineStatus.OK
-                };
-                if (docLine.DocumentQuantity < sourceQuantity)
-                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.LessScan;
-                else if (docLine.DocumentQuantity > sourceQuantity)
-                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.MoreScan;
-                else if (sourceQuantity == 0)
-                    lineValue.LineStatus = GoodsReceiptValidateProcessLineStatus.NotReceived;
-
+                var lineValue = docLine.ToValidateProcessLineDto(sourceQuantity, baseLine);
                 value.Lines!.Add(lineValue);
             }
 
@@ -182,6 +171,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
 
         return response;
     }
+
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request) {
         var data =
