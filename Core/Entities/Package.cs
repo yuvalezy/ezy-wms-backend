@@ -18,9 +18,6 @@ public class Package : BaseEntity {
 
     public int? BinEntry { get; set; }
 
-    [Required]
-    public required Guid CreatedBy { get; set; }
-
     public DateTime? ClosedAt { get; set; }
 
     public Guid? ClosedBy { get; set; }
@@ -62,9 +59,6 @@ public class PackageContent : BaseEntity {
 
     public int? BinEntry { get; set; }
 
-    [Required]
-    public required Guid CreatedBy { get; set; }
-
     // Navigation property
     public virtual Package Package { get; set; } = null!;
 }
@@ -100,9 +94,6 @@ public class PackageTransaction : BaseEntity {
     public Guid? SourceOperationLineId { get; set; }
 
     [Required]
-    public required Guid UserId { get; set; }
-
-    [Required]
     public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
 
     [StringLength(500)]
@@ -135,9 +126,6 @@ public class PackageLocationHistory : BaseEntity {
     public ObjectType SourceOperationType { get; set; } // GoodsReceipt, Transfer, Package
 
     public Guid? SourceOperationId { get; set; }
-
-    [Required]
-    public required Guid UserId { get; set; }
 
     [Required]
     public DateTime MovementDate { get; set; } = DateTime.UtcNow;

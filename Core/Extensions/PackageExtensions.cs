@@ -1,6 +1,7 @@
 using Core.DTOs.Package;
 using Core.Entities;
 using System.Text.Json;
+using Core.DTOs;
 using Core.Interfaces;
 
 namespace Core.Extensions;
@@ -14,7 +15,7 @@ public static class PackageExtensions {
             WhsCode          = package.WhsCode,
             BinEntry         = package.BinEntry,
             BinCode          = await GetBinCodeAsync(package.BinEntry, adapter),
-            CreatedBy        = package.CreatedBy,
+            CreatedBy        = package.CreatedByUser.ToDto(),
             CreatedAt        = package.CreatedAt,
             ClosedAt         = package.ClosedAt,
             ClosedBy         = package.ClosedBy,
@@ -26,18 +27,20 @@ public static class PackageExtensions {
     }
 
     public static async Task<PackageContentDto> ToDto(this PackageContent content, IExternalSystemAdapter adapter) {
+        var itemData = await adapter.GetItemInfo(content.ItemCode);
         return new PackageContentDto {
             Id        = content.Id,
             PackageId = content.PackageId,
             ItemCode  = content.ItemCode,
-            ItemName  = null,
+            ItemData  = itemData,
             Quantity  = content.Quantity,
             WhsCode   = content.WhsCode,
             BinCode   = await GetBinCodeAsync(content.BinEntry, adapter),
             CreatedAt = content.CreatedAt,
-            CreatedBy = content.CreatedBy
+            CreatedBy = content.CreatedByUser.ToDto(),
         };
     }
+
 
     public static PackageTransactionDto ToDto(this PackageTransaction transaction) {
         return new PackageTransactionDto {
@@ -50,7 +53,7 @@ public static class PackageExtensions {
             SourceOperationType   = transaction.SourceOperationType,
             SourceOperationId     = transaction.SourceOperationId,
             SourceOperationLineId = transaction.SourceOperationLineId,
-            UserId                = transaction.UserId,
+            User                  = transaction.CreatedByUser.ToDto(),
             TransactionDate       = transaction.TransactionDate,
             Notes                 = transaction.Notes
         };
@@ -69,7 +72,7 @@ public static class PackageExtensions {
             ToBinCode           = await GetBinCodeAsync(history.ToBinEntry, adapter),
             SourceOperationType = history.SourceOperationType,
             SourceOperationId   = history.SourceOperationId,
-            UserId              = history.UserId,
+            User                = history.CreatedByUser.ToDto(),
             MovementDate        = history.MovementDate,
             Notes               = history.Notes
         };

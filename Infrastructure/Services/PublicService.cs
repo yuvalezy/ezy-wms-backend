@@ -21,6 +21,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
         var itemAndBinCountTask  = adapter.GetItemAndBinCount(warehouse);
         var pickingDocumentsTask = adapter.GetPickListsAsync(new PickListsRequest(), warehouse);
 
+        int activePackageCount = await db.Packages.CountAsync(v => v.Status == PackageStatus.Active);
         var goodsReceiptResult = db.GoodsReceipts
             .Where(a => a.Status == ObjectStatus.Open || a.Status == ObjectStatus.InProgress);
         int goodsReceiptCount        = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
@@ -37,6 +38,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
         return new HomeInfoResponse {
             BinCheck            = response.binCount,
             ItemCheck           = response.itemCount,
+            PackageCheck        = activePackageCount,
             GoodsReceipt        = goodsReceiptCount,
             ReceiptConfirmation = receiptConfirmationCount,
             Picking             = pickingDocuments.Count(),
@@ -68,7 +70,24 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await adapter.ItemCheckAsync(itemCode, barcode);
 
-    public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) => await adapter.BinCheckAsync(binEntry);
+    public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {
+        var response = (await adapter.BinCheckAsync(binEntry)).ToArray();
+        var packages = await db.PackageContents
+            .Include(v => v.Package)
+            .Where(v => v.BinEntry == binEntry)
+            .OrderBy(v => v.Package.CreatedAt)
+            .ToArrayAsync();
+
+        foreach (var value in response) {
+            var itemPackages = packages.Where(v => v.ItemCode == value.ItemCode).ToArray();
+            if (itemPackages.Length > 0)
+                value.Packages = itemPackages
+                    .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, (int)v.Quantity))
+                    .ToArray();
+        }
+
+        return response;
+    }
 
     public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
         var   response = (await adapter.ItemStockAsync(itemCode, whsCode)).ToArray();
@@ -78,7 +97,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             .Where(v => v.BinEntry.HasValue && bins.Contains(v.BinEntry.Value) && v.ItemCode == itemCode)
             .OrderBy(v => v.Package.CreatedAt)
             .ToArrayAsync();
-        
+
         foreach (var value in response) {
             var binPackages = packages.Where(v => v.BinEntry!.Value == value.BinEntry).ToArray();
             if (binPackages.Length > 0)

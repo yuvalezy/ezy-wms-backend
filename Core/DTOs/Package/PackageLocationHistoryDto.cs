@@ -14,7 +14,7 @@ public class PackageLocationHistoryDto {
     public          string?             ToBinCode           { get; set; }
     public          ObjectType          SourceOperationType { get; set; }
     public          Guid?               SourceOperationId   { get; set; }
-    public          Guid                UserId              { get; set; }
+    public          UserAuditResponse?                User              { get; set; }
     public          DateTime            MovementDate        { get; set; }
     public          string?             Notes               { get; set; }
 }

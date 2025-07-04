@@ -7,9 +7,9 @@ namespace Core.Services;
 
 public interface IPackageService {
     // Core Package Operations
-    Task<Package>              CreatePackageAsync(SessionInfo           sessionInfo, CreatePackageRequest request);
-    Task<Package?>             GetPackageAsync(Guid                     packageId);
-    Task<Package?>             GetPackageByBarcodeAsync(string          barcode, bool content, bool history);
+    Task<Package>  CreatePackageAsync(SessionInfo  sessionInfo, CreatePackageRequest request);
+    Task<Package?> GetPackageAsync(Guid            packageId);
+    Task<Package?> GetPackageByBarcodeAsync(string barcode, bool contents, bool history, bool details);
     Task<IEnumerable<Package>> GetActivePackagesAsync(string?           whsCode = null);
     Task<int>                  ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid        sourceOperationId, SessionInfo sessionInfo);
     Task<Package>              ClosePackageAsync(Guid                   packageId,           SessionInfo sessionInfo);

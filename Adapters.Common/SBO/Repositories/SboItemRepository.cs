@@ -312,6 +312,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         const string query =
             """
                  select
+                 "ItemName",
                  COALESCE("NumInBuy", 1) as "NumInBuy",
                  "BuyUnitMsr" as "BuyUnitMsr",
                  COALESCE("PurPackUn", 1) as "PurPackUn",
@@ -323,14 +324,14 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode }
         };
         var response = await dbService.QuerySingleAsync(query, parameters, reader => new ItemUnitResponse {
-            UnitMeasure    = reader["BuyUnitMsr"].ToString()??string.Empty,
+            ItemName       = reader["ItemName"].ToString() ?? string.Empty,
+            UnitMeasure    = reader["BuyUnitMsr"].ToString() ?? string.Empty,
             QuantityInUnit = Convert.ToInt32(reader["NumInBuy"]),
-            PackMeasure    = reader["PurPackMsr"].ToString()??string.Empty,
+            PackMeasure    = reader["PurPackMsr"].ToString() ?? string.Empty,
             QuantityInPack = Convert.ToInt32(reader["PurPackUn"])
         });
         if (response == null)
             throw new KeyNotFoundException($"Item with code {itemCode} not found.");
         return response;
     }
-
 }

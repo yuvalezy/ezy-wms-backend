@@ -61,8 +61,8 @@ public class PackageController(
     }
 
     [HttpGet("barcode/{barcode}")]
-    public async Task<ActionResult<PackageDto>> GetPackageByBarcode(string barcode, [FromQuery] bool content = false, [FromQuery] bool history = false) {
-        var package     = await packageService.GetPackageByBarcodeAsync(barcode, content, history);
+    public async Task<ActionResult<PackageDto>> GetPackageByBarcode(string barcode, [FromQuery] bool contents = false, [FromQuery] bool history = false, [FromQuery] bool details = false) {
+        var package     = await packageService.GetPackageByBarcodeAsync(barcode, contents, history, details);
         var sessionInfo = HttpContext.GetSession();
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();

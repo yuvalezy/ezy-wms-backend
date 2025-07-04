@@ -28,18 +28,18 @@ public class PackageService(
         string whsCode = sessionInfo.Warehouse;
         var    userId  = sessionInfo.Guid;
         var package = new Package {
-            Id               = Guid.NewGuid(),
-            Barcode          = barcode,
-            Status           = PackageStatus.Init,
-            WhsCode          = whsCode,
-            BinEntry         = request.BinEntry,
-            CreatedBy        = userId,
-            ClosedAt         = null,
-            ClosedBy         = null,
-            Notes            = null,
+            Id                  = Guid.NewGuid(),
+            Barcode             = barcode,
+            Status              = PackageStatus.Init,
+            WhsCode             = whsCode,
+            BinEntry            = request.BinEntry,
+            CreatedByUserId     = userId,
+            ClosedAt            = null,
+            ClosedBy            = null,
+            Notes               = null,
             SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
-            SourceOperationId = request.SourceOperationId,
-            CustomAttributes = SerializeCustomAttributes(request.CustomAttributes)
+            SourceOperationId   = request.SourceOperationId,
+            CustomAttributes    = SerializeCustomAttributes(request.CustomAttributes)
         };
 
         db.Packages.Add(package);
@@ -61,12 +61,14 @@ public class PackageService(
             .FirstOrDefaultAsync(p => p.Id == packageId && !p.Deleted);
     }
 
-    public async Task<Package?> GetPackageByBarcodeAsync(string barcode, bool content, bool history) {
+    public async Task<Package?> GetPackageByBarcodeAsync(string barcode, bool contents, bool history, bool details) {
         var query = db.Packages.AsQueryable();
-        if (content)
+        if (contents)
             query = query.Include(c => c.Contents);
         if (history)
             query = query.Include(c => c.LocationHistory);
+        if (details)
+            query = query.Include(c => c.CreatedByUser);
         return await query.FirstOrDefaultAsync(p => p.Barcode == barcode && !p.Deleted);
     }
 
@@ -87,7 +89,7 @@ public class PackageService(
 
         int activatedCount = 0;
         foreach (var package in initPackages) {
-            if (package.Contents.Count <= 0) 
+            if (package.Contents.Count <= 0)
                 continue;
             package.Status          = PackageStatus.Active;
             package.UpdatedAt       = DateTime.UtcNow;

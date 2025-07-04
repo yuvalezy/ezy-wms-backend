@@ -41,7 +41,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
         if (unitQuantity == null) {
             unitQuantity = request.Quantity;
             if (unit != UnitType.Unit) {
-                var data = await adapter.GetItemPurchaseUnits(request.ItemCode);
+                var data = await adapter.GetItemInfo(request.ItemCode);
                 unitQuantity *= data.QuantityInUnit;
                 if (unit == UnitType.Pack)
                     unitQuantity *= data.QuantityInPack;
@@ -72,13 +72,13 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
         }
 
         var content = new PackageContent {
-            Id        = Guid.NewGuid(),
-            PackageId = request.PackageId,
-            ItemCode  = request.ItemCode,
-            Quantity  = unitQuantity.Value,
-            WhsCode   = sessionInfo.Warehouse,
-            BinEntry  = request.BinEntry,
-            CreatedBy = sessionInfo.Guid,
+            Id              = Guid.NewGuid(),
+            PackageId       = request.PackageId,
+            ItemCode        = request.ItemCode,
+            Quantity        = unitQuantity.Value,
+            WhsCode         = sessionInfo.Warehouse,
+            BinEntry        = request.BinEntry,
+            CreatedByUserId = sessionInfo.Guid,
         };
 
         context.PackageContents.Add(content);
@@ -124,14 +124,14 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             throw new InvalidOperationException($"Item {request.ItemCode} not found in package {package.Barcode}");
         }
 
-        decimal?           unitQuantity = request.UnitQuantity;
+        decimal?          unitQuantity = request.UnitQuantity;
         var               unit         = request.UnitType;
         ItemUnitResponse? data         = null;
 
         if (unitQuantity == null) {
             unitQuantity = request.Quantity;
             if (unit != UnitType.Unit) {
-                data         =  await adapter.GetItemPurchaseUnits(request.ItemCode);
+                data         =  await adapter.GetItemInfo(request.ItemCode);
                 unitQuantity *= data.QuantityInUnit;
                 if (unit == UnitType.Pack)
                     unitQuantity *= data.QuantityInPack;
@@ -212,7 +212,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,
             SourceOperationLineId = request.SourceOperationLineId,
-            UserId                = request.UserId,
+            CreatedByUserId       = request.UserId,
             TransactionDate       = DateTime.UtcNow,
             Notes                 = request.Notes
         };

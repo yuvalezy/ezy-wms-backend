@@ -9,7 +9,7 @@ public class PackageDto {
     public required string                      WhsCode          { get; set; }
     public          int?                        BinEntry         { get; set; }
     public          string?                     BinCode          { get; set; }
-    public          Guid                        CreatedBy        { get; set; }
+    public          UserAuditResponse?          CreatedBy        { get; set; }
     public          DateTime                    CreatedAt        { get; set; }
     public          DateTime?                   ClosedAt         { get; set; }
     public          Guid?                       ClosedBy         { get; set; }

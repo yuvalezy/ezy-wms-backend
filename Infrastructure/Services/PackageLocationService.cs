@@ -9,11 +9,10 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PackageLocationService(SystemDbContext context, IPackageContentService contentService, ILogger<PackageLocationService> logger) : IPackageLocationService {
-    
     public async Task<Package> MovePackageAsync(MovePackageRequest request) {
         var package = await context.Packages
             .FirstOrDefaultAsync(p => p.Id == request.PackageId && !p.Deleted);
-            
+
         if (package == null) {
             throw new InvalidOperationException($"Package {request.PackageId} not found");
         }
@@ -57,10 +56,10 @@ public class PackageLocationService(SystemDbContext context, IPackageContentServ
             .Where(h => h.PackageId == packageId && !h.Deleted)
             .OrderByDescending(h => h.MovementDate)
             .ToListAsync();
-            
-        logger.LogDebug("Retrieved {Count} location history records for package {PackageId}", 
+
+        logger.LogDebug("Retrieved {Count} location history records for package {PackageId}",
             history.Count, packageId);
-            
+
         return history;
     }
 
@@ -74,7 +73,6 @@ public class PackageLocationService(SystemDbContext context, IPackageContentServ
         ObjectType          sourceOperationType,
         Guid?               sourceOperationId,
         Guid                userId) {
-        
         var movement = new PackageLocationHistory {
             Id                  = Guid.NewGuid(),
             PackageId           = packageId,
@@ -85,12 +83,12 @@ public class PackageLocationService(SystemDbContext context, IPackageContentServ
             ToBinEntry          = toBinEntry,
             SourceOperationType = sourceOperationType,
             SourceOperationId   = sourceOperationId,
-            UserId              = userId,
+            CreatedByUserId     = userId,
             MovementDate        = DateTime.UtcNow
         };
 
         await context.PackageLocationHistory.AddAsync(movement);
-        
+
         logger.LogDebug("Logged package movement: {PackageId} from {FromWhsCode} to {ToWhsCode} by {UserId}",
             packageId, fromWhsCode, toWhsCode, userId);
     }

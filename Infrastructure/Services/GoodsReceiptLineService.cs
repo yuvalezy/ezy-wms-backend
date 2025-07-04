@@ -333,7 +333,7 @@ public class GoodsReceiptLineService(
                 continue;
             decimal removeQuantity = line.Quantity;
             if (line.Unit != UnitType.Unit) {
-                var data = await adapter.GetItemPurchaseUnits(line.ItemCode);
+                var data = await adapter.GetItemInfo(line.ItemCode);
                 removeQuantity /= data.QuantityInUnit;
                 if (line.Unit == UnitType.Pack)
                     removeQuantity /= data.QuantityInPack;

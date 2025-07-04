@@ -3,6 +3,7 @@
 public class HomeInfoResponse {
     public int ItemCheck           { get; set; }
     public int BinCheck            { get; set; }
+    public int PackageCheck        { get; set; }
     public int GoodsReceipt        { get; set; }
     public int ReceiptConfirmation { get; set; }
     public int Picking             { get; set; }

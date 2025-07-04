@@ -24,10 +24,6 @@ public class PackageConfiguration : IEntityTypeConfiguration<Package>
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(p => p.CreatedBy)
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(p => p.ClosedBy)
             .HasMaxLength(50);
 
@@ -92,10 +88,6 @@ public class PackageContentConfiguration : IEntityTypeConfiguration<PackageConte
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(c => c.CreatedBy)
-            .IsRequired()
-            .HasMaxLength(50);
-
         // Configure indexes
         builder.HasIndex(c => c.PackageId)
             .HasDatabaseName("IX_PackageContent_Package");
@@ -142,10 +134,6 @@ public class PackageTransactionConfiguration : IEntityTypeConfiguration<PackageT
             .IsRequired()
             .HasMaxLength(20);
 
-        builder.Property(t => t.UserId)
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(t => t.TransactionDate)
             .IsRequired();
 
@@ -189,10 +177,6 @@ public class PackageLocationHistoryConfiguration : IEntityTypeConfiguration<Pack
         builder.Property(h => h.SourceOperationType)
             .IsRequired()
             .HasMaxLength(20);
-
-        builder.Property(h => h.UserId)
-            .IsRequired()
-            .HasMaxLength(50);
 
         builder.Property(h => h.MovementDate)
             .IsRequired();

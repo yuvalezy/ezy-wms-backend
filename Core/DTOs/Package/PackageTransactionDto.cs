@@ -12,7 +12,7 @@ public class PackageTransactionDto {
     public          ObjectType             SourceOperationType   { get; set; }
     public          Guid?                  SourceOperationId     { get; set; }
     public          Guid?                  SourceOperationLineId { get; set; }
-    public          Guid                   UserId                { get; set; }
+    public          UserAuditResponse?     User                  { get; set; }
     public          DateTime               TransactionDate       { get; set; }
     public          string?                Notes                 { get; set; }
 }
