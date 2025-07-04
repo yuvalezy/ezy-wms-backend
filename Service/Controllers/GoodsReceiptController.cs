@@ -8,11 +8,15 @@ using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Service.Middlewares;
 
 namespace Service.Controllers;
 
+/// <summary>
+/// Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -22,9 +26,21 @@ public class GoodsReceiptController(
     IGoodsReceiptLineService   receiptLineService,
     ISettings                  settings)
     : ControllerBase {
-    // 1. Create Goods Receipt
+    /// <summary>
+    /// Creates a new goods receipt document
+    /// </summary>
+    /// <param name="request">The goods receipt creation request containing document details</param>
+    /// <returns>The created goods receipt with its generated ID and details</returns>
+    /// <response code="200">Returns the created goods receipt</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("create")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor)]
+    [ProducesResponseType(typeof(GoodsReceiptResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<GoodsReceiptResponse>> CreateGoodsReceipt([FromBody] CreateGoodsReceiptRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -50,8 +66,22 @@ public class GoodsReceiptController(
         return Ok(result);
     }
 
-    // 2. Add Item to Goods Receipt
+    /// <summary>
+    /// Adds an item to an existing goods receipt document
+    /// </summary>
+    /// <param name="request">The request containing item details and receipt ID</param>
+    /// <returns>Response indicating success or failure of the operation</returns>
+    /// <response code="200">Returns the add item response</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("addItem")]
+    [ProducesResponseType(typeof(GoodsReceiptAddItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GoodsReceiptAddItemResponse>> AddItem([FromBody] GoodsReceiptAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -85,8 +115,22 @@ public class GoodsReceiptController(
         }
     }
 
-    // 3. Update Line
+    /// <summary>
+    /// Updates a specific line in a goods receipt document
+    /// </summary>
+    /// <param name="request">The request containing line details to update</param>
+    /// <returns>Response indicating success or failure of the update</returns>
+    /// <response code="200">Returns the update line response</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("updateLine")]
+    [ProducesResponseType(typeof(UpdateLineResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UpdateLineResponse>> UpdateLine([FromBody] UpdateGoodsReceiptLineRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -112,8 +156,22 @@ public class GoodsReceiptController(
         return await receiptLineService.UpdateLine(sessionInfo, request);
     }
 
-    // 4. Update Line Quantity
+    /// <summary>
+    /// Updates the quantity of a specific line in a goods receipt document
+    /// </summary>
+    /// <param name="request">The request containing line ID and new quantity</param>
+    /// <returns>Response indicating success or failure of the quantity update</returns>
+    /// <response code="200">Returns the update line response</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("updateLineQuantity")]
+    [ProducesResponseType(typeof(UpdateLineResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UpdateLineResponse>> UpdateLineQuantity([FromBody] UpdateGoodsReceiptLineQuantityRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -139,8 +197,22 @@ public class GoodsReceiptController(
         return await receiptLineService.UpdateLineQuantity(sessionInfo, request);
     }
 
-    // 5. Cancel Goods Receipt
+    /// <summary>
+    /// Cancels a goods receipt document (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt to cancel</param>
+    /// <returns>True if cancellation was successful, false otherwise</returns>
+    /// <response code="200">Returns true if cancellation was successful</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("cancel/{id:guid}")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> CancelGoodsReceipt(Guid id) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -162,8 +234,22 @@ public class GoodsReceiptController(
         return Ok(result);
     }
 
-    // 6. Process Goods Receipt
+    /// <summary>
+    /// Processes a goods receipt document, creating the actual inventory movement (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt to process</param>
+    /// <returns>Response indicating success or failure of the processing operation</returns>
+    /// <response code="200">Returns the process goods receipt response</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("process/{id:guid}")]
+    [ProducesResponseType(typeof(ProcessGoodsReceiptResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProcessGoodsReceiptResponse>> ProcessGoodsReceipt(Guid id) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -184,8 +270,24 @@ public class GoodsReceiptController(
         return await receiptService.ProcessGoodsReceipt(id, sessionInfo);
     }
 
-    // 7. Get Documents (list) - Uses POST for complex filtering
+    /// <summary>
+    /// Gets a list of goods receipt documents with optional filtering
+    /// </summary>
+    /// <param name="request">The request containing filter criteria</param>
+    /// <returns>A list of goods receipt documents matching the filter criteria</returns>
+    /// <response code="200">Returns the list of goods receipts</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <remarks>
+    /// Uses POST method to support complex filtering criteria that may exceed URL length limits.
+    /// The Confirm parameter determines which role permissions are required.
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptResponse>>> GetGoodsReceipts([FromBody] GoodsReceiptsRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -209,10 +311,22 @@ public class GoodsReceiptController(
         return Ok(await receiptService.GetGoodsReceipts(request, sessionInfo.Warehouse));
     }
 
-    // 8. Get Document by ID
+    /// <summary>
+    /// Gets a specific goods receipt document by its ID
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt</param>
+    /// <returns>The goods receipt document details</returns>
+    /// <response code="200">Returns the goods receipt document</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpGet("{id:guid}")]
     [RequireAnyRole(RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
+    [ProducesResponseType(typeof(GoodsReceiptResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GoodsReceiptResponse>> GetGoodsReceipt(Guid id) {
         var sessionInfo = HttpContext.GetSession();
         var document    = await receiptService.GetGoodsReceipt(id);
@@ -239,8 +353,20 @@ public class GoodsReceiptController(
         return Ok(document);
     }
 
-    // 9. Get All Report
+    /// <summary>
+    /// Gets a comprehensive report of all items in a goods receipt document (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt</param>
+    /// <returns>A detailed report of all items in the goods receipt</returns>
+    /// <response code="200">Returns the goods receipt all report</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpGet("{id:guid}/report/all")]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptReportAllResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptReportAllResponse>>> GetGoodsReceiptAllReport(Guid id) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -261,8 +387,21 @@ public class GoodsReceiptController(
         return Ok(await receiptReportService.GetGoodsReceiptAllReport(id, sessionInfo.Warehouse));
     }
 
-    // 10. Get All Report Details
+    /// <summary>
+    /// Gets detailed report information for a specific item in a goods receipt document (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt</param>
+    /// <param name="itemCode">The item code to get detailed information for</param>
+    /// <returns>Detailed report information for the specified item</returns>
+    /// <response code="200">Returns the goods receipt all report details</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpGet("{id:guid}/report/all/{itemCode}")]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptReportAllDetailsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptReportAllDetailsResponse>>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -283,8 +422,22 @@ public class GoodsReceiptController(
         return Ok(await receiptReportService.GetGoodsReceiptAllReportDetails(id, itemCode));
     }
 
-    // 11. Update Goods Receipt All
+    /// <summary>
+    /// Updates all items in a goods receipt document in bulk (supervisor only)
+    /// </summary>
+    /// <param name="request">The request containing bulk update information</param>
+    /// <returns>True if update was successful, false otherwise</returns>
+    /// <response code="200">Returns true if update was successful</response>
+    /// <response code="400">If the request is invalid or update failed</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("updateAll")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<bool>> UpdateGoodsReceiptAll([FromBody] UpdateGoodsReceiptAllRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -306,8 +459,20 @@ public class GoodsReceiptController(
         return string.IsNullOrWhiteSpace(errorMessage) ? Ok(true) : BadRequest(errorMessage);
     }
 
-    // 12. Get VS Exit Report
+    /// <summary>
+    /// Gets a comparison report between goods receipt and exit documents (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt</param>
+    /// <returns>A comparison report showing variances between receipt and exit</returns>
+    /// <response code="200">Returns the goods receipt vs exit report</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpGet("{id:guid}/report/vsExit")]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptVSExitReportResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptVSExitReportResponse>>> GetGoodsReceiptVSExitReport(Guid id) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -328,8 +493,20 @@ public class GoodsReceiptController(
         return Ok(await receiptReportService.GetGoodsReceiptVSExitReport(id));
     }
 
-    // 13. Get Validate Process
+    /// <summary>
+    /// Validates whether a goods receipt document is ready for processing (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the goods receipt</param>
+    /// <returns>Validation results indicating if the document can be processed</returns>
+    /// <response code="200">Returns the goods receipt validation results</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpGet("{id:guid}/validateProcess")]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptValidateProcessResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptValidateProcessResponse>>> GetGoodsReceiptValidateProcess(Guid id) {
         var sessionInfo = HttpContext.GetSession();
 
@@ -350,8 +527,20 @@ public class GoodsReceiptController(
         return Ok(await receiptReportService.GetGoodsReceiptValidateProcess(id));
     }
 
-    // 14. Get Validate Process Line Details
+    /// <summary>
+    /// Gets detailed validation information for specific lines in a goods receipt document (supervisor only)
+    /// </summary>
+    /// <param name="request">The request containing line validation criteria</param>
+    /// <returns>Detailed validation information for the specified lines</returns>
+    /// <response code="200">Returns the goods receipt validation line details</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="404">If the goods receipt document is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
     [HttpPost("validateProcessLineDetails")]
+    [ProducesResponseType(typeof(IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>>> GetGoodsReceiptValidateProcessLineDetails(
         [FromBody] GoodsReceiptValidateProcessLineDetailsRequest request) {
         var sessionInfo = HttpContext.GetSession();

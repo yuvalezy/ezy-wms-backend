@@ -1,0 +1,1412 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Service</name>
+    </assembly>
+    <members>
+        <member name="T:Service.Controllers.AuthenticationController">
+            <summary>
+            Authentication Controller - Manages user authentication, session management, and password operations
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.#ctor(Core.Interfaces.IAuthenticationService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.AuthenticationController},Core.Interfaces.ISessionManager,Core.Interfaces.IExternalSystemAdapter)">
+            <summary>
+            Authentication Controller - Manages user authentication, session management, and password operations
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.GetCompanyInfo">
+            <summary>
+            Gets company information (no authentication required)
+            </summary>
+            <returns>The company name from the external system</returns>
+            <response code="200">Returns the company name</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.Login(Core.DTOs.LoginRequest)">
+            <summary>
+            Authenticates a user with password-only login
+            </summary>
+            <param name="request">The login request containing password</param>
+            <returns>Session information with JWT token and user details</returns>
+            <response code="200">Returns session info with token and user details</response>
+            <response code="400">If warehouse selection is required</response>
+            <response code="401">If the password is invalid or account is disabled</response>
+            <response code="500">If a server error occurs</response>
+            <remarks>
+            This endpoint uses password-only authentication. The system automatically identifies the user.
+            Sets an HTTP-only cookie for session management and returns a JWT token for API access.
+            </remarks>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.ChangePassword(Core.DTOs.Settings.ChangePasswordRequest)">
+            <summary>
+            Changes the password for the authenticated user
+            </summary>
+            <param name="request">The password change request containing current and new passwords</param>
+            <returns>Success message if password change was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="400">If the current password is incorrect</response>
+            <response code="401">If the user is not authenticated or token is invalid</response>
+            <response code="500">If a server error occurs</response>
+            <remarks>
+            Requires authentication. The user ID is extracted from the JWT token.
+            Both current password verification and new password validation are performed.
+            </remarks>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.Logout">
+            <summary>
+            Logs out the authenticated user and clears session
+            </summary>
+            <returns>Success message if logout was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+            <remarks>
+            Clears the session from the server-side session manager and removes the HTTP-only cookie.
+            The JWT token becomes invalid after logout.
+            </remarks>
+        </member>
+        <member name="T:Service.Controllers.AuthorizationGroupController">
+            <summary>
+            Authorization Group Controller - Manages authorization groups and role assignments (super user only)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.#ctor(Core.Interfaces.IAuthorizationGroupService)">
+            <summary>
+            Authorization Group Controller - Manages authorization groups and role assignments (super user only)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.Create(Core.DTOs.Settings.CreateAuthorizationGroupRequest)">
+            <summary>
+            Creates a new authorization group (super user only)
+            </summary>
+            <param name="request">The authorization group creation request</param>
+            <returns>The created authorization group details</returns>
+            <response code="201">Returns the created authorization group</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.Update(Core.DTOs.Settings.UpdateAuthorizationGroupRequest)">
+            <summary>
+            Updates an existing authorization group (super user only)
+            </summary>
+            <param name="request">The authorization group update request</param>
+            <returns>The updated authorization group details</returns>
+            <response code="200">Returns the updated authorization group</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="404">If the authorization group is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.Delete(System.Guid)">
+            <summary>
+            Deletes an authorization group (super user only)
+            </summary>
+            <param name="id">The unique identifier of the authorization group to delete</param>
+            <returns>No content if deletion was successful</returns>
+            <response code="204">Authorization group deleted successfully</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="404">If the authorization group is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.GetById(System.Guid)">
+            <summary>
+            Gets a specific authorization group by its ID (super user only)
+            </summary>
+            <param name="id">The unique identifier of the authorization group</param>
+            <returns>The authorization group details</returns>
+            <response code="200">Returns the authorization group details</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="404">If the authorization group is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.AuthorizationGroupController.GetAll">
+            <summary>
+            Gets all authorization groups in the system (super user only)
+            </summary>
+            <returns>A list of all authorization groups</returns>
+            <response code="200">Returns the list of authorization groups</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="T:Service.Controllers.CancellationReasonController">
+            <summary>
+            Cancellation Reason Controller - Manages cancellation reasons for various operations (super user only for modifications)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.#ctor(Core.Interfaces.ICancellationReasonService)">
+            <summary>
+            Cancellation Reason Controller - Manages cancellation reasons for various operations (super user only for modifications)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.Create(Core.DTOs.Settings.CreateCancellationReasonRequest)">
+            <summary>
+            Creates a new cancellation reason (super user only)
+            </summary>
+            <param name="request">The cancellation reason creation request</param>
+            <returns>The created cancellation reason details</returns>
+            <response code="201">Returns the created cancellation reason</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.Update(Core.DTOs.Settings.UpdateCancellationReasonRequest)">
+            <summary>
+            Updates an existing cancellation reason (super user only)
+            </summary>
+            <param name="request">The cancellation reason update request</param>
+            <returns>The updated cancellation reason details</returns>
+            <response code="200">Returns the updated cancellation reason</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="404">If the cancellation reason is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.Delete(System.Guid)">
+            <summary>
+            Deletes a cancellation reason (super user only)
+            </summary>
+            <param name="id">The unique identifier of the cancellation reason to delete</param>
+            <returns>No content if deletion was successful</returns>
+            <response code="204">Cancellation reason deleted successfully</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="404">If the cancellation reason is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.GetAll(Core.DTOs.Settings.GetCancellationReasonsRequest)">
+            <summary>
+            Gets all cancellation reasons with optional filtering (authenticated users only)
+            </summary>
+            <param name="request">The request containing filter criteria</param>
+            <returns>A list of cancellation reasons matching the filter criteria</returns>
+            <response code="200">Returns the list of cancellation reasons</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+            <remarks>
+            This endpoint allows all authenticated users to read cancellation reasons, not just super users.
+            </remarks>
+        </member>
+        <member name="M:Service.Controllers.CancellationReasonController.GetById(System.Guid)">
+            <summary>
+            Gets a specific cancellation reason by its ID (authenticated users only)
+            </summary>
+            <param name="id">The unique identifier of the cancellation reason</param>
+            <returns>The cancellation reason details</returns>
+            <response code="200">Returns the cancellation reason details</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="404">If the cancellation reason is not found</response>
+            <response code="500">If a server error occurs</response>
+            <remarks>
+            This endpoint allows all authenticated users to read cancellation reasons, not just super users.
+            </remarks>
+        </member>
+        <member name="T:Service.Controllers.CountingController">
+            <summary>
+            Counting Controller - Manages inventory counting operations including creation, item counting, and processing
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService)">
+            <summary>
+            Counting Controller - Manages inventory counting operations including creation, item counting, and processing
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.CountingController.CreateCounting(Core.DTOs.InventoryCounting.CreateInventoryCountingRequest)">
+            <summary>
+            Creates a new inventory counting document (supervisor only)
+            </summary>
+            <param name="request">The counting creation request containing counting details</param>
+            <returns>The created inventory counting document</returns>
+            <response code="200">Returns the created inventory counting</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.GetCountings(Core.DTOs.InventoryCounting.InventoryCountingsRequest)">
+            <summary>
+            Gets a list of inventory counting documents with optional filtering
+            </summary>
+            <param name="request">The request containing filter criteria</param>
+            <returns>A list of inventory counting documents matching the filter criteria</returns>
+            <response code="200">Returns the list of inventory countings</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.GetCounting(System.Guid)">
+            <summary>
+            Gets a specific inventory counting document by its ID
+            </summary>
+            <param name="id">The unique identifier of the inventory counting</param>
+            <returns>The inventory counting document details</returns>
+            <response code="200">Returns the inventory counting document</response>
+            <response code="404">If the inventory counting is not found</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.AddItem(Core.DTOs.InventoryCounting.InventoryCountingAddItemRequest)">
+            <summary>
+            Adds an item to an inventory counting document
+            </summary>
+            <param name="request">The request containing item details and counting ID</param>
+            <returns>Response indicating success or failure of the operation</returns>
+            <response code="200">Returns the add item response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.UpdateLine(Core.DTOs.InventoryCounting.InventoryCountingUpdateLineRequest)">
+            <summary>
+            Updates a specific line in an inventory counting document
+            </summary>
+            <param name="request">The request containing line details to update</param>
+            <returns>Response indicating success or failure of the update</returns>
+            <response code="200">Returns the update line response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.CancelCounting(Core.DTOs.InventoryCounting.CancelInventoryCountingRequest)">
+            <summary>
+            Cancels an inventory counting document (supervisor only)
+            </summary>
+            <param name="request">The cancellation request containing counting ID</param>
+            <returns>True if cancellation was successful, false otherwise</returns>
+            <response code="200">Returns true if cancellation was successful</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.ProcessCounting(Core.DTOs.InventoryCounting.ProcessInventoryCountingRequest)">
+            <summary>
+            Processes an inventory counting document, creating actual inventory adjustments (supervisor only)
+            </summary>
+            <param name="request">The processing request containing counting ID</param>
+            <returns>Response indicating success or failure of the processing operation</returns>
+            <response code="200">Returns the process counting response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.CountingContent(Core.DTOs.InventoryCounting.InventoryCountingContentRequest)">
+            <summary>
+            Gets the content details for an inventory counting document
+            </summary>
+            <param name="request">The request containing counting content criteria</param>
+            <returns>A list of inventory counting content items</returns>
+            <response code="200">Returns the inventory counting content</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.CountingController.GetCountingSummaryReport(System.Guid)">
+            <summary>
+            Gets a summary report for an inventory counting document (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the inventory counting</param>
+            <returns>The inventory counting summary report</returns>
+            <response code="200">Returns the inventory counting summary report</response>
+            <response code="404">If the inventory counting is not found</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.GeneralController">
+            <summary>
+            General Controller - Provides general system information, warehouses, user data, and item/barcode scanning utilities
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.#ctor(Core.Interfaces.IPublicService)">
+            <summary>
+            General Controller - Provides general system information, warehouses, user data, and item/barcode scanning utilities
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.GetWarehouses(System.String[])">
+            <summary>
+            Gets a list of available warehouses with optional filtering
+            </summary>
+            <param name="filter">Optional array of warehouse codes to filter by</param>
+            <returns>A list of warehouses available to the authenticated user</returns>
+            <response code="200">Returns the list of warehouses</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.GetHomeInfo">
+            <summary>
+            Gets home dashboard information for the authenticated user
+            </summary>
+            <returns>Dashboard statistics and information for the user's warehouse</returns>
+            <response code="200">Returns the home dashboard information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.GetUserInfo">
+            <summary>
+            Gets user information for the authenticated user
+            </summary>
+            <returns>User profile information and session details</returns>
+            <response code="200">Returns the user information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.GetVendors">
+            <summary>
+            Gets a list of vendors from the external system (goods receipt roles only)
+            </summary>
+            <returns>A list of vendor information</returns>
+            <response code="200">Returns the list of vendors</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required goods receipt permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.ScanBinLocation(System.String)">
+            <summary>
+            Scans and validates a bin location barcode
+            </summary>
+            <param name="bin">The bin location barcode or identifier to scan</param>
+            <returns>Bin location information if found</returns>
+            <response code="200">Returns the bin location details</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required warehouse operation permissions</response>
+            <response code="404">If the bin location is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.ScanItemBarCode(System.String,System.Boolean)">
+            <summary>
+            Scans and retrieves item information by barcode
+            </summary>
+            <param name="scanCode">The item barcode or identifier to scan</param>
+            <param name="item">Whether to search by item code instead of barcode</param>
+            <returns>Item information matching the scanned code</returns>
+            <response code="200">Returns the item information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required warehouse operation permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.ItemCheck(Core.DTOs.Items.ItemBarCodeRequest)">
+            <summary>
+            Validates item and barcode combinations (supervisor roles only)
+            </summary>
+            <param name="request">The request containing item code and barcode to validate</param>
+            <returns>Item validation results</returns>
+            <response code="200">Returns the item validation results</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.BinCheck(System.Int32)">
+            <summary>
+            Checks bin contents and inventory (supervisor roles only)
+            </summary>
+            <param name="binEntry">The bin entry ID to check contents for</param>
+            <returns>Bin content information and inventory details</returns>
+            <response code="200">Returns the bin content information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.ItemStock(Core.DTOs.Items.ItemBarCodeRequest)">
+            <summary>
+            Gets item stock information across bins in the current warehouse
+            </summary>
+            <param name="request">The request containing item code to check stock for</param>
+            <returns>Item stock information across all bins</returns>
+            <response code="200">Returns the item stock information</response>
+            <response code="400">If the item code is missing or invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.UpdateItemBarCode(Core.DTOs.Settings.UpdateBarCodeRequest)">
+            <summary>
+            Updates or creates item barcode associations (supervisor roles only)
+            </summary>
+            <param name="request">The request containing item and barcode information to update</param>
+            <returns>Response indicating success or failure of the barcode update</returns>
+            <response code="200">Returns the barcode update response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="T:Service.Controllers.GoodsReceiptController">
+            <summary>
+            Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.#ctor(Core.Interfaces.IGoodsReceiptService,Core.Interfaces.IGoodsReceiptReportService,Core.Interfaces.IGoodsReceiptLineService,Core.Interfaces.ISettings)">
+            <summary>
+            Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.CreateGoodsReceipt(Core.DTOs.GoodsReceipt.CreateGoodsReceiptRequest)">
+            <summary>
+            Creates a new goods receipt document
+            </summary>
+            <param name="request">The goods receipt creation request containing document details</param>
+            <returns>The created goods receipt with its generated ID and details</returns>
+            <response code="200">Returns the created goods receipt</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.AddItem(Core.DTOs.GoodsReceipt.GoodsReceiptAddItemRequest)">
+            <summary>
+            Adds an item to an existing goods receipt document
+            </summary>
+            <param name="request">The request containing item details and receipt ID</param>
+            <returns>Response indicating success or failure of the operation</returns>
+            <response code="200">Returns the add item response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.UpdateLine(Core.DTOs.GoodsReceipt.UpdateGoodsReceiptLineRequest)">
+            <summary>
+            Updates a specific line in a goods receipt document
+            </summary>
+            <param name="request">The request containing line details to update</param>
+            <returns>Response indicating success or failure of the update</returns>
+            <response code="200">Returns the update line response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.UpdateLineQuantity(Core.DTOs.GoodsReceipt.UpdateGoodsReceiptLineQuantityRequest)">
+            <summary>
+            Updates the quantity of a specific line in a goods receipt document
+            </summary>
+            <param name="request">The request containing line ID and new quantity</param>
+            <returns>Response indicating success or failure of the quantity update</returns>
+            <response code="200">Returns the update line response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.CancelGoodsReceipt(System.Guid)">
+            <summary>
+            Cancels a goods receipt document (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt to cancel</param>
+            <returns>True if cancellation was successful, false otherwise</returns>
+            <response code="200">Returns true if cancellation was successful</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.ProcessGoodsReceipt(System.Guid)">
+            <summary>
+            Processes a goods receipt document, creating the actual inventory movement (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt to process</param>
+            <returns>Response indicating success or failure of the processing operation</returns>
+            <response code="200">Returns the process goods receipt response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceipts(Core.DTOs.GoodsReceipt.GoodsReceiptsRequest)">
+            <summary>
+            Gets a list of goods receipt documents with optional filtering
+            </summary>
+            <param name="request">The request containing filter criteria</param>
+            <returns>A list of goods receipt documents matching the filter criteria</returns>
+            <response code="200">Returns the list of goods receipts</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+            <remarks>
+            Uses POST method to support complex filtering criteria that may exceed URL length limits.
+            The Confirm parameter determines which role permissions are required.
+            </remarks>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceipt(System.Guid)">
+            <summary>
+            Gets a specific goods receipt document by its ID
+            </summary>
+            <param name="id">The unique identifier of the goods receipt</param>
+            <returns>The goods receipt document details</returns>
+            <response code="200">Returns the goods receipt document</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceiptAllReport(System.Guid)">
+            <summary>
+            Gets a comprehensive report of all items in a goods receipt document (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt</param>
+            <returns>A detailed report of all items in the goods receipt</returns>
+            <response code="200">Returns the goods receipt all report</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceiptAllReportDetails(System.Guid,System.String)">
+            <summary>
+            Gets detailed report information for a specific item in a goods receipt document (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt</param>
+            <param name="itemCode">The item code to get detailed information for</param>
+            <returns>Detailed report information for the specified item</returns>
+            <response code="200">Returns the goods receipt all report details</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.UpdateGoodsReceiptAll(Core.DTOs.GoodsReceipt.UpdateGoodsReceiptAllRequest)">
+            <summary>
+            Updates all items in a goods receipt document in bulk (supervisor only)
+            </summary>
+            <param name="request">The request containing bulk update information</param>
+            <returns>True if update was successful, false otherwise</returns>
+            <response code="200">Returns true if update was successful</response>
+            <response code="400">If the request is invalid or update failed</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceiptVSExitReport(System.Guid)">
+            <summary>
+            Gets a comparison report between goods receipt and exit documents (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt</param>
+            <returns>A comparison report showing variances between receipt and exit</returns>
+            <response code="200">Returns the goods receipt vs exit report</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceiptValidateProcess(System.Guid)">
+            <summary>
+            Validates whether a goods receipt document is ready for processing (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the goods receipt</param>
+            <returns>Validation results indicating if the document can be processed</returns>
+            <response code="200">Returns the goods receipt validation results</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.GoodsReceiptController.GetGoodsReceiptValidateProcessLineDetails(Core.DTOs.GoodsReceipt.GoodsReceiptValidateProcessLineDetailsRequest)">
+            <summary>
+            Gets detailed validation information for specific lines in a goods receipt document (supervisor only)
+            </summary>
+            <param name="request">The request containing line validation criteria</param>
+            <returns>Detailed validation information for the specified lines</returns>
+            <response code="200">Returns the goods receipt validation line details</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="404">If the goods receipt document is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.PackageController">
+            <summary>
+            Package Controller - Manages package operations including creation, content management, location tracking, and validation
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
+            <summary>
+            Package Controller - Manages package operations including creation, content management, location tracking, and validation
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PackageController.CreatePackage(Core.DTOs.Package.CreatePackageRequest)">
+            <summary>
+            Creates a new package
+            </summary>
+            <param name="request">The package creation request containing package details</param>
+            <returns>The created package with its generated barcode and details</returns>
+            <response code="200">Returns the created package</response>
+            <response code="400">If the request is invalid or creation failed</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetPackage(System.Guid)">
+            <summary>
+            Gets a specific package by its ID
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <returns>The package details</returns>
+            <response code="200">Returns the package details</response>
+            <response code="404">If the package is not found or not accessible</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetPackageByBarcode(System.String,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Gets a package by its barcode with optional additional data
+            </summary>
+            <param name="barcode">The barcode of the package to retrieve</param>
+            <param name="contents">Include package contents in the response</param>
+            <param name="history">Include transaction history in the response</param>
+            <param name="details">Include detailed package information in the response</param>
+            <returns>The package details with optional additional data</returns>
+            <response code="200">Returns the package details</response>
+            <response code="404">If the package is not found or not accessible</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetActivePackages">
+            <summary>
+            Gets all active packages in the user's warehouse
+            </summary>
+            <returns>A list of active packages</returns>
+            <response code="200">Returns the list of active packages</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.ClosePackage(System.Guid)">
+            <summary>
+            Closes a package, finalizing its contents and triggering label printing if configured
+            </summary>
+            <param name="id">The unique identifier of the package to close</param>
+            <returns>The closed package details</returns>
+            <response code="200">Returns the closed package</response>
+            <response code="400">If the package cannot be closed or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.CancelPackage(System.Guid,Core.DTOs.Package.CancelPackageRequest)">
+            <summary>
+            Cancels a package with a specified reason
+            </summary>
+            <param name="id">The unique identifier of the package to cancel</param>
+            <param name="request">The cancellation request containing the reason</param>
+            <returns>The cancelled package details</returns>
+            <response code="200">Returns the cancelled package</response>
+            <response code="400">If the package cannot be cancelled or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.LockPackage(System.Guid,Core.DTOs.Package.LockPackageRequest)">
+            <summary>
+            Locks a package to prevent modifications with a specified reason
+            </summary>
+            <param name="id">The unique identifier of the package to lock</param>
+            <param name="request">The lock request containing the reason</param>
+            <returns>The locked package details</returns>
+            <response code="200">Returns the locked package</response>
+            <response code="400">If the package cannot be locked or request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.UnlockPackage(System.Guid)">
+            <summary>
+            Unlocks a package to allow modifications (supervisor only)
+            </summary>
+            <param name="id">The unique identifier of the package to unlock</param>
+            <returns>The unlocked package details</returns>
+            <response code="200">Returns the unlocked package</response>
+            <response code="400">If the package cannot be unlocked or request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.AddItemToPackage(System.Guid,Core.DTOs.Package.AddItemToPackageRequest)">
+            <summary>
+            Adds an item to a package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <param name="request">The request containing item details to add</param>
+            <returns>The package content details for the added item</returns>
+            <response code="200">Returns the added package content</response>
+            <response code="400">If the item cannot be added or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.RemoveItemFromPackage(System.Guid,Core.DTOs.Package.RemoveItemFromPackageRequest)">
+            <summary>
+            Removes an item from a package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <param name="request">The request containing item details to remove</param>
+            <returns>The package content details for the removed item</returns>
+            <response code="200">Returns the removed package content</response>
+            <response code="400">If the item cannot be removed or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetPackageContents(System.Guid)">
+            <summary>
+            Gets all items contained in a package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <returns>A list of all items in the package</returns>
+            <response code="200">Returns the package contents</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetPackageTransactions(System.Guid)">
+            <summary>
+            Gets the transaction history for a package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <returns>A list of all transactions performed on the package</returns>
+            <response code="200">Returns the package transaction history</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetPackageMovements(System.Guid)">
+            <summary>
+            Gets the location movement history for a package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <returns>A list of all location movements for the package</returns>
+            <response code="200">Returns the package movement history</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.ValidateConsistency(System.String)">
+            <summary>
+            Validates package consistency across the system
+            </summary>
+            <param name="whsCode">Optional warehouse code to limit validation scope</param>
+            <returns>A list of detected inconsistencies</returns>
+            <response code="200">Returns the list of inconsistencies found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GenerateBarcode">
+            <summary>
+            Generates a new unique barcode for package creation
+            </summary>
+            <returns>A new unique barcode</returns>
+            <response code="200">Returns the generated barcode</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.MovePackage(System.Guid,Core.DTOs.Package.MovePackageRequest)">
+            <summary>
+            Moves a package to a new location
+            </summary>
+            <param name="id">The unique identifier of the package to move</param>
+            <param name="request">The move request containing destination location details</param>
+            <returns>The updated package details with new location</returns>
+            <response code="200">Returns the moved package</response>
+            <response code="400">If the package cannot be moved or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.ValidatePackage(System.Guid)">
+            <summary>
+            Validates the consistency and integrity of a specific package
+            </summary>
+            <param name="id">The unique identifier of the package to validate</param>
+            <returns>The validation results for the package</returns>
+            <response code="200">Returns the package validation results</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.PickingController">
+            <summary>
+            Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PickingController.#ctor(Core.Interfaces.IPickListService,Core.Interfaces.IPickListProcessService,System.IServiceProvider)">
+            <summary>
+            Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PickingController.GetPickings(Core.DTOs.PickList.PickListsRequest)">
+            <summary>
+            Gets a list of pick lists with optional filtering
+            </summary>
+            <param name="request">The request containing filter criteria</param>
+            <returns>A list of pick lists matching the filter criteria</returns>
+            <response code="200">Returns the list of pick lists</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PickingController.GetPicking(System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Boolean},System.Nullable{System.Int32})">
+            <summary>
+            Gets a specific pick list by its ID with optional detail parameters
+            </summary>
+            <param name="id">The unique identifier of the pick list</param>
+            <param name="type">Optional type filter for pick list details</param>
+            <param name="entry">Optional entry filter for pick list details</param>
+            <param name="availableBins">Include available bin information in the response</param>
+            <param name="binEntry">Optional bin entry filter for pick list details</param>
+            <returns>The pick list details with optional additional data</returns>
+            <response code="200">Returns the pick list details</response>
+            <response code="404">If the pick list is not found</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PickingController.AddItem(Core.DTOs.PickList.PickListAddItemRequest)">
+            <summary>
+            Adds an item to a pick list
+            </summary>
+            <param name="request">The request containing item details and pick list ID</param>
+            <returns>Response indicating success or failure of the operation</returns>
+            <response code="200">Returns the add item response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PickingController.Process(Core.DTOs.PickList.ProcessPickListRequest)">
+            <summary>
+            Processes a pick list, finalizing the picking operation and triggering background sync (supervisor only)
+            </summary>
+            <param name="request">The processing request containing pick list ID</param>
+            <returns>Response indicating success or failure of the processing operation</returns>
+            <response code="200">Returns the process pick list response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+            <remarks>
+            This operation finalizes the pick list and triggers an immediate background synchronization if the background service is available.
+            </remarks>
+        </member>
+        <member name="M:Service.Controllers.PickingController.Cancel(Core.DTOs.PickList.ProcessPickListRequest)">
+            <summary>
+            Cancels a pick list (supervisor only)
+            </summary>
+            <param name="request">The cancellation request containing pick list ID</param>
+            <returns>Response indicating success or failure of the cancellation operation</returns>
+            <response code="200">Returns the cancel pick list response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.TransferController">
+            <summary>
+            Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.TransferController.#ctor(Core.Interfaces.ITransferService,Core.Interfaces.ITransferLineService)">
+            <summary>
+            Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.TransferController.CreateTransfer(Core.DTOs.Transfer.CreateTransferRequest)">
+            <summary>
+            Creates a new transfer document (supervisor only)
+            </summary>
+            <param name="transferRequest">The transfer creation request containing source/destination warehouse and details</param>
+            <returns>The created transfer document with its details</returns>
+            <response code="200">Returns the created transfer</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.ProcessInfo(System.Guid)">
+            <summary>
+            Gets processing information for a transfer document
+            </summary>
+            <param name="id">The unique identifier of the transfer</param>
+            <returns>Transfer information required for processing</returns>
+            <response code="200">Returns the transfer processing information</response>
+            <response code="404">If the transfer is not found</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.AddItem(Core.DTOs.Transfer.TransferAddItemRequest)">
+            <summary>
+            Adds an item to a transfer document
+            </summary>
+            <param name="request">The request containing item details and transfer ID</param>
+            <returns>Response indicating success or failure of the operation</returns>
+            <response code="200">Returns the add item response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.UpdateLine(Core.DTOs.Transfer.TransferUpdateLineRequest)">
+            <summary>
+            Updates a specific line in a transfer document
+            </summary>
+            <param name="request">The request containing line details to update</param>
+            <returns>Response indicating success or failure of the update</returns>
+            <response code="200">Returns the update line response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.UpdateLineQuantity(Core.DTOs.Transfer.TransferUpdateLineQuantityRequest)">
+            <summary>
+            Updates the quantity of a specific line in a transfer document
+            </summary>
+            <param name="request">The request containing line ID and new quantity</param>
+            <returns>Response indicating success or failure of the quantity update</returns>
+            <response code="200">Returns the update line response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.CancelTransfer(Core.DTOs.Transfer.CancelTransferRequest)">
+            <summary>
+            Cancels a transfer document (supervisor only)
+            </summary>
+            <param name="request">The cancellation request containing transfer ID</param>
+            <returns>Success indication</returns>
+            <response code="200">Returns success status</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.ProcessTransfer(Core.DTOs.Transfer.ProcessTransferRequest)">
+            <summary>
+            Processes a transfer document, creating the actual inventory movement
+            </summary>
+            <param name="request">The processing request containing transfer ID</param>
+            <returns>Response indicating success or failure of the processing operation</returns>
+            <response code="200">Returns the process transfer response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.GetTransfers(Core.DTOs.Transfer.TransfersRequest)">
+            <summary>
+            Gets a list of transfer documents with optional filtering
+            </summary>
+            <param name="request">The request containing filter criteria</param>
+            <returns>A list of transfer documents matching the filter criteria</returns>
+            <response code="200">Returns the list of transfers</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.GetTransfer(System.Guid)">
+            <summary>
+            Gets a specific transfer document by its ID
+            </summary>
+            <param name="id">The unique identifier of the transfer</param>
+            <returns>The transfer document details</returns>
+            <response code="200">Returns the transfer document</response>
+            <response code="404">If the transfer is not found</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.TransferContent(Core.DTOs.Transfer.TransferContentRequest)">
+            <summary>
+            Gets the content details for a transfer document
+            </summary>
+            <param name="request">The request containing transfer content criteria</param>
+            <returns>A list of transfer content items</returns>
+            <response code="200">Returns the transfer content</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.TransferContentTargetDetail(Core.DTOs.Transfer.TransferContentTargetDetailRequest)">
+            <summary>
+            Gets detailed target information for transfer content items
+            </summary>
+            <param name="request">The request containing transfer content target detail criteria</param>
+            <returns>A list of transfer content target details</returns>
+            <response code="200">Returns the transfer content target details</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.UpdateContentTargetDetail(Core.DTOs.Transfer.TransferUpdateContentTargetDetailRequest)">
+            <summary>
+            Updates target detail information for transfer content (supervisor only)
+            </summary>
+            <param name="request">The request containing updated target detail information</param>
+            <returns>Success indication</returns>
+            <response code="200">Returns success status</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.CreateTransferRequest(Core.DTOs.Transfer.CreateTransferRequestRequest)">
+            <summary>
+            Creates a transfer request document
+            </summary>
+            <param name="request">The transfer request creation details</param>
+            <returns>The created transfer request response</returns>
+            <response code="200">Returns the created transfer request</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.UserController">
+            <summary>
+            User Controller - Manages user operations including CRUD operations, enabling/disabling users, and external user integration (super user only)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.UserController.#ctor(Core.Interfaces.IUserService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.UserController})">
+            <summary>
+            User Controller - Manages user operations including CRUD operations, enabling/disabling users, and external user integration (super user only)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.UserController.GetUsers">
+            <summary>
+            Gets all users in the system (super user only)
+            </summary>
+            <returns>A list of all users</returns>
+            <response code="200">Returns the list of users</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.GetUser(System.Guid)">
+            <summary>
+            Gets a specific user by their ID (super user only)
+            </summary>
+            <param name="id">The unique identifier of the user</param>
+            <returns>The user details</returns>
+            <response code="200">Returns the user details</response>
+            <response code="404">If the user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.CreateUser(Core.DTOs.Settings.CreateUserRequest)">
+            <summary>
+            Creates a new user (super user only)
+            </summary>
+            <param name="request">The user creation request containing user details</param>
+            <returns>The created user details</returns>
+            <response code="201">Returns the created user</response>
+            <response code="400">If the request is invalid</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.UpdateUser(System.Guid,Core.DTOs.Settings.UpdateUserRequest)">
+            <summary>
+            Updates an existing user (super user only)
+            </summary>
+            <param name="id">The unique identifier of the user to update</param>
+            <param name="request">The user update request containing updated details</param>
+            <returns>Success message if update was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="400">If the request is invalid</response>
+            <response code="404">If the user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.DeleteUser(System.Guid)">
+            <summary>
+            Deletes a user (super user only)
+            </summary>
+            <param name="id">The unique identifier of the user to delete</param>
+            <returns>Success message if deletion was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="400">If the request is invalid</response>
+            <response code="404">If the user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.DisableUser(System.Guid)">
+            <summary>
+            Disables a user account (super user only)
+            </summary>
+            <param name="id">The unique identifier of the user to disable</param>
+            <returns>Success message if disabling was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="400">If the request is invalid</response>
+            <response code="404">If the user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.EnableUser(System.Guid)">
+            <summary>
+            Enables a user account (super user only)
+            </summary>
+            <param name="id">The unique identifier of the user to enable</param>
+            <returns>Success message if enabling was successful</returns>
+            <response code="200">Returns success message</response>
+            <response code="400">If the request is invalid</response>
+            <response code="404">If the user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.GetExternalUsers">
+            <summary>
+            Gets all users from the external system (super user only)
+            </summary>
+            <returns>A list of external system users</returns>
+            <response code="200">Returns the list of external users</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.UserController.GetExternalUser(System.String)">
+            <summary>
+            Gets a specific user from the external system by their ID (super user only)
+            </summary>
+            <param name="id">The external system user identifier</param>
+            <returns>The external user details</returns>
+            <response code="200">Returns the external user details</response>
+            <response code="404">If the external user is not found</response>
+            <response code="500">If a server error occurs</response>
+            <response code="403">If the user lacks super user permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.ErrorMessages">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.BarCode_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to BarCode is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.BarCodentoMatchItemCode">
+            <summary>
+              Looks up a localized string similar to The BarCode {0} does not match with Item {1} BarCode.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.Bin_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to Bin is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.BinNotInWarehouse">
+            <summary>
+              Looks up a localized string similar to Bin Location {0} is not current warehouse Warehouses.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.BinRequiredParameterForWarehouse">
+            <summary>
+              Looks up a localized string similar to Bin is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.BinWasNotFoundIndatabase">
+            <summary>
+              Looks up a localized string similar to Bin Location {0} was not found in the database.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.Draft">
+            <summary>
+              Looks up a localized string similar to Draft.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.DraftNumber">
+            <summary>
+              Looks up a localized string similar to Draft Number.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_">
+            <summary>
+              Looks up a localized string similar to No valid source purchase document found for item {0}.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ID_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to ID is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.InventoryCounting">
+            <summary>
+              Looks up a localized string similar to Inventory Counting.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.InventoryTransfer">
+            <summary>
+              Looks up a localized string similar to Inventory Transfer.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemBarCode1WasNotFoundInTransactionSpecificDocuments">
+            <summary>
+              Looks up a localized string similar to Item {0}, Bar Code {1} was not found in transaction specific documents.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemBarCodeNotPurchaseItem">
+            <summary>
+              Looks up a localized string similar to Item {0}, Bar Code {1} is not a purchase item.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemBarCodeNotStockItem">
+            <summary>
+              Looks up a localized string similar to Item {0}, Bar Code {1} is not a inventory managed item.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemCode_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to ItemCode is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemCodeWasNotFoundIndatabase">
+            <summary>
+              Looks up a localized string similar to Item Code {0} was not found in the database.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ItemNotInWarehouse">
+            <summary>
+              Looks up a localized string similar to Item {0}, Bar Code {1} is not enabled in Item Master Data, Warehouses.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.LineID_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to LineID is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.PickEntryRequiredParameter">
+            <summary>
+              Looks up a localized string similar to PickEntry is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.PurchaseDeliveryNote">
+            <summary>
+              Looks up a localized string similar to Purchase Delivery Note.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.Quantity_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to Quantity is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.QuantityMoreThenAvailable">
+            <summary>
+              Looks up a localized string similar to Selected quantity for item {0} is less then available quantity.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.QuantityMoreThenAvailableCurrent">
+            <summary>
+              Looks up a localized string similar to Selected quantity for current item is less then available quantity.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.ReleasedQuantityFromItemIsless">
+            <summary>
+              Looks up a localized string similar to Released quantity from item {0} is less then added quantity.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.TransactionIDNotExists">
+            <summary>
+              Looks up a localized string similar to Transaction with ID {0} does not exists in the system.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.UnitType_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to UnitType is a required parameter.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.WMSTransaction">
+            <summary>
+              Looks up a localized string similar to WMS Transaction.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages.WMSTransactionAlert">
+            <summary>
+              Looks up a localized string similar to WMS Transaction #{0}.
+            </summary>
+        </member>
+        <member name="T:Service.ErrorMessages_es_PA">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.BarCode_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to El parametero &quot;BarCode&quot; (Codigó de Barra) es obligatorio.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.BarCodentoMatchItemCode">
+            <summary>
+              Looks up a localized string similar to El código de barras {0} no coincide con el código de barras del artículo {1}.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.Draft">
+            <summary>
+              Looks up a localized string similar to Borrador.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.DraftNumber">
+            <summary>
+              Looks up a localized string similar to Numero Borrador.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.GoodsReceiptData_AddItem_No_valid_source_purchase_document_found_for_item__0_">
+            <summary>
+              Looks up a localized string similar to No se encontrol documento de compra fuente valido para el artículo {0}.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ID_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to El parametero &quot;ID&quot; (Identificación de Transacción) es obligatorio.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ItemBarCode1WasNotFoundInTransactionSpecificDocuments">
+            <summary>
+              Looks up a localized string similar to Artículo {0}, Código de Barras {1} no fue encontrado en los documentos especficos de la transacción.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ItemBarCodeNotPurchaseItem">
+            <summary>
+              Looks up a localized string similar to Artículo {0}, Código de Barras {1} no es un artículo de compra.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ItemCode_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to El parametero &quot;ItemCode&quot; (Codigó de Artículo) es obligatorio.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ItemCodeWasNotFoundIndatabase">
+            <summary>
+              Looks up a localized string similar to El código de artículo {0} no se encontró en la base de datos.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.LineID_is_a_required_parameter">
+            <summary>
+              Looks up a localized string similar to LineID es un parameter requerido.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.PickEntryRequiredParameter">
+            <summary>
+              Looks up a localized string similar to El parametero &quot;PickEntry&quot; es obligatorio.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.PurchaseDeliveryNote">
+            <summary>
+              Looks up a localized string similar to Entrada de Mercancia.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.ReleasedQuantityFromItemIsless">
+            <summary>
+              Looks up a localized string similar to La cantidad liberada del artículo {0} es menor que la cantidad agregada..
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.TransactionIDNotExists">
+            <summary>
+              Looks up a localized string similar to La transacción con ID {0} no existe en el sistema.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.WMSTransaction">
+            <summary>
+              Looks up a localized string similar to Transacción WMS.
+            </summary>
+        </member>
+        <member name="P:Service.ErrorMessages_es_PA.WMSTransactionAlert">
+            <summary>
+              Looks up a localized string similar to Transacción de WMS #{0}.
+            </summary>
+        </member>
+        <member name="T:Service.Swagger.AuthorizeOperationFilter">
+            <summary>
+            Swagger operation filter to document authorization requirements
+            </summary>
+        </member>
+        <member name="T:Service.Swagger.EnumSchemaFilter">
+            <summary>
+            Swagger schema filter to enhance enum documentation
+            </summary>
+        </member>
+    </members>
+</doc>

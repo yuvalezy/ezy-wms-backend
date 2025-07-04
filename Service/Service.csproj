@@ -12,6 +12,11 @@
         <Configurations>Debug;Release;Test</Configurations>
         <PlatformTarget>x64</PlatformTarget>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+        <StaticWebAssetsBuildMode>root</StaticWebAssetsBuildMode>
+        <CompressionEnabled>false</CompressionEnabled>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">

@@ -14,6 +14,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Service.Controllers;
 
+/// <summary>
+/// Authentication Controller - Manages user authentication, session management, and password operations
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthenticationController(
@@ -21,7 +24,16 @@ public class AuthenticationController(
     ILogger<AuthenticationController> logger,
     ISessionManager                   sessionManager,
     IExternalSystemAdapter            externalSystemAdapter) : ControllerBase {
-    [HttpGet("CompanyName"), AllowAnonymous]
+    /// <summary>
+    /// Gets company information (no authentication required)
+    /// </summary>
+    /// <returns>The company name from the external system</returns>
+    /// <response code="200">Returns the company name</response>
+    /// <response code="500">If a server error occurs</response>
+    [HttpGet("CompanyName")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<string>> GetCompanyInfo() {
         string? companyName = await sessionManager.GetStringAsync("CompanyName");
         if (!string.IsNullOrEmpty(companyName)) {
@@ -33,8 +45,25 @@ public class AuthenticationController(
         return Ok(companyName);
     }
 
-    [AllowAnonymous]
+    /// <summary>
+    /// Authenticates a user with password-only login
+    /// </summary>
+    /// <param name="request">The login request containing password</param>
+    /// <returns>Session information with JWT token and user details</returns>
+    /// <response code="200">Returns session info with token and user details</response>
+    /// <response code="400">If warehouse selection is required</response>
+    /// <response code="401">If the password is invalid or account is disabled</response>
+    /// <response code="500">If a server error occurs</response>
+    /// <remarks>
+    /// This endpoint uses password-only authentication. The system automatically identifies the user.
+    /// Sets an HTTP-only cookie for session management and returns a JWT token for API access.
+    /// </remarks>
     [HttpPost("login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request) {
         try {
             var sessionInfo = await authenticationService.LoginAsync(request);
@@ -69,8 +98,25 @@ public class AuthenticationController(
         }
     }
 
-    [Authorize]
+    /// <summary>
+    /// Changes the password for the authenticated user
+    /// </summary>
+    /// <param name="request">The password change request containing current and new passwords</param>
+    /// <returns>Success message if password change was successful</returns>
+    /// <response code="200">Returns success message</response>
+    /// <response code="400">If the current password is incorrect</response>
+    /// <response code="401">If the user is not authenticated or token is invalid</response>
+    /// <response code="500">If a server error occurs</response>
+    /// <remarks>
+    /// Requires authentication. The user ID is extracted from the JWT token.
+    /// Both current password verification and new password validation are performed.
+    /// </remarks>
     [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request) {
         try {
             // Get user ID from JWT claims
@@ -93,8 +139,22 @@ public class AuthenticationController(
         }
     }
 
-    [Authorize]
+    /// <summary>
+    /// Logs out the authenticated user and clears session
+    /// </summary>
+    /// <returns>Success message if logout was successful</returns>
+    /// <response code="200">Returns success message</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="500">If a server error occurs</response>
+    /// <remarks>
+    /// Clears the session from the server-side session manager and removes the HTTP-only cookie.
+    /// The JWT token becomes invalid after logout.
+    /// </remarks>
     [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Logout() {
         try {
             // Get the session token from the cookie

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -20,8 +23,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Service.Configuration;
 using Service.Middlewares;
+using Service.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,9 +108,61 @@ if (allowedOrigins is { Length: > 0 }) {
 }
 
 services.AddEndpointsApiExplorer();
-if (builder.Environment.IsDevelopment()) {
-    services.AddSwaggerGen();
-}
+services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new OpenApiInfo {
+        Title = "EzyWMS API",
+        Version = "v1",
+        Description = "ASP.NET Core Web API for EzyWMS warehouse management system",
+        Contact = new OpenApiContact {
+            Name = "EzyWMS Support",
+            Email = "support@ezywms.com"
+        }
+    });
+
+    // Configure JWT Bearer authentication
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header,
+            },
+            new List<string>()
+        }
+    });
+
+    // Include XML documentation
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath)) {
+        c.IncludeXmlComments(xmlPath);
+    }
+
+    // Include Core assembly XML documentation
+    var coreXmlFile = "Core.xml";
+    var coreXmlPath = Path.Combine(AppContext.BaseDirectory, coreXmlFile);
+    if (File.Exists(coreXmlPath)) {
+        c.IncludeXmlComments(coreXmlPath);
+    }
+
+    // Custom schema filter for enums
+    c.SchemaFilter<EnumSchemaFilter>();
+    
+    // Operation filter for role-based authorization documentation
+    c.OperationFilter<AuthorizeOperationFilter>();
+});
 
 services.AddLogging(config => {
     config.AddConsole();
