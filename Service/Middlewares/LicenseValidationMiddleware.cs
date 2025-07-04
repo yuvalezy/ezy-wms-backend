@@ -14,7 +14,7 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
     private readonly HashSet<string> allowedEndpoints = new(StringComparer.OrdinalIgnoreCase) {
         "/api/authentication/login",
         "/api/authentication/logout",
-        "/api/authentication/companyname",
+        "/api/authentication/companyInfo",
         "/api/users",
         "/api/authorization-groups",
         "/api/device",

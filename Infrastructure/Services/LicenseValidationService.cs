@@ -1,3 +1,5 @@
+using Core.DTOs.General;
+using Core.DTOs.License;
 using Core.Enums;
 using Core.Models;
 using Core.Services;
@@ -6,11 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class LicenseValidationService(
-    IAccountStatusService accountStatusService,
-    IDeviceService deviceService,
-    ILicenseCacheService licenseCacheService,
+    IAccountStatusService             accountStatusService,
+    IDeviceService                    deviceService,
+    ILicenseCacheService              licenseCacheService,
     ILogger<LicenseValidationService> logger) : ILicenseValidationService {
-
     public async Task<bool> ValidateDeviceAccessAsync(string deviceUuid) {
         // Check if device exists and is active
         try {
@@ -37,44 +38,44 @@ public class LicenseValidationService(
 
     public async Task<bool> ValidateSystemAccessAsync() {
         var accountStatus = await accountStatusService.GetCurrentAccountStatusAsync();
-        
+
         return accountStatus.Status switch {
             AccountState.Active or AccountState.PaymentDue or AccountState.PaymentDueUnknown or AccountState.Demo => true,
-            AccountState.Disabled or AccountState.DemoExpired => false,
-            _ => false
+            AccountState.Disabled or AccountState.DemoExpired                                                     => false,
+            _                                                                                                     => false
         };
     }
 
     public async Task<LicenseValidationResult> GetLicenseValidationResultAsync() {
         var accountStatus = await accountStatusService.GetCurrentAccountStatusAsync();
-        var licenseCache = await licenseCacheService.GetLicenseCacheAsync();
-        
+        var licenseCache  = await licenseCacheService.GetLicenseCacheAsync();
+
         var result = new LicenseValidationResult {
-            AccountStatus = accountStatus.Status,
+            AccountStatus  = accountStatus.Status,
             ExpirationDate = accountStatus.ExpirationDate ?? accountStatus.DemoExpirationDate,
-            IsValid = await ValidateSystemAccessAsync()
+            IsValid        = await ValidateSystemAccessAsync()
         };
 
         if (result.ExpirationDate.HasValue) {
             var daysUntilExpiration = (int)(result.ExpirationDate.Value - DateTime.UtcNow).TotalDays;
             result.DaysUntilExpiration = Math.Max(0, daysUntilExpiration);
-            result.IsInGracePeriod = daysUntilExpiration > 0 && daysUntilExpiration <= 7;
+            result.IsInGracePeriod     = daysUntilExpiration > 0 && daysUntilExpiration <= 7;
         }
 
         // Determine warning message
         switch (accountStatus.Status) {
             case AccountState.PaymentDue:
                 result.ShowWarning = true;
-                result.WarningMessage = "Payment is due. Please contact support.";
+                result.Warning     = new LicenseWarning(LicenseWarningType.PaymentDue);
                 break;
             case AccountState.PaymentDueUnknown:
                 result.ShowWarning = true;
-                result.WarningMessage = $"Payment status unknown. System will be disabled in {result.DaysUntilExpiration} days.";
+                result.Warning     = new LicenseWarning(LicenseWarningType.PaymentStatusUnknown, result.DaysUntilExpiration);
                 break;
             default:
                 if (result.IsInGracePeriod) {
                     result.ShowWarning = true;
-                    result.WarningMessage = $"Account expires in {result.DaysUntilExpiration} days. Please renew.";
+                    result.Warning     = new LicenseWarning(LicenseWarningType.AccountExpiresIn, result.DaysUntilExpiration);
                 }
                 break;
         }

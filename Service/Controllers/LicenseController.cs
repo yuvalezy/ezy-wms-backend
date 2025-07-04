@@ -27,7 +27,7 @@ public class LicenseController(
                 ExpirationDate = validation.ExpirationDate,
                 DaysUntilExpiration = validation.DaysUntilExpiration,
                 IsInGracePeriod = validation.IsInGracePeriod,
-                WarningMessage = validation.WarningMessage,
+                Warning = validation.Warning,
                 ShowWarning = validation.ShowWarning
             });
         }

@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Core;
 using Core.DTOs;
 using Core.DTOs.General;
+using Core.DTOs.License;
 using Core.DTOs.Settings;
+using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Services;
@@ -34,7 +36,7 @@ public class AuthenticationController(
     /// <returns>Company information including name, server time, and license warnings</returns>
     /// <response code="200">Returns company information with license warnings</response>
     /// <response code="500">If a server error occurs</response>
-    [HttpGet("CompanyName")]
+    [HttpGet("CompanyInfo")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CompanyInfoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -46,7 +48,7 @@ public class AuthenticationController(
                 await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
             }
 
-            var response = new CompanyInfoResponse{
+            var response = new CompanyInfoResponse {
                 CompanyName     = companyName,
                 ServerTime      = DateTime.UtcNow,
                 LicenseWarnings = []
@@ -56,7 +58,7 @@ public class AuthenticationController(
             try {
                 var licenseValidation = await licenseValidationService.GetLicenseValidationResultAsync();
                 if (licenseValidation is { ShowWarning: true, DaysUntilExpiration: <= -3 }) {
-                    response.LicenseWarnings.Add(licenseValidation.WarningMessage ?? "License issue detected");
+                    response.LicenseWarnings.Add(licenseValidation.Warning ?? new LicenseWarning(LicenseWarningType.LicenseIssueDetected));
                 }
             }
             catch (Exception ex) {
@@ -234,7 +236,7 @@ public class AuthenticationController(
                 ExpirationDate      = validation.ExpirationDate,
                 DaysUntilExpiration = validation.DaysUntilExpiration,
                 IsInGracePeriod     = validation.IsInGracePeriod,
-                WarningMessage      = validation.WarningMessage,
+                WarningMessage      = validation.Warning,
                 ShowWarning         = validation.ShowWarning
             });
         }
@@ -244,14 +246,14 @@ public class AuthenticationController(
         }
     }
 
-    private async Task<List<string>> GetLicenseWarningsAsync() {
-        var warnings = new List<string>();
+    private async Task<List<LicenseWarning>> GetLicenseWarningsAsync() {
+        var warnings = new List<LicenseWarning>();
 
         try {
             var validation = await licenseValidationService.GetLicenseValidationResultAsync();
 
             if (validation.ShowWarning) {
-                warnings.Add(validation.WarningMessage ?? "License issue detected");
+                warnings.Add(validation.Warning ?? new LicenseWarning(LicenseWarningType.LicenseIssueDetected));
             }
         }
         catch (Exception ex) {

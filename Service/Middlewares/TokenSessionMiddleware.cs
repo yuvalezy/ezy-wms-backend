@@ -15,11 +15,15 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
     public static string MockSessionToken { get; set; }
 #endif
     public async Task InvokeAsync(HttpContext context) {
-        var endpoint = context.GetEndpoint();
-        bool requiresAuth = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>() != null ||
-                            endpoint?.Metadata.GetMetadata<RequireAnyRoleAttribute>() != null ||
-                            endpoint?.Metadata.GetMetadata<RequireRolePermissionAttribute>() != null ||
-                            endpoint?.Metadata.GetMetadata<RequireSuperUserAttribute>() != null;
+        var endpoint                       = context.GetEndpoint();
+        var authorizeAttribute             = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>();
+        var requireAnyRoleAttribute        = endpoint?.Metadata.GetMetadata<RequireAnyRoleAttribute>();
+        var requireRolePermissionAttribute = endpoint?.Metadata.GetMetadata<RequireRolePermissionAttribute>();
+        var requireSuperUserAttribute      = endpoint?.Metadata.GetMetadata<RequireSuperUserAttribute>();
+        bool requiresAuth = authorizeAttribute != null ||
+                            requireAnyRoleAttribute != null ||
+                            requireRolePermissionAttribute != null ||
+                            requireSuperUserAttribute != null;
 
         // Skip session check on public endpoints
         if (!requiresAuth) {
