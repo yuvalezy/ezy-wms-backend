@@ -49,7 +49,7 @@ public class AuthenticationController(
             var response = new CompanyInfoResponse{
                 CompanyName     = companyName,
                 ServerTime      = DateTime.UtcNow,
-                LicenseWarnings = new List<string>()
+                LicenseWarnings = []
             };
 
             // Add license warnings if past due by 3+ days
