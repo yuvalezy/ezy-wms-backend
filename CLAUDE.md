@@ -85,6 +85,7 @@ The application uses a hybrid authentication approach that combines JWT tokens w
 6. Add `[Authorize]` attribute if authentication is required
 
 ### Running in Debug Mode
+**Note**: The Service project only runs on Windows due to SAP Business One COM interop dependencies.
 1. Set Service project as startup project
 2. Run with `dotnet run` or F5 in Visual Studio
 3. API will be available at http://localhost:5000
