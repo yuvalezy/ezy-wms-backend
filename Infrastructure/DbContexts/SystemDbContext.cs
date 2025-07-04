@@ -34,6 +34,10 @@ public class SystemDbContext : DbContext {
     public DbSet<PackageLocationHistory> PackageLocationHistory  { get; set; }
     public DbSet<PackageInconsistency>   PackageInconsistencies  { get; set; }
 
+    // Device Entities
+    public DbSet<Device>      Devices      { get; set; }
+    public DbSet<DeviceAudit> DeviceAudits { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
@@ -56,6 +60,10 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new PackageTransactionConfiguration());
         modelBuilder.ApplyConfiguration(new PackageLocationHistoryConfiguration());
         modelBuilder.ApplyConfiguration(new PackageInconsistencyConfiguration());
+
+        // Device configurations
+        modelBuilder.ApplyConfiguration(new DeviceConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceAuditConfiguration());
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
             if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))

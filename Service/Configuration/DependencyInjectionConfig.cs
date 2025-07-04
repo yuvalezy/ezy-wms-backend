@@ -55,6 +55,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPackageLocationService, PackageLocationService>();
         services.AddScoped<IPackageService, PackageService>();
 
+        // Device Management Services
+        services.AddScoped<IDeviceService, DeviceService>();
+
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(
             configuration.GetSection("BackgroundServices:PickListSync"));

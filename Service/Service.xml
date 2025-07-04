@@ -317,6 +317,71 @@
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="T:Service.Controllers.DeviceController">
+            <summary>
+            Device Controller - Manages device registration and status for licensing system
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.RegisterDevice(Core.DTOs.Device.RegisterDeviceRequest)">
+            <summary>
+            Registers a new device in the system
+            </summary>
+            <param name="request">The device registration request</param>
+            <returns>The registered device information</returns>
+            <response code="200">Returns the registered device</response>
+            <response code="400">If the device is already registered or request is invalid</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.GetAllDevices">
+            <summary>
+            Gets all registered devices
+            </summary>
+            <returns>List of all devices</returns>
+            <response code="200">Returns the list of devices</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.GetDevice(System.String)">
+            <summary>
+            Gets a specific device by UUID
+            </summary>
+            <param name="deviceUuid">The device UUID</param>
+            <returns>The device information</returns>
+            <response code="200">Returns the device</response>
+            <response code="404">If the device is not found</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.UpdateDeviceStatus(System.String,Core.DTOs.Device.UpdateDeviceStatusRequest)">
+            <summary>
+            Updates the status of a device
+            </summary>
+            <param name="deviceUuid">The device UUID</param>
+            <param name="request">The status update request</param>
+            <returns>The updated device information</returns>
+            <response code="200">Returns the updated device</response>
+            <response code="400">If the status is invalid</response>
+            <response code="404">If the device is not found</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.UpdateDeviceName(System.String,Core.DTOs.Device.UpdateDeviceNameRequest)">
+            <summary>
+            Updates the name of a device
+            </summary>
+            <param name="deviceUuid">The device UUID</param>
+            <param name="request">The name update request</param>
+            <returns>The updated device information</returns>
+            <response code="200">Returns the updated device</response>
+            <response code="404">If the device is not found</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
+        <member name="M:Service.Controllers.DeviceController.GetDeviceAuditHistory(System.String)">
+            <summary>
+            Gets the audit history for a device
+            </summary>
+            <param name="deviceUuid">The device UUID</param>
+            <returns>List of audit records for the device</returns>
+            <response code="200">Returns the audit history</response>
+            <response code="403">If the user is not a superuser</response>
+        </member>
         <member name="T:Service.Controllers.GeneralController">
             <summary>
             General Controller - Provides general system information, warehouses, user data, and item/barcode scanning utilities
