@@ -5,6 +5,7 @@ using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Core.Utils;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +18,25 @@ public class AuthenticationService(
     IJwtAuthenticationService      jwtService,
     ISessionManager                sessionManager,
     IExternalSystemAdapter         externalSystemAdapter,
+    IDeviceService                 deviceService,
     ILogger<AuthenticationService> logger) : IAuthenticationService {
-    public async Task<SessionInfo?> LoginAsync(LoginRequest request) {
+    public async Task<SessionInfo?> LoginAsync(LoginRequest request, string deviceUuid) {
         try {
+            //Validate the device exists
+            var  device         = await deviceService.GetDeviceAsync(deviceUuid);
+            bool registerDevice = false;
+            if (device == null) {
+                if (string.IsNullOrWhiteSpace(request.NewDeviceName)) {
+                    throw new DeviceRegistrationException("NEW_DEVICE_NAME");
+                }
+
+                if (await deviceService.ValidateDeviceNameAvailable(request.NewDeviceName)) {
+                    throw new DeviceRegistrationException("NEW_DEVICE_TAKEN");
+                }
+
+                registerDevice = true;
+            }
+
             // Find all users and check password
             var users = await dbContext.Users
                 .Include(u => u.AuthorizationGroup)
@@ -50,9 +67,9 @@ public class AuthenticationService(
             }
 
             // Handle warehouse selection
-            string?    selectedWarehouse = null;
+            string?            selectedWarehouse = null;
             WarehouseResponse? warehouse         = null;
-            if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
+            if (authenticatedUser.Warehouses.Count > 1) {
                 if (string.IsNullOrEmpty(request.Warehouse)) {
                     // Fetch available warehouses
                     string[]? filter     = authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null;
@@ -104,8 +121,13 @@ public class AuthenticationService(
                 EnableBinLocations = warehouse!.EnableBinLocations,
                 DefaultBinLocation = warehouse!.DefaultBinLocation,
                 Token              = token,
-                ExpiresAt          = expiresAt
+                ExpiresAt          = expiresAt,
+                DeviceUuid         = deviceUuid,
             };
+
+            if (registerDevice) {
+                device = await deviceService.RegisterDeviceAsync(deviceUuid, request.NewDeviceName!, sessionInfo);
+            }
 
             // Store session in memory
             await sessionManager.SetValueAsync(token, sessionInfo.ToJson(), TimeSpan.FromDays(1));

@@ -7,6 +7,7 @@ using Adapters.Common.Utils;
 using Core.DTOs;
 using Core.DTOs.GoodsReceipt;
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;

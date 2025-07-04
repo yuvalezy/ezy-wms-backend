@@ -42,9 +42,15 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         return device;
     }
 
-    public async Task<Device> GetDeviceAsync(string deviceUuid) {
+    public async Task<Device?> GetDeviceAsync(string deviceUuid) {
         return await context.Devices
             .FirstOrDefaultAsync(d => d.DeviceUuid == deviceUuid);
+    }
+
+    public Task<bool> ValidateDeviceNameAvailable(string name) {
+        return context.Devices
+            .Where(d => d.DeviceName.ToLower() == name.ToLower())
+            .AnyAsync();
     }
 
     public async Task<List<Device>> GetAllDevicesAsync() {

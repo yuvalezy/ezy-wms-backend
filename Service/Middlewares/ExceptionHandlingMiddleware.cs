@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Core.DTOs;
+using Core.Exceptions;
 using Core.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

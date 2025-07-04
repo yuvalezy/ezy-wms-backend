@@ -4,6 +4,7 @@ using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
 using Core.Entities;
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.DbContexts;

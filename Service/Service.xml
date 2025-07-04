@@ -29,7 +29,7 @@
             <param name="request">The login request containing password</param>
             <returns>Session information with JWT token and user details</returns>
             <response code="200">Returns session info with token and user details</response>
-            <response code="400">If warehouse selection is required</response>
+            <response code="400">If warehouse selection is required or device registration details are needed</response>
             <response code="401">If the password is invalid or account is disabled</response>
             <response code="500">If a server error occurs</response>
             <remarks>
@@ -1479,6 +1479,11 @@
         <member name="T:Service.Swagger.AuthorizeOperationFilter">
             <summary>
             Swagger operation filter to document authorization requirements
+            </summary>
+        </member>
+        <member name="T:Service.Swagger.DeviceUuidOperationFilter">
+            <summary>
+            Swagger operation filter to document Device UUID header requirements
             </summary>
         </member>
         <member name="T:Service.Swagger.EnumSchemaFilter">

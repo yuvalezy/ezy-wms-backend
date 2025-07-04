@@ -15,7 +15,10 @@ public class DeviceConfiguration : IEntityTypeConfiguration<Device>
         builder.Property(e => e.DeviceName)
             .IsRequired()
             .HasMaxLength(100);
-            
+        
+        builder.HasIndex(e => e.DeviceName)
+            .IsUnique();
+        
         builder.Property(e => e.StatusNotes)
             .HasMaxLength(500);
             

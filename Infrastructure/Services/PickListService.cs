@@ -2,6 +2,7 @@ using Core.DTOs;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Infrastructure.DbContexts;

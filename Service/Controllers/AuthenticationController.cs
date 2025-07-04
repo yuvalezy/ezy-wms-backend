@@ -79,7 +79,7 @@ public class AuthenticationController(
     /// <param name="request">The login request containing password</param>
     /// <returns>Session information with JWT token and user details</returns>
     /// <response code="200">Returns session info with token and user details</response>
-    /// <response code="400">If warehouse selection is required</response>
+    /// <response code="400">If warehouse selection is required or device registration details are needed</response>
     /// <response code="401">If the password is invalid or account is disabled</response>
     /// <response code="500">If a server error occurs</response>
     /// <remarks>
@@ -94,26 +94,13 @@ public class AuthenticationController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request) {
         try {
-            var sessionInfo = await authenticationService.LoginAsync(request);
-            
             string? deviceUuid = Request.Headers["X-Device-UUID"].FirstOrDefault();
             if (deviceUuid == null) {
+                logger.LogError("Device UUID not found in request headers");
                 return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password or account disabled." });
             }
-            /*
-             *     private string? GetDeviceUuid(HttpContext context) {
-        // Try to get from header first
 
-        // If not in header, try to get from session
-        if (!string.IsNullOrEmpty(deviceUuid))
-            return deviceUuid;
-        var sessionInfo = context.GetSession();
-        deviceUuid = sessionInfo.DeviceUuid;
-
-        return deviceUuid;
-    }
-
-             */
+            var sessionInfo = await authenticationService.LoginAsync(request, deviceUuid);
 
             if (sessionInfo == null) {
                 return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password or account disabled." });
@@ -145,6 +132,13 @@ public class AuthenticationController(
                 data = new {
                     warehouses = ex.AvailableWarehouses.Select(w => new { id = w.Id, name = w.Name })
                 }
+            });
+        }
+        catch (DeviceRegistrationException ex) {
+            logger.LogInformation($"Device registration response: {ex.Error}");
+            return BadRequest(new {
+                error             = ex.Error,
+                error_description = ex.Message,
             });
         }
         catch (Exception ex) {
