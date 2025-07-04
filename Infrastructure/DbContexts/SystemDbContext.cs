@@ -37,6 +37,12 @@ public class SystemDbContext : DbContext {
     // Device Entities
     public DbSet<Device>      Devices      { get; set; }
     public DbSet<DeviceAudit> DeviceAudits { get; set; }
+    
+    // License Entities
+    public DbSet<AccountStatus>      AccountStatuses      { get; set; }
+    public DbSet<AccountStatusAudit> AccountStatusAudits  { get; set; }
+    public DbSet<LicenseCache>       LicenseCaches        { get; set; }
+    
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -64,29 +70,35 @@ public class SystemDbContext : DbContext {
         // Device configurations
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceAuditConfiguration());
+        
+        // License configurations
+        modelBuilder.ApplyConfiguration(new AccountStatusConfiguration());
+        modelBuilder.ApplyConfiguration(new AccountStatusAuditConfiguration());
+        modelBuilder.ApplyConfiguration(new LicenseCacheConfiguration());
+        
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
-            if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
-                continue;
             var entityBuilder = modelBuilder.Entity(entityType.ClrType);
+            
+            // Handle BaseEntity inherited entities
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) {
+                if (Database.IsSqlServer()) {
+                    entityBuilder
+                        .Property(nameof(BaseEntity.CreatedAt))
+                        .HasDefaultValueSql("GETUTCDATE()");
+                }
 
+                // Create query filter using reflection
+                var parameter  = Expression.Parameter(entityType.ClrType, "e");
+                var property   = Expression.Property(parameter, nameof(BaseEntity.Deleted));
+                var comparison = Expression.Equal(property, Expression.Constant(false));
+                var lambda     = Expression.Lambda(comparison, parameter);
 
-            if (Database.IsSqlServer()) {
-                entityBuilder
-                    .Property(nameof(BaseEntity.CreatedAt))
-                    .HasDefaultValueSql("GETUTCDATE()");
+                // Configure audit relationships if properties exist
+                ConfigureAuditRelationships(entityBuilder, entityType.ClrType);
+
+                entityBuilder.HasQueryFilter(lambda);
             }
-
-            // Create query filter using reflection
-            var parameter  = Expression.Parameter(entityType.ClrType, "e");
-            var property   = Expression.Property(parameter, nameof(BaseEntity.Deleted));
-            var comparison = Expression.Equal(property, Expression.Constant(false));
-            var lambda     = Expression.Lambda(comparison, parameter);
-
-            // Configure audit relationships if properties exist
-            ConfigureAuditRelationships(entityBuilder, entityType.ClrType);
-
-            entityBuilder.HasQueryFilter(lambda);
         }
 
 

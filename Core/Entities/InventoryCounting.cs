@@ -4,7 +4,7 @@ using Core.Enums;
 
 namespace Core.Entities;
 
-public class InventoryCounting : BaseEntity {
+public sealed class InventoryCounting : BaseEntity {
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Number { get; set; }
@@ -25,10 +25,10 @@ public class InventoryCounting : BaseEntity {
     public required string WhsCode { get; set; }
 
     // Navigation property
-    public virtual ICollection<InventoryCountingLine> Lines { get; set; } = new List<InventoryCountingLine>();
+    public ICollection<InventoryCountingLine> Lines { get; set; } = new List<InventoryCountingLine>();
 }
 
-public class InventoryCountingLine : BaseEntity {
+public sealed class InventoryCountingLine : BaseEntity {
     [Required]
     [StringLength(254)]
     public required string BarCode { get; set; }
@@ -63,6 +63,6 @@ public class InventoryCountingLine : BaseEntity {
     [ForeignKey("InventoryCounting")]
     public Guid InventoryCountingId { get; set; }
 
-    public virtual InventoryCounting InventoryCounting { get; set; } = null!;
-    public virtual CancellationReason? CancellationReason { get; set; }
+    public InventoryCounting InventoryCounting { get; set; } = null!;
+    public CancellationReason? CancellationReason { get; set; }
 }

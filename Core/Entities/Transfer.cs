@@ -4,7 +4,7 @@ using Core.Enums;
 
 namespace Core.Entities;
 
-public class Transfer : BaseEntity {
+public sealed class Transfer : BaseEntity {
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Number { get; set; }
@@ -26,10 +26,10 @@ public class Transfer : BaseEntity {
     public required string WhsCode { get; set; } = string.Empty;
 
     // Navigation property
-    public virtual ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
+    public ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
 }
 
-public class TransferLine : BaseEntity {
+public sealed class TransferLine : BaseEntity {
     [Required]
     [StringLength(254)]
     public required string BarCode { get; set; }
@@ -67,6 +67,6 @@ public class TransferLine : BaseEntity {
     public Guid TransferId { get; set; }
 
     // Navigation properties
-    public virtual Transfer Transfer { get; set; } = null!;
-    public virtual CancellationReason? CancellationReason { get; set; }
+    public Transfer Transfer { get; set; } = null!;
+    public CancellationReason? CancellationReason { get; set; }
 }

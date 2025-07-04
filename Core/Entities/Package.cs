@@ -4,7 +4,7 @@ using Core.Enums;
 
 namespace Core.Entities;
 
-public class Package : BaseEntity {
+public sealed class Package : BaseEntity {
     [Required]
     [StringLength(50)]
     public required string Barcode { get; set; }
@@ -35,12 +35,12 @@ public class Package : BaseEntity {
     public string? CustomAttributes { get; set; }
 
     // Navigation properties
-    public virtual ICollection<PackageContent>         Contents        { get; set; } = new List<PackageContent>();
-    public virtual ICollection<PackageTransaction>     Transactions    { get; set; } = new List<PackageTransaction>();
-    public virtual ICollection<PackageLocationHistory> LocationHistory { get; set; } = new List<PackageLocationHistory>();
+    public ICollection<PackageContent>         Contents        { get; set; } = new List<PackageContent>();
+    public ICollection<PackageTransaction>     Transactions    { get; set; } = new List<PackageTransaction>();
+    public ICollection<PackageLocationHistory> LocationHistory { get; set; } = new List<PackageLocationHistory>();
 }
 
-public class PackageContent : BaseEntity {
+public sealed class PackageContent : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -60,10 +60,10 @@ public class PackageContent : BaseEntity {
     public int? BinEntry { get; set; }
 
     // Navigation property
-    public virtual Package Package { get; set; } = null!;
+    public Package Package { get; set; } = null!;
 }
 
-public class PackageTransaction : BaseEntity {
+public sealed class PackageTransaction : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -100,10 +100,10 @@ public class PackageTransaction : BaseEntity {
     public string? Notes { get; set; }
 
     // Navigation property
-    public virtual Package Package { get; set; } = null!;
+    public Package Package { get; set; } = null!;
 }
 
-public class PackageLocationHistory : BaseEntity {
+public sealed class PackageLocationHistory : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -134,10 +134,10 @@ public class PackageLocationHistory : BaseEntity {
     public string? Notes { get; set; }
 
     // Navigation property
-    public virtual Package Package { get; set; } = null!;
+    public Package Package { get; set; } = null!;
 }
 
-public class PackageInconsistency : BaseEntity {
+public sealed class PackageInconsistency : BaseEntity {
     [Required]
     [ForeignKey("Package")]
     public Guid PackageId { get; set; }
@@ -195,5 +195,5 @@ public class PackageInconsistency : BaseEntity {
     public string? Notes { get; set; }
 
     // Navigation property
-    public virtual Package Package { get; set; } = null!;
+    public Package Package { get; set; } = null!;
 }

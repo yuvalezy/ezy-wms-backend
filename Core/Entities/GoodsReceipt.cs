@@ -4,7 +4,7 @@ using Core.Enums;
 
 namespace Core.Entities;
 
-public class GoodsReceipt : BaseEntity {
+public sealed class GoodsReceipt : BaseEntity {
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Number { get; set; }
@@ -29,11 +29,11 @@ public class GoodsReceipt : BaseEntity {
     public required string WhsCode { get; set; }
 
     // Navigation properties
-    public virtual ICollection<GoodsReceiptLine>     Lines     { get; set; } = new List<GoodsReceiptLine>();
-    public virtual ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
+    public ICollection<GoodsReceiptLine>     Lines     { get; set; } = new List<GoodsReceiptLine>();
+    public ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
 }
 
-public class GoodsReceiptLine : BaseEntity {
+public sealed class GoodsReceiptLine : BaseEntity {
     [Required]
     [StringLength(254)]
     public required string BarCode { get; set; }
@@ -66,14 +66,14 @@ public class GoodsReceiptLine : BaseEntity {
     [ForeignKey("GoodsReceipt")]
     public Guid GoodsReceiptId { get; set; }
 
-    public virtual GoodsReceipt        GoodsReceipt       { get; set; } = null!;
-    public virtual CancellationReason? CancellationReason { get; set; }
+    public GoodsReceipt        GoodsReceipt       { get; set; } = null!;
+    public CancellationReason? CancellationReason { get; set; }
 
-    public virtual ICollection<GoodsReceiptTarget> Targets { get; set; } = new List<GoodsReceiptTarget>();
-    public virtual ICollection<GoodsReceiptSource> Sources { get; set; } = new List<GoodsReceiptSource>();
+    public ICollection<GoodsReceiptTarget> Targets { get; set; } = new List<GoodsReceiptTarget>();
+    public ICollection<GoodsReceiptSource> Sources { get; set; } = new List<GoodsReceiptSource>();
 }
 
-public class GoodsReceiptTarget : BaseEntity {
+public sealed class GoodsReceiptTarget : BaseEntity {
     [Required]
     [StringLength(50)]
     public required string ItemCode { get; set; }
@@ -101,10 +101,10 @@ public class GoodsReceiptTarget : BaseEntity {
     [ForeignKey("GoodsReceiptLine")]
     public Guid GoodsReceiptLineId { get; set; }
 
-    public virtual GoodsReceiptLine GoodsReceiptLine { get; set; } = null!;
+    public GoodsReceiptLine GoodsReceiptLine { get; set; } = null!;
 }
 
-public class GoodsReceiptDocument : BaseEntity {
+public sealed class GoodsReceiptDocument : BaseEntity {
     [Required]
     public int DocEntry { get; set; }
 
@@ -117,10 +117,10 @@ public class GoodsReceiptDocument : BaseEntity {
     [ForeignKey("GoodsReceipt")]
     public Guid GoodsReceiptId { get; set; }
 
-    public virtual GoodsReceipt GoodsReceipt { get; set; } = null!;
+    public GoodsReceipt GoodsReceipt { get; set; } = null!;
 }
 
-public class GoodsReceiptSource : BaseEntity {
+public sealed class GoodsReceiptSource : BaseEntity {
     [Required]
     public decimal Quantity { get; set; }
 
@@ -140,5 +140,5 @@ public class GoodsReceiptSource : BaseEntity {
     [ForeignKey("GoodsReceiptLine")]
     public Guid GoodsReceiptLineId { get; set; }
 
-    public virtual GoodsReceiptLine GoodsReceiptLine { get; set; } = null!;
+    public GoodsReceiptLine GoodsReceiptLine { get; set; } = null!;
 }

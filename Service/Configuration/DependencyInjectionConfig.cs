@@ -57,6 +57,13 @@ public static class DependencyInjectionConfig {
 
         // Device Management Services
         services.AddScoped<IDeviceService, DeviceService>();
+        
+        // License Management Services
+        services.AddScoped<ILicenseEncryptionService, LicenseEncryptionService>();
+        services.AddScoped<IAccountStatusService, AccountStatusService>();
+        services.AddScoped<ILicenseCacheService, LicenseCacheService>();
+        services.AddScoped<ILicenseValidationService, LicenseValidationService>();
+        
 
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(
