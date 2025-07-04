@@ -4,7 +4,7 @@
 This collection contains comprehensive API documentation and examples for the EzyWMS warehouse management system.
 
 ## Files Generated
-- `EzyWMS-API-Collection.postman_collection.json` - Complete API collection with 11 endpoint groups
+- `EzyWMS-API-Collection.postman_collection.json` - Complete API collection with 13 endpoint groups
 - `EzyWMS-API-Environment.postman_environment.json` - Environment variables for API testing
 
 ## Setup Instructions
@@ -27,10 +27,10 @@ This collection contains comprehensive API documentation and examples for the Ez
 - **OpenAPI Spec**: http://192.168.88.24:5000/swagger/v1/swagger.json
 
 ## Generated on
-2025-07-04T18:25:20.115Z
+2025-07-04T21:04:04.193Z
 
 ## Collection Statistics
-- Total Endpoints: 79
-- Total Folders: 11
+- Total Endpoints: 90
+- Total Folders: 13
 - Authentication: JWT Bearer Token
 - Content-Type: application/json

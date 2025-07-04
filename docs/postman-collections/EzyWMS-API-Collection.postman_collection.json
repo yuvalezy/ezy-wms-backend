@@ -2627,7 +2627,7 @@
       "name": "Authentication",
       "item": [
         {
-          "name": "Gets company information (no authentication required)",
+          "name": "Gets company information with license warnings (no authentication required)",
           "request": {
             "method": "GET",
             "header": [
@@ -2638,14 +2638,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/authentication/companyname",
+              "raw": "{{baseUrl}}/api/authentication/companyinfo",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "authentication",
-                "companyname"
+                "companyinfo"
               ]
             },
             "description": "\n\n**Authorization:** Anonymous access allowed"
@@ -2744,6 +2744,31 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "Gets license status information",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/authentication/license-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "authentication",
+                "license-status"
+              ]
+            },
+            "description": "\n\n**Authorization:** Anonymous access allowed"
           }
         }
       ]
@@ -3491,6 +3516,348 @@
               ]
             },
             "description": "This endpoint allows all authenticated users to read cancellation reasons, not just super users.\n\n**Authorization:** Anonymous access allowed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Device",
+      "item": [
+        {
+          "name": "Registers a new device in the system",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                "register"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Gets all registered devices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Gets a specific device by UUID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device/:deviceUuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                ":deviceUuid"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Updates the status of a device",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device/:deviceUuid/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                ":deviceUuid",
+                "status"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Updates the name of a device",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device/:deviceUuid/name",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                ":deviceUuid",
+                "name"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Gets the audit history for a device",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/device/:deviceUuid/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "device",
+                ":deviceUuid",
+                "audit"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "License",
+      "item": [
+        {
+          "name": "GET /api/license/status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/license/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "license",
+                "status"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/license/queue-status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/license/queue-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "license",
+                "queue-status"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/license/force-sync",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/license/force-sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "license",
+                "force-sync"
+              ]
+            },
+            "description": "\n\n**Authorization Requirements:**\n- Policy: SuperUserOnly",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/license/validate-device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/license/validate-device",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "license",
+                "validate-device"
+              ]
+            },
+            "description": ""
           }
         }
       ]

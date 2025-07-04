@@ -44,7 +44,7 @@ public class AuthenticationService(
                 return null;
             }
 
-            if (!authenticatedUser.SuperUser && authenticatedUser.Warehouses.Count == 0) {
+            if (authenticatedUser is { SuperUser: false, Warehouses.Count: 0 }) {
                 logger.LogWarning("Login failed: User {UserId} has no warehouses assigned", authenticatedUser.Id);
                 return null;
             }

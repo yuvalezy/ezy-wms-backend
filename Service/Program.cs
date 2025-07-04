@@ -244,10 +244,6 @@ if (allowedOrigins is { Length: > 0 }) {
 
 app.UseAuthentication();
 
-// License middleware (after authentication)
-app.UseMiddleware<Service.Middlewares.LicenseErrorHandlingMiddleware>();
-app.UseMiddleware<Service.Middlewares.LicenseValidationMiddleware>();
-
 // Initialize database with error handling
 try {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();

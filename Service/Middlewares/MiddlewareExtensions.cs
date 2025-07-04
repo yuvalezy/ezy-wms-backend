@@ -24,6 +24,9 @@ public static class MiddlewareExtensions {
     private static void ConfigureCommonMiddlewares(IApplicationBuilder app) {
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<TokenSessionMiddleware>();
+        app.UseMiddleware<LicenseErrorHandlingMiddleware>();
+        app.UseMiddleware<LicenseValidationMiddleware>();
+
 
         // Security Headers Middleware
         app.Use(async (context, next) => {
