@@ -1,0 +1,23 @@
+{
+  "name": "mock-cloud-server",
+  "version": "1.0.0",
+  "description": "Mock cloud license server for testing Phase 3 cloud integration",
+  "main": "mock-cloud-server.js",
+  "scripts": {
+    "start": "node mock-cloud-server.js",
+    "dev": "node mock-cloud-server.js 3001"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": [
+    "mock",
+    "server",
+    "license",
+    "cloud",
+    "testing"
+  ],
+  "author": "WMS Development Team",
+  "license": "ISC"
+}

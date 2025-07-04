@@ -42,6 +42,7 @@ public class SystemDbContext : DbContext {
     public DbSet<AccountStatus>      AccountStatuses      { get; set; }
     public DbSet<AccountStatusAudit> AccountStatusAudits  { get; set; }
     public DbSet<LicenseCache>       LicenseCaches        { get; set; }
+    public DbSet<CloudSyncQueue>     CloudSyncQueues      { get; set; }
     
 
 
@@ -75,6 +76,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new AccountStatusConfiguration());
         modelBuilder.ApplyConfiguration(new AccountStatusAuditConfiguration());
         modelBuilder.ApplyConfiguration(new LicenseCacheConfiguration());
+        modelBuilder.ApplyConfiguration(new CloudSyncQueueConfiguration());
         
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {

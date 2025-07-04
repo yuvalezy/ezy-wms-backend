@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class DeviceService(SystemDbContext context, ILogger<DeviceService> logger) : IDeviceService {
+public class DeviceService(SystemDbContext context, ICloudLicenseService cloudService, ILogger<DeviceService> logger) : IDeviceService {
     public async Task<Device> RegisterDeviceAsync(string deviceUuid, string deviceName, SessionInfo sessionInfo) {
         // Check if device already exists
         var existingDevice = await context.Devices
@@ -34,6 +34,9 @@ public class DeviceService(SystemDbContext context, ILogger<DeviceService> logge
         // Log audit record
         await LogDeviceStatusChangeAsync(device.Id, DeviceStatus.Active, DeviceStatus.Active,
             "Device registered", sessionInfo);
+
+        // Queue cloud event
+        await cloudService.QueueDeviceEventAsync("register", deviceUuid, deviceName);
 
         logger.LogInformation("Device {DeviceUuid} registered by user {UserId}", deviceUuid, sessionInfo.Guid);
         return device;
@@ -71,6 +74,15 @@ public class DeviceService(SystemDbContext context, ILogger<DeviceService> logge
 
         // Log audit record
         await LogDeviceStatusChangeAsync(device.Id, previousStatus, status, reason, sessionInfo);
+
+        // Queue cloud event
+        string eventType = status switch {
+            DeviceStatus.Active => "activate",
+            DeviceStatus.Inactive => "deactivate",
+            DeviceStatus.Disabled => "disable",
+            _ => "update"
+        };
+        await cloudService.QueueDeviceEventAsync(eventType, deviceUuid);
 
         logger.LogInformation("Device {DeviceUuid} status changed from {PreviousStatus} to {NewStatus} by user {UserId}",
             deviceUuid, previousStatus, status, sessionInfo?.Guid);

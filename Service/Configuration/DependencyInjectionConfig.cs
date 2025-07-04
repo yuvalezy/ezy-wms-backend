@@ -63,7 +63,10 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAccountStatusService, AccountStatusService>();
         services.AddScoped<ILicenseCacheService, LicenseCacheService>();
         services.AddScoped<ILicenseValidationService, LicenseValidationService>();
+        services.AddScoped<ICloudLicenseService, CloudLicenseService>();
         
+        // Configure HTTP client for cloud services
+        services.AddHttpClient<CloudLicenseService>();
 
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(
@@ -71,6 +74,13 @@ public static class DependencyInjectionConfig {
         services.AddSingleton<BackgroundPickListSyncService>();
         services.AddHostedService<BackgroundPickListSyncService>(provider => 
             provider.GetRequiredService<BackgroundPickListSyncService>());
+
+        // Configure CloudSyncBackgroundService
+        services.Configure<CloudSyncBackgroundOptions>(
+            configuration.GetSection("BackgroundServices:CloudSync"));
+        services.AddSingleton<CloudSyncBackgroundService>();
+        services.AddHostedService<CloudSyncBackgroundService>(provider => 
+            provider.GetRequiredService<CloudSyncBackgroundService>());
 
         switch (settings.ExternalAdapter) {
             // case ExternalAdapterType.SboWindows:
