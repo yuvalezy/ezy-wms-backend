@@ -190,6 +190,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<TransferResponse> GetTransfer(Guid id) => await transferService.GetTransfer(id);
+
     /// <summary>
     /// Gets the content details for a transfer document
     /// </summary>

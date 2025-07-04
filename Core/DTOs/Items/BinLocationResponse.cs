@@ -1,6 +1,4 @@
-﻿using Core.Enums;
-
-namespace Core.DTOs.Items;
+﻿namespace Core.DTOs.Items;
 
 public class BinLocationResponse {
     public          int    Entry { get; set; }

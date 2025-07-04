@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Integration.Services;
 
-namespace UnitTests.Integration.Services
+[TestFixture]
+public class HelloIntegrationServicesTest
 {
-    [TestFixture]
-    public class HelloIntegrationServicesTest
+    [Test]
+    public void HelloIntegrationServices_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloIntegrationServices_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, Integration Services!";
+        // Arrange
+        var expected = "Hello, Integration Services!";
 
-            // Act
-            var actual = "Hello, Integration Services!";
+        // Act
+        var actual = "Hello, Integration Services!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }

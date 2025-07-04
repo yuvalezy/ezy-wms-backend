@@ -107,7 +107,7 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<BinLocationResponse?>> ScanBinLocation([FromQuery] string bin) {
         var response = await publicService.ScanBinLocationAsync(bin);
-        
+
         return response != null ? Ok(response) : NotFound();
     }
 

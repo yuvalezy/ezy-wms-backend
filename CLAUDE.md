@@ -102,3 +102,8 @@ The application uses a hybrid authentication approach that combines JWT tokens w
 - API settings managed through Service.Administration UI
 - Database connections can be stored in configuration or registry
 - JWT settings in `Jwt` section of appsettings.json
+
+## Coding Guidelines
+
+### Namespace Declaration
+- Use Primary constructors, declare namespace [Namespace];, not namespace { .... }

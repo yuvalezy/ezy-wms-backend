@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices.JavaScript;
-
 namespace Core.DTOs.GoodsReceipt;
 
 public class GoodsReceiptAddItemResponse {

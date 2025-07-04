@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Core;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;

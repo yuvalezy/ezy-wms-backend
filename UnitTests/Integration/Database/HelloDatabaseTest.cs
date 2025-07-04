@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Integration.Database;
 
-namespace UnitTests.Integration.Database
+[TestFixture]
+public class HelloDatabaseTest
 {
-    [TestFixture]
-    public class HelloDatabaseTest
+    [Test]
+    public void HelloDatabase_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloDatabase_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, Database!";
+        // Arrange
+        var expected = "Hello, Database!";
 
-            // Act
-            var actual = "Hello, Database!";
+        // Act
+        var actual = "Hello, Database!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }

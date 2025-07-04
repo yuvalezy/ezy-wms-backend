@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Integration.Middleware;
 
-namespace UnitTests.Integration.Middleware
+[TestFixture]
+public class HelloMiddlewareTest
 {
-    [TestFixture]
-    public class HelloMiddlewareTest
+    [Test]
+    public void HelloMiddleware_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloMiddleware_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, Middleware!";
+        // Arrange
+        var expected = "Hello, Middleware!";
 
-            // Act
-            var actual = "Hello, Middleware!";
+        // Act
+        var actual = "Hello, Middleware!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }

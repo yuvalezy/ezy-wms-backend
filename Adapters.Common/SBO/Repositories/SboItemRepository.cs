@@ -2,7 +2,6 @@ using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
-using Core.DTOs.GoodsReceipt;
 using Core.DTOs.Items;
 using Core.Interfaces;
 using Core.Models.Settings;

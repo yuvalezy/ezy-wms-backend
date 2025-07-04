@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Http.Controllers;
 
-namespace UnitTests.Http.Controllers
+[TestFixture]
+public class HelloControllersTest
 {
-    [TestFixture]
-    public class HelloControllersTest
+    [Test]
+    public void HelloControllers_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloControllers_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, Controllers!";
+        // Arrange
+        var expected = "Hello, Controllers!";
 
-            // Act
-            var actual = "Hello, Controllers!";
+        // Act
+        var actual = "Hello, Controllers!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }

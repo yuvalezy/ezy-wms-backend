@@ -1,4 +1,3 @@
-using Core;
 using Core.DTOs.PickList;
 using Core.DTOs.Transfer;
 using Core.Enums;

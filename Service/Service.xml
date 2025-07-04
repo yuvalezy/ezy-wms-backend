@@ -322,6 +322,11 @@
             Device Controller - Manages device registration and status for licensing system
             </summary>
         </member>
+        <member name="M:Service.Controllers.DeviceController.#ctor(Core.Services.IDeviceService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.DeviceController})">
+            <summary>
+            Device Controller - Manages device registration and status for licensing system
+            </summary>
+        </member>
         <member name="M:Service.Controllers.DeviceController.RegisterDevice(Core.DTOs.Device.RegisterDeviceRequest)">
             <summary>
             Registers a new device in the system

@@ -1,5 +1,4 @@
-﻿using Core;
-using Core.Entities;
+﻿using Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Core.Utils;

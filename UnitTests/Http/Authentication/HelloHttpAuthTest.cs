@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Http.Authentication;
 
-namespace UnitTests.Http.Authentication
+[TestFixture]
+public class HelloHttpAuthTest
 {
-    [TestFixture]
-    public class HelloHttpAuthTest
+    [Test]
+    public void HelloHttpAuth_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloHttpAuth_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, HTTP Auth!";
+        // Arrange
+        var expected = "Hello, HTTP Auth!";
 
-            // Act
-            var actual = "Hello, HTTP Auth!";
+        // Act
+        var actual = "Hello, HTTP Auth!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }

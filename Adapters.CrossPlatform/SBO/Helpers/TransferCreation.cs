@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Transfer;
 using Core.Enums;

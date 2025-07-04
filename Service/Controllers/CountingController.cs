@@ -20,7 +20,6 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class CountingController(IInventoryCountingsService inventoryCountingsService) : ControllerBase {
-    
     /// <summary>
     /// Creates a new inventory counting document (supervisor only)
     /// </summary>
@@ -40,7 +39,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
         var sessionInfo = HttpContext.GetSession();
         return await inventoryCountingsService.CreateCounting(request, sessionInfo);
     }
-    
+
     /// <summary>
     /// Gets a list of inventory counting documents with optional filtering
     /// </summary>
@@ -58,7 +57,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
         var sessionInfo = HttpContext.GetSession();
         return await inventoryCountingsService.GetCountings(request, sessionInfo.Warehouse);
     }
-    
+
     /// <summary>
     /// Gets a specific inventory counting document by its ID
     /// </summary>
@@ -77,7 +76,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
     public async Task<InventoryCountingResponse> GetCounting(Guid id) {
         return await inventoryCountingsService.GetCounting(id);
     }
-    
+
     /// <summary>
     /// Adds an item to an inventory counting document
     /// </summary>
@@ -97,7 +96,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
         var sessionInfo = HttpContext.GetSession();
         return await inventoryCountingsService.AddItem(sessionInfo, request);
     }
-    
+
     /// <summary>
     /// Updates a specific line in an inventory counting document
     /// </summary>
@@ -117,7 +116,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
         var sessionInfo = HttpContext.GetSession();
         return await inventoryCountingsService.UpdateLine(sessionInfo, request);
     }
-    
+
     /// <summary>
     /// Cancels an inventory counting document (supervisor only)
     /// </summary>
@@ -137,7 +136,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
         var sessionInfo = HttpContext.GetSession();
         return await inventoryCountingsService.CancelCounting(request.ID, sessionInfo);
     }
-    
+
     /// <summary>
     /// Processes an inventory counting document, creating actual inventory adjustments (supervisor only)
     /// </summary>
@@ -155,10 +154,10 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProcessInventoryCountingResponse>> ProcessCounting([FromBody] ProcessInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var result = await inventoryCountingsService.ProcessCounting(request.ID, sessionInfo);
+        var result      = await inventoryCountingsService.ProcessCounting(request.ID, sessionInfo);
         return Ok(result);
     }
-    
+
     /// <summary>
     /// Gets the content details for an inventory counting document
     /// </summary>
@@ -175,7 +174,7 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
     public async Task<IEnumerable<InventoryCountingContentResponse>> CountingContent([FromBody] InventoryCountingContentRequest request) {
         return await inventoryCountingsService.GetCountingContent(request);
     }
-    
+
     /// <summary>
     /// Gets a summary report for an inventory counting document (supervisor only)
     /// </summary>

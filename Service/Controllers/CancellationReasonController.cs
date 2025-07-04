@@ -91,6 +91,7 @@ public class CancellationReasonController(ICancellationReasonService cancellatio
             if (!result) {
                 return NotFound($"Cancellation reason with ID {id} not found.");
             }
+
             return NoContent();
         }
         catch (InvalidOperationException ex) {
@@ -111,7 +112,7 @@ public class CancellationReasonController(ICancellationReasonService cancellatio
     /// </remarks>
     [HttpGet]
     [AllowAnonymous] // Allow non-superusers to read cancellation reasons
-    [Authorize] // But still require authentication
+    [Authorize]      // But still require authentication
     [ProducesResponseType(typeof(IEnumerable<CancellationReasonResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -134,7 +135,7 @@ public class CancellationReasonController(ICancellationReasonService cancellatio
     /// </remarks>
     [HttpGet("{id:guid}")]
     [AllowAnonymous] // Allow non-superusers to read cancellation reasons
-    [Authorize] // But still require authentication
+    [Authorize]      // But still require authentication
     [ProducesResponseType(typeof(CancellationReasonResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -144,6 +145,7 @@ public class CancellationReasonController(ICancellationReasonService cancellatio
         if (reason == null) {
             return NotFound($"Cancellation reason with ID {id} not found.");
         }
+
         return Ok(reason);
     }
 }

@@ -1,5 +1,4 @@
 using Core.DTOs.Items;
-using Core.Enums;
 
 namespace Core.DTOs.Package;
 

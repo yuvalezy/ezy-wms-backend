@@ -1,13 +1,7 @@
-﻿using Adapters.CrossPlatform.SBO.Services;
-using Core.Interfaces;
+﻿using Core.Interfaces;
 using Core.Models.Settings;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using UnitTests.Integration.ExternalSystems.Shared;
-using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.General;
 

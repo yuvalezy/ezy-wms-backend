@@ -1,5 +1,4 @@
 ﻿using Core.DTOs.Items;
-using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;

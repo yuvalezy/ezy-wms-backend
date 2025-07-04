@@ -1,21 +1,18 @@
-using NUnit.Framework;
+namespace UnitTests.Unit.Services;
 
-namespace UnitTests.Unit.Services
+[TestFixture]
+public class HelloServiceTest
 {
-    [TestFixture]
-    public class HelloServiceTest
+    [Test]
+    public void HelloWorld_ShouldReturnGreeting()
     {
-        [Test]
-        public void HelloWorld_ShouldReturnGreeting()
-        {
-            // Arrange
-            var expected = "Hello, World!";
+        // Arrange
+        var expected = "Hello, World!";
 
-            // Act
-            var actual = "Hello, World!";
+        // Act
+        var actual = "Hello, World!";
 
-            // Assert
-            Assert.That(actual, Is.EqualTo(expected));
-        }
+        // Assert
+        Assert.That(actual, Is.EqualTo(expected));
     }
 }
