@@ -1,6 +1,6 @@
 ﻿using Core.Enums;
 
-namespace Core.DTOs;
+namespace Core.DTOs.General;
 
 public abstract class ResponseBase {
     public string?        ErrorMessage { get; set; }

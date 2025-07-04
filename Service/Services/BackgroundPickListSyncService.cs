@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Core.Interfaces;
+using Core.Models.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -74,9 +75,4 @@ public class BackgroundPickListSyncService(
         logger.LogInformation("BackgroundPickListSyncService is stopping");
         await base.StopAsync(cancellationToken);
     }
-}
-
-public class BackgroundPickListSyncOptions {
-    public int  IntervalSeconds { get; set; } = 60;
-    public bool Enabled         { get; set; } = true;
 }

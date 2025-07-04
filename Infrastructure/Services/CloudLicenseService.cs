@@ -1,10 +1,10 @@
 using Core.Entities;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
@@ -14,13 +14,13 @@ namespace Infrastructure.Services;
 
 public class CloudLicenseService(
     HttpClient httpClient,
-    IConfiguration configuration,
+    ISettings settings,
     SystemDbContext context,
     ILogger<CloudLicenseService> logger) : ICloudLicenseService {
     
-    private readonly string _cloudEndpoint = configuration["Licensing:CloudEndpoint"] ?? 
+    private readonly string _cloudEndpoint = settings.Licensing.CloudEndpoint ?? 
         throw new InvalidOperationException("Cloud endpoint not configured");
-    private readonly string _bearerToken = configuration["Licensing:BearerToken"] ?? 
+    private readonly string _bearerToken = settings.Licensing.BearerToken ?? 
         throw new InvalidOperationException("Bearer token not configured");
 
     public async Task<CloudLicenseResponse> SendDeviceEventAsync(CloudLicenseRequest request) {

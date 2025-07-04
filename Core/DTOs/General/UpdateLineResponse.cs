@@ -1,6 +1,6 @@
 ﻿using Core.Enums;
 
-namespace Core.DTOs;
+namespace Core.DTOs.General;
 
 public class UpdateLineResponse {
     public UpdateLineReturnValue ReturnValue { get; set; } = UpdateLineReturnValue.Ok;

@@ -1,3 +1,4 @@
+using Core.DTOs.General;
 using Core.Enums;
 
 namespace Core.DTOs.Package;

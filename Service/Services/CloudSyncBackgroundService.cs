@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Core.Enums;
 using Core.Models;
+using Core.Models.Settings;
 using Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -169,10 +170,4 @@ public class CloudSyncBackgroundService(
         logger.LogInformation("CloudSyncBackgroundService is stopping");
         await base.StopAsync(cancellationToken);
     }
-}
-
-public class CloudSyncBackgroundOptions {
-    public int  SyncIntervalMinutes     { get; set; } = 10;
-    public int  ValidationIntervalHours { get; set; } = 24;
-    public bool Enabled                 { get; set; } = true;
 }

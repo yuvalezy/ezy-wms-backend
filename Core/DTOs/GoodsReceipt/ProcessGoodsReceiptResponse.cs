@@ -1,3 +1,5 @@
+using Core.DTOs.General;
+
 namespace Core.DTOs.GoodsReceipt;
 
 public class ProcessGoodsReceiptResponse : ResponseBase {

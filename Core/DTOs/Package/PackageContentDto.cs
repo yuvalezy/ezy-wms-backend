@@ -1,3 +1,4 @@
+using Core.DTOs.General;
 using Core.DTOs.Items;
 
 namespace Core.DTOs.Package;

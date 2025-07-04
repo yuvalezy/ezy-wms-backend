@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Core;
 using Core.DTOs;
+using Core.DTOs.General;
 using Core.DTOs.Settings;
 using Core.Exceptions;
 using Core.Interfaces;
+using Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +26,8 @@ public class AuthenticationController(
     IAuthenticationService            authenticationService,
     ILogger<AuthenticationController> logger,
     ISessionManager                   sessionManager,
-    IExternalSystemAdapter            externalSystemAdapter) : ControllerBase {
+    IExternalSystemAdapter            externalSystemAdapter,
+    ILicenseValidationService         licenseValidationService) : ControllerBase {
     /// <summary>
     /// Gets company information (no authentication required)
     /// </summary>
@@ -32,17 +36,39 @@ public class AuthenticationController(
     /// <response code="500">If a server error occurs</response>
     [HttpGet("CompanyName")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CompanyInfoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<string>> GetCompanyInfo() {
-        string? companyName = await sessionManager.GetStringAsync("CompanyName");
-        if (!string.IsNullOrEmpty(companyName)) {
-            return Ok(companyName);
-        }
+    public async Task<ActionResult<CompanyInfoResponse>> GetCompanyInfo() {
+        try {
+            string? companyName = await sessionManager.GetStringAsync("CompanyName");
+            if (string.IsNullOrEmpty(companyName)) {
+                companyName = await externalSystemAdapter.GetCompanyNameAsync();
+                await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
+            }
 
-        companyName = await externalSystemAdapter.GetCompanyNameAsync();
-        await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
-        return Ok(companyName);
+            var response = new CompanyInfoResponse{
+                CompanyName     = companyName,
+                ServerTime      = DateTime.UtcNow,
+                LicenseWarnings = new List<string>()
+            };
+
+            // Add license warnings if past due by 3+ days
+            try {
+                var licenseValidation = await licenseValidationService.GetLicenseValidationResultAsync();
+                if (licenseValidation is { ShowWarning: true, DaysUntilExpiration: <= -3 }) {
+                    response.LicenseWarnings.Add(licenseValidation.WarningMessage ?? "License issue detected");
+                }
+            }
+            catch (Exception ex) {
+                logger.LogWarning(ex, "Error getting license warnings for company info");
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error getting company name");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 
     /// <summary>
@@ -80,7 +106,15 @@ public class AuthenticationController(
                 Expires  = sessionInfo.ExpiresAt
             });
 
-            return Ok(sessionInfo);
+            // Create response with license warnings
+            var response = new {
+                Token           = sessionInfo.Token,
+                IsSuccess       = true,
+                SessionInfo     = sessionInfo,
+                LicenseWarnings = await GetLicenseWarningsAsync()
+            };
+
+            return Ok(response);
         }
         catch (WarehouseSelectionRequiredException ex) {
             logger.LogInformation("Warehouse selection required for login");
@@ -178,5 +212,52 @@ public class AuthenticationController(
             logger.LogError(ex, "Error during logout");
             return StatusCode(500, new { error = "server_error", error_description = "An error occurred during logout." });
         }
+    }
+
+    /// <summary>
+    /// Gets license status information
+    /// </summary>
+    /// <returns>License status details</returns>
+    /// <response code="200">Returns license status</response>
+    /// <response code="500">If a server error occurs</response>
+    [HttpGet("license-status")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<object>> GetLicenseStatus() {
+        try {
+            var validation = await licenseValidationService.GetLicenseValidationResultAsync();
+
+            return Ok(new {
+                IsValid             = validation.IsValid,
+                AccountStatus       = validation.AccountStatus.ToString(),
+                ExpirationDate      = validation.ExpirationDate,
+                DaysUntilExpiration = validation.DaysUntilExpiration,
+                IsInGracePeriod     = validation.IsInGracePeriod,
+                WarningMessage      = validation.WarningMessage,
+                ShowWarning         = validation.ShowWarning
+            });
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error getting license status");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    private async Task<List<string>> GetLicenseWarningsAsync() {
+        var warnings = new List<string>();
+
+        try {
+            var validation = await licenseValidationService.GetLicenseValidationResultAsync();
+
+            if (validation.ShowWarning) {
+                warnings.Add(validation.WarningMessage ?? "License issue detected");
+            }
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error getting license warnings");
+        }
+
+        return warnings;
     }
 }

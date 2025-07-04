@@ -17,4 +17,5 @@ public class SessionInfo {
     public required ICollection<RoleType> Roles              { get; set; }
     public          DateTime              ExpiresAt          { get; set; }
     public          string                Token              { get; set; }
+    public          string?               DeviceUuid         { get; set; }
 }

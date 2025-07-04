@@ -1,4 +1,4 @@
-namespace Core.DTOs;
+namespace Core.DTOs.General;
 
 public class LoginRequest {
     public required string  Password  { get; set; }

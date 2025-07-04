@@ -9,7 +9,7 @@
             Authentication Controller - Manages user authentication, session management, and password operations
             </summary>
         </member>
-        <member name="M:Service.Controllers.AuthenticationController.#ctor(Core.Interfaces.IAuthenticationService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.AuthenticationController},Core.Interfaces.ISessionManager,Core.Interfaces.IExternalSystemAdapter)">
+        <member name="M:Service.Controllers.AuthenticationController.#ctor(Core.Interfaces.IAuthenticationService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.AuthenticationController},Core.Interfaces.ISessionManager,Core.Interfaces.IExternalSystemAdapter,Core.Services.ILicenseValidationService)">
             <summary>
             Authentication Controller - Manages user authentication, session management, and password operations
             </summary>
@@ -22,7 +22,7 @@
             <response code="200">Returns the company name</response>
             <response code="500">If a server error occurs</response>
         </member>
-        <member name="M:Service.Controllers.AuthenticationController.Login(Core.DTOs.LoginRequest)">
+        <member name="M:Service.Controllers.AuthenticationController.Login(Core.DTOs.General.LoginRequest)">
             <summary>
             Authenticates a user with password-only login
             </summary>
@@ -64,6 +64,14 @@
             Clears the session from the server-side session manager and removes the HTTP-only cookie.
             The JWT token becomes invalid after logout.
             </remarks>
+        </member>
+        <member name="M:Service.Controllers.AuthenticationController.GetLicenseStatus">
+            <summary>
+            Gets license status information
+            </summary>
+            <returns>License status details</returns>
+            <response code="200">Returns license status</response>
+            <response code="500">If a server error occurs</response>
         </member>
         <member name="T:Service.Controllers.AuthorizationGroupController">
             <summary>

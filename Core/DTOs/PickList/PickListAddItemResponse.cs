@@ -1,3 +1,5 @@
+using Core.DTOs.General;
+
 namespace Core.DTOs.PickList;
 
 public class PickListAddItemResponse : ResponseBase {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.DTOs;
+using Core.DTOs.General;
 using Core.DTOs.Items;
 using Core.DTOs.Settings;
 using Core.Enums;

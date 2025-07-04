@@ -69,15 +69,20 @@ public static class DependencyInjectionConfig {
         services.AddHttpClient<CloudLicenseService>();
 
         // Configure BackgroundPickListSyncService
-        services.Configure<BackgroundPickListSyncOptions>(
-            configuration.GetSection("BackgroundServices:PickListSync"));
+        services.Configure<BackgroundPickListSyncOptions>(options => {
+            options.IntervalSeconds = settings.BackgroundServices.PickListSync.IntervalSeconds;
+            options.Enabled = settings.BackgroundServices.PickListSync.Enabled;
+        });
         services.AddSingleton<BackgroundPickListSyncService>();
         services.AddHostedService<BackgroundPickListSyncService>(provider => 
             provider.GetRequiredService<BackgroundPickListSyncService>());
 
         // Configure CloudSyncBackgroundService
-        services.Configure<CloudSyncBackgroundOptions>(
-            configuration.GetSection("BackgroundServices:CloudSync"));
+        services.Configure<CloudSyncBackgroundOptions>(options => {
+            options.SyncIntervalMinutes = settings.BackgroundServices.CloudSync.SyncIntervalMinutes;
+            options.ValidationIntervalHours = settings.BackgroundServices.CloudSync.ValidationIntervalHours;
+            options.Enabled = settings.BackgroundServices.CloudSync.Enabled;
+        });
         services.AddSingleton<CloudSyncBackgroundService>();
         services.AddHostedService<CloudSyncBackgroundService>(provider => 
             provider.GetRequiredService<CloudSyncBackgroundService>());

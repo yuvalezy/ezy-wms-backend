@@ -1,4 +1,4 @@
-﻿namespace Core.DTOs;
+﻿namespace Core.DTOs.General;
 
 public class HomeInfoResponse {
     public int ItemCheck           { get; set; }

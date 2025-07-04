@@ -1,4 +1,5 @@
 ﻿using Core.DTOs;
+using Core.DTOs.General;
 using Core.Entities;
 
 namespace Core.Extensions;

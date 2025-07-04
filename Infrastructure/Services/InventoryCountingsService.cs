@@ -1,4 +1,5 @@
 using Core.DTOs;
+using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
 using Core.Entities;

@@ -4,15 +4,17 @@ using Core.Interfaces;
 namespace Core.Models.Settings;
 
 public class Settings : ISettings {
-    public LoggingSettings                    Logging           { get; set; }
-    public string                             AllowedHosts      { get; set; }
-    public ConnectionStringsSettings          ConnectionStrings { get; set; }
-    public JwtSettings                        Jwt               { get; set; }
-    public Options                            Options           { get; set; }
-    public Filters                            Filters           { get; set; }
-    public Dictionary<string, CustomField[]>? CustomFields      { get; set; }
-    public SessionManagementSettings          SessionManagement { get; set; }
-    public SboSettings?                       SboSettings       { get; set; }
-    public ExternalAdapterType                ExternalAdapter   { get; set; }
-    public PackageSettings                    Package           { get; set; }
+    public LoggingSettings                    Logging            { get; set; } = new();
+    public string                             AllowedHosts       { get; set; } = string.Empty;
+    public ConnectionStringsSettings          ConnectionStrings  { get; set; } = null!;
+    public JwtSettings                        Jwt                { get; set; } = new();
+    public Options                            Options            { get; set; } = new();
+    public Filters                            Filters            { get; set; } = new();
+    public Dictionary<string, CustomField[]>? CustomFields       { get; set; }
+    public SessionManagementSettings          SessionManagement  { get; set; } = new();
+    public SboSettings?                       SboSettings        { get; set; }
+    public ExternalAdapterType                ExternalAdapter    { get; set; } = new();
+    public PackageSettings                    Package            { get; set; } = new();
+    public LicensingSettings                  Licensing          { get; set; } = new();
+    public BackgroundServicesSettings         BackgroundServices { get; set; } = new();
 }
