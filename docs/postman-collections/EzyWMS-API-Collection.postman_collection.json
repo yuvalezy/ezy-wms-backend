@@ -103,6 +103,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -138,6 +144,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -173,6 +185,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -208,6 +226,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -243,6 +267,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -279,6 +309,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -315,6 +351,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -349,6 +391,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -384,6 +432,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -421,6 +475,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -459,6 +519,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -494,6 +560,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -531,6 +603,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -567,6 +645,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -607,6 +691,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -641,6 +731,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -675,6 +771,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -710,6 +812,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -766,6 +874,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -802,6 +916,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -838,6 +958,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -874,6 +1000,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -910,6 +1042,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -946,6 +1084,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -982,6 +1126,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1018,6 +1168,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1054,6 +1210,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1090,6 +1252,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1133,6 +1301,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1168,6 +1342,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1204,6 +1384,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1245,6 +1431,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1280,6 +1472,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1316,6 +1514,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1351,6 +1555,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1386,6 +1596,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1421,6 +1637,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1456,6 +1678,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1491,6 +1719,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1569,6 +1803,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1604,6 +1844,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1639,6 +1885,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1674,6 +1926,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1709,6 +1967,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1749,6 +2013,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1784,6 +2054,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1838,6 +2114,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1873,6 +2155,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1908,6 +2196,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1943,6 +2237,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -1978,6 +2278,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2013,6 +2319,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2048,6 +2360,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2089,6 +2407,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2143,6 +2467,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2204,6 +2534,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2239,6 +2575,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2274,6 +2616,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2314,6 +2662,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2348,6 +2702,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2382,6 +2742,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2417,6 +2783,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2452,6 +2824,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2487,6 +2865,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2523,6 +2907,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2559,6 +2949,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2594,6 +2990,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2685,6 +3087,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2755,6 +3163,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2785,6 +3199,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2828,6 +3248,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2863,6 +3289,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2898,6 +3330,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2933,6 +3371,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -2976,6 +3420,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3025,6 +3475,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3060,6 +3516,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3103,6 +3565,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3138,6 +3606,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3178,6 +3652,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3212,6 +3692,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3246,6 +3732,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3280,6 +3772,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3315,6 +3813,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3355,6 +3859,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3389,6 +3899,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3423,6 +3939,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3467,6 +3989,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3502,6 +4030,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3532,6 +4066,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3601,6 +4141,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3636,6 +4182,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3672,6 +4224,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3708,6 +4266,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3774,6 +4338,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3809,6 +4379,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {
@@ -3844,6 +4420,12 @@
                 "key": "Content-Type",
                 "value": "application/json",
                 "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
               }
             ],
             "url": {

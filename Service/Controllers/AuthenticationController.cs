@@ -95,6 +95,25 @@ public class AuthenticationController(
     public async Task<IActionResult> Login([FromBody] LoginRequest request) {
         try {
             var sessionInfo = await authenticationService.LoginAsync(request);
+            
+            string? deviceUuid = Request.Headers["X-Device-UUID"].FirstOrDefault();
+            if (deviceUuid == null) {
+                return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password or account disabled." });
+            }
+            /*
+             *     private string? GetDeviceUuid(HttpContext context) {
+        // Try to get from header first
+
+        // If not in header, try to get from session
+        if (!string.IsNullOrEmpty(deviceUuid))
+            return deviceUuid;
+        var sessionInfo = context.GetSession();
+        deviceUuid = sessionInfo.DeviceUuid;
+
+        return deviceUuid;
+    }
+
+             */
 
             if (sessionInfo == null) {
                 return Unauthorized(new { error = "invalid_grant", error_description = "Invalid password or account disabled." });

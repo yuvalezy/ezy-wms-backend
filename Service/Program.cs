@@ -128,6 +128,15 @@ services.AddSwaggerGen(c => {
         Scheme = "Bearer"
     });
 
+    // Configure Device UUID header requirement
+    c.AddSecurityDefinition("DeviceUUID", new OpenApiSecurityScheme {
+        Description = "Device UUID header required for most endpoints (except authentication, users, device management, license status, swagger, and health). Example: \"X-Device-UUID: {device-uuid}\"",
+        Name = "X-Device-UUID",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "DeviceUUID"
+    });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
         {
             new OpenApiSecurityScheme {
@@ -162,6 +171,9 @@ services.AddSwaggerGen(c => {
     
     // Operation filter for role-based authorization documentation
     c.OperationFilter<AuthorizeOperationFilter>();
+    
+    // Operation filter for Device UUID requirements
+    c.OperationFilter<DeviceUuidOperationFilter>();
 });
 
 services.AddLogging(config => {
