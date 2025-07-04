@@ -29,10 +29,10 @@ public class AuthenticationController(
     IExternalSystemAdapter            externalSystemAdapter,
     ILicenseValidationService         licenseValidationService) : ControllerBase {
     /// <summary>
-    /// Gets company information (no authentication required)
+    /// Gets company information with license warnings (no authentication required)
     /// </summary>
-    /// <returns>The company name from the external system</returns>
-    /// <response code="200">Returns the company name</response>
+    /// <returns>Company information including name, server time, and license warnings</returns>
+    /// <response code="200">Returns company information with license warnings</response>
     /// <response code="500">If a server error occurs</response>
     [HttpGet("CompanyName")]
     [AllowAnonymous]
