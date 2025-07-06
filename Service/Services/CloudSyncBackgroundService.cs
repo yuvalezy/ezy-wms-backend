@@ -62,7 +62,7 @@ public class CloudSyncBackgroundService(
         }
     }
 
-    public async Task TriggerSync() {
+    private async Task TriggerSync() {
         // Ensure only one sync runs at a time
         if (!await syncSemaphore.WaitAsync(0)) {
             logger.LogInformation("Cloud sync already in progress, skipping");
@@ -88,7 +88,7 @@ public class CloudSyncBackgroundService(
         }
     }
 
-    public async Task TriggerValidation() {
+    private async Task TriggerValidation() {
         // Ensure only one validation runs at a time
         if (!await syncSemaphore.WaitAsync(0)) {
             logger.LogInformation("Cloud validation already in progress, skipping");

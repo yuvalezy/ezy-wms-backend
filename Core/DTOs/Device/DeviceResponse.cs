@@ -6,6 +6,6 @@ public class DeviceResponse {
     public required string    DeviceName       { get; set; }
     public required string    Status           { get; set; }
     public          DateTime  RegistrationDate { get; set; }
-    public required string    StatusNotes      { get; set; }
+    public          string?   StatusNotes      { get; set; }
     public          DateTime? LastActiveDate   { get; set; }
 }

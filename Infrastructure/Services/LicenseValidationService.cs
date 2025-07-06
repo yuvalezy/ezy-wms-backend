@@ -10,13 +10,13 @@ namespace Infrastructure.Services;
 public class LicenseValidationService(
     IAccountStatusService             accountStatusService,
     IDeviceService                    deviceService,
-    ILicenseCacheService              licenseCacheService,
+    // ILicenseCacheService              licenseCacheService,
     ILogger<LicenseValidationService> logger) : ILicenseValidationService {
     public async Task<bool> ValidateDeviceAccessAsync(string deviceUuid) {
         // Check if device exists and is active
         try {
             var device = await deviceService.GetDeviceAsync(deviceUuid);
-            if (device == null || device.Status != DeviceStatus.Active) {
+            if (device is not { Status: DeviceStatus.Active }) {
                 logger.LogWarning("Device {DeviceUuid} not found or not active", deviceUuid);
                 return false;
             }
@@ -27,13 +27,11 @@ public class LicenseValidationService(
         }
 
         // Check account status
-        var systemAccess = await ValidateSystemAccessAsync();
-        if (!systemAccess) {
-            logger.LogWarning("System access denied for device {DeviceUuid} due to account status", deviceUuid);
-            return false;
-        }
-
-        return true;
+        bool systemAccess = await ValidateSystemAccessAsync();
+        if (systemAccess) 
+            return true;
+        logger.LogWarning("System access denied for device {DeviceUuid} due to account status", deviceUuid);
+        return false;
     }
 
     public async Task<bool> ValidateSystemAccessAsync() {
@@ -48,7 +46,7 @@ public class LicenseValidationService(
 
     public async Task<LicenseValidationResult> GetLicenseValidationResultAsync() {
         var accountStatus = await accountStatusService.GetCurrentAccountStatusAsync();
-        var licenseCache  = await licenseCacheService.GetLicenseCacheAsync();
+        // var licenseCache  = await licenseCacheService.GetLicenseCacheAsync(); // TODO check if I need this
 
         var result = new LicenseValidationResult {
             AccountStatus  = accountStatus.Status,
@@ -57,7 +55,7 @@ public class LicenseValidationService(
         };
 
         if (result.ExpirationDate.HasValue) {
-            var daysUntilExpiration = (int)(result.ExpirationDate.Value - DateTime.UtcNow).TotalDays;
+            int daysUntilExpiration = (int)(result.ExpirationDate.Value - DateTime.UtcNow).TotalDays;
             result.DaysUntilExpiration = Math.Max(0, daysUntilExpiration);
             result.IsInGracePeriod     = daysUntilExpiration > 0 && daysUntilExpiration <= 7;
         }

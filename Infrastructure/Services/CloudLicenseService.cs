@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Core.Utils;
 
 namespace Infrastructure.Services;
 
@@ -18,23 +19,23 @@ public class CloudLicenseService(
     SystemDbContext context,
     ILogger<CloudLicenseService> logger) : ICloudLicenseService {
     
-    private readonly string _cloudEndpoint = settings.Licensing.CloudEndpoint ?? 
+    private readonly string cloudEndpoint = settings.Licensing.CloudEndpoint ?? 
         throw new InvalidOperationException("Cloud endpoint not configured");
-    private readonly string _bearerToken = settings.Licensing.BearerToken ?? 
+    private readonly string bearerToken = settings.Licensing.BearerToken ?? 
         throw new InvalidOperationException("Bearer token not configured");
 
     public async Task<CloudLicenseResponse> SendDeviceEventAsync(CloudLicenseRequest request) {
         try {
             ConfigureHttpClient();
             
-            var json = JsonSerializer.Serialize(request);
+            string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync($"{_cloudEndpoint}/api/license/device-event", content);
+            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/license/device-event", content);
             
             if (response.IsSuccessStatusCode) {
-                var responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<CloudLicenseResponse>(responseJson) ?? 
+                string responseJson = await response.Content.ReadAsStringAsync();
+                var result = JsonUtils.Deserialize<CloudLicenseResponse>(responseJson) ?? 
                     new CloudLicenseResponse { Success = false, Message = "Failed to deserialize response" };
                 
                 logger.LogInformation("Device event {Event} sent successfully for device {DeviceUuid}", 
@@ -43,7 +44,7 @@ public class CloudLicenseService(
                 return result;
             }
             else {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                string errorContent = await response.Content.ReadAsStringAsync();
                 logger.LogError("Cloud service returned error {StatusCode}: {Error}", 
                     response.StatusCode, errorContent);
                 
@@ -80,21 +81,21 @@ public class CloudLicenseService(
         try {
             ConfigureHttpClient();
             
-            var json = JsonSerializer.Serialize(request);
+            string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync($"{_cloudEndpoint}/api/license/validate-account", content);
+            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/license/validate-account", content);
             
             if (response.IsSuccessStatusCode) {
-                var responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<AccountValidationResponse>(responseJson) ??
+                string responseJson = await response.Content.ReadAsStringAsync();
+                var result = JsonUtils.Deserialize<AccountValidationResponse>(responseJson) ??
                     new AccountValidationResponse { Success = false, Message = "Failed to deserialize response" };
                 
                 logger.LogInformation("Account validation completed successfully");
                 return result;
             }
             else {
-                var errorContent = await response.Content.ReadAsStringAsync();
+                string errorContent = await response.Content.ReadAsStringAsync();
                 logger.LogError("Account validation failed with status {StatusCode}: {Error}", 
                     response.StatusCode, errorContent);
                 
@@ -116,7 +117,7 @@ public class CloudLicenseService(
     public async Task<bool> IsCloudAvailableAsync() {
         try {
             ConfigureHttpClient();
-            var response = await httpClient.GetAsync($"{_cloudEndpoint}/api/license/health");
+            var response = await httpClient.GetAsync($"{cloudEndpoint}/api/license/health");
             return response.IsSuccessStatusCode;
         }
         catch {
@@ -167,11 +168,8 @@ public class CloudLicenseService(
     }
 
     private void ConfigureHttpClient() {
-        httpClient.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", _bearerToken);
         httpClient.DefaultRequestHeaders.Clear();
-        httpClient.DefaultRequestHeaders.Authorization = 
-            new AuthenticationHeaderValue("Bearer", _bearerToken);
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
         httpClient.DefaultRequestHeaders.Add("User-Agent", "WMS-License-Client/1.0");
         httpClient.Timeout = TimeSpan.FromSeconds(30);
     }
@@ -182,7 +180,7 @@ public class CloudLicenseService(
             item.UpdatedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
 
-            var request = JsonSerializer.Deserialize<CloudLicenseRequest>(item.RequestPayload);
+            var request = JsonUtils.Deserialize<CloudLicenseRequest>(item.RequestPayload);
             if (request == null) {
                 throw new InvalidOperationException("Failed to deserialize request payload");
             }
@@ -208,7 +206,7 @@ public class CloudLicenseService(
         }
     }
 
-    private async Task HandleFailedQueueItemAsync(CloudSyncQueue item, string error) {
+    private Task HandleFailedQueueItemAsync(CloudSyncQueue item, string error) {
         item.RetryCount++;
         item.LastError = error;
 
@@ -223,5 +221,7 @@ public class CloudLicenseService(
             logger.LogWarning("Failed to process queued event {EventType} for device {DeviceUuid}. Retry {RetryCount}/24 scheduled", 
                 item.EventType, item.DeviceUuid, item.RetryCount);
         }
+
+        return Task.CompletedTask;
     }
 }

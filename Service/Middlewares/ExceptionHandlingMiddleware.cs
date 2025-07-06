@@ -24,21 +24,38 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
     }
 
     private static Task HandleExceptionAsync(HttpContext context, Exception exception) {
-        /* 1️⃣  ApiErrorException  ----------------------------------------- */
-        if (exception is ApiErrorException apiEx) {
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode  = (int)HttpStatusCode.BadRequest;   // choose the status you prefer
+        switch (exception) {
+            /* 1️⃣  ApiErrorException  ----------------------------------------- */
+            case ApiErrorException apiEx: {
+                context.Response.ContentType = "application/json";
+                context.Response.StatusCode  = (int)HttpStatusCode.BadRequest;   // choose the status you prefer
 
-            var apiErrorMessage = new {
-                apiEx.ErrorId,
-                apiEx.ErrorData
-            };
+                var apiErrorMessage = new {
+                    apiEx.ErrorId,
+                    apiEx.ErrorData
+                };
 
-            string payload = JsonSerializer.Serialize(apiErrorMessage, JsonUtils.Options);
-            return context.Response.WriteAsync(payload);
+                string payload = JsonSerializer.Serialize(apiErrorMessage, JsonUtils.Options);
+                return context.Response.WriteAsync(payload);
+            }
+            /* 2️⃣  LicenseValidationException  ----------------------------- */
+            case LicenseValidationException licenseEx: {
+                context.Response.ContentType = "application/json";
+                context.Response.StatusCode  = (int)HttpStatusCode.Forbidden;
+
+                var response = new {
+                    error         = "License validation failed",
+                    message       = licenseEx.Message,
+                    licenseStatus = licenseEx.LicenseStatus,
+                    timestamp     = DateTime.UtcNow
+                };
+
+                string payload = JsonSerializer.Serialize(response);
+                return context.Response.WriteAsync(payload);
+            }
         }
 
-        /* 2️⃣  Generic mapping  ------------------------------------------- */
+        /* 3️⃣  Generic mapping  ------------------------------------------- */
         var code = exception switch {
             UnauthorizedAccessException                     => HttpStatusCode.Unauthorized,
             System.Collections.Generic.KeyNotFoundException => HttpStatusCode.NotFound,

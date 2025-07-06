@@ -10,5 +10,5 @@ public class LicenseData {
     public string?                     InactiveReason       { get; set; }
     public int                         MaxAllowedDevices    { get; set; }
     public int                         ActiveDeviceCount    { get; set; }
-    public Dictionary<string, object>  AdditionalData       { get; set; } = new Dictionary<string, object>();
+    public Dictionary<string, object>  AdditionalData       { get; set; } = new();
 }

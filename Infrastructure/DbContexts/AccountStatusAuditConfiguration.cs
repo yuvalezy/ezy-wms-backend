@@ -11,12 +11,8 @@ public class AccountStatusAuditConfiguration : IEntityTypeConfiguration<AccountS
         builder.Property(x => x.Reason)
             .HasMaxLength(500);
             
-        builder.HasOne(x => x.AccountStatus)
-            .WithMany()
-            .HasForeignKey(x => x.AccountStatusId)
-            .OnDelete(DeleteBehavior.Cascade);
-            
-        builder.HasIndex(x => x.AccountStatusId);
         builder.HasIndex(x => x.CreatedAt);
+        builder.HasIndex(x => x.PreviousStatus);
+        builder.HasIndex(x => x.NewStatus);
     }
 }

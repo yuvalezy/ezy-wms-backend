@@ -60,7 +60,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
             .ToListAsync();
     }
 
-    public async Task<Device> UpdateDeviceStatusAsync(string deviceUuid, DeviceStatus status, string reason, SessionInfo sessionInfo) {
+    public async Task<Device> UpdateDeviceStatusAsync(string deviceUuid, DeviceStatus status, string reason, SessionInfo? sessionInfo) {
         var device = await GetDeviceAsync(deviceUuid);
         if (device == null) {
             throw new InvalidOperationException("Device not found");
@@ -70,7 +70,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         device.Status          = status;
         device.StatusNotes     = reason;
         device.UpdatedAt       = DateTime.UtcNow;
-        device.UpdatedByUserId = sessionInfo?.Guid;
+        device.UpdatedByUserId = Guid.Empty;
 
         if (status == DeviceStatus.Active) {
             device.LastActiveDate = DateTime.UtcNow;
@@ -83,10 +83,10 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
 
         // Queue cloud event
         string eventType = status switch {
-            DeviceStatus.Active => "activate",
+            DeviceStatus.Active   => "activate",
             DeviceStatus.Inactive => "deactivate",
             DeviceStatus.Disabled => "disable",
-            _ => "update"
+            _                     => "update"
         };
         await cloudService.QueueDeviceEventAsync(eventType, deviceUuid);
 
@@ -131,14 +131,13 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         return device?.Status == DeviceStatus.Active;
     }
 
-    private async Task LogDeviceStatusChangeAsync(Guid deviceId,  DeviceStatus previousStatus,
-        DeviceStatus                                   newStatus, string       reason, SessionInfo sessionInfo) {
+    private async Task LogDeviceStatusChangeAsync(Guid deviceId, DeviceStatus previousStatus, DeviceStatus newStatus, string reason, SessionInfo? sessionInfo) {
         var audit = new DeviceAudit {
             DeviceId        = deviceId,
             PreviousStatus  = previousStatus,
             NewStatus       = newStatus,
             Reason          = reason,
-            CreatedByUserId = sessionInfo?.Guid
+            CreatedByUserId = sessionInfo?.Guid ?? Guid.Empty
         };
 
         context.DeviceAudits.Add(audit);

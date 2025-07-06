@@ -447,23 +447,28 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
 - Endpoint access control with allowed endpoints whitelist
 - Error response handling with proper HTTP status codes
 
-#### LicenseErrorHandlingMiddleware
-**Location**: `Service/Middlewares/LicenseErrorHandlingMiddleware.cs`
+#### ExceptionHandlingMiddleware (Enhanced)
+**Location**: `Service/Middlewares/ExceptionHandlingMiddleware.cs`
 ```csharp
-public class LicenseErrorHandlingMiddleware(RequestDelegate next, ILogger<LicenseErrorHandlingMiddleware> logger) {
-    private async Task HandleLicenseExceptionAsync(HttpContext context, LicenseValidationException ex) {
-        context.Response.StatusCode = 403;
-        var response = new {
-            error = "License validation failed",
-            message = ex.Message,
-            licenseStatus = ex.LicenseStatus,
-            timestamp = DateTime.UtcNow
-        };
+public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger) {
+    private static Task HandleExceptionAsync(HttpContext context, Exception exception) {
+        switch (exception) {
+            case LicenseValidationException licenseEx: {
+                context.Response.StatusCode = 403;
+                var response = new {
+                    error = "License validation failed",
+                    message = licenseEx.Message,
+                    licenseStatus = licenseEx.LicenseStatus,
+                    timestamp = DateTime.UtcNow
+                };
+                return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
+        }
     }
 }
 ```
-- Global license exception handling
-- Consistent error response format
+- Unified exception handling including license validation
+- Consistent error response format across all exception types
 - Proper HTTP status codes (403 for license failures)
 - Structured JSON error responses
 

@@ -669,7 +669,7 @@ public class LicenseIntegrationTests
 
         var response = await _client.GetAsync("/api/authentication/companyname");
         var content = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<CompanyNameResponse>(content);
+        var result = JsonUtils.Deserialize<CompanyNameResponse>(content);
         
         Assert.IsTrue(result.LicenseWarnings.Any());
     }

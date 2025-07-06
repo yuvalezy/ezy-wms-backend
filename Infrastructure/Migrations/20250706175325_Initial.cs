@@ -12,6 +12,25 @@ namespace Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AccountStatus",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    ExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PaymentCycleDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DemoExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    InactiveReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    LastValidationTimestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AccountStatus", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CloudSyncQueues",
                 columns: table => new
                 {
@@ -37,7 +56,6 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AccountStatusId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     PreviousStatus = table.Column<int>(type: "int", nullable: false),
                     NewStatus = table.Column<int>(type: "int", nullable: false),
                     Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
@@ -51,29 +69,6 @@ namespace Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AccountStatusAudits", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AccountStatuses",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    ExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PaymentCycleDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DemoExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    InactiveReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    LastValidationTimestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Deleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AccountStatuses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -918,10 +913,20 @@ namespace Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.InsertData(
+                table: "AccountStatus",
+                columns: new[] { "Id", "CreatedAt", "DemoExpirationDate", "ExpirationDate", "InactiveReason", "LastValidationTimestamp", "PaymentCycleDate", "Status", "UpdatedAt" },
+                values: new object[] { 1, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, null, null, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, 0, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc) });
+
             migrationBuilder.CreateIndex(
-                name: "IX_AccountStatusAudits_AccountStatusId",
-                table: "AccountStatusAudits",
-                column: "AccountStatusId");
+                name: "IX_AccountStatus_LastValidationTimestamp",
+                table: "AccountStatus",
+                column: "LastValidationTimestamp");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccountStatus_Status",
+                table: "AccountStatus",
+                column: "Status");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AccountStatusAudits_CreatedAt",
@@ -934,28 +939,18 @@ namespace Infrastructure.Migrations
                 column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AccountStatusAudits_NewStatus",
+                table: "AccountStatusAudits",
+                column: "NewStatus");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AccountStatusAudits_PreviousStatus",
+                table: "AccountStatusAudits",
+                column: "PreviousStatus");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AccountStatusAudits_UpdatedByUserId",
                 table: "AccountStatusAudits",
-                column: "UpdatedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountStatuses_CreatedByUserId",
-                table: "AccountStatuses",
-                column: "CreatedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountStatuses_LastValidationTimestamp",
-                table: "AccountStatuses",
-                column: "LastValidationTimestamp");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountStatuses_Status",
-                table: "AccountStatuses",
-                column: "Status");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountStatuses_UpdatedByUserId",
-                table: "AccountStatuses",
                 column: "UpdatedByUserId");
 
             migrationBuilder.CreateIndex(
@@ -1017,6 +1012,12 @@ namespace Infrastructure.Migrations
                 name: "IX_Devices_CreatedByUserId",
                 table: "Devices",
                 column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Devices_DeviceName",
+                table: "Devices",
+                column: "DeviceName",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Devices_DeviceUuid",
@@ -1331,14 +1332,6 @@ namespace Infrastructure.Migrations
                 column: "AuthorizationGroupId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_AccountStatusAudits_AccountStatuses_AccountStatusId",
-                table: "AccountStatusAudits",
-                column: "AccountStatusId",
-                principalTable: "AccountStatuses",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_AccountStatusAudits_Users_CreatedByUserId",
                 table: "AccountStatusAudits",
                 column: "CreatedByUserId",
@@ -1349,22 +1342,6 @@ namespace Infrastructure.Migrations
             migrationBuilder.AddForeignKey(
                 name: "FK_AccountStatusAudits_Users_UpdatedByUserId",
                 table: "AccountStatusAudits",
-                column: "UpdatedByUserId",
-                principalTable: "Users",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_AccountStatuses_Users_CreatedByUserId",
-                table: "AccountStatuses",
-                column: "CreatedByUserId",
-                principalTable: "Users",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_AccountStatuses_Users_UpdatedByUserId",
-                table: "AccountStatuses",
                 column: "UpdatedByUserId",
                 principalTable: "Users",
                 principalColumn: "Id",
@@ -1397,6 +1374,9 @@ namespace Infrastructure.Migrations
             migrationBuilder.DropForeignKey(
                 name: "FK_AuthorizationGroups_Users_UpdatedByUserId",
                 table: "AuthorizationGroups");
+
+            migrationBuilder.DropTable(
+                name: "AccountStatus");
 
             migrationBuilder.DropTable(
                 name: "AccountStatusAudits");
@@ -1439,9 +1419,6 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "TransferLines");
-
-            migrationBuilder.DropTable(
-                name: "AccountStatuses");
 
             migrationBuilder.DropTable(
                 name: "Devices");

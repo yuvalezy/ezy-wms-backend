@@ -1,24 +1,25 @@
 using Core.Models;
 using Core.Services;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Core.Interfaces;
+using Core.Utils;
 
 namespace Infrastructure.Services;
 
-public class LicenseEncryptionService(IConfiguration configuration, ILogger<LicenseEncryptionService> logger) : ILicenseEncryptionService {
-    private readonly string _encryptionKey = configuration["Licensing:EncryptionKey"] ?? 
+public class LicenseEncryptionService(ISettings settings, ILogger<LicenseEncryptionService> logger) : ILicenseEncryptionService {
+    private readonly string encryptionKey = settings.Licensing.EncryptionKey ?? 
         throw new InvalidOperationException("Licensing encryption key not configured");
 
     public string EncryptLicenseData(LicenseCacheData data) {
         try {
-            var json = JsonSerializer.Serialize(data);
-            var plainTextBytes = Encoding.UTF8.GetBytes(json);
+            string json           = JsonSerializer.Serialize(data);
+            byte[] plainTextBytes = Encoding.UTF8.GetBytes(json);
             
             using var aes = Aes.Create();
-            aes.Key = Convert.FromBase64String(_encryptionKey);
+            aes.Key = Convert.FromBase64String(encryptionKey);
             aes.GenerateIV();
             
             using var encryptor = aes.CreateEncryptor();
@@ -37,12 +38,12 @@ public class LicenseEncryptionService(IConfiguration configuration, ILogger<Lice
 
     public LicenseCacheData DecryptLicenseData(string encryptedData) {
         try {
-            var fullCipher = Convert.FromBase64String(encryptedData);
+            byte[] fullCipher = Convert.FromBase64String(encryptedData);
             
             using var aes = Aes.Create();
-            aes.Key = Convert.FromBase64String(_encryptionKey);
+            aes.Key = Convert.FromBase64String(encryptionKey);
             
-            var iv = new byte[16];
+            byte[] iv = new byte[16];
             Array.Copy(fullCipher, 0, iv, 0, iv.Length);
             aes.IV = iv;
             
@@ -50,8 +51,8 @@ public class LicenseEncryptionService(IConfiguration configuration, ILogger<Lice
             using var msDecrypt = new MemoryStream(fullCipher, iv.Length, fullCipher.Length - iv.Length);
             using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
             using var srDecrypt = new StreamReader(csDecrypt);
-            var json = srDecrypt.ReadToEnd();
-            return JsonSerializer.Deserialize<LicenseCacheData>(json) ?? throw new InvalidOperationException("Failed to deserialize license data");
+            string json = srDecrypt.ReadToEnd();
+            return JsonUtils.Deserialize<LicenseCacheData>(json) ?? throw new InvalidOperationException("Failed to deserialize license data");
         }
         catch (Exception ex) {
             logger.LogError(ex, "Failed to decrypt license data");
@@ -60,14 +61,14 @@ public class LicenseEncryptionService(IConfiguration configuration, ILogger<Lice
     }
 
     public string GenerateDataHash(LicenseCacheData data) {
-        var json = JsonSerializer.Serialize(data);
+        string    json   = JsonSerializer.Serialize(data);
         using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(json));
+        byte[]    hash   = sha256.ComputeHash(Encoding.UTF8.GetBytes(json));
         return Convert.ToBase64String(hash);
     }
 
     public bool ValidateDataHash(LicenseCacheData data, string hash) {
-        var computedHash = GenerateDataHash(data);
+        string computedHash = GenerateDataHash(data);
         return computedHash == hash;
     }
 }

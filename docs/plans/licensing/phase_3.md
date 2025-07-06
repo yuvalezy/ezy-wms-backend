@@ -151,7 +151,7 @@ public class CloudLicenseService : ICloudLicenseService
             if (response.IsSuccessStatusCode)
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<CloudLicenseResponse>(responseJson);
+                var result = JsonUtils.Deserialize<CloudLicenseResponse>(responseJson);
                 
                 _logger.LogInformation("Device event {Event} sent successfully for device {DeviceUuid}", 
                     request.Event, request.DeviceUuid);
@@ -212,7 +212,7 @@ public class CloudLicenseService : ICloudLicenseService
             if (response.IsSuccessStatusCode)
             {
                 var responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<AccountValidationResponse>(responseJson);
+                var result = JsonUtils.Deserialize<AccountValidationResponse>(responseJson);
                 
                 _logger.LogInformation("Account validation completed successfully");
                 return result;
@@ -304,7 +304,7 @@ public class CloudLicenseService : ICloudLicenseService
             item.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            var request = JsonSerializer.Deserialize<CloudLicenseRequest>(item.RequestPayload);
+            var request = JsonUtils.Deserialize<CloudLicenseRequest>(item.RequestPayload);
             var response = await SendDeviceEventAsync(request);
 
             if (response.Success)
@@ -621,7 +621,7 @@ app.MapPost("/api/license/device-event", async (HttpContext context) =>
     }
 
     var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
-    var request = JsonSerializer.Deserialize<CloudLicenseRequest>(requestBody);
+    var request = JsonUtils.Deserialize<CloudLicenseRequest>(requestBody);
 
     // Simulate processing
     await Task.Delay(100);
@@ -691,7 +691,7 @@ app.MapPost("/api/license/validate-account", async (HttpContext context) =>
     }
 
     var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
-    var request = JsonSerializer.Deserialize<AccountValidationRequest>(requestBody);
+    var request = JsonUtils.Deserialize<AccountValidationRequest>(requestBody);
 
     // Simulate validation processing
     await Task.Delay(200);
@@ -736,7 +736,7 @@ app.MapGet("/api/license/admin/devices", async (HttpContext context) =>
 app.MapPost("/api/license/admin/account-status", async (HttpContext context) =>
 {
     var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
-    var request = JsonSerializer.Deserialize<Dictionary<string, object>>(requestBody);
+    var request = JsonUtils.Deserialize<Dictionary<string, object>>(requestBody);
     
     if (request.ContainsKey("status"))
     {

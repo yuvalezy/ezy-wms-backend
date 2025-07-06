@@ -18,6 +18,7 @@ namespace Service.Controllers;
 /// Device Controller - Manages device registration and status for licensing system
 /// </summary>
 [ApiController]
+[RequireSuperUser]
 [Route("api/[controller]")]
 [Authorize]
 public class DeviceController(IDeviceService deviceService, ILogger<DeviceController> logger) : ControllerBase {
@@ -30,7 +31,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="400">If the device is already registered or request is invalid</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpPost("register")]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(DeviceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -66,7 +66,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="200">Returns the list of devices</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpGet]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(List<DeviceResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<DeviceResponse>>> GetAllDevices() {
@@ -99,7 +98,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="404">If the device is not found</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpGet("{deviceUuid}")]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(DeviceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -137,7 +135,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="404">If the device is not found</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpPut("{deviceUuid}/status")]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(DeviceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -183,7 +180,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="404">If the device is not found</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpPut("{deviceUuid}/name")]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(DeviceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -221,7 +217,6 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
     /// <response code="200">Returns the audit history</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpGet("{deviceUuid}/audit")]
-    [RequireSuperUser]
     [ProducesResponseType(typeof(List<DeviceAuditResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<List<DeviceAuditResponse>>> GetDeviceAuditHistory(string deviceUuid) {

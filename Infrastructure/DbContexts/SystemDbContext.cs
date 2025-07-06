@@ -39,7 +39,7 @@ public class SystemDbContext : DbContext {
     public DbSet<DeviceAudit> DeviceAudits { get; set; }
     
     // License Entities
-    public DbSet<AccountStatus>      AccountStatuses      { get; set; }
+    public DbSet<AccountStatus>      AccountStatus      { get; set; }
     public DbSet<AccountStatusAudit> AccountStatusAudits  { get; set; }
     public DbSet<LicenseCache>       LicenseCaches        { get; set; }
     public DbSet<CloudSyncQueue>     CloudSyncQueues      { get; set; }

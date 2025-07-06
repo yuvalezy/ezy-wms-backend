@@ -41,8 +41,8 @@ public class LicenseCacheService(
 
     public async Task UpdateLicenseCacheAsync(LicenseCacheData data) {
         try {
-            var encryptedData = encryptionService.EncryptLicenseData(data);
-            var dataHash = encryptionService.GenerateDataHash(data);
+            string encryptedData = encryptionService.EncryptLicenseData(data);
+            string dataHash = encryptionService.GenerateDataHash(data);
 
             var cache = new Core.Entities.LicenseCache {
                 EncryptedData = encryptedData,

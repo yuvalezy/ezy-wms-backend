@@ -161,7 +161,7 @@ public class LicenseEncryptionService : ILicenseEncryptionService
                 using (var srDecrypt = new StreamReader(csDecrypt))
                 {
                     var json = srDecrypt.ReadToEnd();
-                    return JsonSerializer.Deserialize<LicenseCacheData>(json);
+                    return JsonUtils.Deserialize<LicenseCacheData>(json);
                 }
             }
         }
