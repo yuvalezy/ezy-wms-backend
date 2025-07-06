@@ -12,13 +12,12 @@ namespace Service.Middlewares;
 
 public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseValidationMiddleware> logger) {
     private readonly HashSet<string> allowedEndpoints = new(StringComparer.OrdinalIgnoreCase) {
-        "/api/authentication/login",
-        "/api/authentication/logout",
-        "/api/authentication/companyInfo",
-        "/api/users",
-        "/api/authorization-groups",
+        "/api/authentication",
+        "/api/user",
+        "/api/authorizationGroup",
         "/api/device",
-        "/api/license/status",
+        "/api/license",
+        "/api/general",
         "/swagger",
         "/health"
     };

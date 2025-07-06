@@ -14,4 +14,5 @@ public class UserInfoResponse {
     public required Options                            Settings         { get; set; }
     public          bool                               SuperUser        { get; set; }
     public          Dictionary<string, CustomField[]>? CustomFields     { get; set; }
+    public          DeviceStatus?                            DeviceStatus     { get; set; }
 }

@@ -4,15 +4,17 @@ using Core.DTOs.Items;
 using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.DTOs.Settings;
+using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class PublicService(IExternalSystemAdapter adapter, ISettings settings, IUserService userService, SystemDbContext db) : IPublicService {
+public class PublicService(IExternalSystemAdapter adapter, ISettings settings, IUserService userService, IDeviceService deviceService, SystemDbContext db) : IPublicService {
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter) {
         var warehouses = await adapter.GetWarehousesAsync(filter);
         return warehouses;
@@ -50,6 +52,15 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<UserInfoResponse> GetUserInfoAsync(SessionInfo info) {
         var user = await userService.GetUserAsync(Guid.Parse(info.UserId));
+
+        // Get device information if available
+        string? deviceUuid = info.DeviceUuid;
+
+        Device? device = null;
+        if (!string.IsNullOrEmpty(deviceUuid)) {
+            device = await deviceService.GetDeviceAsync(deviceUuid);
+        }
+
         return new UserInfoResponse {
             ID               = info.UserId,
             Name             = info.Name,
@@ -60,6 +71,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             SuperUser        = info.SuperUser,
             Settings         = settings.Options,
             CustomFields     = settings.CustomFields,
+            DeviceStatus     = device?.Status
         };
     }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Core.DTOs;
 using Core.DTOs.General;
@@ -56,9 +57,9 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     }
 
     /// <summary>
-    /// Gets user information for the authenticated user
+    /// Gets user information for the authenticated user including device status
     /// </summary>
-    /// <returns>User profile information and session details</returns>
+    /// <returns>User profile information, session details, and device status</returns>
     /// <response code="200">Returns the user information</response>
     /// <response code="401">If the user is not authenticated</response>
     /// <response code="500">If a server error occurs</response>
@@ -67,7 +68,17 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserInfoResponse>> GetUserInfo() {
-        return await publicService.GetUserInfoAsync(HttpContext.GetSession());
+        var sessionInfo = HttpContext.GetSession();
+        
+        // Get device UUID from header if not in session
+        if (string.IsNullOrEmpty(sessionInfo.DeviceUuid)) {
+            var deviceUuid = HttpContext.Request.Headers["X-Device-UUID"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(deviceUuid)) {
+                sessionInfo.DeviceUuid = deviceUuid;
+            }
+        }
+        
+        return await publicService.GetUserInfoAsync(sessionInfo);
     }
 
     /// <summary>
