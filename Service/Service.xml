@@ -335,16 +335,6 @@
             Device Controller - Manages device registration and status for licensing system
             </summary>
         </member>
-        <member name="M:Service.Controllers.DeviceController.RegisterDevice(Core.DTOs.Device.RegisterDeviceRequest)">
-            <summary>
-            Registers a new device in the system
-            </summary>
-            <param name="request">The device registration request</param>
-            <returns>The registered device information</returns>
-            <response code="200">Returns the registered device</response>
-            <response code="400">If the device is already registered or request is invalid</response>
-            <response code="403">If the user is not a superuser</response>
-        </member>
         <member name="M:Service.Controllers.DeviceController.GetAllDevices">
             <summary>
             Gets all registered devices

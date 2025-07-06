@@ -23,43 +23,6 @@ namespace Service.Controllers;
 [Authorize]
 public class DeviceController(IDeviceService deviceService, ILogger<DeviceController> logger) : ControllerBase {
     /// <summary>
-    /// Registers a new device in the system
-    /// </summary>
-    /// <param name="request">The device registration request</param>
-    /// <returns>The registered device information</returns>
-    /// <response code="200">Returns the registered device</response>
-    /// <response code="400">If the device is already registered or request is invalid</response>
-    /// <response code="403">If the user is not a superuser</response>
-    [HttpPost("register")]
-    [ProducesResponseType(typeof(DeviceResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<DeviceResponse>> RegisterDevice([FromBody] RegisterDeviceRequest request) {
-        try {
-            var sessionInfo = HttpContext.GetSession();
-            var device = await deviceService.RegisterDeviceAsync(
-                request.DeviceUuid, request.DeviceName, sessionInfo);
-
-            return Ok(new DeviceResponse {
-                Id               = device.Id,
-                DeviceUuid       = device.DeviceUuid,
-                DeviceName       = device.DeviceName,
-                Status           = device.Status.ToString(),
-                RegistrationDate = device.RegistrationDate,
-                StatusNotes      = device.StatusNotes,
-                LastActiveDate   = device.LastActiveDate
-            });
-        }
-        catch (InvalidOperationException ex) {
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex) {
-            logger.LogError(ex, "Error registering device {DeviceUuid}", request.DeviceUuid);
-            return BadRequest(new { error = "Failed to register device" });
-        }
-    }
-
-    /// <summary>
     /// Gets all registered devices
     /// </summary>
     /// <returns>List of all devices</returns>

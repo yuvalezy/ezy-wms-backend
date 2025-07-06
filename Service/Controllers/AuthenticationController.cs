@@ -117,6 +117,7 @@ public class AuthenticationController(
             // Create response with license warnings
             var response = new {
                 Token           = sessionInfo.Token,
+                ExpiresAt       = sessionInfo.ExpiresAt,
                 IsSuccess       = true,
                 SessionInfo     = sessionInfo,
                 LicenseWarnings = await GetLicenseWarningsAsync()

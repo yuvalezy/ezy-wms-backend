@@ -69,7 +69,17 @@ public class AuthenticationService(
             // Handle warehouse selection
             string?            selectedWarehouse = null;
             WarehouseResponse? warehouse         = null;
-            if (authenticatedUser.Warehouses.Count > 1) {
+            if (authenticatedUser.Warehouses.Count == 1) {
+                selectedWarehouse = authenticatedUser.Warehouses.First();
+
+                //Validate that the warehouse exists in the system
+                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                if (warehouse == null) {
+                    logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
+                    return null;
+                }
+            }
+            else if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
                 if (string.IsNullOrEmpty(request.Warehouse)) {
                     // Fetch available warehouses
                     string[]? filter     = authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null;
@@ -85,16 +95,6 @@ public class AuthenticationService(
                 }
 
                 selectedWarehouse = request.Warehouse;
-                //Validate that the warehouse exists in the system
-                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
-                if (warehouse == null) {
-                    logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
-                    return null;
-                }
-            }
-            else if (authenticatedUser.Warehouses.Count == 1) {
-                selectedWarehouse = authenticatedUser.Warehouses.First();
-
                 //Validate that the warehouse exists in the system
                 warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
                 if (warehouse == null) {
