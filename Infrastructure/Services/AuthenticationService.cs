@@ -66,6 +66,12 @@ public class AuthenticationService(
                 return null;
             }
 
+            if (!authenticatedUser.SuperUser && !registerDevice && device != null && device.Status != DeviceStatus.Active) {
+                logger.LogWarning("Login failed: Device {DeviceUuid} is not active", deviceUuid);
+                return null;
+            }
+
+
             // Handle warehouse selection
             string?            selectedWarehouse = null;
             WarehouseResponse? warehouse         = null;
