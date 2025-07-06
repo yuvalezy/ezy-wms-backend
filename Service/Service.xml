@@ -335,11 +335,13 @@
             Device Controller - Manages device registration and status for licensing system
             </summary>
         </member>
-        <member name="M:Service.Controllers.DeviceController.GetAllDevices">
+        <member name="M:Service.Controllers.DeviceController.GetAllDevices(System.String,System.String)">
             <summary>
-            Gets all registered devices
+            Gets all registered devices with optional filtering
             </summary>
-            <returns>List of all devices</returns>
+            <param name="status">Filter by device status (Active, Inactive, or Disabled)</param>
+            <param name="searchTerm">Search term to filter by device name, UUID, or status notes</param>
+            <returns>List of devices matching the filters</returns>
             <response code="200">Returns the list of devices</response>
             <response code="403">If the user is not a superuser</response>
         </member>

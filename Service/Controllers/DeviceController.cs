@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.DTOs.Device;
@@ -23,17 +24,26 @@ namespace Service.Controllers;
 [Authorize]
 public class DeviceController(IDeviceService deviceService, ILogger<DeviceController> logger) : ControllerBase {
     /// <summary>
-    /// Gets all registered devices
+    /// Gets all registered devices with optional filtering
     /// </summary>
-    /// <returns>List of all devices</returns>
+    /// <param name="status">Filter by device status (Active, Inactive, or Disabled)</param>
+    /// <param name="searchTerm">Search term to filter by device name, UUID, or status notes</param>
+    /// <returns>List of devices matching the filters</returns>
     /// <response code="200">Returns the list of devices</response>
     /// <response code="403">If the user is not a superuser</response>
     [HttpGet]
     [ProducesResponseType(typeof(List<DeviceResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<List<DeviceResponse>>> GetAllDevices() {
+    public async Task<ActionResult<List<DeviceResponse>>> GetAllDevices(
+        [FromQuery] string? status     = null,
+        [FromQuery] string? searchTerm = null) {
         try {
-            var devices = await deviceService.GetAllDevicesAsync();
+            DeviceStatus? deviceStatus = null;
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<DeviceStatus>(status, true, out var parsedStatus)) {
+                deviceStatus = parsedStatus;
+            }
+
+            var devices = await deviceService.GetAllDevicesAsync(deviceStatus, searchTerm);
             var response = devices.Select(d => new DeviceResponse {
                 Id               = d.Id,
                 DeviceUuid       = d.DeviceUuid,
@@ -150,8 +160,7 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
         string deviceUuid, [FromBody] UpdateDeviceNameRequest request) {
         try {
             var sessionInfo = HttpContext.GetSession();
-            var device = await deviceService.UpdateDeviceNameAsync(
-                deviceUuid, request.DeviceName, sessionInfo);
+            var device      = await deviceService.UpdateDeviceNameAsync(deviceUuid, request.DeviceName, sessionInfo);
 
             return Ok(new DeviceResponse {
                 Id               = device.Id,
@@ -165,6 +174,9 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
         }
         catch (InvalidOperationException ex) {
             return NotFound(new { error = ex.Message });
+        }
+        catch (ValidationException ex) {
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error updating device name for {DeviceUuid}", deviceUuid);

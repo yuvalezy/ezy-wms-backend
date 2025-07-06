@@ -8,7 +8,7 @@ public interface IDeviceService {
     Task<Device>            RegisterDeviceAsync(string         deviceUuid, string deviceName, SessionInfo sessionInfo);
     Task<Device?>           GetDeviceAsync(string              deviceUuid);
     Task<bool>              ValidateDeviceNameAvailable(string name);
-    Task<List<Device>>      GetAllDevicesAsync();
+    Task<List<Device>>      GetAllDevicesAsync(DeviceStatus? status = null, string? searchTerm = null);
     Task<Device>            UpdateDeviceStatusAsync(string    deviceUuid, DeviceStatus status,  string      reason, SessionInfo? sessionInfo);
     Task<Device>            UpdateDeviceNameAsync(string      deviceUuid, string       newName, SessionInfo sessionInfo);
     Task<List<DeviceAudit>> GetDeviceAuditHistoryAsync(string deviceUuid);

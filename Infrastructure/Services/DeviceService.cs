@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Core.Entities;
 using Core.Enums;
 using Core.Models;
@@ -53,9 +54,22 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
             .AnyAsync();
     }
 
-    public async Task<List<Device>> GetAllDevicesAsync() {
-        return await context.Devices
-            .Where(d => !d.Deleted)
+    public async Task<List<Device>> GetAllDevicesAsync(DeviceStatus? status = null, string? searchTerm = null) {
+        var query = context.Devices
+            .Where(d => !d.Deleted);
+
+        if (status.HasValue) {
+            query = query.Where(d => d.Status == status.Value);
+        }
+
+        if (!string.IsNullOrEmpty(searchTerm)) {
+            query = query.Where(d => 
+                EF.Functions.Like(d.DeviceName.ToLower(), $"%{searchTerm.ToLower()}%") || 
+                EF.Functions.Like(d.DeviceUuid.ToLower(), $"%{searchTerm.ToLower()}%") ||
+                (d.StatusNotes != null && EF.Functions.Like(d.StatusNotes.ToLower(), $"%{searchTerm.ToLower()}%")));
+        }
+
+        return await query
             .OrderByDescending(d => d.CreatedAt)
             .ToListAsync();
     }
@@ -70,7 +84,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         device.Status          = status;
         device.StatusNotes     = reason;
         device.UpdatedAt       = DateTime.UtcNow;
-        device.UpdatedByUserId = Guid.Empty;
+        device.UpdatedByUserId = sessionInfo?.Guid;
 
         if (status == DeviceStatus.Active) {
             device.LastActiveDate = DateTime.UtcNow;
@@ -97,6 +111,12 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
     }
 
     public async Task<Device> UpdateDeviceNameAsync(string deviceUuid, string newName, SessionInfo sessionInfo) {
+        if (await context.Devices.AnyAsync(d => d.DeviceUuid != deviceUuid && !d.Deleted && d.DeviceName.ToLower() == newName.ToLower())) {
+            throw new ValidationException("Device name already in use");
+        }
+        // return context.Devices
+        //     .Where(d => d.DeviceName.ToLower() == name.ToLower())
+        //     .AnyAsync();
         var device = await GetDeviceAsync(deviceUuid);
         if (device == null) {
             throw new InvalidOperationException("Device not found");
