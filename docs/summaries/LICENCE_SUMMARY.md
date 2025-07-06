@@ -63,9 +63,10 @@ public enum DeviceStatus {
 ```csharp
 public interface IDeviceService {
     Task<Device>             RegisterDeviceAsync(string deviceUuid, string deviceName, SessionInfo sessionInfo);
-    Task<Device>             GetDeviceAsync(string deviceUuid);
-    Task<List<Device>>       GetAllDevicesAsync();
-    Task<Device>             UpdateDeviceStatusAsync(string deviceUuid, DeviceStatus status, string reason, SessionInfo sessionInfo);
+    Task<Device?>            GetDeviceAsync(string deviceUuid);
+    Task<bool>               ValidateDeviceNameAvailable(string name);
+    Task<List<Device>>       GetAllDevicesAsync(DeviceStatus? status = null, string? searchTerm = null);
+    Task<Device>             UpdateDeviceStatusAsync(string deviceUuid, DeviceStatus status, string reason, SessionInfo? sessionInfo);
     Task<Device>             UpdateDeviceNameAsync(string deviceUuid, string newName, SessionInfo sessionInfo);
     Task<List<DeviceAudit>>  GetDeviceAuditHistoryAsync(string deviceUuid);
     Task<bool>               IsDeviceActiveAsync(string deviceUuid);
@@ -75,7 +76,9 @@ public interface IDeviceService {
 #### DeviceService Implementation
 **Location**: `Infrastructure/Services/DeviceService.cs`
 - Device registration and management
-- Status tracking with audit logging
+- Status tracking with audit logging  
+- Device name uniqueness validation
+- Filtering support (status and search term)
 - Cloud event integration (Phase 3)
 
 ### Controllers
@@ -84,9 +87,8 @@ public interface IDeviceService {
 **Location**: `Service/Controllers/DeviceController.cs`
 
 **Endpoints**:
-- `POST /api/device/register` - Register new device
 - `GET /api/device/{deviceUuid}` - Get device details
-- `GET /api/device` - Get all devices
+- `GET /api/device?status={status}&searchTerm={term}` - Get all devices with optional filtering
 - `PUT /api/device/{deviceUuid}/status` - Update device status
 - `PUT /api/device/{deviceUuid}/name` - Update device name
 - `GET /api/device/{deviceUuid}/audit` - Get device audit history
@@ -97,7 +99,6 @@ public interface IDeviceService {
 
 #### Request Models
 **Location**: `Core/DTOs/Device/`
-- `RegisterDeviceRequest.cs` - Device registration
 - `UpdateDeviceStatusRequest.cs` - Status updates
 - `UpdateDeviceNameRequest.cs` - Name updates
 
@@ -125,15 +126,19 @@ public interface IDeviceService {
 
 ### Entities
 
-#### AccountStatus Entity
+#### AccountStatus Entity (Singleton Pattern)
 **Location**: `Core/Entities/AccountStatus.cs`
 ```csharp
-public class AccountStatus : BaseEntity {
-    public AccountState Status           { get; set; }
-    public string?      InactiveReason   { get; set; }
-    public DateTime?    ExpirationDate   { get; set; }
-    public DateTime?    PaymentCycleDate { get; set; }
-    public DateTime?    DemoExpirationDate { get; set; }
+public class AccountStatus {
+    public int          Id                      { get; set; } = 1; // Singleton record
+    public AccountState Status                 { get; set; }
+    public DateTime?    ExpirationDate        { get; set; }
+    public DateTime?    PaymentCycleDate      { get; set; }
+    public DateTime?    DemoExpirationDate    { get; set; }
+    public string?      InactiveReason        { get; set; }
+    public DateTime     LastValidationTimestamp { get; set; }
+    public DateTime     CreatedAt              { get; set; }
+    public DateTime     UpdatedAt              { get; set; }
 }
 ```
 
@@ -141,11 +146,9 @@ public class AccountStatus : BaseEntity {
 **Location**: `Core/Entities/AccountStatusAudit.cs`
 ```csharp
 public class AccountStatusAudit : BaseEntity {
-    public Guid         AccountStatusId { get; set; }
     public AccountState PreviousStatus  { get; set; }
     public AccountState NewStatus       { get; set; }
     public string?      Reason          { get; set; }
-    public AccountStatus AccountStatus  { get; set; }
 }
 ```
 
@@ -168,13 +171,13 @@ public class LicenseCache {
 **Location**: `Core/Enums/AccountState.cs`
 ```csharp
 public enum AccountState {
-    Demo            = 1,
-    Active          = 2,
-    PaymentDue      = 3,
-    PaymentDueUnknown = 4,
-    Expired         = 5,
-    Suspended       = 6,
-    Terminated      = 7
+    Invalid           = 0,
+    Active            = 1,
+    PaymentDue        = 2,
+    PaymentDueUnknown = 3,
+    Disabled          = 4,
+    Demo              = 5,
+    DemoExpired       = 6,
 }
 ```
 
@@ -266,9 +269,10 @@ public interface ILicenseValidationService {
 
 #### AccountStatusService
 **Location**: `Infrastructure/Services/AccountStatusService.cs`
-- Account status management and validation
+- Account status management and validation (singleton pattern)
 - Audit trail for status changes
 - Expiration and grace period logic
+- Automatic account status seeding
 
 #### LicenseCacheService  
 **Location**: `Infrastructure/Services/LicenseCacheService.cs`
@@ -406,7 +410,7 @@ public interface ICloudLicenseService {
 #### CloudLicenseService
 **Location**: `Infrastructure/Services/CloudLicenseService.cs`
 - HTTP client communication with cloud API
-- Bearer token authentication
+- Fixed bearer token authentication (proper header order)
 - Queue management and retry logic
 - Error handling and logging
 
@@ -665,7 +669,7 @@ public class CloudSyncBackgroundOptions {
 ### Created Tables
 1. **Devices** - Device registration and management
 2. **DeviceAudits** - Device status change history
-3. **AccountStatuses** - Account status tracking
+3. **AccountStatus** - Account status tracking (singleton table)
 4. **AccountStatusAudits** - Account status change history
 5. **LicenseCaches** - Encrypted license data cache
 6. **CloudSyncQueues** - Cloud synchronization queue
@@ -723,9 +727,8 @@ Background services:
 ### Device Management
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
-| POST | `/api/device/register` | Register new device | SuperUser |
 | GET | `/api/device/{uuid}` | Get device details | SuperUser |
-| GET | `/api/device` | Get all devices | SuperUser |
+| GET | `/api/device?status={status}&searchTerm={term}` | Get all devices with filtering | SuperUser |
 | PUT | `/api/device/{uuid}/status` | Update device status | SuperUser |
 | PUT | `/api/device/{uuid}/name` | Update device name | SuperUser |
 | GET | `/api/device/{uuid}/audit` | Get audit history | SuperUser |
@@ -746,6 +749,37 @@ Background services:
 | GET | `/api/authentication/license-status` | Get license status | None |
 | POST | `/api/authentication/logout` | Logout | Authenticated |
 | POST | `/api/authentication/change-password` | Change password | Authenticated |
+
+---
+
+## Recent Updates and Fixes
+
+### AccountStatus Singleton Pattern Implementation
+- **Issue**: AccountStatus was using BaseEntity with Guid IDs, causing LogStatusChange failures with Guid.Empty
+- **Solution**: Converted to singleton pattern with fixed ID=1
+- **Benefits**: 
+  - Only one account status record per installation (as intended)
+  - Eliminates Guid.Empty issues in audit logging
+  - Automatic database seeding with initial Invalid status
+  - Simplified status management logic
+
+### CloudLicenseService Authorization Fix
+- **Issue**: Bearer token not reaching cloud endpoint due to header clearing order
+- **Solution**: Fixed ConfigureHttpClient() method to clear headers before setting Authorization
+- **Impact**: Cloud license validation now works properly with bearer token authentication
+
+### Device Management Enhancements
+- **Filtering Support**: Added optional query parameters to GetAllDevices endpoint
+  - `?status=Active|Inactive|Disabled` - Filter by device status
+  - `?searchTerm=text` - Search device name, UUID, or status notes
+  - Case-insensitive search using EF.Functions.Like
+- **Validation**: Device name uniqueness validation in UpdateDeviceNameAsync
+- **Session Handling**: Fixed session info handling in device operations
+
+### Authentication Improvements
+- **Warehouse Selection**: Fixed logic for single warehouse users
+- **Token Expiration**: Added ExpiresAt field to authentication response
+- **Error Handling**: Enhanced ValidationException handling
 
 ---
 

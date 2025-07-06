@@ -63,8 +63,8 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         }
 
         if (!string.IsNullOrEmpty(searchTerm)) {
-            query = query.Where(d => 
-                EF.Functions.Like(d.DeviceName.ToLower(), $"%{searchTerm.ToLower()}%") || 
+            query = query.Where(d =>
+                EF.Functions.Like(d.DeviceName.ToLower(), $"%{searchTerm.ToLower()}%") ||
                 EF.Functions.Like(d.DeviceUuid.ToLower(), $"%{searchTerm.ToLower()}%") ||
                 (d.StatusNotes != null && EF.Functions.Like(d.StatusNotes.ToLower(), $"%{searchTerm.ToLower()}%")));
         }
@@ -114,6 +114,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         if (await context.Devices.AnyAsync(d => d.DeviceUuid != deviceUuid && !d.Deleted && d.DeviceName.ToLower() == newName.ToLower())) {
             throw new ValidationException("Device name already in use");
         }
+
         // return context.Devices
         //     .Where(d => d.DeviceName.ToLower() == name.ToLower())
         //     .AnyAsync();
@@ -137,10 +138,11 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
     public async Task<List<DeviceAudit>> GetDeviceAuditHistoryAsync(string deviceUuid) {
         var device = await GetDeviceAsync(deviceUuid);
         if (device == null) {
-            return new List<DeviceAudit>();
+            return [];
         }
 
         return await context.DeviceAudits
+            .Include(a => a.CreatedByUser)
             .Where(a => a.DeviceId == device.Id)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();

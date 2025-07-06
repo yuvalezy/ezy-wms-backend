@@ -202,7 +202,7 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
                 NewStatus      = a.NewStatus.ToString(),
                 Reason         = a.Reason,
                 ChangedAt      = a.CreatedAt,
-                ChangedByUser  = a.CreatedByUserId?.ToString()
+                ChangedByUser  = a.CreatedByUser?.FullName
             }).ToList();
 
             return Ok(response);
