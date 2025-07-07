@@ -11,6 +11,7 @@ using Core.DTOs.Settings;
 using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
+using Core.Models.Settings;
 using Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +30,8 @@ public class AuthenticationController(
     ILogger<AuthenticationController> logger,
     ISessionManager                   sessionManager,
     IExternalSystemAdapter            externalSystemAdapter,
-    ILicenseValidationService         licenseValidationService) : ControllerBase {
+    ILicenseValidationService         licenseValidationService,
+    ISettings                         settings) : ControllerBase {
     /// <summary>
     /// Gets company information with license warnings (no authentication required)
     /// </summary>
@@ -107,12 +109,7 @@ public class AuthenticationController(
             }
 
             // Set HTTP-only cookie
-            Response.Cookies.Append(Const.SessionCookieName, sessionInfo.Token, new CookieOptions {
-                HttpOnly = true,
-                Secure   = false, // Set to true in production
-                SameSite = SameSiteMode.Lax,
-                Expires  = sessionInfo.ExpiresAt
-            });
+            Response.Cookies.Append(Const.SessionCookieName, sessionInfo.Token, GetCookieOptions(sessionInfo.ExpiresAt));
 
             // Create response with license warnings
             var response = new {
@@ -216,11 +213,7 @@ public class AuthenticationController(
             }
 
             // Clear the session cookie
-            Response.Cookies.Delete(Const.SessionCookieName, new CookieOptions {
-                HttpOnly = true,
-                Secure   = false, // Set to true in production
-                SameSite = SameSiteMode.Lax
-            });
+            Response.Cookies.Delete(Const.SessionCookieName, GetCookieOptions());
 
             return Ok(new { message = "Logged out successfully." });
         }
@@ -275,5 +268,31 @@ public class AuthenticationController(
         }
 
         return warnings;
+    }
+
+    private CookieOptions GetCookieOptions(DateTime? expires = null) {
+        var cookieSettings = settings.SessionManagement.Cookie;
+        var sameSiteMode = cookieSettings.SameSite.ToLower() switch {
+            "strict" => SameSiteMode.Strict,
+            "lax" => SameSiteMode.Lax,
+            "none" => SameSiteMode.None,
+            _ => SameSiteMode.Lax
+        };
+
+        var options = new CookieOptions {
+            HttpOnly = cookieSettings.HttpOnly,
+            Secure = cookieSettings.Secure,
+            SameSite = sameSiteMode
+        };
+
+        if (!string.IsNullOrEmpty(cookieSettings.Domain)) {
+            options.Domain = cookieSettings.Domain;
+        }
+
+        if (expires.HasValue) {
+            options.Expires = expires.Value;
+        }
+
+        return options;
     }
 }
