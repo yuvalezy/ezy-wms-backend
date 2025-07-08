@@ -8,4 +8,5 @@ public class CompanyInfoResponse {
     public DateTime             ServerTime      { get; set; }
     public List<LicenseWarning> LicenseWarnings { get; set; } = [];
     public DeviceStatus?        DeviceStatus    { get; set; }
+    public AccountState?        AccountStatus   { get; set; }
 }

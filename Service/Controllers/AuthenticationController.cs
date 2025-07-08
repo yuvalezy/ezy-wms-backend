@@ -66,6 +66,7 @@ public class AuthenticationController(
             // Add license warnings if past due by 3+ days
             try {
                 var licenseValidation = await licenseValidationService.GetLicenseValidationResultAsync();
+                response.AccountStatus = licenseValidation.AccountStatus;
                 if (licenseValidation is { ShowWarning: true, DaysUntilExpiration: <= -3 }) {
                     response.LicenseWarnings.Add(licenseValidation.Warning ?? new LicenseWarning(LicenseWarningType.LicenseIssueDetected));
                 }

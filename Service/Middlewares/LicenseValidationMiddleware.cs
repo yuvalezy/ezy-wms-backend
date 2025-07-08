@@ -17,7 +17,8 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
         "/api/authorizationGroup",
         "/api/device",
         "/api/license",
-        "/api/general",
+        "/api/general/userInfo",
+        "/api/general/warehouses",
         "/swagger",
         "/health"
     };
