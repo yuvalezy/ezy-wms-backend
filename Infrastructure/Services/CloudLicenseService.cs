@@ -117,7 +117,7 @@ public class CloudLicenseService(
     public async Task<bool> IsCloudAvailableAsync() {
         try {
             ConfigureHttpClient();
-            var response = await httpClient.GetAsync($"{cloudEndpoint}/api/license/health");
+            var response = await httpClient.GetAsync($"{cloudEndpoint}/health");
             return response.IsSuccessStatusCode;
         }
         catch {
@@ -125,7 +125,7 @@ public class CloudLicenseService(
         }
     }
 
-    public async Task QueueDeviceEventAsync(string eventType, string deviceUuid, string deviceName = "") {
+    public async Task QueueDeviceEventAsync(CloudLicenseEvent eventType, string deviceUuid, string deviceName = "") {
         var request = new CloudLicenseRequest {
             DeviceUuid = deviceUuid,
             Event = eventType,

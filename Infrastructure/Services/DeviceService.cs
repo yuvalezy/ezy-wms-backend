@@ -37,7 +37,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
             "Device registered", sessionInfo);
 
         // Queue cloud event
-        await cloudService.QueueDeviceEventAsync("register", deviceUuid, deviceName);
+        await cloudService.QueueDeviceEventAsync(CloudLicenseEvent.Register, deviceUuid, deviceName);
 
         logger.LogInformation("Device {DeviceUuid} registered by user {UserId}", deviceUuid, sessionInfo.Guid);
         return device;
@@ -96,11 +96,11 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         await LogDeviceStatusChangeAsync(device.Id, previousStatus, status, reason, sessionInfo);
 
         // Queue cloud event
-        string eventType = status switch {
-            DeviceStatus.Active   => "activate",
-            DeviceStatus.Inactive => "deactivate",
-            DeviceStatus.Disabled => "disable",
-            _                     => "update"
+        var eventType = status switch {
+            DeviceStatus.Active   => CloudLicenseEvent.Activate,
+            DeviceStatus.Inactive => CloudLicenseEvent.Deactivate,
+            DeviceStatus.Disabled => CloudLicenseEvent.Disable,
+            _                     => CloudLicenseEvent.Update
         };
         await cloudService.QueueDeviceEventAsync(eventType, deviceUuid);
 

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250706175325_Initial")]
+    [Migration("20250708155740_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -250,10 +250,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("EventType")
-                        .IsRequired()
+                    b.Property<int>("EventType")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("int");
 
                     b.Property<string>("LastError")
                         .HasMaxLength(1000)

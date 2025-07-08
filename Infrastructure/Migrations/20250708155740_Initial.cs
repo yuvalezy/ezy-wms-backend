@@ -37,7 +37,7 @@ namespace Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    EventType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    EventType = table.Column<int>(type: "int", maxLength: 50, nullable: false),
                     DeviceUuid = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     RequestPayload = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ProcessedAt = table.Column<DateTime>(type: "datetime2", nullable: true),

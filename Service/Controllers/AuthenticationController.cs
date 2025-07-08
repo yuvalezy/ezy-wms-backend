@@ -30,6 +30,7 @@ public class AuthenticationController(
     ILogger<AuthenticationController> logger,
     ISessionManager                   sessionManager,
     IExternalSystemAdapter            externalSystemAdapter,
+    IDeviceService                    deviceService,
     ILicenseValidationService         licenseValidationService,
     ISettings                         settings) : ControllerBase {
     /// <summary>
@@ -49,12 +50,18 @@ public class AuthenticationController(
                 companyName = await externalSystemAdapter.GetCompanyNameAsync();
                 await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
             }
-
+            
             var response = new CompanyInfoResponse {
                 CompanyName     = companyName,
                 ServerTime      = DateTime.UtcNow,
                 LicenseWarnings = []
             };
+            
+            string? deviceUuid = Request.Headers["X-Device-UUID"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(deviceUuid)) {
+                var device = await deviceService.GetDeviceAsync(deviceUuid);
+                response.DeviceStatus = device?.Status;
+            }
 
             // Add license warnings if past due by 3+ days
             try {

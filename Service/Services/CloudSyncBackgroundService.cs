@@ -137,8 +137,8 @@ public class CloudSyncBackgroundService(
                 await licenseCacheService.UpdateLicenseCacheAsync(cacheData);
 
                 // Deactivate devices if requested
-                if (response.DevicesToDeactivate.Count > 0) {
-                    foreach (var deviceUuid in response.DevicesToDeactivate) {
+                if (response.DevicesToDeactivate is { Count: > 0 }) {
+                    foreach (string deviceUuid in response.DevicesToDeactivate) {
                         // System action - pass null for sessionInfo since this is automated
                         await deviceService.UpdateDeviceStatusAsync(deviceUuid, DeviceStatus.Disabled,
                             "Deactivated by cloud service", null);

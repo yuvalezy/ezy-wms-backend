@@ -13,22 +13,21 @@ namespace Service.Controllers;
 public class LicenseController(
     ILicenseValidationService  licenseValidationService,
     ICloudLicenseService       cloudService,
-    IDeviceService             deviceService,
+    IAccountStatusService      accountStatusService,
     ILogger<LicenseController> logger) : ControllerBase {
-
     [HttpGet("status")]
     public async Task<ActionResult<LicenseStatusResponse>> GetStatus() {
         try {
             var validation = await licenseValidationService.GetLicenseValidationResultAsync();
-            
+
             return Ok(new LicenseStatusResponse {
-                IsValid = validation.IsValid,
-                AccountStatus = validation.AccountStatus.ToString(),
-                ExpirationDate = validation.ExpirationDate,
+                IsValid             = validation.IsValid,
+                AccountStatus       = await accountStatusService.GetCurrentAccountStatusAsync(),
+                ExpirationDate      = validation.ExpirationDate,
                 DaysUntilExpiration = validation.DaysUntilExpiration,
-                IsInGracePeriod = validation.IsInGracePeriod,
-                Warning = validation.Warning,
-                ShowWarning = validation.ShowWarning
+                IsInGracePeriod     = validation.IsInGracePeriod,
+                Warning             = validation.Warning,
+                ShowWarning         = validation.ShowWarning
             });
         }
         catch (Exception ex) {
@@ -41,13 +40,13 @@ public class LicenseController(
     [RequireSuperUser]
     public async Task<ActionResult<QueueStatusResponse>> GetQueueStatus() {
         try {
-            var pendingCount = await cloudService.GetPendingEventCountAsync();
-            var cloudAvailable = await cloudService.IsCloudAvailableAsync();
-            
+            int pendingCount   = await cloudService.GetPendingEventCountAsync();
+            bool cloudAvailable = await cloudService.IsCloudAvailableAsync();
+
             return Ok(new QueueStatusResponse {
-                PendingEventCount = pendingCount,
+                PendingEventCount     = pendingCount,
                 CloudServiceAvailable = cloudAvailable,
-                LastChecked = DateTime.UtcNow
+                LastChecked           = DateTime.UtcNow
             });
         }
         catch (Exception ex) {
@@ -65,24 +64,6 @@ public class LicenseController(
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error forcing sync");
-            return StatusCode(500, new { error = "Internal server error" });
-        }
-    }
-
-    [HttpPost("validate-device")]
-    public async Task<ActionResult<DeviceValidationResponse>> ValidateDevice([FromBody] DeviceValidationRequest request) {
-        try {
-            var isValid = await licenseValidationService.ValidateDeviceAccessAsync(request.DeviceUuid);
-            var device = await deviceService.GetDeviceAsync(request.DeviceUuid);
-            
-            return Ok(new DeviceValidationResponse {
-                IsValid = isValid,
-                DeviceStatus = device?.Status.ToString(),
-                ValidationTimestamp = DateTime.UtcNow
-            });
-        }
-        catch (Exception ex) {
-            logger.LogError(ex, "Error validating device");
             return StatusCode(500, new { error = "Internal server error" });
         }
     }

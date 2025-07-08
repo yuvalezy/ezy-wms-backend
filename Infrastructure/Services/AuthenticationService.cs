@@ -35,7 +35,7 @@ public class AuthenticationService(
                 }
 
                 registerDevice = true;
-            }
+            } 
 
             // Find all users and check password
             var users = await dbContext.Users
