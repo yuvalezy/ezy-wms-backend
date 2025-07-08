@@ -116,7 +116,7 @@ public class CloudSyncBackgroundService(
 
             var response = await cloudService.ValidateAccountAsync(validationRequest);
 
-            if (response.Success && response.LicenseData != null) {
+            if (response is { Success: true, LicenseData: not null }) {
                 // Update account status
                 await accountStatusService.UpdateAccountStatusAsync(response.LicenseData.AccountStatus,
                     "Daily validation from cloud service");

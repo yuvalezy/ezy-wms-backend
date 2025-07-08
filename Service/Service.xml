@@ -435,76 +435,6 @@
             <response code="403">If the user lacks required goods receipt permissions</response>
             <response code="500">If a server error occurs</response>
         </member>
-        <member name="M:Service.Controllers.GeneralController.ScanBinLocation(System.String)">
-            <summary>
-            Scans and validates a bin location barcode
-            </summary>
-            <param name="bin">The bin location barcode or identifier to scan</param>
-            <returns>Bin location information if found</returns>
-            <response code="200">Returns the bin location details</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required warehouse operation permissions</response>
-            <response code="404">If the bin location is not found</response>
-            <response code="500">If a server error occurs</response>
-        </member>
-        <member name="M:Service.Controllers.GeneralController.ScanItemBarCode(System.String,System.Boolean)">
-            <summary>
-            Scans and retrieves item information by barcode
-            </summary>
-            <param name="scanCode">The item barcode or identifier to scan</param>
-            <param name="item">Whether to search by item code instead of barcode</param>
-            <returns>Item information matching the scanned code</returns>
-            <response code="200">Returns the item information</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required warehouse operation permissions</response>
-            <response code="500">If a server error occurs</response>
-        </member>
-        <member name="M:Service.Controllers.GeneralController.ItemCheck(Core.DTOs.Items.ItemBarCodeRequest)">
-            <summary>
-            Validates item and barcode combinations (supervisor roles only)
-            </summary>
-            <param name="request">The request containing item code and barcode to validate</param>
-            <returns>Item validation results</returns>
-            <response code="200">Returns the item validation results</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required supervisor permissions</response>
-            <response code="500">If a server error occurs</response>
-        </member>
-        <member name="M:Service.Controllers.GeneralController.BinCheck(System.Int32)">
-            <summary>
-            Checks bin contents and inventory (supervisor roles only)
-            </summary>
-            <param name="binEntry">The bin entry ID to check contents for</param>
-            <returns>Bin content information and inventory details</returns>
-            <response code="200">Returns the bin content information</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required supervisor permissions</response>
-            <response code="500">If a server error occurs</response>
-        </member>
-        <member name="M:Service.Controllers.GeneralController.ItemStock(Core.DTOs.Items.ItemBarCodeRequest)">
-            <summary>
-            Gets item stock information across bins in the current warehouse
-            </summary>
-            <param name="request">The request containing item code to check stock for</param>
-            <returns>Item stock information across all bins</returns>
-            <response code="200">Returns the item stock information</response>
-            <response code="400">If the item code is missing or invalid</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required supervisor permissions</response>
-            <response code="500">If a server error occurs</response>
-        </member>
-        <member name="M:Service.Controllers.GeneralController.UpdateItemBarCode(Core.DTOs.Settings.UpdateBarCodeRequest)">
-            <summary>
-            Updates or creates item barcode associations (supervisor roles only)
-            </summary>
-            <param name="request">The request containing item and barcode information to update</param>
-            <returns>Response indicating success or failure of the barcode update</returns>
-            <response code="200">Returns the barcode update response</response>
-            <response code="400">If the request is invalid</response>
-            <response code="401">If the user is not authenticated</response>
-            <response code="403">If the user lacks required supervisor permissions</response>
-            <response code="500">If a server error occurs</response>
-        </member>
         <member name="T:Service.Controllers.GoodsReceiptController">
             <summary>
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
@@ -679,6 +609,86 @@
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="404">If the goods receipt document is not found</response>
             <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.ItemsController">
+            <summary>
+            Item Controller - Provides item/barcode/bin location utilities
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.#ctor(Core.Interfaces.IPublicService)">
+            <summary>
+            Item Controller - Provides item/barcode/bin location utilities
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.ScanBinLocation(System.String)">
+            <summary>
+            Scans and validates a bin location barcode
+            </summary>
+            <param name="bin">The bin location barcode or identifier to scan</param>
+            <returns>Bin location information if found</returns>
+            <response code="200">Returns the bin location details</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required warehouse operation permissions</response>
+            <response code="404">If the bin location is not found</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.ScanItemBarCode(System.String,System.Boolean)">
+            <summary>
+            Scans and retrieves item information by barcode
+            </summary>
+            <param name="scanCode">The item barcode or identifier to scan</param>
+            <param name="item">Whether to search by item code instead of barcode</param>
+            <returns>Item information matching the scanned code</returns>
+            <response code="200">Returns the item information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required warehouse operation permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.ItemCheck(Core.DTOs.Items.ItemBarCodeRequest)">
+            <summary>
+            Validates item and barcode combinations (supervisor roles only)
+            </summary>
+            <param name="request">The request containing item code and barcode to validate</param>
+            <returns>Item validation results</returns>
+            <response code="200">Returns the item validation results</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.BinCheck(System.Int32)">
+            <summary>
+            Checks bin contents and inventory (supervisor roles only)
+            </summary>
+            <param name="binEntry">The bin entry ID to check contents for</param>
+            <returns>Bin content information and inventory details</returns>
+            <response code="200">Returns the bin content information</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.ItemStock(Core.DTOs.Items.ItemBarCodeRequest)">
+            <summary>
+            Gets item stock information across bins in the current warehouse
+            </summary>
+            <param name="request">The request containing item code to check stock for</param>
+            <returns>Item stock information across all bins</returns>
+            <response code="200">Returns the item stock information</response>
+            <response code="400">If the item code is missing or invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.UpdateItemBarCode(Core.DTOs.Settings.UpdateBarCodeRequest)">
+            <summary>
+            Updates or creates item barcode associations (supervisor roles only)
+            </summary>
+            <param name="request">The request containing item and barcode information to update</param>
+            <returns>Response indicating success or failure of the barcode update</returns>
+            <response code="200">Returns the barcode update response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
         </member>
         <member name="T:Service.Controllers.PackageController">
             <summary>

@@ -57,7 +57,7 @@ public class LicenseValidationService(
         if (result.ExpirationDate.HasValue) {
             int daysUntilExpiration = (int)(result.ExpirationDate.Value - DateTime.UtcNow).TotalDays;
             result.DaysUntilExpiration = Math.Max(0, daysUntilExpiration);
-            result.IsInGracePeriod     = daysUntilExpiration > 0 && daysUntilExpiration <= 7;
+            result.IsInGracePeriod     = daysUntilExpiration is > 0 and <= 7;
         }
 
         // Determine warning message
