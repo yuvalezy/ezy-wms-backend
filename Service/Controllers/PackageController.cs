@@ -27,6 +27,7 @@ public class PackageController(
     IPackageContentService     contentService,
     IPackageValidationService  validationService,
     IPackageLocationService    locationService,
+    IInventoryCountingsService countingService,
     IExternalSystemAdapter     adapter,
     ILogger<PackageController> logger,
     ISettings                  settings)
@@ -90,23 +91,33 @@ public class PackageController(
     /// <summary>
     /// Gets a package by its barcode with optional additional data
     /// </summary>
-    /// <param name="barcode">The barcode of the package to retrieve</param>
-    /// <param name="contents">Include package contents in the response</param>
-    /// <param name="history">Include transaction history in the response</param>
-    /// <param name="details">Include detailed package information in the response</param>
+    /// <param name="parameters">Object containing barcode and additional query parameters:
+    /// - Barcode: The barcode of the package to retrieve
+    /// - Contents: Include package contents in the response
+    /// - History: Include transaction history in the response  
+    /// - Details: Include detailed package information in the response
+    /// - ObjectId: Optional reference object ID
+    /// - ObjectType: Optional reference object type</param>
     /// <returns>The package details with optional additional data</returns>
-    /// <response code="200">Returns the package details</response>
-    /// <response code="404">If the package is not found or not accessible</response>
+    /// <response code="200">Returns the package details with requested optional data</response>
+    /// <response code="404">If the package is not found or not accessible by the current user</response>
     /// <response code="401">If the user is not authenticated</response>
-    [HttpGet("barcode/{barcode}")]
+    [HttpPost("barcode")]
     [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PackageDto>> GetPackageByBarcode(string barcode, [FromQuery] bool contents = false, [FromQuery] bool history = false, [FromQuery] bool details = false) {
-        var package     = await packageService.GetPackageByBarcodeAsync(barcode, contents, history, details);
+    public async Task<ActionResult<PackageDto>> GetPackageByBarcode([FromBody] PackageByBarcodeRequest parameters) {
+        var package     = await packageService.GetPackageByBarcodeAsync(parameters);
         var sessionInfo = HttpContext.GetSession();
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
+
+        if (parameters.ObjectType == ObjectType.InventoryCounting) {
+            bool isValid = await countingService.ValidateScanPackage(package.Id, parameters.ObjectId!.Value, parameters.BinEntry);
+            if (!isValid) {
+                return BadRequest(new { error = "Package is already counted in another bin location" });
+            }
+        }
 
         return Ok(await package.ToDto(adapter));
     }

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Core.DTOs;
 using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +22,11 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CountingController(IInventoryCountingsService inventoryCountingsService) : ControllerBase {
+public class CountingController(
+    IInventoryCountingsService inventoryCountingsService,
+    IPackageService packageService,
+    IPackageContentService packageContentService,
+    ISettings settings) : ControllerBase {
     /// <summary>
     /// Creates a new inventory counting document (supervisor only)
     /// </summary>
@@ -95,8 +101,43 @@ public class CountingController(IInventoryCountingsService inventoryCountingsSer
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<InventoryCountingAddItemResponse> AddItem([FromBody] InventoryCountingAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await inventoryCountingsService.AddItem(sessionInfo, request);
+
+        string? packageBarcode = null;
+        // Handle package creation or item addition
+        if (request.StartNewPackage && settings.Options.EnablePackages) {
+            var package = await packageService.CreatePackageAsync(sessionInfo, new Core.DTOs.Package.CreatePackageRequest {
+                BinEntry = request.BinEntry,
+                SourceOperationType = ObjectType.InventoryCounting,
+                SourceOperationId = request.ID
+            });
+            
+            request.PackageId = package.Id;
+            packageBarcode = package.Barcode;
+        }
+        
+        // Call the standard service method
+        var response = await inventoryCountingsService.AddItem(sessionInfo, request);
+        
+        // Add to package if package context is active
+        if (request.PackageId.HasValue && response.Status == ResponseStatus.Ok) {
+            await packageContentService.AddItemToPackageAsync(new Core.DTOs.Package.AddItemToPackageRequest {
+                PackageId = request.PackageId.Value,
+                ItemCode = request.ItemCode,
+                Quantity = request.Quantity,
+                UnitType = request.Unit,
+                BinEntry = request.BinEntry,
+                SourceOperationType = ObjectType.InventoryCounting,
+                SourceOperationId = request.ID,
+                SourceOperationLineId = response.LineId
+            }, sessionInfo);
+            
+            response.PackageId = request.PackageId.Value;
+            response.PackageBarcode = packageBarcode;
+        }
+        
+        return response;
     }
+    
 
     /// <summary>
     /// Updates a specific line in an inventory counting document

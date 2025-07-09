@@ -1,4 +1,5 @@
 ﻿namespace Core.Enums;
+
 public enum AddItemReturnValueType {
     Ok                                            = 0,
     ItemCodeNotFound                              = -1,
@@ -14,4 +15,5 @@ public enum AddItemReturnValueType {
     BinNotInWarehouse                             = -11,
     BinMissing                                    = -12,
     QuantityMoreAvailable                         = -13,
+    PackageBinLocation                            = -14
 }

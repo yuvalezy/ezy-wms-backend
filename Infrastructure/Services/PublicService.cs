@@ -1,5 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.General;
+﻿using Core.DTOs.General;
 using Core.DTOs.Items;
 using Core.DTOs.Package;
 using Core.DTOs.PickList;

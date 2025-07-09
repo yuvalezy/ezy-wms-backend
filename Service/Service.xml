@@ -223,7 +223,7 @@
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
         </member>
-        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService)">
+        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService,Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Interfaces.ISettings)">
             <summary>
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
@@ -695,7 +695,7 @@
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IInventoryCountingsService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
             <summary>
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>
@@ -721,17 +721,20 @@
             <response code="404">If the package is not found or not accessible</response>
             <response code="401">If the user is not authenticated</response>
         </member>
-        <member name="M:Service.Controllers.PackageController.GetPackageByBarcode(System.String,System.Boolean,System.Boolean,System.Boolean)">
+        <member name="M:Service.Controllers.PackageController.GetPackageByBarcode(Core.DTOs.Package.PackageByBarcodeRequest)">
             <summary>
             Gets a package by its barcode with optional additional data
             </summary>
-            <param name="barcode">The barcode of the package to retrieve</param>
-            <param name="contents">Include package contents in the response</param>
-            <param name="history">Include transaction history in the response</param>
-            <param name="details">Include detailed package information in the response</param>
+            <param name="parameters">Object containing barcode and additional query parameters:
+            - Barcode: The barcode of the package to retrieve
+            - Contents: Include package contents in the response
+            - History: Include transaction history in the response  
+            - Details: Include detailed package information in the response
+            - ObjectId: Optional reference object ID
+            - ObjectType: Optional reference object type</param>
             <returns>The package details with optional additional data</returns>
-            <response code="200">Returns the package details</response>
-            <response code="404">If the package is not found or not accessible</response>
+            <response code="200">Returns the package details with requested optional data</response>
+            <response code="404">If the package is not found or not accessible by the current user</response>
             <response code="401">If the user is not authenticated</response>
         </member>
         <member name="M:Service.Controllers.PackageController.GetActivePackages">

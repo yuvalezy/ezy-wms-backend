@@ -59,6 +59,9 @@ public sealed class InventoryCountingLine : BaseEntity {
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;
 
+    // Package-related properties
+    public Guid? PackageId { get; set; }
+
     // Navigation property
     [ForeignKey("InventoryCounting")]
     public Guid InventoryCountingId { get; set; }

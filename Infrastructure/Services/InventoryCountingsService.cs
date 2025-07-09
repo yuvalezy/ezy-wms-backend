@@ -1,18 +1,23 @@
-using Core.DTOs;
 using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
+using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapter adapter, ISettings settings) : IInventoryCountingsService {
+public class InventoryCountingsService(
+    SystemDbContext         db,
+    IExternalSystemAdapter  adapter,
+    ISettings               settings,
+    IPackageContentService packageContentService) : IInventoryCountingsService {
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
             Name            = request.Name,
@@ -94,6 +99,12 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             throw new ApiErrorException((int)AddItemReturnValueType.NotStockItem, new { request.ItemCode, request.BarCode });
         }
 
+        if (request.PackageId.HasValue) {
+            if (!await ValidateScanPackage(request.PackageId.Value, request.ID, request.BinEntry)) {
+                throw new ApiErrorException((int)AddItemReturnValueType.PackageBinLocation, new { request.ItemCode, request.BarCode });
+            }
+        }
+
         // Calculate total quantity including unit conversion
         int totalQuantity = request.Quantity;
         if (request.Unit != UnitType.Unit) {
@@ -115,7 +126,8 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                 Unit                = request.Unit,
                 Date                = DateTime.UtcNow,
                 LineStatus          = LineStatus.Open,
-                CreatedByUserId     = sessionInfo.Guid
+                CreatedByUserId     = sessionInfo.Guid,
+                PackageId           = request.PackageId
             };
 
             await db.InventoryCountingLines.AddAsync(line);
@@ -187,18 +199,18 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             // Update quantity if provided
             if (request.Quantity.HasValue) {
                 int newQuantity = request.Quantity.Value;
-                if (line.Unit != UnitType.Unit) {
-                    var items = await adapter.ItemCheckAsync(line.ItemCode, null);
-                    var item  = items.FirstOrDefault();
-                    if (item != null) {
-                        newQuantity *= item.NumInBuy;
-                        if (line.Unit == UnitType.Pack) {
-                            newQuantity *= item.PurPackUn;
-                        }
+                var items       = await adapter.ItemCheckAsync(line.ItemCode, null);
+                var item        = items.FirstOrDefault();
+                if (line.Unit != UnitType.Unit && item != null) {
+                    newQuantity *= item.NumInBuy;
+                    if (line.Unit == UnitType.Pack) {
+                        newQuantity *= item.PurPackUn;
                     }
                 }
 
                 line.Quantity = newQuantity;
+                decimal diff = newQuantity - line.Quantity;
+                await UpdatePackageContentBasedOnLineQuantity(sessionInfo, line, item!, diff);
             }
 
             // Handle line closure
@@ -231,6 +243,59 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
         catch {
             await transaction.RollbackAsync();
             throw;
+        }
+    }
+
+    private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, InventoryCountingLine line, ItemCheckResponse item, decimal unitQuantity) {
+        if (unitQuantity == 0) {
+            return;
+        }
+
+        var transaction = await db
+            .PackageTransactions
+            .Include(v => v.Package)
+            .FirstOrDefaultAsync(v => v.SourceOperationLineId == line.Id);
+
+        if (transaction == null) {
+            return;
+        }
+
+        decimal quantity = unitQuantity;
+        if (line.Unit != UnitType.Unit) {
+            quantity /= item.NumInBuy;
+            if (line.Unit == UnitType.Pack)
+                quantity /= item.PurPackUn;
+        }
+
+        switch (unitQuantity) {
+            case > 0: {
+                var addRequest = new AddItemToPackageRequest {
+                    PackageId             = transaction.PackageId,
+                    ItemCode              = line.ItemCode,
+                    Quantity              = quantity,
+                    UnitQuantity          = unitQuantity,
+                    UnitType              = line.Unit,
+                    BinEntry              = line.BinEntry,
+                    SourceOperationType   = ObjectType.InventoryCounting,
+                    SourceOperationId     = line.InventoryCountingId,
+                    SourceOperationLineId = line.Id
+                };
+                await packageContentService.AddItemToPackageAsync(addRequest, session);
+                break;
+            }
+            case < 0: {
+                var removeRequest = new RemoveItemFromPackageRequest {
+                    PackageId           = transaction.PackageId,
+                    ItemCode            = line.ItemCode,
+                    Quantity            = quantity * -1,
+                    UnitQuantity        = unitQuantity * -1,
+                    UnitType            = line.Unit,
+                    SourceOperationType = ObjectType.InventoryCounting,
+                    SourceOperationId   = line.InventoryCountingId
+                };
+                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
+                break;
+            }
         }
     }
 
@@ -296,6 +361,17 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
                     line.LineStatus      = LineStatus.Closed;
                     line.UpdatedAt       = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
+                }
+
+                // Update package contents based on counting results
+                if (packageContentService != null) {
+                    var countingLines = await db.InventoryCountingLines
+                        .Where(l => l.InventoryCountingId == id && l.PackageId.HasValue)
+                        .ToListAsync();
+
+                    foreach (var line in countingLines) {
+                        await UpdatePackageContentFromCounting(line, sessionInfo);
+                    }
                 }
 
                 await db.SaveChangesAsync();
@@ -603,5 +679,53 @@ public class InventoryCountingsService(SystemDbContext db, IExternalSystemAdapte
             TotalVarianceValue = totalSystemValue - totalCountedValue,
             Lines              = reportLines
         };
+    }
+
+    public async Task<bool> ValidateScanPackage(Guid packageId, Guid id, int? binEntry) {
+        // Check if package exists in counting with different bin location
+        bool isDifferentBinLocation = await db.InventoryCountingLines.AnyAsync(c =>
+            c.InventoryCountingId == id &&
+            c.PackageId == packageId &&
+            c.BinEntry != binEntry);
+
+        // Return true if package is not found in counting or is in same bin location
+        return !isDifferentBinLocation;
+    }
+
+    private async Task UpdatePackageContentFromCounting(InventoryCountingLine countingLine, SessionInfo sessionInfo) {
+        if (packageContentService == null || !countingLine.PackageId.HasValue) {
+            return;
+        }
+
+        var existingContent = await db.PackageContents
+            .FirstOrDefaultAsync(c => c.PackageId == countingLine.PackageId &&
+                                      c.ItemCode == countingLine.ItemCode);
+
+        if (existingContent != null) {
+            // Update existing content quantity
+            existingContent.Quantity        = countingLine.Quantity;
+            existingContent.UpdatedAt       = DateTime.UtcNow;
+            existingContent.UpdatedByUserId = sessionInfo.Guid;
+
+            // Remove if quantity is zero
+            if (existingContent.Quantity == 0) {
+                db.PackageContents.Remove(existingContent);
+            }
+        }
+        else if (countingLine.Quantity > 0) {
+            // Add new content if counted quantity is positive
+            var newContent = new PackageContent {
+                Id              = Guid.NewGuid(),
+                PackageId       = countingLine.PackageId.Value,
+                ItemCode        = countingLine.ItemCode,
+                Quantity        = countingLine.Quantity,
+                WhsCode         = countingLine.InventoryCounting.WhsCode,
+                BinEntry        = countingLine.BinEntry,
+                CreatedAt       = DateTime.UtcNow,
+                CreatedByUserId = sessionInfo.Guid
+            };
+
+            db.PackageContents.Add(newContent);
+        }
     }
 }

@@ -9,4 +9,8 @@ public class InventoryCountingAddItemRequest {
     public int Quantity { get; set; }
     public int? BinEntry { get; set; }
     public UnitType Unit { get; set; }
+    
+    // Package-related properties
+    public bool StartNewPackage { get; set; }
+    public Guid? PackageId { get; set; }
 }

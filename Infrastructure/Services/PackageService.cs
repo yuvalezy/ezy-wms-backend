@@ -61,15 +61,16 @@ public class PackageService(
             .FirstOrDefaultAsync(p => p.Id == packageId && !p.Deleted);
     }
 
-    public async Task<Package?> GetPackageByBarcodeAsync(string barcode, bool contents, bool history, bool details) {
+    public async Task<Package?> GetPackageByBarcodeAsync(PackageByBarcodeRequest parameters) {
         var query = db.Packages.AsQueryable();
-        if (contents)
+        if (parameters is { Contents: true })
             query = query.Include(c => c.Contents);
-        if (history)
+        if (parameters is { History: true })
             query = query.Include(c => c.LocationHistory);
-        if (details)
+        if (parameters is { Details: true })
             query = query.Include(c => c.CreatedByUser);
-        return await query.FirstOrDefaultAsync(p => p.Barcode == barcode && !p.Deleted);
+        
+        return await query.FirstOrDefaultAsync(p => p.Barcode == parameters.Barcode && !p.Deleted);
     }
 
     public async Task<IEnumerable<Package>> GetActivePackagesAsync(string? whsCode = null) {
