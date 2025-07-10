@@ -193,8 +193,8 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
                     }
                 }
 
-                line.Quantity = newQuantity;
                 decimal diff = newQuantity - line.Quantity;
+                line.Quantity = newQuantity;
                 await UpdatePackageContentBasedOnLineQuantity(sessionInfo, line, item!, diff);
             }
 
@@ -353,15 +353,29 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
     }
 
     private async Task<InventoryCountingPackage> UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, int quantity, UnitType unit, SessionInfo sessionInfo) {
-        var countingPackage = await db.InventoryCountingPackages
-            .FirstOrDefaultAsync(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
+        // First check the local context for unsaved entities
+        var countingPackage = db.InventoryCountingPackages.Local
+            .FirstOrDefault(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
+        
+        // If not found in local context, query the database
+        if (countingPackage == null) {
+            countingPackage = await db.InventoryCountingPackages
+                .FirstOrDefaultAsync(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
+        }
 
         if (countingPackage == null) {
             throw new ValidationException($"Package {packageId} not found in counting {countingId}.");
         }
 
-        var countingContent = await db.InventoryCountingPackageContents
-            .FirstOrDefaultAsync(c => c.InventoryCountingPackageId == countingPackage.Id && c.ItemCode == itemCode);
+        // First check the local context for unsaved entities
+        var countingContent = db.InventoryCountingPackageContents.Local
+            .FirstOrDefault(c => c.InventoryCountingPackageId == countingPackage.Id && c.ItemCode == itemCode);
+            
+        // If not found in local context, query the database
+        if (countingContent == null) {
+            countingContent = await db.InventoryCountingPackageContents
+                .FirstOrDefaultAsync(c => c.InventoryCountingPackageId == countingPackage.Id && c.ItemCode == itemCode);
+        }
 
         if (countingContent == null) {
             // New item being counted into package
