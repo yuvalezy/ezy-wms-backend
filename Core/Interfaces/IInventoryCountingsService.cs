@@ -1,4 +1,3 @@
-using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.Entities;
 using Core.Models;
@@ -9,11 +8,8 @@ public interface IInventoryCountingsService {
     Task<InventoryCountingResponse>                     CreateCounting(CreateInventoryCountingRequest      request, SessionInfo sessionInfo);
     Task<IEnumerable<InventoryCountingResponse>>        GetCountings(InventoryCountingsRequest             request, string      warehouse);
     Task<InventoryCountingResponse>                     GetCounting(Guid                                   id);
-    Task<InventoryCountingAddItemResponse>              AddItem(SessionInfo                                sessionInfo, InventoryCountingAddItemRequest    request);
-    Task<UpdateLineResponse>                            UpdateLine(SessionInfo                             sessionInfo, InventoryCountingUpdateLineRequest request);
     Task<bool>                                          CancelCounting(Guid                                id,          SessionInfo                        sessionInfo);
     Task<ProcessInventoryCountingResponse>              ProcessCounting(Guid                               id,          SessionInfo                        sessionInfo);
     Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request);
     Task<InventoryCountingSummaryResponse>              GetCountingSummaryReport(Guid                      id);
-    Task<bool>                                          ValidateScanPackage(Guid                           packageId, Guid id, int? binEntry);
 }

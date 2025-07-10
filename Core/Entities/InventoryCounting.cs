@@ -24,8 +24,9 @@ public sealed class InventoryCounting : BaseEntity {
     [StringLength(8)]
     public required string WhsCode { get; set; }
 
-    // Navigation property
+    // Navigation properties
     public ICollection<InventoryCountingLine> Lines { get; set; } = new List<InventoryCountingLine>();
+    public ICollection<InventoryCountingPackage> CountingPackages { get; set; } = new List<InventoryCountingPackage>();
 }
 
 public sealed class InventoryCountingLine : BaseEntity {

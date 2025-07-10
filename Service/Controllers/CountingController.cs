@@ -22,11 +22,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CountingController(
-    IInventoryCountingsService inventoryCountingsService,
-    IPackageService packageService,
-    IPackageContentService packageContentService,
-    ISettings settings) : ControllerBase {
+public class CountingController(IInventoryCountingsService service, IInventoryCountingsLineService lineService) : ControllerBase {
     /// <summary>
     /// Creates a new inventory counting document (supervisor only)
     /// </summary>
@@ -44,7 +40,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<InventoryCountingResponse> CreateCounting([FromBody] CreateInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await inventoryCountingsService.CreateCounting(request, sessionInfo);
+        return await service.CreateCounting(request, sessionInfo);
     }
 
     /// <summary>
@@ -62,7 +58,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<InventoryCountingResponse>> GetCountings([FromQuery] InventoryCountingsRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await inventoryCountingsService.GetCountings(request, sessionInfo.Warehouse);
+        return await service.GetCountings(request, sessionInfo.Warehouse);
     }
 
     /// <summary>
@@ -81,7 +77,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<InventoryCountingResponse> GetCounting(Guid id) {
-        return await inventoryCountingsService.GetCounting(id);
+        return await service.GetCounting(id);
     }
 
     /// <summary>
@@ -102,42 +98,12 @@ public class CountingController(
     public async Task<InventoryCountingAddItemResponse> AddItem([FromBody] InventoryCountingAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
 
-        string? packageBarcode = null;
-        // Handle package creation or item addition
-        if (request.StartNewPackage && settings.Options.EnablePackages) {
-            var package = await packageService.CreatePackageAsync(sessionInfo, new Core.DTOs.Package.CreatePackageRequest {
-                BinEntry = request.BinEntry,
-                SourceOperationType = ObjectType.InventoryCounting,
-                SourceOperationId = request.ID
-            });
-            
-            request.PackageId = package.Id;
-            packageBarcode = package.Barcode;
-        }
-        
-        // Call the standard service method
-        var response = await inventoryCountingsService.AddItem(sessionInfo, request);
-        
-        // Add to package if package context is active
-        if (request.PackageId.HasValue && response.Status == ResponseStatus.Ok) {
-            await packageContentService.AddItemToPackageAsync(new Core.DTOs.Package.AddItemToPackageRequest {
-                PackageId = request.PackageId.Value,
-                ItemCode = request.ItemCode,
-                Quantity = request.Quantity,
-                UnitType = request.Unit,
-                BinEntry = request.BinEntry,
-                SourceOperationType = ObjectType.InventoryCounting,
-                SourceOperationId = request.ID,
-                SourceOperationLineId = response.LineId
-            }, sessionInfo);
-            
-            response.PackageId = request.PackageId.Value;
-            response.PackageBarcode = packageBarcode;
-        }
-        
+        // Call the standard service method to add item to counting
+        var response = await lineService.AddItem(sessionInfo, request);
+
         return response;
     }
-    
+
 
     /// <summary>
     /// Updates a specific line in an inventory counting document
@@ -156,7 +122,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<UpdateLineResponse> UpdateLine([FromBody] InventoryCountingUpdateLineRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await inventoryCountingsService.UpdateLine(sessionInfo, request);
+        return await lineService.UpdateLine(sessionInfo, request);
     }
 
     /// <summary>
@@ -176,7 +142,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<bool>> CancelCounting([FromBody] CancelInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await inventoryCountingsService.CancelCounting(request.ID, sessionInfo);
+        return await service.CancelCounting(request.ID, sessionInfo);
     }
 
     /// <summary>
@@ -196,7 +162,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProcessInventoryCountingResponse>> ProcessCounting([FromBody] ProcessInventoryCountingRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var result      = await inventoryCountingsService.ProcessCounting(request.ID, sessionInfo);
+        var result      = await service.ProcessCounting(request.ID, sessionInfo);
         return Ok(result);
     }
 
@@ -214,7 +180,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<InventoryCountingContentResponse>> CountingContent([FromBody] InventoryCountingContentRequest request) {
-        return await inventoryCountingsService.GetCountingContent(request);
+        return await service.GetCountingContent(request);
     }
 
     /// <summary>
@@ -233,6 +199,6 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<InventoryCountingSummaryResponse> GetCountingSummaryReport(Guid id) {
-        return await inventoryCountingsService.GetCountingSummaryReport(id);
+        return await service.GetCountingSummaryReport(id);
     }
 }

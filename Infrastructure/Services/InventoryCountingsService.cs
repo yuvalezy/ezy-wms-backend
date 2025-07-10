@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
@@ -17,7 +18,9 @@ public class InventoryCountingsService(
     SystemDbContext         db,
     IExternalSystemAdapter  adapter,
     ISettings               settings,
-    IPackageContentService packageContentService) : IInventoryCountingsService {
+    IPackageContentService  packageContentService,
+    IPackageService         packageService,
+    IPackageLocationService packageLocationService) : IInventoryCountingsService {
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
             Name            = request.Name,
@@ -73,231 +76,6 @@ public class InventoryCountingsService(
         return InventoryCountingResponse.FromEntity(counting);
     }
 
-    public async Task<InventoryCountingAddItemResponse> AddItem(SessionInfo sessionInfo, InventoryCountingAddItemRequest request) {
-        // Validate the counting exists and is in a valid state
-        var counting = await db.InventoryCountings.FindAsync(request.ID);
-        if (counting == null) {
-            throw new KeyNotFoundException($"Inventory counting with ID {request.ID} not found.");
-        }
-
-        if (counting.Status != ObjectStatus.Open && counting.Status != ObjectStatus.InProgress) {
-            return new InventoryCountingAddItemResponse {
-                Status         = ResponseStatus.Error,
-                ErrorMessage   = "Counting must be Open or In Progress to add items",
-                ClosedCounting = true
-            };
-        }
-
-        // Validate the item and barcode
-        var validationResult = await adapter.GetItemValidationInfo(request.ItemCode, request.BarCode, sessionInfo.Warehouse, request.BinEntry, sessionInfo.EnableBinLocations);
-
-        if (!validationResult.IsValidBarCode) {
-            throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeBarCodeMismatch, new { request.ItemCode, request.BarCode });
-        }
-
-        if (!validationResult.IsInventoryItem) {
-            throw new ApiErrorException((int)AddItemReturnValueType.NotStockItem, new { request.ItemCode, request.BarCode });
-        }
-
-        if (request.PackageId.HasValue) {
-            if (!await ValidateScanPackage(request.PackageId.Value, request.ID, request.BinEntry)) {
-                throw new ApiErrorException((int)AddItemReturnValueType.PackageBinLocation, new { request.ItemCode, request.BarCode });
-            }
-        }
-
-        // Calculate total quantity including unit conversion
-        int totalQuantity = request.Quantity;
-        if (request.Unit != UnitType.Unit) {
-            totalQuantity *= validationResult.NumInBuy;
-            if (request.Unit == UnitType.Pack) {
-                totalQuantity *= validationResult.PurPackUn;
-            }
-        }
-
-        var transaction = await db.Database.BeginTransactionAsync();
-        try {
-            // Create counting line
-            var line = new InventoryCountingLine {
-                InventoryCountingId = request.ID,
-                ItemCode            = request.ItemCode,
-                BarCode             = request.BarCode,
-                Quantity            = totalQuantity,
-                BinEntry            = request.BinEntry,
-                Unit                = request.Unit,
-                Date                = DateTime.UtcNow,
-                LineStatus          = LineStatus.Open,
-                CreatedByUserId     = sessionInfo.Guid,
-                PackageId           = request.PackageId
-            };
-
-            await db.InventoryCountingLines.AddAsync(line);
-
-            // Update counting status if it was Open
-            if (counting.Status == ObjectStatus.Open) {
-                counting.Status          = ObjectStatus.InProgress;
-                counting.UpdatedAt       = DateTime.UtcNow;
-                counting.UpdatedByUserId = sessionInfo.Guid;
-                db.Update(counting);
-            }
-
-            await db.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return InventoryCountingAddItemResponse.Success(line.Id);
-        }
-        catch {
-            await transaction.RollbackAsync();
-            throw;
-        }
-    }
-
-    public async Task<UpdateLineResponse> UpdateLine(SessionInfo sessionInfo, InventoryCountingUpdateLineRequest request) {
-        var response = new UpdateLineResponse();
-
-        var transaction = await db.Database.BeginTransactionAsync();
-        try {
-            // Validate counting exists and is in valid state
-            var counting = await db.InventoryCountings
-                .Where(ic => ic.Id == request.Id)
-                .Select(ic => new { ic.Status })
-                .FirstOrDefaultAsync();
-
-            if (counting == null) {
-                response.ReturnValue  = UpdateLineReturnValue.Status;
-                response.ErrorMessage = "Inventory counting not found";
-                return response;
-            }
-
-            if (counting.Status != ObjectStatus.Open && counting.Status != ObjectStatus.InProgress) {
-                response.ReturnValue  = UpdateLineReturnValue.Status;
-                response.ErrorMessage = "Counting status is not Open or In Progress";
-                return response;
-            }
-
-            // Find the line to update
-            var line = await db.InventoryCountingLines
-                .Where(icl => icl.Id == request.LineId && icl.InventoryCountingId == request.Id)
-                .FirstOrDefaultAsync();
-
-            if (line == null) {
-                response.ReturnValue  = UpdateLineReturnValue.LineStatus;
-                response.ErrorMessage = "Counting line not found";
-                return response;
-            }
-
-            if (line.LineStatus == LineStatus.Closed) {
-                response.ReturnValue  = UpdateLineReturnValue.LineStatus;
-                response.ErrorMessage = "Line is already closed";
-                return response;
-            }
-
-            // Update comments if provided
-            if (request.Comment != null) {
-                line.Comments = request.Comment;
-            }
-
-            // Update quantity if provided
-            if (request.Quantity.HasValue) {
-                int newQuantity = request.Quantity.Value;
-                var items       = await adapter.ItemCheckAsync(line.ItemCode, null);
-                var item        = items.FirstOrDefault();
-                if (line.Unit != UnitType.Unit && item != null) {
-                    newQuantity *= item.NumInBuy;
-                    if (line.Unit == UnitType.Pack) {
-                        newQuantity *= item.PurPackUn;
-                    }
-                }
-
-                line.Quantity = newQuantity;
-                decimal diff = newQuantity - line.Quantity;
-                await UpdatePackageContentBasedOnLineQuantity(sessionInfo, line, item!, diff);
-            }
-
-            // Handle line closure
-            if (request.CancellationReasonId.HasValue) {
-                // Validate the cancellation reason exists and is enabled
-                var cancellationReason = await db.CancellationReasons
-                    .Where(cr => cr.Id == request.CancellationReasonId.Value && cr.IsEnabled && cr.Counting)
-                    .FirstOrDefaultAsync();
-
-                if (cancellationReason == null) {
-                    response.ReturnValue  = UpdateLineReturnValue.CloseReason;
-                    response.ErrorMessage = "Invalid or disabled cancellation reason for counting";
-                    return response;
-                }
-
-                line.LineStatus           = LineStatus.Closed;
-                line.CancellationReasonId = request.CancellationReasonId.Value;
-            }
-
-            // Update modification tracking
-            line.UpdatedAt       = DateTime.UtcNow;
-            line.UpdatedByUserId = sessionInfo.Guid;
-
-            db.Update(line);
-            await db.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return response;
-        }
-        catch {
-            await transaction.RollbackAsync();
-            throw;
-        }
-    }
-
-    private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, InventoryCountingLine line, ItemCheckResponse item, decimal unitQuantity) {
-        if (unitQuantity == 0) {
-            return;
-        }
-
-        var transaction = await db
-            .PackageTransactions
-            .Include(v => v.Package)
-            .FirstOrDefaultAsync(v => v.SourceOperationLineId == line.Id);
-
-        if (transaction == null) {
-            return;
-        }
-
-        decimal quantity = unitQuantity;
-        if (line.Unit != UnitType.Unit) {
-            quantity /= item.NumInBuy;
-            if (line.Unit == UnitType.Pack)
-                quantity /= item.PurPackUn;
-        }
-
-        switch (unitQuantity) {
-            case > 0: {
-                var addRequest = new AddItemToPackageRequest {
-                    PackageId             = transaction.PackageId,
-                    ItemCode              = line.ItemCode,
-                    Quantity              = quantity,
-                    UnitQuantity          = unitQuantity,
-                    UnitType              = line.Unit,
-                    BinEntry              = line.BinEntry,
-                    SourceOperationType   = ObjectType.InventoryCounting,
-                    SourceOperationId     = line.InventoryCountingId,
-                    SourceOperationLineId = line.Id
-                };
-                await packageContentService.AddItemToPackageAsync(addRequest, session);
-                break;
-            }
-            case < 0: {
-                var removeRequest = new RemoveItemFromPackageRequest {
-                    PackageId           = transaction.PackageId,
-                    ItemCode            = line.ItemCode,
-                    Quantity            = quantity * -1,
-                    UnitQuantity        = unitQuantity * -1,
-                    UnitType            = line.Unit,
-                    SourceOperationType = ObjectType.InventoryCounting,
-                    SourceOperationId   = line.InventoryCountingId
-                };
-                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
-                break;
-            }
-        }
-    }
 
     public async Task<bool> CancelCounting(Guid id, SessionInfo sessionInfo) {
         var counting = await db.InventoryCountings.FindAsync(id);
@@ -363,16 +141,8 @@ public class InventoryCountingsService(
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
 
-                // Update package contents based on counting results
-                if (packageContentService != null) {
-                    var countingLines = await db.InventoryCountingLines
-                        .Where(l => l.InventoryCountingId == id && l.PackageId.HasValue)
-                        .ToListAsync();
-
-                    foreach (var line in countingLines) {
-                        await UpdatePackageContentFromCounting(line, sessionInfo);
-                    }
-                }
+                // Process packages based on counting results
+                await ProcessCountingPackages(id, sessionInfo);
 
                 await db.SaveChangesAsync();
             }
@@ -681,51 +451,107 @@ public class InventoryCountingsService(
         };
     }
 
-    public async Task<bool> ValidateScanPackage(Guid packageId, Guid id, int? binEntry) {
-        // Check if package exists in counting with different bin location
-        bool isDifferentBinLocation = await db.InventoryCountingLines.AnyAsync(c =>
-            c.InventoryCountingId == id &&
-            c.PackageId == packageId &&
-            c.BinEntry != binEntry);
 
-        // Return true if package is not found in counting or is in same bin location
-        return !isDifferentBinLocation;
-    }
+    private async Task ProcessCountingPackages(Guid countingId, SessionInfo sessionInfo) {
+        var countingPackages = await db.InventoryCountingPackages
+            .Include(cp => cp.Contents)
+            .Include(cp => cp.Package)
+            .ThenInclude(p => p.Contents)
+            .Where(cp => cp.InventoryCountingId == countingId)
+            .ToListAsync();
 
-    private async Task UpdatePackageContentFromCounting(InventoryCountingLine countingLine, SessionInfo sessionInfo) {
-        if (packageContentService == null || !countingLine.PackageId.HasValue) {
-            return;
-        }
+        foreach (var countingPackage in countingPackages) {
+            var package = countingPackage.Package;
 
-        var existingContent = await db.PackageContents
-            .FirstOrDefaultAsync(c => c.PackageId == countingLine.PackageId &&
-                                      c.ItemCode == countingLine.ItemCode);
+            // Handle package location changes
+            if (countingPackage.CountedWhsCode != countingPackage.OriginalWhsCode ||
+                countingPackage.CountedBinEntry != countingPackage.OriginalBinEntry) {
+                await packageLocationService.LogLocationMovementAsync(
+                    package.Id,
+                    PackageMovementType.Moved,
+                    countingPackage.OriginalWhsCode,
+                    countingPackage.OriginalBinEntry,
+                    countingPackage.CountedWhsCode,
+                    countingPackage.CountedBinEntry,
+                    ObjectType.InventoryCounting,
+                    countingId,
+                    sessionInfo.Guid
+                );
 
-        if (existingContent != null) {
-            // Update existing content quantity
-            existingContent.Quantity        = countingLine.Quantity;
-            existingContent.UpdatedAt       = DateTime.UtcNow;
-            existingContent.UpdatedByUserId = sessionInfo.Guid;
-
-            // Remove if quantity is zero
-            if (existingContent.Quantity == 0) {
-                db.PackageContents.Remove(existingContent);
+                // Update package location
+                package.WhsCode         = countingPackage.CountedWhsCode;
+                package.BinEntry        = countingPackage.CountedBinEntry;
+                package.UpdatedAt       = DateTime.UtcNow;
+                package.UpdatedByUserId = sessionInfo.Guid;
             }
-        }
-        else if (countingLine.Quantity > 0) {
-            // Add new content if counted quantity is positive
-            var newContent = new PackageContent {
-                Id              = Guid.NewGuid(),
-                PackageId       = countingLine.PackageId.Value,
-                ItemCode        = countingLine.ItemCode,
-                Quantity        = countingLine.Quantity,
-                WhsCode         = countingLine.InventoryCounting.WhsCode,
-                BinEntry        = countingLine.BinEntry,
-                CreatedAt       = DateTime.UtcNow,
-                CreatedByUserId = sessionInfo.Guid
-            };
 
-            db.PackageContents.Add(newContent);
+            // Process package contents
+            var itemsToProcess = new Dictionary<string, (decimal counted, decimal? original)>();
+
+            // Collect all items from counting
+            foreach (var countingContent in countingPackage.Contents) {
+                itemsToProcess[countingContent.ItemCode] = (countingContent.CountedQuantity, countingContent.OriginalQuantity);
+            }
+
+            // Process each item
+            foreach (var item in itemsToProcess) {
+                string  itemCode    = item.Key;
+                decimal countedQty  = item.Value.counted;
+                decimal originalQty = item.Value.original ?? 0;
+
+                if (countedQty == originalQty)
+                    continue;
+                decimal difference = countedQty - originalQty;
+
+                switch (difference) {
+                    case > 0:
+                        // Add items to package
+                        await packageContentService.AddItemToPackageAsync(new AddItemToPackageRequest {
+                            PackageId           = package.Id,
+                            ItemCode            = itemCode,
+                            Quantity            = difference,
+                            UnitQuantity        = difference,
+                            UnitType            = UnitType.Unit,
+                            BinEntry            = countingPackage.CountedBinEntry,
+                            SourceOperationType = ObjectType.InventoryCounting,
+                            SourceOperationId   = countingId
+                        }, sessionInfo);
+                        break;
+                    case < 0:
+                        // Remove items from package
+                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
+                            PackageId           = package.Id,
+                            ItemCode            = itemCode,
+                            Quantity            = Math.Abs(difference),
+                            UnitQuantity        = Math.Abs(difference),
+                            UnitType            = UnitType.Unit,
+                            SourceOperationType = ObjectType.InventoryCounting,
+                            SourceOperationId   = countingId
+                        }, sessionInfo);
+                        break;
+                }
+            }
+
+            // Handle items that were in the original package but not counted (removed)
+            var originalItems = package.Contents.Where(c => !itemsToProcess.ContainsKey(c.ItemCode));
+            foreach (var originalItem in originalItems) {
+                if (originalItem.Quantity > 0) {
+                    await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
+                        PackageId           = package.Id,
+                        ItemCode            = originalItem.ItemCode,
+                        Quantity            = originalItem.Quantity,
+                        UnitQuantity        = originalItem.Quantity,
+                        UnitType            = UnitType.Unit,
+                        SourceOperationType = ObjectType.InventoryCounting,
+                        SourceOperationId   = countingId
+                    }, sessionInfo);
+                }
+            }
+
+            // Activate package if it was created during counting and has content
+            if (countingPackage.IsNewPackage && package.Status == PackageStatus.Init) {
+                await packageService.ActivatePackagesBySourceAsync(ObjectType.InventoryCounting, countingId, sessionInfo);
+            }
         }
     }
 }

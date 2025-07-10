@@ -26,6 +26,10 @@ public class SystemDbContext : DbContext {
     public DbSet<GoodsReceiptSource>    GoodsReceiptSources    { get; set; }
     public DbSet<InventoryCountingLine> InventoryCountingLines { get; set; }
     public DbSet<TransferLine>          TransferLines          { get; set; }
+    
+    // Inventory Counting Package Entities
+    public DbSet<InventoryCountingPackage>        InventoryCountingPackages        { get; set; }
+    public DbSet<InventoryCountingPackageContent> InventoryCountingPackageContents { get; set; }
 
     // Package Entities
     public DbSet<Package>                Packages                { get; set; }
@@ -59,6 +63,8 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new TransferLineConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryCountingPackageConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryCountingPackageContentConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
         
         // Package configurations

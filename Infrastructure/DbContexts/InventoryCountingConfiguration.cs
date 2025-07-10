@@ -20,6 +20,13 @@ public class InventoryCountingConfiguration : IEntityTypeConfiguration<Inventory
             .HasForeignKey(icl => icl.InventoryCountingId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure CountingPackages relationship with cascade delete
+        builder
+            .HasMany(ic => ic.CountingPackages)
+            .WithOne(icp => icp.InventoryCounting)
+            .HasForeignKey(icp => icp.InventoryCountingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Enums are now stored as integers by default
     }
 }

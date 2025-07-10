@@ -23,14 +23,14 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class PackageController(
-    IPackageService            packageService,
-    IPackageContentService     contentService,
-    IPackageValidationService  validationService,
-    IPackageLocationService    locationService,
-    IInventoryCountingsService countingService,
-    IExternalSystemAdapter     adapter,
-    ILogger<PackageController> logger,
-    ISettings                  settings)
+    IPackageService                packageService,
+    IPackageContentService         contentService,
+    IPackageValidationService      validationService,
+    IPackageLocationService        locationService,
+    IInventoryCountingsLineService countingService,
+    IExternalSystemAdapter         adapter,
+    ILogger<PackageController>     logger,
+    ISettings                      settings)
     : ControllerBase {
     /// <summary>
     /// Creates a new package

@@ -63,7 +63,7 @@ public class AddItems(Guid id, string testItem, string testWarehouse, WebApplica
     private async Task AddItem() {
         foreach (var entry in binEntries) {
             using var scope   = factory.Services.CreateScope();
-            var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+            var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsLineService>();
             var response = await service.AddItem(TestConstants.SessionInfo, new InventoryCountingAddItemRequest() {
                 BarCode  = testItem,
                 BinEntry = entry.binEntry,
@@ -113,7 +113,7 @@ public class AddItems(Guid id, string testItem, string testWarehouse, WebApplica
 
     private async Task UpdateItem() {
         using var scope   = factory.Services.CreateScope();
-        var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+        var       service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsLineService>();
         var request = new InventoryCountingUpdateLineRequest {
             Id       = id,
             LineId   = lastLineId,
