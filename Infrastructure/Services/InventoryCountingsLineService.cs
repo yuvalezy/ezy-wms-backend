@@ -232,55 +232,59 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
     }
 
     private async Task UpdatePackageContentBasedOnLineQuantity(SessionInfo session, InventoryCountingLine line, ItemCheckResponse item, decimal unitQuantity) {
-        if (unitQuantity == 0) {
+        if (unitQuantity == 0 || !line.PackageId.HasValue) {
             return;
         }
 
-        var transaction = await db
-            .PackageTransactions
-            .Include(v => v.Package)
-            .FirstOrDefaultAsync(v => v.SourceOperationLineId == line.Id);
-
-        if (transaction == null) {
+        // Find the counting package for this line
+        var countingPackage = db.InventoryCountingPackages.Local
+            .FirstOrDefault(cp => cp.InventoryCountingId == line.InventoryCountingId && cp.PackageId == line.PackageId);
+            
+        if (countingPackage == null) {
+            countingPackage = await db.InventoryCountingPackages
+                .FirstOrDefaultAsync(cp => cp.InventoryCountingId == line.InventoryCountingId && cp.PackageId == line.PackageId);
+        }
+        
+        if (countingPackage == null) {
+            // Package not being counted, nothing to update
             return;
         }
 
-        decimal quantity = unitQuantity;
-        if (line.Unit != UnitType.Unit) {
-            quantity /= item.NumInBuy;
-            if (line.Unit == UnitType.Pack)
-                quantity /= item.PurPackUn;
+        // Find the counting package content for this item
+        var countingContent = db.InventoryCountingPackageContents.Local
+            .FirstOrDefault(c => c.InventoryCountingPackageId == countingPackage.Id && c.ItemCode == line.ItemCode);
+            
+        if (countingContent == null) {
+            countingContent = await db.InventoryCountingPackageContents
+                .FirstOrDefaultAsync(c => c.InventoryCountingPackageId == countingPackage.Id && c.ItemCode == line.ItemCode);
         }
 
-        switch (unitQuantity) {
-            case > 0: {
-                var addRequest = new AddItemToPackageRequest {
-                    PackageId             = transaction.PackageId,
-                    ItemCode              = line.ItemCode,
-                    Quantity              = quantity,
-                    UnitQuantity          = unitQuantity,
-                    UnitType              = line.Unit,
-                    BinEntry              = line.BinEntry,
-                    SourceOperationType   = ObjectType.InventoryCounting,
-                    SourceOperationId     = line.InventoryCountingId,
-                    SourceOperationLineId = line.Id
-                };
-                await packageContentService.AddItemToPackageAsync(addRequest, session);
-                break;
+        if (countingContent != null) {
+            // Update the counted quantity based on the line quantity change
+            countingContent.CountedQuantity += (decimal)unitQuantity;
+            countingContent.UpdatedAt = DateTime.UtcNow;
+            countingContent.UpdatedByUserId = session.Guid;
+            
+            // If counted quantity goes to zero or negative, we might want to handle this differently
+            if (countingContent.CountedQuantity < 0) {
+                countingContent.CountedQuantity = 0;
             }
-            case < 0: {
-                var removeRequest = new RemoveItemFromPackageRequest {
-                    PackageId           = transaction.PackageId,
-                    ItemCode            = line.ItemCode,
-                    Quantity            = quantity * -1,
-                    UnitQuantity        = unitQuantity * -1,
-                    UnitType            = line.Unit,
-                    SourceOperationType = ObjectType.InventoryCounting,
-                    SourceOperationId   = line.InventoryCountingId
-                };
-                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
-                break;
-            }
+            db.InventoryCountingPackageContents.Update(countingContent);
+        }
+        else if (unitQuantity > 0) {
+            // Create new counting content entry if adding quantity and item wasn't previously in package
+            countingContent = new InventoryCountingPackageContent {
+                Id = Guid.NewGuid(),
+                InventoryCountingPackageId = countingPackage.Id,
+                ItemCode = line.ItemCode,
+                CountedQuantity = (decimal)unitQuantity,
+                OriginalQuantity = 0, // Item wasn't originally in package
+                Unit = line.Unit,
+                CreatedAt = DateTime.UtcNow,
+                CreatedByUserId = session.Guid
+            };
+            
+            db.InventoryCountingPackageContents.Add(countingContent);
         }
     }
 
@@ -352,7 +356,7 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
         return countingPackage;
     }
 
-    private async Task<InventoryCountingPackage> UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, int quantity, UnitType unit, SessionInfo sessionInfo) {
+    private async Task UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, int quantity, UnitType unit, SessionInfo sessionInfo) {
         // First check the local context for unsaved entities
         var countingPackage = db.InventoryCountingPackages.Local
             .FirstOrDefault(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
@@ -398,12 +402,10 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
             countingContent.UpdatedAt       =  DateTime.UtcNow;
             countingContent.UpdatedByUserId =  sessionInfo.Guid;
         }
-
-        return countingPackage;
     }
 
     private async Task<InventoryCountingPackage> CreateCountingPackage(Guid countingId, Package package, string countedWhsCode, int? countedBinEntry, bool isNewPackage, SessionInfo sessionInfo) {
-        var value = new InventoryCountingPackage() {
+        var value = new InventoryCountingPackage {
             Id                  = Guid.NewGuid(),
             InventoryCountingId = countingId,
             PackageId           = package.Id,
