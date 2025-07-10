@@ -223,7 +223,7 @@
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
         </member>
-        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService,Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService,Core.Interfaces.IInventoryCountingsLineService)">
             <summary>
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
@@ -695,7 +695,7 @@
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IInventoryCountingsService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IInventoryCountingsLineService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
             <summary>
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>

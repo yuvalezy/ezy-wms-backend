@@ -59,8 +59,11 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
 
         var transaction = await db.Database.BeginTransactionAsync();
         try {
-            // Handle new package creation
+            string? packageBarcode = null;
+
+            // Handle package operations
             if (request.StartNewPackage && settings.Options.EnablePackages) {
+                // Create new package
                 var package = await packageService.CreatePackageAsync(sessionInfo, new CreatePackageRequest {
                     BinEntry            = request.BinEntry,
                     SourceOperationType = ObjectType.InventoryCounting,
@@ -68,6 +71,22 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
                 });
 
                 request.PackageId = package.Id;
+                packageBarcode    = package.Barcode;
+
+                // Create counting package entry for new package
+                await CreateCountingPackage(
+                    countingId: request.ID,
+                    package: package,
+                    countedWhsCode: sessionInfo.Warehouse,
+                    countedBinEntry: request.BinEntry,
+                    isNewPackage: true,
+                    sessionInfo: sessionInfo
+                );
+            }
+            else if (request.PackageId.HasValue) {
+                // Handle existing package
+                var countingPackage = await HandleExistingPackage(request.ID, request.PackageId.Value, request.BinEntry, sessionInfo);
+                packageBarcode = countingPackage.PackageBarcode;
             }
 
             // Create counting line
@@ -95,10 +114,8 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
             }
 
             // If item is being counted into a package, update the counting package content
-            string? packageBarcode = null;
             if (request.PackageId.HasValue) {
-                var countingPackage = await UpdateCountingPackageContent(request.ID, request.PackageId.Value, request.ItemCode, totalQuantity, request.Unit, sessionInfo);
-                packageBarcode = countingPackage.PackageBarcode;
+                await UpdateCountingPackageContent(request.ID, request.PackageId.Value, request.ItemCode, totalQuantity, request.Unit, sessionInfo);
             }
 
             await db.SaveChangesAsync();
@@ -278,6 +295,63 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
         return !isDifferentBinLocation;
     }
 
+    private async Task<InventoryCountingPackage> HandleExistingPackage(Guid countingId, Guid packageId, int? binEntry, SessionInfo sessionInfo) {
+        var countingPackage = await db.InventoryCountingPackages
+            .FirstOrDefaultAsync(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
+
+        if (countingPackage == null) {
+            // First time counting this existing package - need to create entry
+            var package = await db.Packages
+                .Include(p => p.Contents)
+                .FirstOrDefaultAsync(p => p.Id == packageId);
+
+            if (package == null) {
+                throw new ValidationException($"Package {packageId} not found.");
+            }
+
+            countingPackage = await CreateCountingPackage(
+                countingId: countingId,
+                package: package,
+                countedWhsCode: sessionInfo.Warehouse,
+                countedBinEntry: binEntry,
+                isNewPackage: false,
+                sessionInfo: sessionInfo
+            );
+
+            // Snapshot existing package contents
+            foreach (var content in package.Contents) {
+                var countingContent = new InventoryCountingPackageContent {
+                    Id                         = Guid.NewGuid(),
+                    InventoryCountingPackageId = countingPackage.Id,
+                    ItemCode                   = content.ItemCode,
+                    CountedQuantity            = 0, // Will be updated as items are counted
+                    OriginalQuantity           = content.Quantity,
+                    Unit                       = UnitType.Unit,
+                    CreatedAt                  = DateTime.UtcNow,
+                    CreatedByUserId            = sessionInfo.Guid
+                };
+
+                db.InventoryCountingPackageContents.Add(countingContent);
+            }
+        }
+        else {
+            // Package already being counted - validate location consistency
+            if (countingPackage.CountedWhsCode != sessionInfo.Warehouse || countingPackage.CountedBinEntry != binEntry) {
+                throw new ApiErrorException((int)AddItemReturnValueType.PackageBinLocation,
+                    new {
+                        PackageId         = packageId,
+                        ExpectedWarehouse = countingPackage.CountedWhsCode,
+                        ExpectedBin       = countingPackage.CountedBinEntry,
+                        ProvidedWarehouse = sessionInfo.Warehouse,
+                        ProvidedBin       = binEntry,
+                        Message           = "Package is already being counted in a different location"
+                    });
+            }
+        }
+
+        return countingPackage;
+    }
+
     private async Task<InventoryCountingPackage> UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, int quantity, UnitType unit, SessionInfo sessionInfo) {
         var countingPackage = await db.InventoryCountingPackages
             .FirstOrDefaultAsync(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);
@@ -312,5 +386,24 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
         }
 
         return countingPackage;
+    }
+
+    private async Task<InventoryCountingPackage> CreateCountingPackage(Guid countingId, Package package, string countedWhsCode, int? countedBinEntry, bool isNewPackage, SessionInfo sessionInfo) {
+        var value = new InventoryCountingPackage() {
+            Id                  = Guid.NewGuid(),
+            InventoryCountingId = countingId,
+            PackageId           = package.Id,
+            PackageBarcode      = package.Barcode,
+            OriginalWhsCode     = package.WhsCode,
+            OriginalBinEntry    = package.BinEntry,
+            CountedWhsCode      = countedWhsCode,
+            CountedBinEntry     = countedBinEntry,
+            IsNewPackage        = isNewPackage,
+            OriginalStatus      = package.Status,
+            CreatedAt           = DateTime.UtcNow,
+            CreatedByUserId     = sessionInfo.Guid
+        };
+        await db.InventoryCountingPackages.AddAsync(value);
+        return value;
     }
 }
