@@ -16,7 +16,6 @@ public static class SboServiceLayerDependencyInjection {
         services.AddScoped<SboGeneralRepository>();
         services.AddScoped<SboItemRepository>();
         services.AddScoped<SboPickingRepository>();
-        services.AddScoped<SboInventoryCountingRepository>();
         services.AddScoped<SboGoodsReceiptRepository>();
         services.AddScoped<IExternalSystemAdapter, SboServiceLayerAdapter>();
     }

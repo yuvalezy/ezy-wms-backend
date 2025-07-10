@@ -59,6 +59,7 @@ public class SboAdapter(
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
         await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
+    public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
 
     // Transfers
     public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
@@ -121,10 +122,10 @@ public class SboAdapter(
         return result;
     }
 
-    public async Task<Dictionary<int, bool>>                        GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
-    public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
+    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
 
-    public Task<ProcessPickListResponse> CancelPickListTransfer(int absEntry, IEnumerable<ItemBinLocationResponseQuantity> selection) {
+    public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
+    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry) {
         var helper = new PickingCancellation(sboCompany, absEntry, loggerFactory);
         return Task.FromResult(helper.Execute());
     }
@@ -194,4 +195,5 @@ public class SboAdapter(
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
         return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
+    public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
 }
