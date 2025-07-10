@@ -23,6 +23,7 @@ public class SboAdapter(
     SboItemRepository         itemRepository,
     SboPickingRepository      pickingRepository,
     SboGoodsReceiptRepository goodsReceiptRepository,
+    SboInventoryCountingRepository inventoryCountingRepository,
     SboCompany                sboCompany,
     ISettings                 settings,
     ILoggerFactory            loggerFactory) : IExternalSystemAdapter {
@@ -161,6 +162,10 @@ public class SboAdapter(
 //             //todo log error handler
 //         }
 //     }
+    }
+
+    public async Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode) {
+        return await inventoryCountingRepository.ValidateOpenInventoryCounting(whsCode, binEntry, itemCode);
     }
 
     // Goods Receipt methods

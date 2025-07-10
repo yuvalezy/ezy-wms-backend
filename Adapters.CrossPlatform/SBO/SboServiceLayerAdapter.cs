@@ -17,29 +17,32 @@ using Microsoft.Extensions.Logging;
 namespace Adapters.CrossPlatform.SBO;
 
 public class SboServiceLayerAdapter : IExternalSystemAdapter {
-    private readonly SboEmployeeRepository     employeeRepository;
-    private readonly SboGeneralRepository      generalRepository;
-    private readonly SboItemRepository         itemRepository;
-    private readonly SboPickingRepository      pickingRepository;
-    private readonly SboGoodsReceiptRepository goodsReceiptRepository;
-    private readonly SboCompany                sboCompany;
-    private readonly ILoggerFactory            loggerFactory;
+    private readonly SboEmployeeRepository          employeeRepository;
+    private readonly SboGeneralRepository           generalRepository;
+    private readonly SboItemRepository              itemRepository;
+    private readonly SboPickingRepository           pickingRepository;
+    private readonly SboGoodsReceiptRepository      goodsReceiptRepository;
+    private readonly SboInventoryCountingRepository inventoryCountingRepository;
+    private readonly SboCompany                     sboCompany;
+    private readonly ILoggerFactory                 loggerFactory;
 
     public SboServiceLayerAdapter(SboEmployeeRepository employeeRepository,
         SboGeneralRepository                            generalRepository,
         SboItemRepository                               itemRepository,
         SboPickingRepository                            pickingRepository,
         SboGoodsReceiptRepository                       goodsReceiptRepository,
+        SboInventoryCountingRepository                  inventoryCountingRepository,
         ISettings                                       settings,
         SboCompany                                      sboCompany,
         ILoggerFactory                                  loggerFactory) {
-        this.employeeRepository     = employeeRepository;
-        this.generalRepository      = generalRepository;
-        this.itemRepository         = itemRepository;
-        this.pickingRepository      = pickingRepository;
-        this.goodsReceiptRepository = goodsReceiptRepository;
-        this.sboCompany             = sboCompany;
-        this.loggerFactory          = loggerFactory;
+        this.employeeRepository          = employeeRepository;
+        this.generalRepository           = generalRepository;
+        this.itemRepository              = itemRepository;
+        this.pickingRepository           = pickingRepository;
+        this.goodsReceiptRepository      = goodsReceiptRepository;
+        this.inventoryCountingRepository = inventoryCountingRepository;
+        this.sboCompany                  = sboCompany;
+        this.loggerFactory               = loggerFactory;
         if (string.IsNullOrWhiteSpace(settings.SboSettings?.ServiceLayerUrl)) {
             throw new Exception("Service Layer Url is not set");
         }
@@ -165,6 +168,10 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
                 ErrorMessage = e.Message
             };
         }
+    }
+
+    public async Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode) {
+        return await inventoryCountingRepository.ValidateOpenInventoryCounting(whsCode, binEntry, itemCode);
     }
 
     // Goods Receipt methods

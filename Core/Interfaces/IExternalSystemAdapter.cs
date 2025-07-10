@@ -11,28 +11,39 @@ using Core.Models;
 namespace Core.Interfaces;
 
 public interface IExternalSystemAdapter {
-    Task<ExternalValue<string>?>                         GetUserInfoAsync(string id);
-    Task<IEnumerable<ExternalValue<string>>>             GetUsersAsync();
-    Task<string?>                                        GetCompanyNameAsync();
-    Task<IEnumerable<WarehouseResponse>>                 GetWarehousesAsync(string[]? filter = null);
-    Task<WarehouseResponse?>                             GetWarehouseAsync(string id);
-    Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string warehouse);
-    Task<IEnumerable<ExternalValue<string>>>             GetVendorsAsync();
-    Task<ExternalValue<string>?>                         GetVendorAsync(string cardCode);
-    Task<bool>                                           ValidateVendorsAsync(string id);
-    Task<BinLocationResponse?>                           ScanBinLocationAsync(string bin);
-    Task<string?>                                        GetBinCodeAsync(int binEntry);
-    Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string scanCode, bool item = false);
-    Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string? itemCode, string? barcode);
-    Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int binEntry);
-    Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string itemCode, string whsCode);
-    Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items);
+    //Users
+    Task<ExternalValue<string>?>             GetUserInfoAsync(string id);
+    Task<IEnumerable<ExternalValue<string>>> GetUsersAsync();
+
+    Task<string?> GetCompanyNameAsync();
+
+    // Warehouse
+    Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter = null);
+
+    Task<WarehouseResponse?> GetWarehouseAsync(string id);
+
+    // Vendor
+    Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
+    Task<ExternalValue<string>?>             GetVendorAsync(string cardCode);
+
+    Task<bool> ValidateVendorsAsync(string id);
+
+    // Items
+    Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string              warehouse);
+    Task<BinLocationResponse?>                           ScanBinLocationAsync(string            bin);
+    Task<string?>                                        GetBinCodeAsync(int                    binEntry);
+    Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string            scanCode, bool    item = false);
+    Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?                 itemCode, string? barcode);
+    Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int                      binEntry);
+    Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string                  itemCode,  string   whsCode);
+    Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string        warehouse, string[] items);
     Task<UpdateItemBarCodeResponse>                      UpdateItemBarCode(UpdateBarCodeRequest request);
-    Task<ValidateAddItemResult>                          GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
-    Task<ItemUnitResponse>                               GetItemInfo(string itemCode);
-    Task                                                 LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    Task<ValidateAddItemResult>                          GetItemValidationInfo(string           itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
+
+    Task<ItemUnitResponse> GetItemInfo(string itemCode);
+
     // Transfer
-    Task<ProcessTransferResponse>                        ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
+    Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
 
     // Picking methods
     Task<IEnumerable<PickingDocumentResponse>>         GetPickListsAsync(PickListsRequest                   request, string warehouse);
@@ -46,12 +57,14 @@ public interface IExternalSystemAdapter {
     Task<ProcessPickListResponse>                      CancelPickList(int                                   absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry);
 
     // Inventory Counting methods
-    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);
+    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int         countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);
+    Task<bool>                             ValidateOpenInventoryCounting(string whsCode,        int    binEntry,  string                                                    itemCode);
 
     // Goods Receipt methods
-    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string   itemCode,  string           barcode,   List<ObjectKey> specificDocuments, string warehouse);
-    Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int              number,    string           warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
-    Task                               ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type,      List<DocumentParameter> documents);
+    Task                               LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse);
+    Task<ProcessGoodsReceiptResult>    ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    Task                               ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents);
 
     Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(string itemCode, UnitType unit,
         string                                                                                 warehouse,
