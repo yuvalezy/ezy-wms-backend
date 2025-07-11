@@ -23,17 +23,14 @@ public class TransferPackageService(
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
             // Load package by barcode
-            var scannedPackage = await packageService.GetPackageByBarcodeAsync(new PackageByBarcodeRequest {
-                Barcode = request.Barcode,
-                Contents = true
-            });
+            var scannedPackage = await packageService.GetPackageAsync(request.PackageId);
             
             if (scannedPackage == null) {
-                throw new ValidationException($"Package with barcode {request.Barcode} not found");
+                throw new ValidationException($"Package with id {request.PackageId} not found");
             }
             
             // Get package contents
-            var packageContents = (await packageContentService.GetPackageContentsAsync(scannedPackage.Id)).ToArray();
+            var packageContents = scannedPackage.Contents;
             if (!packageContents.Any()) {
                 throw new ValidationException("Package is empty");
             }

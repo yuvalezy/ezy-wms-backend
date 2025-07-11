@@ -122,7 +122,15 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
         switch (request.Type) {
             // Validate quantity availability
             case SourceTarget.Source: {
-                decimal availableInBin = validationResult.AvailableQuantity - binSourceQuantity;
+                // Get quantity locked in packages for this item and bin
+                var packageStatuses = new[] { PackageStatus.Active, PackageStatus.Locked };
+                decimal packagedQuantity = await db.PackageContents
+                    .Where(pc => pc.ItemCode == request.ItemCode &&
+                                 pc.BinEntry == request.BinEntry.Value &&
+                                 packageStatuses.Contains(pc.Package.Status))
+                    .SumAsync(pc => pc.Quantity);
+
+                decimal availableInBin = validationResult.AvailableQuantity - binSourceQuantity - packagedQuantity;
                 if (availableInBin < totalQuantity) {
                     throw new ApiErrorException((int)AddItemReturnValueType.QuantityMoreAvailable, new { request.ItemCode });
                 }
