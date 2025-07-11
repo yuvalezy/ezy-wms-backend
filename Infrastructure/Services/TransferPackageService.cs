@@ -40,6 +40,16 @@ public class TransferPackageService(
                 throw new KeyNotFoundException($"Transfer with ID {request.TransferId} not found.");
             }
 
+            // Check if package is already added as source
+            var existingSourcePackage = await db.TransferPackages
+                .FirstOrDefaultAsync(tp => tp.TransferId == request.TransferId && 
+                                           tp.PackageId == request.PackageId && 
+                                           tp.Type == SourceTarget.Source);
+            
+            if (existingSourcePackage != null) {
+                throw new ValidationException("Package is already added as source to this transfer");
+            }
+
             // Create source transfer lines for ALL package contents automatically
             foreach (var content in packageContents) {
                 var line = new TransferLine {
@@ -59,6 +69,20 @@ public class TransferPackageService(
 
                 db.TransferLines.Add(line);
             }
+
+            // Create TransferPackage record to track package addition
+            var transferPackage = new TransferPackage {
+                TransferId      = request.TransferId,
+                PackageId       = request.PackageId,
+                Type            = SourceTarget.Source,
+                BinEntry        = request.BinEntry ?? scannedPackage.BinEntry,
+                AddedAt         = DateTime.UtcNow,
+                AddedByUserId   = sessionInfo.Guid,
+                CreatedAt       = DateTime.UtcNow,
+                CreatedByUserId = sessionInfo.Guid
+            };
+
+            db.TransferPackages.Add(transferPackage);
 
             // Update transfer status
             if (transfer.Status == ObjectStatus.Open)
@@ -93,6 +117,26 @@ public class TransferPackageService(
                 throw new KeyNotFoundException($"Transfer with ID {request.TransferId} not found.");
             }
 
+            // Check if package was added as source first
+            var sourcePackage = await db.TransferPackages
+                .FirstOrDefaultAsync(tp => tp.TransferId == request.TransferId && 
+                                           tp.PackageId == request.PackageId && 
+                                           tp.Type == SourceTarget.Source);
+            
+            if (sourcePackage == null) {
+                throw new ValidationException("Package must be added as source before it can be transferred to target");
+            }
+
+            // Check if package is already added as target
+            var existingTargetPackage = await db.TransferPackages
+                .FirstOrDefaultAsync(tp => tp.TransferId == request.TransferId && 
+                                           tp.PackageId == request.PackageId && 
+                                           tp.Type == SourceTarget.Target);
+            
+            if (existingTargetPackage != null) {
+                throw new ValidationException("Package is already added as target to this transfer");
+            }
+
             // Get all source lines for this package (created during source scan)
             var packageSourceLines = await db.TransferLines
                 .Where(tl => tl.TransferId == request.TransferId &&
@@ -125,6 +169,20 @@ public class TransferPackageService(
                 db.TransferLines.Add(targetLine);
             }
 
+            // Create TransferPackage record to track package addition
+            var transferPackage = new TransferPackage {
+                TransferId      = request.TransferId,
+                PackageId       = request.PackageId,
+                Type            = SourceTarget.Target,
+                BinEntry        = request.TargetBinEntry,
+                AddedAt         = DateTime.UtcNow,
+                AddedByUserId   = sessionInfo.Guid,
+                CreatedAt       = DateTime.UtcNow,
+                CreatedByUserId = sessionInfo.Guid
+            };
+
+            db.TransferPackages.Add(transferPackage);
+
             // Note: Package movement will happen during ProcessTransfer when result.Success is true
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -141,16 +199,12 @@ public class TransferPackageService(
     }
 
     public async Task MovePackagesOnTransferProcessAsync(Guid transferId, SessionInfo sessionInfo) {
-        // Get all package transfers for this transfer
-        var packageTransferLines = await db.TransferLines
-            .Where(tl => tl.TransferId == transferId &&
-                         tl.Type == SourceTarget.Target &&
-                         tl.Comments != null && tl.Comments.StartsWith("Package:") &&
-                         tl.LineStatus == LineStatus.Open)
-            .GroupBy(tl => tl.Comments) // Group by package barcode
+        // Get all target packages for this transfer
+        var targetPackages = await db.TransferPackages
+            .Where(tp => tp.TransferId == transferId && tp.Type == SourceTarget.Target)
             .ToListAsync();
         
-        if (packageTransferLines.Count == 0) 
+        if (targetPackages.Count == 0) 
             return; // No packages to move, exit
 
         var transfer = await db.Transfers.FindAsync(transferId);
@@ -158,24 +212,12 @@ public class TransferPackageService(
             throw new KeyNotFoundException($"Transfer with ID {transferId} not found.");
         }
 
-        foreach (var packageGroup in packageTransferLines) {
-            var packageBarcode = packageGroup.Key?.Replace("Package: ", "");
-            if (string.IsNullOrEmpty(packageBarcode)) continue;
-
-            var package = await packageService.GetPackageByBarcodeAsync(new PackageByBarcodeRequest {
-                Barcode = packageBarcode,
-                Contents = false
-            });
-
-            if (package == null) continue;
-
-            // Get target bin from the first line in the group
-            var firstLine = packageGroup.First();
-            if (firstLine.BinEntry.HasValue) {
+        foreach (var targetPackage in targetPackages) {
+            if (targetPackage.BinEntry.HasValue) {
                 await packageLocationService.MovePackageAsync(new MovePackageRequest {
-                    PackageId           = package.Id,
+                    PackageId           = targetPackage.PackageId,
                     ToWhsCode           = transfer.WhsCode,
-                    ToBinEntry          = firstLine.BinEntry,
+                    ToBinEntry          = targetPackage.BinEntry,
                     UserId              = sessionInfo.Guid,
                     SourceOperationType = ObjectType.Transfer,
                     SourceOperationId   = transferId

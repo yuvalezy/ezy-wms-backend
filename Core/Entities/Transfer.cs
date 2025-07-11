@@ -25,8 +25,9 @@ public sealed class Transfer : BaseEntity {
     [StringLength(8)]
     public required string WhsCode { get; set; } = string.Empty;
 
-    // Navigation property
+    // Navigation properties
     public ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
+    public ICollection<TransferPackage> Packages { get; set; } = new List<TransferPackage>();
 }
 
 public sealed class TransferLine : BaseEntity {
@@ -69,4 +70,26 @@ public sealed class TransferLine : BaseEntity {
     // Navigation properties
     public Transfer Transfer { get; set; } = null!;
     public CancellationReason? CancellationReason { get; set; }
+}
+
+public sealed class TransferPackage : BaseEntity {
+    [ForeignKey("Transfer")]
+    public Guid TransferId { get; set; }
+    
+    [Required]
+    public Guid PackageId { get; set; }
+    
+    [Required]
+    public SourceTarget Type { get; set; } = SourceTarget.Source;
+    
+    public int? BinEntry { get; set; }
+    
+    [Required]
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+    
+    [Required]
+    public Guid AddedByUserId { get; set; }
+    
+    // Navigation properties
+    public Transfer Transfer { get; set; } = null!;
 }
