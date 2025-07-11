@@ -3,12 +3,13 @@ using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter) : ITransferService {
+public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter, ITransferPackageService transferPackageService, ISettings settings) : ITransferService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
@@ -186,6 +187,11 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter)
             var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData);
 
             if (result.Success) {
+                // Move packages if package feature is enabled
+                if (settings.Options.EnablePackages) {
+                    await transferPackageService.MovePackagesOnTransferProcessAsync(id, sessionInfo);
+                }
+
                 // Update transfer status to Finished
                 transfer.Status          = ObjectStatus.Finished;
                 transfer.UpdatedAt       = DateTime.UtcNow;

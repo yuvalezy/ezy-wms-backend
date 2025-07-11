@@ -955,7 +955,7 @@
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
             </summary>
         </member>
-        <member name="M:Service.Controllers.TransferController.#ctor(Core.Interfaces.ITransferService,Core.Interfaces.ITransferLineService)">
+        <member name="M:Service.Controllers.TransferController.#ctor(Core.Interfaces.ITransferService,Core.Interfaces.ITransferLineService,Core.Services.ITransferPackageService,Core.Interfaces.ISettings)">
             <summary>
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
             </summary>
@@ -990,6 +990,28 @@
             <returns>Response indicating success or failure of the operation</returns>
             <response code="200">Returns the add item response</response>
             <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.AddSourcePackage(Core.DTOs.Transfer.TransferAddSourcePackageRequest)">
+            <summary>
+            Adds a source package to a transfer document by scanning its barcode
+            </summary>
+            <param name="request">The request containing package barcode and transfer ID</param>
+            <returns>Response with package contents that were added to the transfer</returns>
+            <response code="200">Returns the package scan response with contents</response>
+            <response code="400">If the package is not found or is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.TransferController.AddTargetPackage(Core.DTOs.Transfer.TransferAddTargetPackageRequest)">
+            <summary>
+            Transfers a package to the target location
+            </summary>
+            <param name="request">The request containing package ID and target location details</param>
+            <returns>Response indicating success of the package transfer</returns>
+            <response code="200">Returns the package transfer response</response>
+            <response code="400">If the package or transfer is invalid</response>
             <response code="403">If the user lacks required permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>

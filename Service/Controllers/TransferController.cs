@@ -6,6 +6,7 @@ using Core.DTOs.General;
 using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TransferController(ITransferService transferService, ITransferLineService transferLineService) : ControllerBase {
+public class TransferController(ITransferService transferService, ITransferLineService transferLineService, ITransferPackageService transferPackageService, ISettings settings) : ControllerBase {
     /// <summary>
     /// Creates a new transfer document (supervisor only)
     /// </summary>
@@ -74,6 +75,54 @@ public class TransferController(ITransferService transferService, ITransferLineS
     public async Task<TransferAddItemResponse> AddItem([FromBody] TransferAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
         return await transferLineService.AddItem(sessionInfo, request);
+    }
+
+    /// <summary>
+    /// Adds a source package to a transfer document by scanning its barcode
+    /// </summary>
+    /// <param name="request">The request containing package barcode and transfer ID</param>
+    /// <returns>Response with package contents that were added to the transfer</returns>
+    /// <response code="200">Returns the package scan response with contents</response>
+    /// <response code="400">If the package is not found or is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("addSourcePackage")]
+    [RequireRolePermission(RoleType.Transfer)]
+    [ProducesResponseType(typeof(TransferAddItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<TransferAddItemResponse> AddSourcePackage([FromBody] TransferAddSourcePackageRequest request) {
+        if (!settings.Options.EnablePackages) {
+            return new TransferAddItemResponse { ErrorMessage = "Package feature is not enabled" };
+        }
+
+        var sessionInfo = HttpContext.GetSession();
+        return await transferPackageService.HandleSourcePackageScanAsync(request, sessionInfo);
+    }
+
+    /// <summary>
+    /// Transfers a package to the target location
+    /// </summary>
+    /// <param name="request">The request containing package ID and target location details</param>
+    /// <returns>Response indicating success of the package transfer</returns>
+    /// <response code="200">Returns the package transfer response</response>
+    /// <response code="400">If the package or transfer is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("addTargetPackage")]
+    [RequireRolePermission(RoleType.Transfer)]
+    [ProducesResponseType(typeof(TransferAddItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<TransferAddItemResponse> AddTargetPackage([FromBody] TransferAddTargetPackageRequest request) {
+        if (!settings.Options.EnablePackages) {
+            return new TransferAddItemResponse { ErrorMessage = "Package feature is not enabled" };
+        }
+
+        var sessionInfo = HttpContext.GetSession();
+        return await transferPackageService.HandleTargetPackageTransferAsync(request, sessionInfo);
     }
 
     /// <summary>

@@ -28,6 +28,7 @@ public class PackageLocationService(SystemDbContext context, IPackageContentServ
         package.WhsCode   = request.ToWhsCode;
         package.BinEntry  = request.ToBinEntry;
         package.UpdatedAt = DateTime.UtcNow;
+        package.UpdatedByUserId = request.UserId;
 
         // Update all content locations to match package
         var contents = await contentService.GetPackageContentsAsync(request.PackageId);
@@ -35,6 +36,7 @@ public class PackageLocationService(SystemDbContext context, IPackageContentServ
             content.WhsCode   = request.ToWhsCode;
             content.BinEntry  = request.ToBinEntry;
             content.UpdatedAt = DateTime.UtcNow;
+            content.UpdatedByUserId = request.UserId;
         }
 
         // Log the movement

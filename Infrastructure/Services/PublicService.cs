@@ -84,9 +84,10 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {
         var response = (await adapter.BinCheckAsync(binEntry)).ToArray();
+        var packageStatuses = new []{PackageStatus.Active, PackageStatus.Locked};
         var packages = await db.PackageContents
             .Include(v => v.Package)
-            .Where(v => v.BinEntry == binEntry)
+            .Where(v => v.BinEntry == binEntry && packageStatuses.Contains(v.Package.Status))
             .OrderBy(v => v.Package.CreatedAt)
             .ToArrayAsync();
 
@@ -104,9 +105,10 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
     public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
         var   response = (await adapter.ItemStockAsync(itemCode, whsCode)).ToArray();
         int[] bins     = response.Select(v => v.BinEntry).ToArray();
+        var packagesStatuses = new []{PackageStatus.Active, PackageStatus.Locked};
         var packages = await db.PackageContents
             .Include(v => v.Package)
-            .Where(v => v.BinEntry.HasValue && bins.Contains(v.BinEntry.Value) && v.ItemCode == itemCode)
+            .Where(v => v.BinEntry.HasValue && bins.Contains(v.BinEntry.Value) && v.ItemCode == itemCode && packagesStatuses.Contains(v.Package.Status))
             .OrderBy(v => v.Package.CreatedAt)
             .ToArrayAsync();
 

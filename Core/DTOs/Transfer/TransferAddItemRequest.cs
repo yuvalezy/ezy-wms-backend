@@ -11,6 +11,10 @@ public class TransferAddItemRequest : IValidatableObject {
     public UnitType?    Unit     { get; set; }
     public int          Quantity { get; set; }
     public SourceTarget Type     { get; set; }
+    
+    // Package-related properties
+    public Guid? PackageId { get; set; }
+    public bool IsPackageTransfer { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
         if (ID == Guid.Empty)
