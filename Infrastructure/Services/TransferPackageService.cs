@@ -189,7 +189,8 @@ public class TransferPackageService(
 
             return new TransferAddItemResponse {
                 IsPackageTransfer = true,
-                PackageId         = package.Id
+                PackageId         = package.Id,
+                PackageContents = (await Task.WhenAll(package.Contents.Select(async c => await c.ToDto(adapter)))).ToList()
             };
         }
         catch {
