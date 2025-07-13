@@ -1,6 +1,11 @@
 ﻿using System.Text.Json;
 using Adapters.CrossPlatform.SBO.Services;
+using Core;
+using Core.DTOs.Package;
+using Core.Entities;
+using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi;
@@ -8,8 +13,11 @@ using WebApi;
 namespace UnitTests.Integration.ExternalSystems.Shared;
 
 public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISettings settings, int series, WebApplicationFactory<Program> factory) {
-    private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
-    private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
+    private readonly int    testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly string testWarehouse   = TestConstants.SessionInfo.Warehouse;
+
+    public bool       Package         { get; set; }
+    public List<Guid> CreatedPackages { get; set; } = [];
 
     public async Task Execute() {
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
@@ -19,10 +27,16 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISetting
         await ValidateWarehouseStock();
 
         await ValidateBinStock();
+
+        if (!Package)
+            return;
+        await CreatePackages();
+
+        await ValidatePackageContent();
     }
 
-    private async Task CreateDocument() {
 
+    private async Task CreateDocument() {
         // Generate an Inventory Goods Receipt: 20 boxes into testWarehouse with testItem into testBinLocation
         var goodsReceiptData = new {
             Series     = series,
@@ -37,12 +51,13 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISetting
                     WarehouseCode = testWarehouse,
                     UnitPrice     = 10.0,
                     UseBaseUnits  = "tNO",
-                    BinAllocations = new[] {
+                    DocumentLinesBinAllocations = new[] {
                         new {
                             BinAbsEntry                   = testBinLocation,
-                            Quantity                      = 969,
+                            Quantity                      = 80 * 12,
                             AllowNegativeQuantity         = "tNO",
-                            SerialAndBatchNumbersBaseLine = 0
+                            SerialAndBatchNumbersBaseLine = -1,
+                            BaseLineNumber                = 0
                         }
                     }
                 }
@@ -85,8 +100,8 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISetting
     }
 
     private async Task ValidateBinStock() {
-        using var scope            = factory.Services.CreateScope();
-        var       service          = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
+        using var scope   = factory.Services.CreateScope();
+        var       service = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
 
         try {
             var result = (await service.ItemStockAsync(testItem, testWarehouse)).ToArray();
@@ -101,6 +116,48 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISetting
         catch (Exception ex) {
             await TestContext.Out.WriteLineAsync($"SQL query failed: {ex.Message}");
             throw;
+        }
+    }
+
+    private async Task CreatePackages() {
+        using (var scope = factory.Services.CreateScope()) {
+            var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
+            var request = new CreatePackageRequest {
+                BinEntry            = testBinLocation,
+                SourceOperationType = ObjectType.Package,
+            };
+            var package = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
+            CreatedPackages.Add(package.Id);
+
+            var package2 = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
+            CreatedPackages.Add(package2.Id);
+        }
+
+        using (var scope = factory.Services.CreateScope()) {
+            var packageService = scope.ServiceProvider.GetRequiredService<IPackageContentService>();
+            foreach (var package in CreatedPackages) {
+                var request = new AddItemToPackageRequest {
+                    PackageId           = package,
+                    ItemCode            = testItem,
+                    Quantity            = 2,
+                    UnitQuantity        = 24,
+                    UnitType            = UnitType.Dozen,
+                    BinEntry            = testBinLocation,
+                    SourceOperationType = ObjectType.Package,
+                };
+                await packageService.AddItemToPackageAsync(request, TestConstants.SessionInfo);
+            }
+        }
+    }
+    private async Task ValidatePackageContent() {
+        using var scope          = factory.Services.CreateScope();
+        var       packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
+        foreach (var id in CreatedPackages) {
+            var package = await packageService.GetPackageAsync(id);
+            Assert.That(package.Contents.Count == 1);
+            var content = package.Contents.First();
+            Assert.That(content.ItemCode, Is.EqualTo(testItem));
+            Assert.That(content.Quantity, Is.EqualTo(24));;
         }
     }
 }

@@ -51,8 +51,8 @@ public static class DatabaseExtensions {
 
     private static void SeedSystemUser(SystemDbContext context) {
         const string email = "system@localhost";
-        // Check if system user already exists
-        var user = context.Users.FirstOrDefault(u => u.Email == email);
+        // Check if system user already exists - ignore the global query filter
+        var user  = context.Users.IgnoreQueryFilters().FirstOrDefault(u => u.Email == email && u.Deleted);
         if (user != null) {
             SystemUserId = user.Id;
             return;
