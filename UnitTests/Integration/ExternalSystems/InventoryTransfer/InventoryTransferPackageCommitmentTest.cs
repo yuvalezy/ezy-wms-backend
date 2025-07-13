@@ -29,8 +29,9 @@ public class InventoryTransferPackageCommitmentTest : BaseExternalTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory);
-        helper.Package = true;
+        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory) {
+            Package = true
+        };
         await helper.Execute();
         createdPackages = helper.CreatedPackages;
     }
@@ -46,6 +47,13 @@ public class InventoryTransferPackageCommitmentTest : BaseExternalTest {
     [Order(4)]
     public async Task Test_04_AddItemToTransfer_ShouldBeCommited() {
         var helper = new AddPackageToTransferSource(transferId, testItem, factory, createdPackages.First(), settings);
+        await helper.Execute();
+    }
+    
+    [Test]
+    [Order(5)]
+    public async Task Test_05_CancelTransfer_ShouldReleaseCommit() {
+        var helper = new CancelTransferReleaseCommit(transferId, testItem, factory, createdPackages.First(), settings);
         await helper.Execute();
     }
 }

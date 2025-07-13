@@ -155,6 +155,11 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
             line.UpdatedByUserId = sessionInfo.Guid;
         }
 
+        // Clear package commitments if package feature is enabled
+        if (settings.Options.EnablePackages) {
+            await transferPackageService.ClearTransferCommitmentsAsync(id, sessionInfo);
+        }
+
         await db.SaveChangesAsync();
         return true;
     }
@@ -190,6 +195,9 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
                 // Move packages if package feature is enabled
                 if (settings.Options.EnablePackages) {
                     await transferPackageService.MovePackagesOnTransferProcessAsync(id, sessionInfo);
+                    
+                    // Clear package commitments since transfer is now complete
+                    await transferPackageService.ClearTransferCommitmentsAsync(id, sessionInfo);
                 }
 
                 // Update transfer status to Finished
