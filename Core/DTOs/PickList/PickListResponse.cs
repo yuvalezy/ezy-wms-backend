@@ -1,3 +1,4 @@
+using Core.Entities;
 using Core.Enums;
 
 namespace Core.DTOs.PickList;
@@ -43,11 +44,15 @@ public class PickListDetailItemResponse {
     public List<BinLocationQuantityResponse>? BinQuantities { get; set; }
     public int?                               Available     { get; set; }
 
-    public required Dictionary<string, object> CustomFields { get; set; }
+    public required Dictionary<string, object>            CustomFields { get; set; }
+    public          BinLocationPackageQuantityResponse[]? Packages     { get; set; }
 }
 
 public class BinLocationQuantityResponse {
-    public int    Entry    { get; set; }
-    public string Code     { get; set; } = string.Empty;
-    public int    Quantity { get; set; }
+    public int                                   Entry    { get; set; }
+    public string                                Code     { get; set; } = string.Empty;
+    public int                                   Quantity { get; set; }
+    public BinLocationPackageQuantityResponse[]? Packages { get; set; }
 }
+
+public record BinLocationPackageQuantityResponse(Guid Id, string Barcode, int BinEntry, string ItemCode, decimal Quantity);

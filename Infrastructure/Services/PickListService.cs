@@ -1,3 +1,4 @@
+using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
@@ -10,7 +11,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger) : IPickListService {
+public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings) : IPickListService {
+    private readonly bool enablePackages = settings.Options.EnablePackages;
+
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var picks = await adapter.GetPickListsAsync(request, warehouse);
         var response = picks.Select(p => new PickListResponse {
@@ -37,7 +40,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
         foreach (var r in response) {
-            var values      = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
+            var values         = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
             int pickedQuantity = values.Sum(p => p.Quantity);
             r.OpenQuantity   -= pickedQuantity;
             r.UpdateQuantity += pickedQuantity;
@@ -194,7 +197,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             binParams.Add("@BinEntry", request.BinEntry.Value);
         }
 
-        var bins = await adapter.GetPickingDetailItemsBins(binParams);
+        var bins = (await adapter.GetPickingDetailItemsBins(binParams)).ToArray();
 
         // Validate and close stale pick lists before querying
         await ValidateAndCloseStalePickLists();
@@ -214,6 +217,20 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 Quantity = g.Sum(x => x.Quantity)
             });
 
+        string[]                             items      = itemDict.Keys.ToArray();
+        int[]                                binEntries = bins.Select(v => v.Entry).Distinct().ToArray();
+        BinLocationPackageQuantityResponse[] packages   = [];
+
+        if (enablePackages) {
+            var packagesStatuses = new[] { PackageStatus.Active, PackageStatus.Locked };
+            packages = await db
+                .PackageContents
+                .Include(p => p.Package)
+                .Where(p => items.Contains(p.ItemCode) && p.BinEntry != null && binEntries.Contains(p.BinEntry.Value) && packagesStatuses.Contains(p.Package.Status))
+                .Select(p => new BinLocationPackageQuantityResponse(p.PackageId, p.Package.Barcode, p.BinEntry!.Value, p.ItemCode, p.Quantity))
+                .ToArrayAsync();
+        }
+
         foreach (var bin in bins) {
             if (!itemDict.TryGetValue(bin.ItemCode, out var item))
                 continue;
@@ -225,6 +242,11 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             };
             if (binResponse.Quantity <= 0)
                 continue;
+
+            if (enablePackages) {
+                binResponse.Packages = packages.Where(p => p.BinEntry == bin.Entry && p.ItemCode == bin.ItemCode).ToArray();
+            }
+
             item.BinQuantities.Add(binResponse);
         }
 
@@ -235,10 +257,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         // Calculate available quantities and filter if bin entry specified
         responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
-        foreach (var item in responseDetail.Items) {
-            if (item.BinQuantities != null) {
-                item.Available = item.BinQuantities.Sum(b => b.Quantity);
-            }
+        foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
+            item.Available = item.BinQuantities.Sum(b => b.Quantity);
+            item.Packages  = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).ToArray();
         }
     }
 
@@ -258,8 +279,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         if (validationResults.Length == 0) {
             return new PickListAddItemResponse {
-                ErrorMessage   = "Item entry not found in pick",
-                Status         = ResponseStatus.Error,
+                ErrorMessage = "Item entry not found in pick",
+                Status       = ResponseStatus.Error,
             };
         }
 
