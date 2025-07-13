@@ -38,6 +38,7 @@ public sealed class Package : BaseEntity {
     public ICollection<PackageContent>         Contents        { get; set; } = new List<PackageContent>();
     public ICollection<PackageTransaction>     Transactions    { get; set; } = new List<PackageTransaction>();
     public ICollection<PackageLocationHistory> LocationHistory { get; set; } = new List<PackageLocationHistory>();
+    public ICollection<PackageCommitment>      Commitments     { get; set; } = new List<PackageCommitment>();
 }
 
 public sealed class PackageContent : BaseEntity {
@@ -50,8 +51,9 @@ public sealed class PackageContent : BaseEntity {
     public required string ItemCode { get; set; }
 
     [Required]
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal Quantity { get; set; }
+
+    public decimal CommittedQuantity { get; set; } = 0;
 
     [Required]
     [StringLength(50)]
@@ -76,11 +78,9 @@ public sealed class PackageTransaction : BaseEntity {
     public required string ItemCode { get; set; }
 
     [Required]
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal Quantity { get; set; } // Positive for Add, Negative for Remove
 
     [Required]
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal UnitQuantity { get; set; } // Positive for Add, Negative for Remove
 
     [Required]
@@ -160,13 +160,10 @@ public sealed class PackageInconsistency : BaseEntity {
 
     public int? BinEntry { get; set; }
 
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal? SapQuantity { get; set; }
 
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal? WmsQuantity { get; set; }
 
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal? PackageQuantity { get; set; }
 
     [Required]
@@ -193,6 +190,31 @@ public sealed class PackageInconsistency : BaseEntity {
 
     [StringLength(1000)]
     public string? Notes { get; set; }
+
+    // Navigation property
+    public Package Package { get; set; } = null!;
+}
+
+public sealed class PackageCommitment : BaseEntity {
+    [Required]
+    public Guid PackageId { get; set; }
+
+    [Required]
+    [StringLength(50)]
+    public required string ItemCode { get; set; }
+
+    [Required]
+    public decimal Quantity { get; set; }
+
+    [Required]
+    public ObjectType SourceOperationType { get; set; }
+
+    [Required]
+    public Guid SourceOperationId { get; set; }
+
+    public Guid? SourceOperationLineId { get; set; }
+
+    public DateTime CommittedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation property
     public Package Package { get; set; } = null!;

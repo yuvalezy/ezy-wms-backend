@@ -62,6 +62,11 @@ public class PackageConfiguration : IEntityTypeConfiguration<Package>
             .WithOne(h => h.Package)
             .HasForeignKey(h => h.PackageId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(p => p.Commitments)
+            .WithOne(c => c.Package)
+            .HasForeignKey(c => c.PackageId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -83,6 +88,10 @@ public class PackageContentConfiguration : IEntityTypeConfiguration<PackageConte
         builder.Property(c => c.Quantity)
             .IsRequired()
             .HasPrecision(18, 6);
+
+        builder.Property(c => c.CommittedQuantity)
+            .HasPrecision(18, 6)
+            .HasDefaultValue(0);
 
         builder.Property(c => c.WhsCode)
             .IsRequired()
@@ -264,5 +273,53 @@ public class PackageInconsistencyConfiguration : IEntityTypeConfiguration<Packag
 
         builder.HasIndex(i => new { i.InconsistencyType, i.Severity })
             .HasDatabaseName("IX_PackageInconsistency_TypeSeverity");
+    }
+}
+
+public class PackageCommitmentConfiguration : IEntityTypeConfiguration<PackageCommitment>
+{
+    public void Configure(EntityTypeBuilder<PackageCommitment> builder)
+    {
+        // Configure primary key
+        builder.HasKey(c => c.Id);
+
+        // Configure properties
+        builder.Property(c => c.PackageId)
+            .IsRequired();
+
+        builder.Property(c => c.ItemCode)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(c => c.Quantity)
+            .IsRequired()
+            .HasPrecision(18, 6);
+
+        builder.Property(c => c.SourceOperationType)
+            .IsRequired()
+            .HasConversion<int>(); // Store enum as int
+
+        builder.Property(c => c.SourceOperationId)
+            .IsRequired();
+
+        builder.Property(c => c.CommittedAt)
+            .IsRequired();
+
+        // Configure indexes
+        builder.HasIndex(c => c.PackageId)
+            .HasDatabaseName("IX_PackageCommitment_Package");
+
+        builder.HasIndex(c => c.ItemCode)
+            .HasDatabaseName("IX_PackageCommitment_Item");
+
+        builder.HasIndex(c => new { c.SourceOperationType, c.SourceOperationId })
+            .HasDatabaseName("IX_PackageCommitment_Operation");
+
+        builder.HasIndex(c => c.CommittedAt)
+            .HasDatabaseName("IX_PackageCommitment_Date");
+
+        // Composite index for finding commitments by package and item
+        builder.HasIndex(c => new { c.PackageId, c.ItemCode })
+            .HasDatabaseName("IX_PackageCommitment_PackageItem");
     }
 }

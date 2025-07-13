@@ -38,6 +38,7 @@ public class SystemDbContext : DbContext {
     public DbSet<PackageTransaction>     PackageTransactions     { get; set; }
     public DbSet<PackageLocationHistory> PackageLocationHistory  { get; set; }
     public DbSet<PackageInconsistency>   PackageInconsistencies  { get; set; }
+    public DbSet<PackageCommitment>      PackageCommitments      { get; set; }
 
     // Device Entities
     public DbSet<Device>      Devices      { get; set; }
@@ -75,6 +76,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new PackageTransactionConfiguration());
         modelBuilder.ApplyConfiguration(new PackageLocationHistoryConfiguration());
         modelBuilder.ApplyConfiguration(new PackageInconsistencyConfiguration());
+        modelBuilder.ApplyConfiguration(new PackageCommitmentConfiguration());
 
         // Device configurations
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());

@@ -53,10 +53,8 @@ public sealed class InventoryCountingPackageContent : BaseEntity {
     public required string ItemCode { get; set; }
     
     [Required]
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal CountedQuantity { get; set; }
     
-    [Column(TypeName = "DECIMAL(18,6)")]
     public decimal? OriginalQuantity { get; set; } // null for new packages
     
     [Required]
