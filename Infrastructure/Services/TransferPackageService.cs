@@ -90,13 +90,16 @@ public class TransferPackageService(
 
             db.Update(transfer);
             await db.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return new TransferAddItemResponse {
+            
+            // Prepare response before committing transaction
+            var response = new TransferAddItemResponse {
                 IsPackageScan   = true,
                 PackageId       = scannedPackage.Id,
                 PackageContents = (await Task.WhenAll(packageContents.Select(async c => await c.ToDto(adapter)))).ToList()
             };
+            
+            await transaction.CommitAsync();
+            return response;
         }
         catch {
             await transaction.RollbackAsync();
@@ -185,13 +188,16 @@ public class TransferPackageService(
 
             // Note: Package movement will happen during ProcessTransfer when result.Success is true
             await db.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return new TransferAddItemResponse {
+            
+            // Prepare response before committing transaction
+            var response = new TransferAddItemResponse {
                 IsPackageTransfer = true,
                 PackageId         = package.Id,
                 PackageContents = (await Task.WhenAll(package.Contents.Select(async c => await c.ToDto(adapter)))).ToList()
             };
+            
+            await transaction.CommitAsync();
+            return response;
         }
         catch {
             await transaction.RollbackAsync();

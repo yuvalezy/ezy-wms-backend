@@ -112,7 +112,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 
         binCode = await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
         if (!string.IsNullOrWhiteSpace(binCode)) {
-            BinCodes.Add(binEntry, binCode);
+            BinCodes[binEntry] = binCode;
         }
         return binCode;
     }
