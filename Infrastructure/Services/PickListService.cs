@@ -227,7 +227,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 .PackageContents
                 .Include(p => p.Package)
                 .Where(p => items.Contains(p.ItemCode) && p.BinEntry != null && binEntries.Contains(p.BinEntry.Value) && packagesStatuses.Contains(p.Package.Status))
-                .Select(p => new BinLocationPackageQuantityResponse(p.PackageId, p.Package.Barcode, p.BinEntry!.Value, p.ItemCode, p.Quantity))
+                .Select(p => new BinLocationPackageQuantityResponse(p.PackageId, p.Package.Barcode, p.BinEntry!.Value, p.ItemCode, !request.BinEntry.HasValue ? p.Quantity : p.Quantity - p.CommittedQuantity))
                 .ToArrayAsync();
         }
 
@@ -244,7 +244,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 continue;
 
             if (enablePackages) {
-                binResponse.Packages = packages.Where(p => p.BinEntry == bin.Entry && p.ItemCode == bin.ItemCode).ToArray();
+                binResponse.Packages = packages.Where(p => p.BinEntry == bin.Entry && p.ItemCode == bin.ItemCode && p.Quantity > 0).ToArray();
             }
 
             item.BinQuantities.Add(binResponse);
@@ -259,10 +259,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
         foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
             item.Available = item.BinQuantities.Sum(b => b.Quantity);
-            item.Packages  = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).ToArray();
+            item.Packages  = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).Where(b => b.Quantity > 0).ToArray();
         }
     }
-
 
 
     private async Task ValidateAndCloseStalePickLists() {
