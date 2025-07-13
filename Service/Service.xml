@@ -9,7 +9,7 @@
             Authentication Controller - Manages user authentication, session management, and password operations
             </summary>
         </member>
-        <member name="M:Service.Controllers.AuthenticationController.#ctor(Core.Interfaces.IAuthenticationService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.AuthenticationController},Core.Interfaces.ISessionManager,Core.Interfaces.IExternalSystemAdapter,Core.Services.IDeviceService,Core.Services.ILicenseValidationService,Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.AuthenticationController.#ctor(Core.Interfaces.IAuthenticationService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.AuthenticationController},Core.Interfaces.IExternalSystemAdapter,Core.Services.IDeviceService,Core.Services.ILicenseValidationService,Core.Interfaces.ISettings)">
             <summary>
             Authentication Controller - Manages user authentication, session management, and password operations
             </summary>

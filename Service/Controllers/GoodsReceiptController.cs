@@ -207,7 +207,7 @@ public class GoodsReceiptController(
     /// <response code="403">If the user lacks required supervisor permissions</response>
     /// <response code="404">If the goods receipt document is not found</response>
     /// <response code="401">If the user is not authenticated</response>
-    [HttpPost("cancel/{id:guid}")]
+    [HttpGet("cancel/{id:guid}")]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -244,7 +244,7 @@ public class GoodsReceiptController(
     /// <response code="403">If the user lacks required supervisor permissions</response>
     /// <response code="404">If the goods receipt document is not found</response>
     /// <response code="401">If the user is not authenticated</response>
-    [HttpPost("process/{id:guid}")]
+    [HttpGet("process/{id:guid}")]
     [ProducesResponseType(typeof(ProcessGoodsReceiptResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

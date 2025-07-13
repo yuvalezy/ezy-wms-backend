@@ -28,7 +28,6 @@ namespace Service.Controllers;
 public class AuthenticationController(
     IAuthenticationService            authenticationService,
     ILogger<AuthenticationController> logger,
-    ISessionManager                   sessionManager,
     IExternalSystemAdapter            externalSystemAdapter,
     IDeviceService                    deviceService,
     ILicenseValidationService         licenseValidationService,
@@ -45,11 +44,7 @@ public class AuthenticationController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyInfoResponse>> GetCompanyInfo() {
         try {
-            string? companyName = await sessionManager.GetStringAsync("CompanyName");
-            if (string.IsNullOrEmpty(companyName)) {
-                companyName = await externalSystemAdapter.GetCompanyNameAsync();
-                await sessionManager.SetValueAsync("CompanyName", companyName ?? string.Empty, TimeSpan.FromDays(1));
-            }
+            string? companyName = await externalSystemAdapter.GetCompanyNameAsync();
             
             var response = new CompanyInfoResponse {
                 CompanyName     = companyName,
