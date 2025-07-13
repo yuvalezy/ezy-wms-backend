@@ -20,7 +20,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PickingController(IPickListService service, IPickListProcessService processService, IServiceProvider serviceProvider) : ControllerBase {
+public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IServiceProvider serviceProvider) : ControllerBase {
     /// <summary>
     /// Gets a list of pick lists with optional filtering
     /// </summary>
@@ -99,7 +99,7 @@ public class PickingController(IPickListService service, IPickListProcessService
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<PickListAddItemResponse> AddItem([FromBody] PickListAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await service.AddItem(sessionInfo, request);
+        return await lineService.AddItem(sessionInfo, request);
     }
 
     /// <summary>

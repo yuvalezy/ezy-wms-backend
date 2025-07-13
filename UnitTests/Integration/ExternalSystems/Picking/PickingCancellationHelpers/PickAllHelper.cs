@@ -10,8 +10,9 @@ namespace UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpe
 
 public static class PickAllHelper {
     public static async Task PickAll(int pickEntry, PickingSelectionResponse[] selection, WebApplicationFactory<Program> factory, int binEntry, int salesEntry, string testItem) {
-        var scope    = factory.Services.CreateScope();
-        var service  = scope.ServiceProvider.GetRequiredService<IPickListService>();
+        var scope   = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IPickListService>();
+        var lineService = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
         var request = new PickListAddItemRequest {
             ID       = pickEntry,
             Type     = 17,
@@ -23,14 +24,14 @@ public static class PickAllHelper {
         //Pick 20 boxes
         for (int i = 0; i < 20; i++) {
             request.Quantity = 1;
-            var response = await service.AddItem(TestConstants.SessionInfo, request);
+            var response = await lineService.AddItem(TestConstants.SessionInfo, request);
             Assert.That(response, Is.Not.Null);
             Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
         }
 
         //Test exceed error
         request.Quantity = 1;
-        var errorResponse = await service.AddItem(TestConstants.SessionInfo, request);
+        var errorResponse = await lineService.AddItem(TestConstants.SessionInfo, request);
         Assert.That(errorResponse, Is.Not.Null);
         Assert.That(errorResponse.Status, Is.EqualTo(ResponseStatus.Error), errorResponse.ErrorMessage ?? "No error message");
         Assert.That(errorResponse.ErrorMessage, Is.EqualTo("Quantity exceeds bin available stock"));
