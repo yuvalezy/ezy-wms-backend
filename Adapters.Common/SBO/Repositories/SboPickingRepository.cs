@@ -63,7 +63,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         }
 
         if (request.Statuses?.Length > 0) {
-            var statusPlaceholders = string.Join(", ", request.Statuses.Select((_, i) => $"@Status{i}"));
+            string statusPlaceholders = string.Join(", ", request.Statuses.Select((_, i) => $"@Status{i}"));
             sb.AppendLine($" AND PICKS.\"Status\" IN ({statusPlaceholders})");
 
             for (int i = 0; i < request.Statuses.Length; i++) {
@@ -162,7 +162,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<IEnumerable<PickingDetailItemResponse>> GetPickingDetailItems(Dictionary<string, object> parameters) {
-        var (query, customFields) = BuildPickingDetailItemsQuery();
+        (string query, var customFields) = BuildPickingDetailItemsQuery();
         var sqlParams = ConvertToSqlParameters(parameters);
 
         return await dbService.QueryAsync(query, sqlParams, reader => {
@@ -381,20 +381,49 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         return result.ToArray();
     }
+    public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) {
+        const string query =
+            """
+            select T0."RelQtty", T2."LocCode", T2."ItemCode"
+            from PKL1 T0
+                     INNER JOIN OILM T2 ON T2."TransType" = T0."BaseObject" AND T2."DocEntry" = T0."OrderEntry" AND T2."DocLineNum" = T0."OrderLine"
+            where T0."AbsEntry" = @AbsEntry
+            """;
+        var sqlParams = new[] {
+            new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }
+        };
+        var result = await dbService.QueryAsync(query, sqlParams, reader => new {
+            Quantity = Convert.ToDecimal(reader[0]),
+            WhsCode  = reader.GetString(1),
+            ItemCode = reader.GetString(2)
+        });
+        
+        foreach (var value in values) {
+            var check = result.FirstOrDefault(x => x.ItemCode == value.ItemCode && x.WhsCode == value.WhsCode);
+            if (check == null) {
+                return false;
+            }
+            if (check.Quantity < value.Quantity) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
-        if (absEntries == null || absEntries.Length == 0) {
+        if (absEntries.Length == 0) {
             return new Dictionary<int, bool>();
         }
 
-        var placeholders = string.Join(", ", absEntries.Select((_, i) => $"@AbsEntry{i}"));
-        var query = $"""
-                     SELECT 
-                         OPKL."AbsEntry",
-                         CASE WHEN OPKL."Status" IN ('R', 'P', 'D') THEN 1 ELSE 0 END AS "IsOpen"
-                     FROM OPKL 
-                     WHERE OPKL."AbsEntry" IN ({placeholders})
-                     """;
+        string placeholders = string.Join(", ", absEntries.Select((_, i) => $"@AbsEntry{i}"));
+        string query = $"""
+                        SELECT 
+                            OPKL."AbsEntry",
+                            CASE WHEN OPKL."Status" IN ('R', 'P', 'D') THEN 1 ELSE 0 END AS "IsOpen"
+                        FROM OPKL 
+                        WHERE OPKL."AbsEntry" IN ({placeholders})
+                        """;
 
         var sqlParams = new List<SqlParameter>();
         for (int i = 0; i < absEntries.Length; i++) {
@@ -408,7 +437,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         // Create a dictionary with all entries, defaulting to false for missing ones
         var statusDict = new Dictionary<int, bool>();
-        foreach (var entry in absEntries) {
+        foreach (int entry in absEntries) {
             statusDict[entry] = false;
         }
 
@@ -459,4 +488,5 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             return param;
         }).ToArray();
     }
+
 }

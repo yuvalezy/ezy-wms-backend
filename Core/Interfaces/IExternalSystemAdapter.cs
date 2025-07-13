@@ -51,7 +51,8 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<PickingDetailItemResponse>>       GetPickingDetailItems(Dictionary<string, object>     parameters);
     Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
     Task<PickingValidationResult[]>                    ValidatePickingAddItem(PickListAddItemRequest        request);
-    Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, List<PickList> data);
+    Task<bool>                                         ValidatePickingAddPackage(int                        absEntry, IEnumerable<PickListValidateAddPackageRequest> values);
+    Task<ProcessPickListResult>                        ProcessPickList(int                                  absEntry, List<PickList>                                 data);
     Task<Dictionary<int, bool>>                        GetPickListStatuses(int[]                            absEntries);
     Task<IEnumerable<PickingSelectionResponse>>        GetPickingSelection(int                              absEntry);
     Task<ProcessPickListResponse>                      CancelPickList(int                                   absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry);

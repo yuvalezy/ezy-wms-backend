@@ -30,3 +30,28 @@ public class PickList : BaseEntity {
     public DateTime?  SyncedAt   { get; set; }
     public string?    SyncError  { get; set; }
 }
+
+public sealed class PickListPackage : BaseEntity {
+    [Required]
+    public int AbsEntry { get; set; }           // Pick operation identifier
+
+    [Required] 
+    public int PickEntry { get; set; }          // Pick line identifier
+
+    [Required]
+    public Guid PackageId { get; set; }         // Source or target package
+
+    [Required]
+    public SourceTarget Type { get; set; }      // Source or Target
+
+    public int? BinEntry { get; set; }          // Location information
+
+    [Required]
+    public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+
+    [Required]
+    public Guid AddedByUserId { get; set; }
+
+    // Navigation properties
+    public Package Package { get; set; } = null!;
+}

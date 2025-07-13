@@ -9,7 +9,8 @@ public class PickListAddItemRequest {
     public string   ItemCode  { get; set; } = string.Empty;
     public int      Quantity  { get; set; }
     public int?     BinEntry  { get; set; }
-    public UnitType Unit      { get; set; }
-    public int?     PickEntry { get; set; }
-    public Guid?    PackageId { get; set; }
+    public UnitType Unit            { get; set; }
+    public int?     PickEntry       { get; set; }
+    public Guid?    PackageId       { get; set; }  // Target package ID for adding items to
+    public Guid?    SourcePackageId { get; set; }  // Source package ID for partial picking from
 }

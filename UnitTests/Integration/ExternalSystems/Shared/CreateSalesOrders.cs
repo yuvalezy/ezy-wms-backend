@@ -6,12 +6,12 @@ namespace UnitTests.Integration.ExternalSystems.Shared;
 public class CreateSalesOrder(SboCompany sboCompany, string testItem, int series, string customerCode) {
     public int SalesEntry { get; private set; } = -1;
 
-    public int PickEntry { get; private set; } = -1;
+    public int AbsEntry { get; private set; } = -1;
 
     public async Task Execute() {
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
         SalesEntry = await CreateDocument();
-        PickEntry = await ReleaseToPickList();
+        AbsEntry = await ReleaseToPickList();
     }
 
     private async Task<int> CreateDocument() {
@@ -63,9 +63,9 @@ public class CreateSalesOrder(SboCompany sboCompany, string testItem, int series
         Assert.That(result, Is.Not.Null, "Pick List creation result should not be null");
         
         //Extract PickEntry from result for verification
-        string? pickEntry = result?.RootElement.GetProperty("Absoluteentry").ToString();
-        Assert.That(pickEntry, Is.Not.Null.And.Not.Empty, "PickEntry should be returned from pick list creation");
-        await TestContext.Out.WriteLineAsync($"Created Pick List with PickEntry: {pickEntry}");
-        return int.Parse(pickEntry);
+        string? absEntry = result?.RootElement.GetProperty("Absoluteentry").ToString();
+        Assert.That(absEntry, Is.Not.Null.And.Not.Empty, "PickEntry should be returned from pick list creation");
+        await TestContext.Out.WriteLineAsync($"Created Pick List with PickEntry: {absEntry}");
+        return int.Parse(absEntry);
     }
 }

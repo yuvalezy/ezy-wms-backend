@@ -4,5 +4,45 @@
         <name>Core</name>
     </assembly>
     <members>
+        <member name="P:Core.DTOs.PickList.PickListAutoPickRequest.TargetPackageId">
+            <summary>
+            Optional target package ID. If not provided, a new package will be created.
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListAutoPickRequest.TargetBinEntry">
+            <summary>
+            Target bin location for the picked items
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.HandleSourcePackageScanAsync(Core.DTOs.PickList.PickListAddSourcePackageRequest,Core.Models.SessionInfo)">
+            <summary>
+            Adds a source package to a pick operation, creating commitments for all package contents
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.HandleAutoPickPackageAsync(Core.DTOs.PickList.PickListAutoPickRequest,Core.Models.SessionInfo)">
+            <summary>
+            Automatically picks entire package if contents match pending pick requirements
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.CanAutoPickPackageAsync(System.Int32,System.Guid)">
+            <summary>
+            Checks if a package can fulfill all pending pick list requirements for a specific operation
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.HandlePartialPickAsync(Core.DTOs.PickList.PickListAddItemRequest,Core.Models.SessionInfo)">
+            <summary>
+            Handles partial picking from a source package with commitment tracking
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,System.Int32,Core.Models.SessionInfo)">
+            <summary>
+            Clears all package commitments for a specific pick operation
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.ClearAllPickListCommitmentsAsync(System.Int32,Core.Models.SessionInfo)">
+            <summary>
+            Clears all package commitments for an entire pick operation (all pick entries)
+            </summary>
+        </member>
     </members>
 </doc>

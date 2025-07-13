@@ -40,7 +40,7 @@ public class PickingCancellation : BaseExternalTest {
         var helper = new CreateSalesOrder(sboCompany, testItem, salesOrdersSeries, testCustomer);
         await helper.Execute();
         salesEntry = helper.SalesEntry;
-        pickEntry  = helper.PickEntry;
+        pickEntry  = helper.AbsEntry;
         await TestContext.Out.WriteLineAsync($"Created sales order with DocEntry: {salesEntry}");
         Assert.That(salesEntry, Is.Not.EqualTo(-1), "Sales Entry should be created");
         Assert.That(pickEntry, Is.Not.EqualTo(-1), "Pick Entry should be created");
