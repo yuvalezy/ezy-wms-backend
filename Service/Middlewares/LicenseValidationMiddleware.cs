@@ -24,7 +24,7 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
     };
 
     public async Task InvokeAsync(HttpContext context) {
-        string? path = context.Request.Path.Value;
+        string? path = context.Request.Path.Value?.ToLower();
 
         // Skip validation for allowed endpoints
         if (IsAllowedEndpoint(path)) {
@@ -62,6 +62,9 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
     private bool IsAllowedEndpoint(string? path) {
         if (string.IsNullOrEmpty(path))
             return false;
+
+        if (!path.StartsWith("/api") && !path.StartsWith("/graphql"))
+            return true;
 
         return allowedEndpoints.Any(endpoint =>
             path.StartsWith(endpoint, StringComparison.OrdinalIgnoreCase));
