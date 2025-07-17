@@ -14,6 +14,11 @@
             Target bin location for the picked items
             </summary>
         </member>
+        <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
+            <summary>
+            Idle Settings for auto log out, if null or zero, ignore
+            </summary>
+        </member>
         <member name="M:Core.Services.IPickListPackageService.HandleSourcePackageScanAsync(Core.DTOs.PickList.PickListAddSourcePackageRequest,Core.Models.SessionInfo)">
             <summary>
             Adds a source package to a pick operation, creating commitments for all package contents
