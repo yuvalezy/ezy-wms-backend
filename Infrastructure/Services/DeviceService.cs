@@ -23,7 +23,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
             DeviceUuid       = deviceUuid,
             DeviceName       = deviceName,
             RegistrationDate = DateTime.UtcNow,
-            Status           = DeviceStatus.Active,
+            Status           = DeviceStatus.Inactive,
             StatusNotes      = "Initial registration",
             LastActiveDate   = DateTime.UtcNow,
             CreatedByUserId  = sessionInfo.Guid

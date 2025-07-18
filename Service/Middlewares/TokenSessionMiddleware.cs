@@ -41,6 +41,10 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
         sessionToken ??= MockSessionToken;
 #endif
         if (string.IsNullOrWhiteSpace(sessionToken)) {
+            if (isLogoutEndpoint) {
+                await next(context);
+                return;
+            }
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsync("Missing session token.");
             return;
