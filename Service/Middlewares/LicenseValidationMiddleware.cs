@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Core.Models;
 using Microsoft.AspNetCore.Http;
 
 namespace Service.Middlewares;
@@ -77,8 +78,11 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
         // If not in header, try to get from session
         if (!string.IsNullOrEmpty(deviceUuid))
             return deviceUuid;
-        var sessionInfo = context.GetSession();
-        deviceUuid = sessionInfo.DeviceUuid;
+        // Check if session data exists before trying to access it
+        if (context.Items.TryGetValue("SessionData", out object? sessionData) && sessionData is SessionInfo sessionInfo) {
+            deviceUuid = sessionInfo.DeviceUuid;
+        }
+
 
         return deviceUuid;
     }
