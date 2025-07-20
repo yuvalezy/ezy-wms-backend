@@ -35,7 +35,7 @@ public sealed class PickListPackage : BaseEntity {
     [Required]
     public int AbsEntry { get; set; }           // Pick operation identifier
 
-    [Required] 
+    [Required]
     public int PickEntry { get; set; }          // Pick line identifier
 
     [Required]

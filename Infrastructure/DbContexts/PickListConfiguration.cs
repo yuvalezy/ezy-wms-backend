@@ -35,10 +35,6 @@ public class PickListPackageConfiguration : IEntityTypeConfiguration<PickListPac
         builder.Property(p => p.AddedByUserId)
             .IsRequired();
 
-        // Configure indexes
-        builder.HasIndex(p => new { p.AbsEntry, p.PickEntry })
-            .HasDatabaseName("IX_PickListPackage_Operation");
-
         builder.HasIndex(p => p.PackageId)
             .HasDatabaseName("IX_PickListPackage_Package");
 

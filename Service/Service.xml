@@ -884,7 +884,7 @@
             Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PickingController.#ctor(Core.Interfaces.IPickListService,Core.Interfaces.IPickListLineService,Core.Interfaces.IPickListProcessService,System.IServiceProvider)">
+        <member name="M:Service.Controllers.PickingController.#ctor(Core.Interfaces.IPickListService,Core.Interfaces.IPickListLineService,Core.Interfaces.IPickListProcessService,Core.Services.IPickListPackageService,System.IServiceProvider)">
             <summary>
             Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
             </summary>
@@ -921,6 +921,17 @@
             <param name="request">The request containing item details and pick list ID</param>
             <returns>Response indicating success or failure of the operation</returns>
             <response code="200">Returns the add item response</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PickingController.AddPackage(Core.DTOs.PickList.PickListAddPackageRequest)">
+            <summary>
+            Adds an entire package to a pick list
+            </summary>
+            <param name="request">The request containing package details and pick list ID</param>
+            <returns>Response indicating success or failure of the operation</returns>
+            <response code="200">Returns the add package response</response>
             <response code="400">If the request is invalid</response>
             <response code="403">If the user lacks required permissions</response>
             <response code="401">If the user is not authenticated</response>

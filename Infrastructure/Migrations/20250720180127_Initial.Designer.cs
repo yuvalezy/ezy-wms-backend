@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20250713202620_PickCommit")]
-    partial class PickCommit
+    [Migration("20250720180127_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1668,9 +1668,6 @@ namespace Infrastructure.Migrations
                         .HasDatabaseName("IX_PickListPackage_Type");
 
                     b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("AbsEntry", "PickEntry")
-                        .HasDatabaseName("IX_PickListPackage_Operation");
 
                     b.ToTable("PickListPackages");
                 });

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IServiceProvider serviceProvider) : ControllerBase {
+public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IPickListPackageService packageService, IServiceProvider serviceProvider) : ControllerBase {
     /// <summary>
     /// Gets a list of pick lists with optional filtering
     /// </summary>
@@ -100,6 +101,26 @@ public class PickingController(IPickListService service, IPickListLineService li
     public async Task<PickListAddItemResponse> AddItem([FromBody] PickListAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
         return await lineService.AddItem(sessionInfo, request);
+    }
+
+    /// <summary>
+    /// Adds an entire package to a pick list
+    /// </summary>
+    /// <param name="request">The request containing package details and pick list ID</param>
+    /// <returns>Response indicating success or failure of the operation</returns>
+    /// <response code="200">Returns the add package response</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("addPackage")]
+    [RequireRolePermission(RoleType.Picking)]
+    [ProducesResponseType(typeof(PickListPackageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<PickListPackageResponse> AddPackage([FromBody] PickListAddPackageRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        return await packageService.AddPackageAsync(request, sessionInfo);
     }
 
     /// <summary>

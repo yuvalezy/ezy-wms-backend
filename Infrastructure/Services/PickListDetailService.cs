@@ -1,4 +1,3 @@
-using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
@@ -9,10 +8,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListDetailService> logger, ISettings settings) {
+public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListDetailService> logger, ISettings settings, PickListPackageEligibilityService eligibilityService) {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
+        foreach (var detail in response.Detail!) {
+            int dbPickQty = dbPick.Where(p => p.AbsEntry == absEntry && p.PickEntry == detail.Entry).Sum(p => p.Quantity);
+            detail.TotalOpenItems -= dbPickQty;
+        }
         if (request is not { Type: not null, Entry: not null })
             return;
 
@@ -177,25 +180,13 @@ public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter ad
 
                     if (!packageContentsLookup.TryGetValue(package.Id, out var contents)) 
                         continue;
-                    bool canBeFullyPicked = true;
-                        
-                    // Check all contents of the package
-                    foreach (var content in contents) {
-                        // Must have no committed quantity
-                        if (content.CommittedQuantity > 0) {
-                            canBeFullyPicked = false;
-                            break;
-                        }
-                            
-                        // Must have corresponding item with sufficient open quantity
-                        if (itemOpenQuantities.TryGetValue(content.ItemCode, out var openQty) && openQty >= content.Quantity) 
-                            continue;
-                        canBeFullyPicked = false;
-                        break;
-                    }
+                    
+                    // Use eligibility service to check if package can be fully picked
+                    bool canBeFullyPicked = eligibilityService.CanPackageBeFullyPicked(contents, itemOpenQuantities);
 
                     if (!canBeFullyPicked) 
                         continue;
+                        
                     // Mark package as full in ALL items that reference it
                     foreach (var otherItem in responseDetail.Items.Where(i => i.Packages != null)) {
                         var pkg = otherItem.Packages.FirstOrDefault(p => p.Id == package.Id);

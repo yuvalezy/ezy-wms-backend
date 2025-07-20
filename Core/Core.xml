@@ -4,6 +4,31 @@
         <name>Core</name>
     </assembly>
     <members>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.ID">
+            <summary>
+            The pick list absolute entry (PickList.AbsEntry)
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.Type">
+            <summary>
+            The document type (e.g., Sales Order = 17, Invoice = 13)
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.Entry">
+            <summary>
+            The document entry number
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.PackageId">
+            <summary>
+            The package ID to add to the pick list
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.BinEntry">
+            <summary>
+            Optional bin entry where the package is located
+            </summary>
+        </member>
         <member name="P:Core.DTOs.PickList.PickListAutoPickRequest.TargetPackageId">
             <summary>
             Optional target package ID. If not provided, a new package will be created.
@@ -14,39 +39,54 @@
             Target bin location for the picked items
             </summary>
         </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.Status">
+            <summary>
+            The response status
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.ErrorMessage">
+            <summary>
+            Error message if the operation failed
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.PickListIds">
+            <summary>
+            The IDs of the created pick list entries
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.PackageId">
+            <summary>
+            The package ID that was processed
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.PackageContents">
+            <summary>
+            The contents of the package that were added
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListPackageResponse.OkResponse">
+            <summary>
+            Creates a successful response with no additional data
+            </summary>
+        </member>
+        <member name="M:Core.DTOs.PickList.PickListPackageResponse.ErrorResponse(System.String)">
+            <summary>
+            Creates an error response with the specified message
+            </summary>
+        </member>
         <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
             <summary>
             Idle Settings for auto log out, if null or zero, ignore
             </summary>
         </member>
-        <member name="M:Core.Services.IPickListPackageService.HandleSourcePackageScanAsync(Core.DTOs.PickList.PickListAddSourcePackageRequest,Core.Models.SessionInfo)">
+        <member name="M:Core.Services.IPickListPackageService.AddPackageAsync(Core.DTOs.PickList.PickListAddPackageRequest,Core.Models.SessionInfo)">
             <summary>
-            Adds a source package to a pick operation, creating commitments for all package contents
+            Adds an entire package to a pick list, creating pick list entries for all package contents
             </summary>
         </member>
-        <member name="M:Core.Services.IPickListPackageService.HandleAutoPickPackageAsync(Core.DTOs.PickList.PickListAutoPickRequest,Core.Models.SessionInfo)">
-            <summary>
-            Automatically picks entire package if contents match pending pick requirements
-            </summary>
-        </member>
-        <member name="M:Core.Services.IPickListPackageService.CanAutoPickPackageAsync(System.Int32,System.Guid)">
-            <summary>
-            Checks if a package can fulfill all pending pick list requirements for a specific operation
-            </summary>
-        </member>
-        <member name="M:Core.Services.IPickListPackageService.HandlePartialPickAsync(Core.DTOs.PickList.PickListAddItemRequest,Core.Models.SessionInfo)">
-            <summary>
-            Handles partial picking from a source package with commitment tracking
-            </summary>
-        </member>
-        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,System.Int32,Core.Models.SessionInfo)">
+        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,Core.Models.SessionInfo)">
             <summary>
             Clears all package commitments for a specific pick operation
-            </summary>
-        </member>
-        <member name="M:Core.Services.IPickListPackageService.ClearAllPickListCommitmentsAsync(System.Int32,Core.Models.SessionInfo)">
-            <summary>
-            Clears all package commitments for an entire pick operation (all pick entries)
             </summary>
         </member>
     </members>

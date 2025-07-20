@@ -1666,9 +1666,6 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.HasIndex("AbsEntry", "PickEntry")
-                        .HasDatabaseName("IX_PickListPackage_Operation");
-
                     b.ToTable("PickListPackages");
                 });
 
