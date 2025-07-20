@@ -126,7 +126,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
     public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) => await pickingRepository.GetPickingDetailItemsBins(parameters);
 
-    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request)                                                         => await pickingRepository.ValidatePickingAddItem(request);
+    public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) => await pickingRepository.ValidatePickingAddItem(request);
     public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) => await pickingRepository.ValidatePickingAddPackage(absEntry, values);
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data) {
@@ -146,8 +146,10 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         return result;
     }
 
-    public async Task<Dictionary<int, bool>>                 GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
-    public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int   absEntry)   => await pickingRepository.GetPickingSelection(absEntry);
+    public async Task<Dictionary<int, bool>> GetPickListStatuses(int[]  absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<PickListClosureInfo>   GetPickListClosureInfo(int absEntry)   => await pickingRepository.GetPickListClosureInfo(absEntry);
+
+    public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
 
     public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry) {
         var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, warehouse, transferBinEntry, loggerFactory);

@@ -2,13 +2,15 @@ using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListDetailService> logger, ISettings settings, PickListPackageEligibilityService eligibilityService) {
+public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListDetailService> logger, ISettings settings, PickListPackageEligibilityService eligibilityService, IPickListPackageService packageService) {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
@@ -220,15 +222,32 @@ public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter ad
             .ToArray();
 
         if (closedPickListEntries.Length > 0) {
-            // Close all local pick lists that are closed in SAP
-            var pickListsToClose = await db.PickLists
-                .Where(p => closedPickListEntries.Contains(p.AbsEntry) &&
-                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
-                .ToArrayAsync();
+            // Process each closed pick list
+            foreach (var absEntry in closedPickListEntries) {
+                try {
+                    // Get closure information from external system
+                    var closureInfo = await adapter.GetPickListClosureInfo(absEntry);
+                    
+                    if (closureInfo.IsClosed) {
+                        // Process the closure (clear commitments, handle movements)
+                        await packageService.ProcessPickListClosureAsync(absEntry, closureInfo, DatabaseExtensions.SystemUserId);
+                        
+                        // Update local pick lists to closed
+                        var pickListsToClose = await db.PickLists
+                            .Where(p => p.AbsEntry == absEntry &&
+                                       (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                            .ToArrayAsync();
 
-            foreach (var pickList in pickListsToClose) {
-                pickList.Status    = ObjectStatus.Closed;
-                pickList.UpdatedAt = DateTime.UtcNow;
+                        foreach (var pickList in pickListsToClose) {
+                            pickList.Status    = ObjectStatus.Closed;
+                            pickList.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    logger.LogError(ex, "Error processing pick list closure for AbsEntry {AbsEntry}", absEntry);
+                    // Continue processing other pick lists
+                }
             }
 
             await db.SaveChangesAsync();

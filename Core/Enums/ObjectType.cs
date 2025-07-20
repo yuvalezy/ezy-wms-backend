@@ -5,5 +5,6 @@ public enum ObjectType {
     InventoryCounting = 1,
     Transfer          = 2,
     Picking           = 3,
-    Package           = 4
+    Package           = 4,
+    PickingClosure    = 5,
 }

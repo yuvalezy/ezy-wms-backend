@@ -304,7 +304,7 @@ public class GoodsReceiptLineService(
                     SourceOperationType = ObjectType.GoodsReceipt,
                     SourceOperationId   = line.GoodsReceiptId
                 };
-                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
+                await packageContentService.RemoveItemFromPackageAsync(removeRequest, session.Guid);
                 break;
             }
         }
@@ -348,7 +348,7 @@ public class GoodsReceiptLineService(
                 SourceOperationType = ObjectType.GoodsReceipt,
                 SourceOperationId   = line.GoodsReceiptId
             };
-            await packageContentService.RemoveItemFromPackageAsync(removeRequest, session);
+            await packageContentService.RemoveItemFromPackageAsync(removeRequest, session.Guid);
         }
 
         await db.SaveChangesAsync();

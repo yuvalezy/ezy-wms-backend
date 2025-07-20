@@ -8,6 +8,16 @@ public class BackgroundServicesSettings {
 public class BackgroundPickListSyncOptions {
     public int  IntervalSeconds { get; set; } = 60;
     public bool Enabled         { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to check for closed pick lists during sync
+    /// </summary>
+    public bool CheckClosedPickLists { get; set; } = true;
+    
+    /// <summary>
+    /// Whether to process package movements when pick lists are closed with follow-up documents
+    /// </summary>
+    public bool ProcessPackageMovements { get; set; } = true;
 }
 
 public class CloudSyncBackgroundOptions {

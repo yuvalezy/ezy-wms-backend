@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Core.Interfaces;
 using Core.Models.Settings;
+using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -58,7 +59,15 @@ public class BackgroundPickListSyncService(
 
             using var scope           = scopeFactory.CreateScope();
             var       pickListService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
+            var       pickListDetailService = scope.ServiceProvider.GetRequiredService<PickListDetailService>();
 
+            // First, validate and close stale pick lists if enabled
+            if (options.CheckClosedPickLists) {
+                logger.LogInformation("Checking for closed pick lists");
+                await pickListDetailService.ValidateAndCloseStalePickLists();
+            }
+            
+            // Then sync pending pick lists
             await pickListService.SyncPendingPickLists();
 
             logger.LogInformation("Background pick list sync completed");

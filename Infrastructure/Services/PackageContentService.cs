@@ -105,7 +105,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
         return content;
     }
 
-    public async Task<PackageContent> RemoveItemFromPackageAsync(RemoveItemFromPackageRequest request, SessionInfo sessionInfo) {
+    public async Task<PackageContent> RemoveItemFromPackageAsync(RemoveItemFromPackageRequest request, Guid userId) {
         var package = await context.Packages
             .FirstOrDefaultAsync(p => p.Id == request.PackageId && !p.Deleted);
 
@@ -157,7 +157,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
         }
         else {
             content.UpdatedAt       = DateTime.UtcNow;
-            content.UpdatedByUserId = sessionInfo.Guid;
+            content.UpdatedByUserId = userId;
         }
 
         await LogPackageTransactionAsync(new LogPackageTransactionRequest {
@@ -169,8 +169,8 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             UnitType            = request.UnitType,
             SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId   = request.SourceOperationId,
-            UserId              = sessionInfo.Guid,
-            Notes               = "Item removed from package"
+            UserId              = userId,
+            Notes               = request.Notes ?? "Item removed from package"
         });
 
         await context.SaveChangesAsync();

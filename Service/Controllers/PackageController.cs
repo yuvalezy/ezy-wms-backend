@@ -319,7 +319,7 @@ public class PackageController(
             }
 
             request.PackageId = id;
-            var content = await contentService.RemoveItemFromPackageAsync(request, sessionInfo);
+            var content = await contentService.RemoveItemFromPackageAsync(request, sessionInfo.Guid);
             return Ok(await content.ToDto(adapter));
         }
         catch (Exception ex) {

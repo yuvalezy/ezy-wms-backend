@@ -524,7 +524,7 @@ public class InventoryCountingsService(
                             UnitType            = UnitType.Unit,
                             SourceOperationType = ObjectType.InventoryCounting,
                             SourceOperationId   = countingId
-                        }, sessionInfo);
+                        }, sessionInfo.Guid);
                         break;
                 }
             }
@@ -541,7 +541,7 @@ public class InventoryCountingsService(
                         UnitType            = UnitType.Unit,
                         SourceOperationType = ObjectType.InventoryCounting,
                         SourceOperationId   = countingId
-                    }, sessionInfo);
+                    }, sessionInfo.Guid);
                 }
             }
 

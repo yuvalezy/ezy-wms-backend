@@ -10,4 +10,5 @@ public class RemoveItemFromPackageRequest {
     public          UnitType    UnitType            { get; set; }
     public          ObjectType? SourceOperationType { get; set; }
     public          Guid?       SourceOperationId   { get; set; }
+    public          string?     Notes               { get; set; }
 }

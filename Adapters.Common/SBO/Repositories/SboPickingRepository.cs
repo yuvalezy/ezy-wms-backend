@@ -489,4 +489,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         }).ToArray();
     }
 
+    public async Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry) {
+        throw new NotImplementedException();
+    }
 }

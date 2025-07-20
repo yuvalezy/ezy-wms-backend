@@ -12,5 +12,10 @@ public interface IPickListPackageService {
     /// <summary>
     /// Clears all package commitments for a specific pick operation
     /// </summary>
-    Task ClearPickListCommitmentsAsync(int absEntry, SessionInfo sessionInfo);
+    Task ClearPickListCommitmentsAsync(int absEntry, Guid userId);
+    
+    /// <summary>
+    /// Processes pick list closure by clearing commitments and optionally processing package movements
+    /// </summary>
+    Task ProcessPickListClosureAsync(int absEntry, PickListClosureInfo closureInfo, Guid userId);
 }
