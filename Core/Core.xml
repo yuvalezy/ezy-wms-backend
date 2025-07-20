@@ -4,6 +4,61 @@
         <name>Core</name>
     </assembly>
     <members>
+        <member name="T:Core.DTOs.PickList.FollowUpDocumentInfo">
+            <summary>
+            Information about a follow-up document created from a pick list
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.PickEntry">
+            <summary>
+            The pick list source entry
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.DocumentType">
+            <summary>
+            The type of document (e.g., 15 = Delivery, 16 = Return)
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.DocumentEntry">
+            <summary>
+            The document entry number
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.DocumentNumber">
+            <summary>
+            The document number (visible number)
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.DocumentDate">
+            <summary>
+            Date when the document was created
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentInfo.Items">
+            <summary>
+            List of items and quantities that were actually delivered/processed
+            </summary>
+        </member>
+        <member name="T:Core.DTOs.PickList.FollowUpDocumentItem">
+            <summary>
+            Item details from a follow-up document
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentItem.ItemCode">
+            <summary>
+            The item code
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentItem.Quantity">
+            <summary>
+            The quantity that was actually delivered/processed
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.FollowUpDocumentItem.BinEntry">
+            <summary>
+            The bin location from which the item was picked
+            </summary>
+        </member>
         <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.ID">
             <summary>
             The pick list absolute entry (PickList.AbsEntry)
@@ -37,6 +92,31 @@
         <member name="P:Core.DTOs.PickList.PickListAutoPickRequest.TargetBinEntry">
             <summary>
             Target bin location for the picked items
+            </summary>
+        </member>
+        <member name="T:Core.DTOs.PickList.PickListClosureInfo">
+            <summary>
+            Contains information about why a pick list was closed in the external system
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListClosureInfo.IsClosed">
+            <summary>
+            Whether the pick list is closed in the external system
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListClosureInfo.ClosureReason">
+            <summary>
+            The reason for closure (e.g., "Manual", "FollowUpDocument", "Cancelled")
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListClosureInfo.FollowUpDocuments">
+            <summary>
+            List of follow-up documents created from this pick list
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.PickList.PickListClosureInfo.RequiresPackageMovement">
+            <summary>
+            Indicates if package movements should be processed
             </summary>
         </member>
         <member name="P:Core.DTOs.PickList.PickListPackageResponse.Status">
@@ -74,6 +154,16 @@
             Creates an error response with the specified message
             </summary>
         </member>
+        <member name="P:Core.Models.Settings.BackgroundPickListSyncOptions.CheckClosedPickLists">
+            <summary>
+            Whether to check for closed pick lists during sync
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.BackgroundPickListSyncOptions.ProcessPackageMovements">
+            <summary>
+            Whether to process package movements when pick lists are closed with follow-up documents
+            </summary>
+        </member>
         <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
             <summary>
             Idle Settings for auto log out, if null or zero, ignore
@@ -84,9 +174,14 @@
             Adds an entire package to a pick list, creating pick list entries for all package contents
             </summary>
         </member>
-        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,Core.Models.SessionInfo)">
+        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,System.Guid)">
             <summary>
             Clears all package commitments for a specific pick operation
+            </summary>
+        </member>
+        <member name="M:Core.Services.IPickListPackageService.ProcessPickListClosureAsync(System.Int32,Core.DTOs.PickList.PickListClosureInfo,System.Guid)">
+            <summary>
+            Processes pick list closure by clearing commitments and optionally processing package movements
             </summary>
         </member>
     </members>
