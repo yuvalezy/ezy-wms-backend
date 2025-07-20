@@ -165,7 +165,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             TransactionType     = PackageTransactionType.Remove,
             ItemCode            = request.ItemCode,
             Quantity            = -request.Quantity,
-            UnitQuantity        = unitQuantity.Value,
+            UnitQuantity        = -unitQuantity.Value,
             UnitType            = request.UnitType,
             SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId   = request.SourceOperationId,

@@ -336,12 +336,16 @@ public class PickListPackageService(
         // Get all unique package IDs
         var packageIds = packageCommitments.Select(pc => pc.PackageId).Distinct().ToList();
 
-        // Load all packages at once
+        // Load all packages at once with AsNoTracking to avoid EF conflicts
         var packages = await db.Packages
+            .AsNoTracking()
             .Include(p => p.Contents)
             .Where(p => packageIds.Contains(p.Id))
             .ToListAsync();
 
+        // Structure to accumulate all changes per package
+        var packageChanges = new Dictionary<Guid, List<(string ItemCode, int Quantity, string Notes)>>();
+        
         // Process movements based on follow-up documents
         foreach (var followUpDoc in closureInfo.FollowUpDocuments) {
             var pickEntry = followUpDoc.PickEntry;
@@ -373,59 +377,111 @@ public class PickListPackageService(
                         continue;
                     }
 
-                    // Use PackageContentService to remove items from package
-                    var removeRequest = new RemoveItemFromPackageRequest {
-                        PackageId           = package.Id,
-                        ItemCode            = docItem.ItemCode,
-                        Quantity            = quantityToReduce,
-                        UnitType            = UnitType.Unit,
-                        UnitQuantity        = quantityToReduce,
-                        SourceOperationType = ObjectType.PickingClosure,
-                        SourceOperationId   = Guid.NewGuid(), // Create new ID for this closure operation
-                        Notes               = $"Pick list {absEntry} (PickEntry {pickEntry}) closed with {GetDocumentTypeName(followUpDoc.DocumentType)} #{followUpDoc.DocumentNumber}"
-                    };
-
-                    try {
-                        // The PackageContentService will handle the transaction logging
-                        await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
-
-                        // Also reduce the committed quantity on the package content
-                        // Note: This is the total committed quantity across all pick lists
-                        packageContent.CommittedQuantity -= quantityToReduce;
-                        if (packageContent.CommittedQuantity < 0) {
-                            packageContent.CommittedQuantity = 0;
-                        }
-                        db.PackageContents.Update(packageContent);
-
-                        // Update the commitment lookup to track what we've processed
-                        commitmentLookup[commitmentKey] -= quantityToReduce;
-
-                        logger.LogDebug("Removed {Quantity} units of {ItemCode} from package {PackageId} for PickEntry {PickEntry}, {DocumentType} #{DocumentNumber}",
-                            quantityToReduce, docItem.ItemCode, package.Id, pickEntry,
-                            GetDocumentTypeName(followUpDoc.DocumentType), followUpDoc.DocumentNumber);
+                    // Accumulate changes for this package
+                    if (!packageChanges.TryGetValue(package.Id, out var changes)) {
+                        changes = new List<(string ItemCode, int Quantity, string Notes)>();
+                        packageChanges[package.Id] = changes;
                     }
-                    catch (InvalidOperationException ex) {
-                        logger.LogWarning(ex, "Failed to remove item {ItemCode} from package {PackageId}: {Message}",
-                            docItem.ItemCode, package.Id, ex.Message);
-                        // Continue processing other items
-                    }
+                    
+                    var notes = $"Pick list {absEntry} (PickEntry {pickEntry}) closed with {GetDocumentTypeName(followUpDoc.DocumentType)} #{followUpDoc.DocumentNumber}";
+                    changes.Add((docItem.ItemCode, quantityToReduce, notes));
+
+                    // Update the commitment lookup to track what we've processed
+                    commitmentLookup[commitmentKey] -= quantityToReduce;
+
+                    logger.LogDebug("Queued removal of {Quantity} units of {ItemCode} from package {PackageId} for PickEntry {PickEntry}, {DocumentType} #{DocumentNumber}",
+                        quantityToReduce, docItem.ItemCode, package.Id, pickEntry,
+                        GetDocumentTypeName(followUpDoc.DocumentType), followUpDoc.DocumentNumber);
                 }
             }
         }
 
-        // Save any committed quantity updates
-        await db.SaveChangesAsync();
+        // Now process all accumulated changes per package
+        foreach (var (packageId, changes) in packageChanges) {
+            // Group changes by item code to consolidate multiple removals
+            var itemChanges = changes
+                .GroupBy(c => c.ItemCode)
+                .Select(g => new {
+                    ItemCode = g.Key,
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    Notes = string.Join("; ", g.Select(x => x.Notes).Distinct())
+                })
+                .ToList();
+
+            foreach (var itemChange in itemChanges) {
+                var removeRequest = new RemoveItemFromPackageRequest {
+                    PackageId           = packageId,
+                    ItemCode            = itemChange.ItemCode,
+                    Quantity            = itemChange.TotalQuantity,
+                    UnitType            = UnitType.Unit,
+                    UnitQuantity        = itemChange.TotalQuantity,
+                    SourceOperationType = ObjectType.PickingClosure,
+                    SourceOperationId   = Guid.NewGuid(), // Create new ID for this closure operation
+                    Notes               = itemChange.Notes
+                };
+
+                try {
+                    // The PackageContentService will handle the transaction logging
+                    await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
+
+                    logger.LogInformation("Successfully removed {Quantity} units of {ItemCode} from package {PackageId}",
+                        itemChange.TotalQuantity, itemChange.ItemCode, packageId);
+                }
+                catch (InvalidOperationException ex) {
+                    logger.LogWarning(ex, "Failed to remove item {ItemCode} from package {PackageId}: {Message}",
+                        itemChange.ItemCode, packageId, ex.Message);
+                    // Continue processing other items
+                }
+            }
+        }
+
+        // Update committed quantities in a single batch
+        await UpdateCommittedQuantitiesInBatch(packageChanges.Keys.ToList());
 
         // Check all packages and update their status if empty
-        foreach (var package in packages) {
-            var remainingContents = await packageContentService.GetPackageContentsAsync(package.Id);
+        foreach (var packageId in packageChanges.Keys) {
+            var remainingContents = await packageContentService.GetPackageContentsAsync(packageId);
             if (!remainingContents.Any(pc => pc.Quantity > 0)) {
-                package.Status    = PackageStatus.Closed;
-                package.UpdatedAt = DateTime.UtcNow;
-                db.Packages.Update(package);
+                var package = await db.Packages.FindAsync(packageId);
+                if (package != null) {
+                    package.Status    = PackageStatus.Closed;
+                    package.UpdatedAt = DateTime.UtcNow;
+                    db.Packages.Update(package);
+                }
             }
         }
         
+        await db.SaveChangesAsync();
+    }
+
+    private async Task UpdateCommittedQuantitiesInBatch(List<Guid> packageIds) {
+        if (!packageIds.Any()) return;
+
+        // Get fresh package contents to update committed quantities
+        var packageContents = await db.PackageContents
+            .Where(pc => packageIds.Contains(pc.PackageId))
+            .ToListAsync();
+
+        // Get all commitments for these packages
+        var commitments = await db.PackageCommitments
+            .Where(pc => packageIds.Contains(pc.PackageId) && pc.SourceOperationType == ObjectType.Picking)
+            .GroupBy(pc => new { pc.PackageId, pc.ItemCode })
+            .Select(g => new {
+                g.Key.PackageId,
+                g.Key.ItemCode,
+                TotalCommitted = g.Sum(x => x.Quantity)
+            })
+            .ToListAsync();
+
+        // Update committed quantities based on actual commitments
+        foreach (var content in packageContents) {
+            var commitment = commitments.FirstOrDefault(c => 
+                c.PackageId == content.PackageId && c.ItemCode == content.ItemCode);
+            
+            content.CommittedQuantity = commitment?.TotalCommitted ?? 0;
+            db.PackageContents.Update(content);
+        }
+
         await db.SaveChangesAsync();
     }
 
