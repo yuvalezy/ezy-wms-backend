@@ -85,8 +85,8 @@ public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter ad
 
         var bins = (await adapter.GetPickingDetailItemsBins(binParams)).ToArray();
 
-        // Validate and close stale pick lists before querying
-        await ValidateAndCloseStalePickLists();
+        // Process any closed pick lists that have package commitments
+        await ProcessClosedPickListsWithPackages();
 
         var result = db.PickLists
             .Where(p => p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
@@ -201,56 +201,48 @@ public class PickListDetailService(SystemDbContext db, IExternalSystemAdapter ad
         }
     }
 
-    public async Task ValidateAndCloseStalePickLists() {
-        var openPickLists = await db.PickLists
-            .Where(p => p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
+    public async Task ProcessClosedPickListsWithPackages() {
+        // Find pick lists that are Closed and Synced locally but might have packages to process
+        var syncedPickLists = await db.PickLists
+            .Where(p => p.Status == ObjectStatus.Closed && p.SyncStatus == SyncStatus.Synced)
             .Select(p => p.AbsEntry)
             .Distinct()
             .ToArrayAsync();
 
-        if (openPickLists.Length == 0) {
+        if (syncedPickLists.Length == 0) {
             return;
         }
 
-        // Get all statuses in a single query
-        var pickListStatuses = await adapter.GetPickListStatuses(openPickLists);
+        // Check if these pick lists have any unprocessed packages
+        var pickListsWithUnprocessedPackages = await db.PickListPackages
+            .Where(plp => syncedPickLists.Contains(plp.AbsEntry) && plp.ProcessedAt == null)
+            .Select(plp => plp.AbsEntry)
+            .Distinct()
+            .ToArrayAsync();
 
-        // Find closed pick lists
-        var closedPickListEntries = pickListStatuses
-            .Where(kvp => !kvp.Value)
-            .Select(kvp => kvp.Key)
-            .ToArray();
+        if (pickListsWithUnprocessedPackages.Length == 0) {
+            return;
+        }
 
-        if (closedPickListEntries.Length > 0) {
-            // Process each closed pick list
-            foreach (var absEntry in closedPickListEntries) {
-                try {
-                    // Get closure information from external system
-                    var closureInfo = await adapter.GetPickListClosureInfo(absEntry);
+        // Process each pick list that has unprocessed packages
+        foreach (var absEntry in pickListsWithUnprocessedPackages) {
+            try {
+                // Get closure information from external system
+                var closureInfo = await adapter.GetPickListClosureInfo(absEntry);
+                
+                if (closureInfo.IsClosed) {
+                    logger.LogInformation("Processing package movements for closed pick list {AbsEntry}", absEntry);
                     
-                    if (closureInfo.IsClosed) {
-                        // Process the closure (clear commitments, handle movements)
-                        await packageService.ProcessPickListClosureAsync(absEntry, closureInfo, DatabaseExtensions.SystemUserId);
-                        
-                        // Update local pick lists to closed
-                        var pickListsToClose = await db.PickLists
-                            .Where(p => p.AbsEntry == absEntry &&
-                                       (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
-                            .ToArrayAsync();
-
-                        foreach (var pickList in pickListsToClose) {
-                            pickList.Status    = ObjectStatus.Closed;
-                            pickList.UpdatedAt = DateTime.UtcNow;
-                        }
-                    }
-                }
-                catch (Exception ex) {
-                    logger.LogError(ex, "Error processing pick list closure for AbsEntry {AbsEntry}", absEntry);
-                    // Continue processing other pick lists
+                    // Process the closure (clear commitments, handle movements)
+                    await packageService.ProcessPickListClosureAsync(absEntry, closureInfo, DatabaseExtensions.SystemUserId);
+                } else {
+                    logger.LogWarning("Pick list {AbsEntry} has unprocessed packages but is not closed in external system", absEntry);
                 }
             }
-
-            await db.SaveChangesAsync();
+            catch (Exception ex) {
+                logger.LogError(ex, "Error processing pick list closure for AbsEntry {AbsEntry}", absEntry);
+                // Continue processing other pick lists
+            }
         }
     }
 }

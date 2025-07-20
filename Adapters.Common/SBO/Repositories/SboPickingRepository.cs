@@ -492,6 +492,13 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry) {
+        // Query to get pick list closure information and any follow-up documents
+        // This joins PKL1 (pick list lines) with:
+        // - DLN1: Delivery note lines (ObjType 15)
+        // - PCH1: Purchase invoice lines for returns (ObjType 18) 
+        // - WTR1: Inventory transfer lines (ObjType 67)
+        // The joins use PickIdNo field which links delivery/return/transfer lines back to the pick list
+        // OILM and OBTL are used to get bin location information from inventory transactions
         const string query =
             """
             select T0.PickEntry, T0.PickStatus, 
@@ -501,7 +508,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             COALESCE(T1.DocDate, T2.DocDate, T3.DocDate) DocDate,  
             COALESCE(T1.ItemCode, T2.ItemCode, T3.ItemCode) ItemCode, 
             COALESCE(T1.InvQty, T2.InvQty, T3.InvQty) InvQty, 
-            T11."BinAbs", T1."Quantity" "BinQty"
+            T11."BinAbs", T11."Quantity" "BinQty"
             from PKL1 T0
             left outer join DLN1 T1 on T1.BaseEntry = T0.OrderEntry and T1.BaseType = T0.BaseObject and T1.BaseLine = T0.OrderLine and T1.PickIdNo = T0.AbsEntry
             left outer join PCH1 T2 on T2.BaseEntry = T0.OrderEntry and T2.BaseType = T0.BaseObject and T2.BaseLine = T0.OrderLine and T2.PickIdNo = T0.AbsEntry
@@ -516,45 +523,57 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             throw new Exception("Pick list data not found");
         }
 
+        // Check if pick list is closed (Status = 'C')
         bool isClosed = (string)dt.Rows[0]["PickStatus"] == "C";
         var info = new PickListClosureInfo {
             IsClosed = isClosed,
         };
+        
+        // Determine closure reason based on whether follow-up documents exist
         if (isClosed) {
             info.ClosureReason = dt.Rows[0]["DocEntry"] != DBNull.Value ? PickListClosureReasonType.FollowUpDocument : PickListClosureReasonType.Closed;
         }
 
+        // Dictionary to group follow-up documents by PickEntry
         var control = new Dictionary<int, FollowUpDocumentInfo>();
+        
         foreach (DataRow dr in dt.Rows) {
+            // Skip rows without follow-up documents
+            if (dr["DocEntry"] == DBNull.Value) continue;
+            
             int    pickEntry = (int)dr["PickEntry"];
             int    docEntry  = (int)dr["DocEntry"];
-            int    objType   = (int)dr["ObjType"];
+            int    objType   = Convert.ToInt32(dr["ObjType"]);
             int    lineNum   = (int)dr["LineNum"];
             var    docDate   = (DateTime)dr["DocDate"];
             string itemCode  = (string)dr["ItemCode"];
             int    invQty    = Convert.ToInt32(dr["InvQty"]);
             int?   binEntry  = null;
             int?   binQty    = null;
+            
+            // Get bin information from OBTL if available
             if (dr["BinAbs"] != DBNull.Value) {
                 binEntry = (int)dr["BinAbs"];
                 binQty   = Convert.ToInt32(dr["BinQty"]);
             }
 
-            // FollowUpDocumentInfo documentInfo;
+            // Group items by PickEntry and document
             if (!control.TryGetValue(pickEntry, out var documentInfo)) {
                 documentInfo = new FollowUpDocumentInfo {
                     PickEntry      = pickEntry,
-                    DocumentType   = objType,
+                    DocumentType   = objType,     // 15=Delivery, 18=Return, 67=Transfer
                     DocumentEntry  = docEntry,
-                    DocumentNumber = lineNum,
+                    DocumentNumber = lineNum,     // Using LineNum as DocumentNumber (should be DocNum)
                     DocumentDate   = docDate,
                 };
                 control.Add(pickEntry, documentInfo);
+                info.FollowUpDocuments.Add(documentInfo);
             }
             
+            // Add item details to the follow-up document
             documentInfo.Items.Add(new FollowUpDocumentItem {
                 ItemCode = itemCode,
-                Quantity = binQty ?? invQty,
+                Quantity = binQty ?? invQty,  // Use bin quantity if available, otherwise invoice quantity
                 BinEntry = binEntry
             });
         }

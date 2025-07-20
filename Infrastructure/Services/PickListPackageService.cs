@@ -273,7 +273,17 @@ public class PickListPackageService(
 
             // Clear commitments after processing movements
             await ClearPickListCommitmentsAsync(absEntry, userId);
-
+            
+            // Mark all PickListPackages as processed to avoid reprocessing
+            var pickListPackages = await db.PickListPackages
+                .Where(plp => plp.AbsEntry == absEntry && plp.ProcessedAt == null)
+                .ToListAsync();
+                
+            foreach (var plp in pickListPackages) {
+                plp.ProcessedAt = DateTime.UtcNow;
+            }
+            
+            await db.SaveChangesAsync();
             await transaction.CommitAsync();
         }
         catch (Exception ex) {

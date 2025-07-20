@@ -61,10 +61,10 @@ public class BackgroundPickListSyncService(
             var       pickListService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
             var       pickListDetailService = scope.ServiceProvider.GetRequiredService<PickListDetailService>();
 
-            // First, validate and close stale pick lists if enabled
+            // First, process any closed pick lists with packages if enabled
             if (options.CheckClosedPickLists) {
-                logger.LogInformation("Checking for closed pick lists");
-                await pickListDetailService.ValidateAndCloseStalePickLists();
+                logger.LogInformation("Processing closed pick lists with packages");
+                await pickListDetailService.ProcessClosedPickListsWithPackages();
             }
             
             // Then sync pending pick lists

@@ -51,6 +51,12 @@ public sealed class PickListPackage : BaseEntity {
 
     [Required]
     public Guid AddedByUserId { get; set; }
+    
+    /// <summary>
+    /// Timestamp when this package was processed for pick list closure
+    /// Null means it hasn't been processed yet
+    /// </summary>
+    public DateTime? ProcessedAt { get; set; }
 
     // Navigation properties
     public Package Package { get; set; } = null!;

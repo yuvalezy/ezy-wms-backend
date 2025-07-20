@@ -154,6 +154,12 @@
             Creates an error response with the specified message
             </summary>
         </member>
+        <member name="P:Core.Entities.PickListPackage.ProcessedAt">
+            <summary>
+            Timestamp when this package was processed for pick list closure
+            Null means it hasn't been processed yet
+            </summary>
+        </member>
         <member name="P:Core.Models.Settings.BackgroundPickListSyncOptions.CheckClosedPickLists">
             <summary>
             Whether to check for closed pick lists during sync

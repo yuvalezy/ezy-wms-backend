@@ -29,9 +29,6 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
 
-        // Validate and close stale pick lists before calculating quantities
-        await detailService.ValidateAndCloseStalePickLists();
-
         var dbPick = await db.PickLists
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
@@ -69,9 +66,6 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             PickPackOnly   = pick.PickPackOnly,
             Detail         = []
         };
-
-        // Validate and close stale pick lists before calculating quantities
-        await detailService.ValidateAndCloseStalePickLists();
 
         var dbPick = await db.PickLists
             .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
