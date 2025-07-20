@@ -55,4 +55,6 @@ public class BinLocationQuantityResponse {
     public BinLocationPackageQuantityResponse[]? Packages { get; set; }
 }
 
-public record BinLocationPackageQuantityResponse(Guid Id, string Barcode, int BinEntry, string ItemCode, decimal Quantity);
+public record BinLocationPackageQuantityResponse(Guid Id, string Barcode, int BinEntry, string ItemCode, decimal Quantity) {
+    public bool FullPackage { get; set; }
+}

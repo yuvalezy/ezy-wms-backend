@@ -15,7 +15,9 @@
       "Bash(git mv:*)",
       "Bash(mv:*)",
       "Bash(rm:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(powershell:*)"
     ],
     "deny": []
   }

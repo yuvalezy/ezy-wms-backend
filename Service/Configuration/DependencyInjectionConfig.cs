@@ -42,6 +42,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferPackageService, TransferPackageService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();
         services.AddScoped<IPickListService, PickListService>();
+        services.AddScoped<PickListDetailService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
         services.AddScoped<IPickListPackageService, PickListPackageService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();

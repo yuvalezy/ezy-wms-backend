@@ -78,13 +78,25 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
     public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) => await adapter.ScanBinLocationAsync(bin);
 
-    public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await adapter.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) {
+        if (!settings.Options.EnablePackages)
+            return await adapter.ScanItemBarCodeAsync(scanCode, item);
+
+        bool prefixCheck = string.IsNullOrWhiteSpace(settings.Package.Barcode.Prefix) || scanCode.StartsWith(settings.Package.Barcode.Prefix);
+        bool suffixCheck = string.IsNullOrWhiteSpace(settings.Package.Barcode.Suffix) || scanCode.EndsWith(settings.Package.Barcode.Suffix);
+        if (prefixCheck && suffixCheck) {
+            var package = await db.Packages.FirstOrDefaultAsync(p => p.Barcode == scanCode);
+            return package == null ? [] : [new ItemInfoResponse(package.Id.ToString(), true)];
+        }
+
+        return await adapter.ScanItemBarCodeAsync(scanCode, item);
+    }
 
     public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await adapter.ItemCheckAsync(itemCode, barcode);
 
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {
-        var response = (await adapter.BinCheckAsync(binEntry)).ToArray();
-        var packageStatuses = new []{PackageStatus.Active, PackageStatus.Locked};
+        var response        = (await adapter.BinCheckAsync(binEntry)).ToArray();
+        var packageStatuses = new[] { PackageStatus.Active, PackageStatus.Locked };
         var packages = await db.PackageContents
             .Include(v => v.Package)
             .Where(v => v.BinEntry == binEntry && packageStatuses.Contains(v.Package.Status))
@@ -103,9 +115,9 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
     }
 
     public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
-        var   response = (await adapter.ItemStockAsync(itemCode, whsCode)).ToArray();
-        int[] bins     = response.Select(v => v.BinEntry).ToArray();
-        var packagesStatuses = new []{PackageStatus.Active, PackageStatus.Locked};
+        var   response         = (await adapter.ItemStockAsync(itemCode, whsCode)).ToArray();
+        int[] bins             = response.Select(v => v.BinEntry).ToArray();
+        var   packagesStatuses = new[] { PackageStatus.Active, PackageStatus.Locked };
         var packages = await db.PackageContents
             .Include(v => v.Package)
             .Where(v => v.BinEntry.HasValue && bins.Contains(v.BinEntry.Value) && v.ItemCode == itemCode && packagesStatuses.Contains(v.Package.Status))
