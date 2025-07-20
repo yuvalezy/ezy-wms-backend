@@ -381,6 +381,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         return result.ToArray();
     }
+
     public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) {
         const string query =
             """
@@ -397,12 +398,13 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             WhsCode  = reader.GetString(1),
             ItemCode = reader.GetString(2)
         });
-        
+
         foreach (var value in values) {
             var check = result.FirstOrDefault(x => x.ItemCode == value.ItemCode && x.WhsCode == value.WhsCode);
             if (check == null) {
                 return false;
             }
+
             if (check.Quantity < value.Quantity) {
                 return false;
             }
@@ -490,6 +492,73 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry) {
-        throw new NotImplementedException();
+        const string query =
+            """
+            select T0.PickEntry, T0.PickStatus, 
+            COALESCE(T1.DocEntry, T2.DocEntry, T3.DocEntry) DocEntry, 
+            COALESCE(T1.ObjType, T2.ObjType, T3.ObjType) ObjType, 
+            COALESCE(T1.LineNum, T2.LineNum, T3.ObjType) LineNum,
+            COALESCE(T1.DocDate, T2.DocDate, T3.DocDate) DocDate,  
+            COALESCE(T1.ItemCode, T2.ItemCode, T3.ItemCode) ItemCode, 
+            COALESCE(T1.InvQty, T2.InvQty, T3.InvQty) InvQty, 
+            T11."BinAbs", T1."Quantity" "BinQty"
+            from PKL1 T0
+            left outer join DLN1 T1 on T1.BaseEntry = T0.OrderEntry and T1.BaseType = T0.BaseObject and T1.BaseLine = T0.OrderLine and T1.PickIdNo = T0.AbsEntry
+            left outer join PCH1 T2 on T2.BaseEntry = T0.OrderEntry and T2.BaseType = T0.BaseObject and T2.BaseLine = T0.OrderLine and T2.PickIdNo = T0.AbsEntry
+            left outer join WTR1 T3 on T3.BaseEntry = T0.OrderEntry and T3.BaseType = T0.BaseObject and T3.BaseLine = T0.OrderLine and T3.PickIdNo = T0.AbsEntry
+            left outer join OILM T10 on T10.DocEntry = COALESCE(T1.DocEntry, T2.DocEntry, T3.DocEntry) and T10.TransType = COALESCE(T1.ObjType, T2.ObjType, T3.ObjType) and T10.DocLineNum = COALESCE(T1.LineNum, T2.LineNum, T3.ObjType) and T10.AccumType = 1 and T10.ActionType = 2
+            left outer join OBTL T11 on T11.MessageID = T10.MessageID
+            where T0."AbsEntry" = @AbsEntry
+            """;
+
+        using var dt = await dbService.GetDataTableAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }]);
+        if (dt.Rows.Count == 0) {
+            throw new Exception("Pick list data not found");
+        }
+
+        bool isClosed = (string)dt.Rows[0]["PickStatus"] == "C";
+        var info = new PickListClosureInfo {
+            IsClosed = isClosed,
+        };
+        if (isClosed) {
+            info.ClosureReason = dt.Rows[0]["DocEntry"] != DBNull.Value ? PickListClosureReasonType.FollowUpDocument : PickListClosureReasonType.Closed;
+        }
+
+        var control = new Dictionary<int, FollowUpDocumentInfo>();
+        foreach (DataRow dr in dt.Rows) {
+            int    pickEntry = (int)dr["PickEntry"];
+            int    docEntry  = (int)dr["DocEntry"];
+            int    objType   = (int)dr["ObjType"];
+            int    lineNum   = (int)dr["LineNum"];
+            var    docDate   = (DateTime)dr["DocDate"];
+            string itemCode  = (string)dr["ItemCode"];
+            int    invQty    = Convert.ToInt32(dr["InvQty"]);
+            int?   binEntry  = null;
+            int?   binQty    = null;
+            if (dr["BinAbs"] != DBNull.Value) {
+                binEntry = (int)dr["BinAbs"];
+                binQty   = Convert.ToInt32(dr["BinQty"]);
+            }
+
+            // FollowUpDocumentInfo documentInfo;
+            if (!control.TryGetValue(pickEntry, out var documentInfo)) {
+                documentInfo = new FollowUpDocumentInfo {
+                    PickEntry      = pickEntry,
+                    DocumentType   = objType,
+                    DocumentEntry  = docEntry,
+                    DocumentNumber = lineNum,
+                    DocumentDate   = docDate,
+                };
+                control.Add(pickEntry, documentInfo);
+            }
+            
+            documentInfo.Items.Add(new FollowUpDocumentItem {
+                ItemCode = itemCode,
+                Quantity = binQty ?? invQty,
+                BinEntry = binEntry
+            });
+        }
+
+        return info;
     }
 }

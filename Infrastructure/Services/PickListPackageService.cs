@@ -258,22 +258,22 @@ public class PickListPackageService(
 
         await db.SaveChangesAsync();
     }
-    
+
     public async Task ProcessPickListClosureAsync(int absEntry, PickListClosureInfo closureInfo, Guid userId) {
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
-            logger.LogInformation("Processing pick list closure for AbsEntry {AbsEntry}, Reason: {Reason}", 
+            logger.LogInformation("Processing pick list closure for AbsEntry {AbsEntry}, Reason: {Reason}",
                 absEntry, closureInfo.ClosureReason);
-            
+
             // If closure was due to follow-up documents, process package movements FIRST
             // We need to do this before clearing commitments so we know what was picked
             if (closureInfo.RequiresPackageMovement) {
                 await ProcessPackageMovementsFromFollowUpDocuments(absEntry, closureInfo, userId);
             }
-            
+
             // Clear commitments after processing movements
             await ClearPickListCommitmentsAsync(absEntry, userId);
-            
+
             await transaction.CommitAsync();
         }
         catch (Exception ex) {
@@ -282,21 +282,18 @@ public class PickListPackageService(
             throw;
         }
     }
-    
-    private async Task ProcessPackageMovementsFromFollowUpDocuments(int absEntry,
-        PickListClosureInfo                                             closureInfo,
-        Guid                                                            userId) {
-        
+
+    private async Task ProcessPackageMovementsFromFollowUpDocuments(int absEntry, PickListClosureInfo closureInfo, Guid userId) {
         // Get all pick list packages for this pick list
         var pickListPackages = await db.PickListPackages
             .Where(plp => plp.AbsEntry == absEntry)
             .ToListAsync();
-            
+
         if (!pickListPackages.Any()) {
             logger.LogDebug("No packages found for pick list {AbsEntry}", absEntry);
             return;
         }
-        
+
         // Process each package
         foreach (var pickListPackage in pickListPackages) {
             try {
@@ -304,38 +301,38 @@ public class PickListPackageService(
                 var package = await db.Packages
                     .Include(p => p.Contents)
                     .FirstOrDefaultAsync(p => p.Id == pickListPackage.PackageId);
-                    
+
                 if (package == null) {
                     logger.LogWarning("Package {PackageId} not found", pickListPackage.PackageId);
                     continue;
                 }
-                
+
                 // Process movements based on follow-up documents
                 foreach (var followUpDoc in closureInfo.FollowUpDocuments) {
                     foreach (var docItem in followUpDoc.Items) {
                         // Find matching package content
                         var packageContent = package.Contents
                             .FirstOrDefault(pc => pc.ItemCode == docItem.ItemCode && (docItem.BinEntry == null || pc.BinEntry == docItem.BinEntry));
-                            
+
                         if (packageContent == null) {
                             continue;
                         }
-                        
+
                         // Calculate quantity to reduce based on committed quantity
                         // We use committed quantity because this is what was actually picked from the package
                         var committedQty = packageContent.CommittedQuantity;
                         if (committedQty <= 0) {
-                            logger.LogDebug("No committed quantity for item {ItemCode} in package {PackageId}, skipping", 
+                            logger.LogDebug("No committed quantity for item {ItemCode} in package {PackageId}, skipping",
                                 docItem.ItemCode, package.Id);
                             continue;
                         }
-                        
+
                         // The quantity to reduce is the minimum of:
                         // 1. The quantity in the follow-up document for this item
                         // 2. The committed quantity (what was actually picked from this package)
                         var quantityToReduce = Math.Min(docItem.Quantity, (int)committedQty);
 
-                        if (quantityToReduce <= 0) 
+                        if (quantityToReduce <= 0)
                             continue;
                         // Use PackageContentService to remove items from package
                         var removeRequest = new RemoveItemFromPackageRequest {
@@ -348,36 +345,37 @@ public class PickListPackageService(
                             SourceOperationId   = Guid.NewGuid(), // Create new ID for this closure operation
                             Notes               = $"Pick list {absEntry} closed with {GetDocumentTypeName(followUpDoc.DocumentType)} #{followUpDoc.DocumentNumber}"
                         };
-                            
+
                         try {
                             // The PackageContentService will handle the transaction logging
                             await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
-                            
+
                             // Also reduce the committed quantity since these items have been delivered
                             packageContent.CommittedQuantity -= quantityToReduce;
                             if (packageContent.CommittedQuantity < 0) {
                                 packageContent.CommittedQuantity = 0;
                             }
+
                             db.PackageContents.Update(packageContent);
-                            
-                            logger.LogDebug("Removed {Quantity} units of {ItemCode} from package {PackageId} for {DocumentType} #{DocumentNumber}", 
-                                quantityToReduce, docItem.ItemCode, package.Id, 
+
+                            logger.LogDebug("Removed {Quantity} units of {ItemCode} from package {PackageId} for {DocumentType} #{DocumentNumber}",
+                                quantityToReduce, docItem.ItemCode, package.Id,
                                 GetDocumentTypeName(followUpDoc.DocumentType), followUpDoc.DocumentNumber);
                         }
                         catch (InvalidOperationException ex) {
-                            logger.LogWarning(ex, "Failed to remove item {ItemCode} from package {PackageId}: {Message}", 
+                            logger.LogWarning(ex, "Failed to remove item {ItemCode} from package {PackageId}: {Message}",
                                 docItem.ItemCode, package.Id, ex.Message);
                             // Continue processing other items
                         }
                     }
                 }
-                
+
                 // Save any committed quantity updates
                 await db.SaveChangesAsync();
-                
+
                 // Check if package is now empty and update its status
                 var remainingContents = await packageContentService.GetPackageContentsAsync(package.Id);
-                if (remainingContents.Any(pc => pc.Quantity > 0)) 
+                if (remainingContents.Any(pc => pc.Quantity > 0))
                     continue;
                 package.Status    = PackageStatus.Closed;
                 package.UpdatedAt = DateTime.UtcNow;
@@ -385,13 +383,13 @@ public class PickListPackageService(
                 await db.SaveChangesAsync();
             }
             catch (Exception ex) {
-                logger.LogError(ex, "Error processing package movements for package {PackageId}", 
+                logger.LogError(ex, "Error processing package movements for package {PackageId}",
                     pickListPackage.PackageId);
                 // Continue with other packages
             }
         }
     }
-    
+
     private string GetDocumentTypeName(int documentType) {
         return documentType switch {
             15 => "Delivery",
@@ -399,7 +397,7 @@ public class PickListPackageService(
             13 => "Invoice",
             14 => "Credit Note",
             67 => "Inventory Transfer",
-            _ => $"Document Type {documentType}"
+            _  => $"Document Type {documentType}"
         };
     }
 }
