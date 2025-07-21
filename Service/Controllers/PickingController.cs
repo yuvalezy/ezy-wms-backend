@@ -210,6 +210,18 @@ public class PickingController(IPickListService service, IPickListLineService li
     }
 
     /// <summary>
+    /// Checks a package in the pick list
+    /// </summary>
+    [HttpPost("{id:int}/check/package")]
+    [RequireRolePermission(RoleType.Picking)]
+    [ProducesResponseType(typeof(PickListCheckPackageResponse), StatusCodes.Status200OK)]
+    public async Task<PickListCheckPackageResponse> CheckPackage(int id, [FromBody] PickListCheckPackageRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        request.PickListId = id; // Ensure consistency
+        return await checkService.CheckPackage(request, sessionInfo);
+    }
+
+    /// <summary>
     /// Gets the check summary for a pick list
     /// </summary>
     [HttpGet("{id:int}/check/summary")]

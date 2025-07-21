@@ -971,6 +971,11 @@
             Checks an item in the pick list
             </summary>
         </member>
+        <member name="M:Service.Controllers.PickingController.CheckPackage(System.Int32,Core.DTOs.PickList.PickListCheckPackageRequest)">
+            <summary>
+            Checks a package in the pick list
+            </summary>
+        </member>
         <member name="M:Service.Controllers.PickingController.GetCheckSummary(System.Int32)">
             <summary>
             Gets the check summary for a pick list

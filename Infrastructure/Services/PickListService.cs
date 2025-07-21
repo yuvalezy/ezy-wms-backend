@@ -4,12 +4,11 @@ using Core.Interfaces;
 using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, PickListDetailService detailService, IMemoryCache cache) : IPickListService {
+public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, PickListDetailService detailService) : IPickListService {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
@@ -35,6 +34,14 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         var dbPick = await db.PickLists
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
+        
+        // Get active check sessions if picking check is enabled
+        var activeCheckSessions = settings.Options.EnablePickingCheck 
+            ? await db.PickListCheckSessions
+                .Where(s => entries.Contains(s.PickListId) && !s.IsCompleted && !s.IsCancelled && !s.Deleted)
+                .ToDictionaryAsync(s => s.PickListId)
+            : new Dictionary<int, Core.Entities.PickListCheckSession>();
+        
         foreach (var r in response) {
             var values         = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
             int pickedQuantity = values.Sum(p => p.Quantity);
@@ -44,12 +51,8 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 r.SyncStatus = SyncStatus.Pending;
             
             // Check if picking check has started
-            if (!settings.Options.EnablePickingCheck) 
-                continue;
-            
-            var cacheKey = $"PickListCheck_{r.Entry}";
-            if (cache.TryGetValue<PickListCheckSession>(cacheKey, out var checkSession)) {
-                r.CheckStarted = checkSession != null && !checkSession.IsCompleted;
+            if (settings.Options.EnablePickingCheck && activeCheckSessions.ContainsKey(r.Entry)) {
+                r.CheckStarted = true;
             }
         }
 
@@ -89,10 +92,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         // Check if picking check has started
         if (settings.Options.EnablePickingCheck) {
-            var cacheKey = $"PickListCheck_{absEntry}";
-            if (cache.TryGetValue<PickListCheckSession>(cacheKey, out var checkSession)) {
-                response.CheckStarted = checkSession != null && !checkSession.IsCompleted;
-            }
+            var activeCheckSession = await db.PickListCheckSessions
+                .FirstOrDefaultAsync(s => s.PickListId == absEntry && !s.IsCompleted && !s.IsCancelled && !s.Deleted);
+            response.CheckStarted = activeCheckSession != null;
         }
 
         // Get picking details

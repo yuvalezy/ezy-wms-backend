@@ -29,6 +29,7 @@ public class PickListCheckSession : BaseEntity {
 
     // Navigation properties
     public virtual ICollection<PickListCheckItem> CheckedItems { get; set; } = new List<PickListCheckItem>();
+    public virtual ICollection<PickListCheckPackage> CheckedPackages { get; set; } = new List<PickListCheckPackage>();
     public virtual User StartedByUser { get; set; } = null!;
 }
 
