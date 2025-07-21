@@ -1,0 +1,110 @@
+### Variables
+@baseUrl = https://localhost:7184/api
+@token = YOUR_JWT_TOKEN_HERE
+@pickListId = 123
+
+### 1. Login as Picking Supervisor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "supervisor",
+  "password": "password",
+  "warehouseId": 1
+}
+
+### Save token from response
+# @token = {{login.response.body.token}}
+
+### 2. Get all pick lists (including completed ones for check)
+GET {{baseUrl}}/picking?includeForCheck=true
+Authorization: Bearer {{token}}
+
+### 3. Start a check session (Supervisor only)
+POST {{baseUrl}}/picking/{{pickListId}}/check/start
+Authorization: Bearer {{token}}
+
+### 4. Check an item (PickingCheck role)
+POST {{baseUrl}}/picking/{{pickListId}}/check/item
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemCode": "ITEM001",
+  "checkedQuantity": 10,
+  "unit": 1,
+  "binEntry": null
+}
+
+### 5. Check another item with discrepancy
+POST {{baseUrl}}/picking/{{pickListId}}/check/item
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemCode": "ITEM002",
+  "checkedQuantity": 8,
+  "unit": 1
+}
+
+### 6. Check item with excess quantity
+POST {{baseUrl}}/picking/{{pickListId}}/check/item
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemCode": "ITEM003",
+  "checkedQuantity": 15,
+  "unit": 1
+}
+
+### 7. Get check summary
+GET {{baseUrl}}/picking/{{pickListId}}/check/summary
+Authorization: Bearer {{token}}
+
+### 8. Complete the check (Supervisor only)
+POST {{baseUrl}}/picking/{{pickListId}}/check/complete
+Authorization: Bearer {{token}}
+
+### Error Cases
+
+### 9. Try to start check without supervisor role (should fail)
+# Login as regular picker first
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "picker",
+  "password": "password",
+  "warehouseId": 1
+}
+
+### Then try to start check
+POST {{baseUrl}}/picking/{{pickListId}}/check/start
+Authorization: Bearer {{picker_token}}
+
+### 10. Check item that doesn't exist in pick list
+POST {{baseUrl}}/picking/{{pickListId}}/check/item
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemCode": "INVALID_ITEM",
+  "checkedQuantity": 5,
+  "unit": 1
+}
+
+### 11. Try to check item with no active session
+POST {{baseUrl}}/picking/999/check/item
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemCode": "ITEM001",
+  "checkedQuantity": 5,
+  "unit": 1
+}
+
+### 12. Complete check with no session
+POST {{baseUrl}}/picking/999/check/complete
+Authorization: Bearer {{token}}
