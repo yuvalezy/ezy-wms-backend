@@ -237,4 +237,22 @@ public class PickingController(IPickListService service, IPickListLineService li
         
         return Ok();
     }
+
+    /// <summary>
+    /// Cancels the check process (Supervisor only)
+    /// </summary>
+    [HttpPost("{id:int}/check/cancel")]
+    [RequireRolePermission(RoleType.PickingSupervisor)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CancelCheck(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        var result = await checkService.CancelCheck(id, sessionInfo.Guid);
+        
+        if (!result) {
+            return NotFound("No active check session found");
+        }
+        
+        return Ok();
+    }
 }

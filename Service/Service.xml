@@ -981,6 +981,11 @@
             Completes the check process (Supervisor only)
             </summary>
         </member>
+        <member name="M:Service.Controllers.PickingController.CancelCheck(System.Int32)">
+            <summary>
+            Cancels the check process (Supervisor only)
+            </summary>
+        </member>
         <member name="T:Service.Controllers.TransferController">
             <summary>
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
