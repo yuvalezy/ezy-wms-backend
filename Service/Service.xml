@@ -889,7 +889,7 @@
             Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PickingController.GetPickings(Core.DTOs.PickList.PickListsRequest,System.Boolean)">
+        <member name="M:Service.Controllers.PickingController.GetPickings(Core.DTOs.PickList.PickListsRequest)">
             <summary>
             Gets a list of pick lists with optional filtering
             </summary>

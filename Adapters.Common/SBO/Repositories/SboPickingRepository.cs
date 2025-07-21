@@ -45,7 +45,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         sb.Append("""
                   WHERE T2."LocCode" = @WhsCode 
-                  AND PICKS."Status" IN ('R', 'P', 'D')
+                  AND PICKS."Status" IN ('R', 'P', 'D', 'Y')
                   """);
 
         var parameters = new List<SqlParameter> {
@@ -80,21 +80,23 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         var sqlParams = parameters.ToArray();
 
-        return await dbService.QueryAsync(sb.ToString(), sqlParams, reader => {
-            var document = new PickingDocumentResponse();
-            document.Entry          = reader.GetInt32(0);
-            document.Date           = reader.GetDateTime(1);
-            document.Remarks        = reader.IsDBNull(2) ? null : reader.GetString(2);
-            document.Status         = ConvertStatus(reader.IsDBNull(3) ? null : reader.GetString(3));
-            document.SalesOrders    = reader.GetInt32(4);
-            document.Invoices       = reader.GetInt32(5);
-            document.Transfers      = reader.GetInt32(6);
-            document.Quantity       = (int)reader.GetDecimal(7);
-            document.OpenQuantity   = (int)reader.GetDecimal(8);
-            document.UpdateQuantity = (int)reader.GetDecimal(9);
-            document.PickPackOnly   = pickPackOnly is not null && Convert.ToBoolean(reader["PickPackOnly"]);
+        var response = await dbService.QueryAsync(sb.ToString(), sqlParams, reader => {
+            var document = new PickingDocumentResponse {
+                Entry          = reader.GetInt32(0),
+                Date           = reader.GetDateTime(1),
+                Remarks        = reader.IsDBNull(2) ? null : reader.GetString(2),
+                Status         = ConvertStatus(reader.IsDBNull(3) ? null : reader.GetString(3)),
+                SalesOrders    = reader.GetInt32(4),
+                Invoices       = reader.GetInt32(5),
+                Transfers      = reader.GetInt32(6),
+                Quantity       = (int)reader.GetDecimal(7),
+                OpenQuantity   = (int)reader.GetDecimal(8),
+                UpdateQuantity = (int)reader.GetDecimal(9),
+                PickPackOnly   = pickPackOnly is not null && Convert.ToBoolean(reader["PickPackOnly"])
+            };
             return document;
         });
+        return response;
     }
 
     public async Task<IEnumerable<PickingDetailResponse>> GetPickingDetails(Dictionary<string, object> parameters) {

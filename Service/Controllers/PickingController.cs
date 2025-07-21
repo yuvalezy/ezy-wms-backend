@@ -36,16 +36,9 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(typeof(IEnumerable<PickListResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IEnumerable<PickListResponse>> GetPickings(
-        [FromQuery] PickListsRequest request,
-        [FromQuery] bool includeForCheck = false) {
+    public async Task<IEnumerable<PickListResponse>> GetPickings( [FromQuery] PickListsRequest request) {
         var sessionInfo = HttpContext.GetSession();
         var pickLists = await service.GetPickLists(request, sessionInfo.Warehouse);
-        
-        // If supervisor is requesting for check purposes, return all pick lists
-        if (includeForCheck && sessionInfo.Roles.Contains(RoleType.PickingSupervisor)) {
-            return pickLists;
-        }
         
         // Otherwise, filter as before (optional - depends on current implementation)
         return pickLists;
@@ -208,7 +201,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     /// Checks an item in the pick list
     /// </summary>
     [HttpPost("{id:int}/check/item")]
-    [RequireRolePermission(RoleType.PickingCheck)]
+    [RequireRolePermission(RoleType.Picking)]
     [ProducesResponseType(typeof(PickListCheckItemResponse), StatusCodes.Status200OK)]
     public async Task<PickListCheckItemResponse> CheckItem(int id, [FromBody] PickListCheckItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
@@ -220,7 +213,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     /// Gets the check summary for a pick list
     /// </summary>
     [HttpGet("{id:int}/check/summary")]
-    [RequireAnyRole(RoleType.PickingCheck, RoleType.PickingSupervisor)]
+    [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
     [ProducesResponseType(typeof(PickListCheckSummaryResponse), StatusCodes.Status200OK)]
     public async Task<PickListCheckSummaryResponse> GetCheckSummary(int id) {
         return await checkService.GetCheckSummary(id);

@@ -1,13 +1,15 @@
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, PickListDetailService detailService) : IPickListService {
+public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, PickListDetailService detailService, IMemoryCache cache) : IPickListService {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse) {
@@ -25,6 +27,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 UpdateQuantity = p.UpdateQuantity,
                 PickPackOnly   = p.PickPackOnly,
                 SyncStatus     = SyncStatus.Synced,
+                CheckStarted   = false
             })
             .ToArray();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
@@ -39,6 +42,15 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             r.UpdateQuantity += pickedQuantity;
             if (values.Any(v => v.SyncStatus is SyncStatus.Pending or SyncStatus.Failed))
                 r.SyncStatus = SyncStatus.Pending;
+            
+            // Check if picking check has started
+            if (!settings.Options.EnablePickingCheck) 
+                continue;
+            
+            var cacheKey = $"PickListCheck_{r.Entry}";
+            if (cache.TryGetValue<PickListCheckSession>(cacheKey, out var checkSession)) {
+                r.CheckStarted = checkSession != null && !checkSession.IsCompleted;
+            }
         }
 
         return response;
@@ -64,6 +76,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             OpenQuantity   = pick.OpenQuantity,
             UpdateQuantity = pick.UpdateQuantity,
             PickPackOnly   = pick.PickPackOnly,
+            CheckStarted   = false,
             Detail         = []
         };
 
@@ -73,6 +86,14 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         int dbPickQty = dbPick.Sum(p => p.Quantity);
         response.OpenQuantity   -= dbPickQty;
         response.UpdateQuantity += dbPickQty;
+
+        // Check if picking check has started
+        if (settings.Options.EnablePickingCheck) {
+            var cacheKey = $"PickListCheck_{absEntry}";
+            if (cache.TryGetValue<PickListCheckSession>(cacheKey, out var checkSession)) {
+                response.CheckStarted = checkSession != null && !checkSession.IsCompleted;
+            }
+        }
 
         // Get picking details
         var detailParams = new Dictionary<string, object> {
