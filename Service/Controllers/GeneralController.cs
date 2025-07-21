@@ -8,6 +8,7 @@ using Core.DTOs.Settings;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Models.Settings;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -22,7 +23,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class GeneralController(IPublicService publicService) : ControllerBase {
+public class GeneralController(IPublicService publicService, ISettings settings) : ControllerBase {
     /// <summary>
     /// Gets a list of available warehouses with optional filtering
     /// </summary>
@@ -98,6 +99,19 @@ public class GeneralController(IPublicService publicService) : ControllerBase {
     public async Task<ActionResult<IEnumerable<ExternalValue<string>>>> GetVendors() {
         var response = await publicService.GetVendorsAsync();
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Gets the configured package metadata field definitions
+    /// </summary>
+    /// <returns>Array of metadata field definitions</returns>
+    /// <response code="200">Returns the metadata field definitions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpGet("package-metadata-definitions")]
+    [ProducesResponseType(typeof(PackageMetadataDefinition[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<PackageMetadataDefinition[]> GetPackageMetadataDefinitions() {
+        return Ok(settings.Package.MetadataDefinition);
     }
 
 }

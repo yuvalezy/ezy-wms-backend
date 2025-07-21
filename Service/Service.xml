@@ -392,7 +392,7 @@
             General Controller - Provides general system information, warehouses, user data, and item/barcode scanning utilities
             </summary>
         </member>
-        <member name="M:Service.Controllers.GeneralController.#ctor(Core.Interfaces.IPublicService)">
+        <member name="M:Service.Controllers.GeneralController.#ctor(Core.Interfaces.IPublicService,Core.Interfaces.ISettings)">
             <summary>
             General Controller - Provides general system information, warehouses, user data, and item/barcode scanning utilities
             </summary>
@@ -434,6 +434,14 @@
             <response code="401">If the user is not authenticated</response>
             <response code="403">If the user lacks required goods receipt permissions</response>
             <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.GeneralController.GetPackageMetadataDefinitions">
+            <summary>
+            Gets the configured package metadata field definitions
+            </summary>
+            <returns>Array of metadata field definitions</returns>
+            <response code="200">Returns the metadata field definitions</response>
+            <response code="401">If the user is not authenticated</response>
         </member>
         <member name="T:Service.Controllers.GoodsReceiptController">
             <summary>
@@ -877,6 +885,19 @@
             <param name="id">The unique identifier of the package to validate</param>
             <returns>The validation results for the package</returns>
             <response code="200">Returns the package validation results</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.UpdatePackageMetadata(System.Guid,Core.DTOs.Package.UpdatePackageMetadataRequest)">
+            <summary>
+            Updates metadata for a specific package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <param name="request">The metadata update request containing field values</param>
+            <returns>The updated package with new metadata</returns>
+            <response code="200">Returns the updated package</response>
+            <response code="400">If metadata validation fails or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the package is not found or not accessible</response>
             <response code="401">If the user is not authenticated</response>
         </member>
         <member name="T:Service.Controllers.PickingController">

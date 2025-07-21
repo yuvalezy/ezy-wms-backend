@@ -59,7 +59,7 @@ public class PackageController(
             }
 
             var package = await packageService.CreatePackageAsync(sessionInfo, request);
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error creating package");
@@ -85,7 +85,7 @@ public class PackageController(
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
 
-        return Ok(await package.ToDto(adapter));
+        return Ok(await package.ToDto(adapter, settings));
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public class PackageController(
             }
         }
 
-        return Ok(await package.ToDto(adapter));
+        return Ok(await package.ToDto(adapter, settings));
     }
 
     /// <summary>
@@ -134,7 +134,7 @@ public class PackageController(
     public async Task<ActionResult<IEnumerable<PackageDto>>> GetActivePackages() {
         var sessionInfo = HttpContext.GetSession();
         var packages    = await packageService.GetActivePackagesAsync(sessionInfo.Warehouse);
-        return Ok(packages.Select(async p => await p.ToDto(adapter)));
+        return Ok(packages.Select(async p => await p.ToDto(adapter, settings)));
     }
 
     /// <summary>
@@ -166,7 +166,7 @@ public class PackageController(
                 await TriggerLabelPrintingAsync(package);
             }
 
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error closing package {PackageId}", id);
@@ -194,7 +194,7 @@ public class PackageController(
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.CancelPackageAsync(id, sessionInfo, request.Reason);
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error cancelling package {PackageId}", id);
@@ -219,7 +219,7 @@ public class PackageController(
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.LockPackageAsync(id, sessionInfo, request.Reason);
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error locking package {PackageId}", id);
@@ -246,7 +246,7 @@ public class PackageController(
         try {
             var sessionInfo = HttpContext.GetSession();
             var package     = await packageService.UnlockPackageAsync(id, sessionInfo);
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error unlocking package {PackageId}", id);
@@ -432,7 +432,7 @@ public class PackageController(
             request.PackageId = id;
             request.UserId    = sessionInfo.Guid;
             var package = await locationService.MovePackageAsync(request);
-            return Ok(await package.ToDto(adapter));
+            return Ok(await package.ToDto(adapter, settings));
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error moving package {PackageId}", id);
@@ -453,6 +453,48 @@ public class PackageController(
     public async Task<ActionResult<PackageValidationResult>> ValidatePackage(Guid id) {
         var result = await validationService.ValidatePackageConsistencyAsync(id);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Updates metadata for a specific package
+    /// </summary>
+    /// <param name="id">The unique identifier of the package</param>
+    /// <param name="request">The metadata update request containing field values</param>
+    /// <returns>The updated package with new metadata</returns>
+    /// <response code="200">Returns the updated package</response>
+    /// <response code="400">If metadata validation fails or request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the package is not found or not accessible</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPut("{id:guid}/metadata")]
+    [RequireAnyRole(RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+    [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PackageDto>> UpdatePackageMetadata(
+        Guid id, 
+        [FromBody] UpdatePackageMetadataRequest request) {
+        try {
+            var sessionInfo = HttpContext.GetSession();
+            
+            var package = await packageService.UpdatePackageMetadataAsync(id, request, sessionInfo);
+            return Ok(await package.ToDto(adapter, settings));
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found")) {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not accessible")) {
+            return NotFound(new { error = "Package not found" }); // Don't leak warehouse info
+        }
+        catch (ArgumentException ex) {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error updating package metadata for {PackageId}", id);
+            return BadRequest(new { error = "An error occurred updating package metadata" });
+        }
     }
 
     private async Task TriggerLabelPrintingAsync(Core.Entities.Package package) {

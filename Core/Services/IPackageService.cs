@@ -16,4 +16,7 @@ public interface IPackageService {
     Task<Package>              CancelPackageAsync(Guid                          packageId,           SessionInfo sessionInfo, string? reason);
     Task<Package>              LockPackageAsync(Guid                            packageId,           SessionInfo sessionInfo, string? reason);
     Task<Package>              UnlockPackageAsync(Guid                          packageId,           SessionInfo sessionInfo);
+    
+    // Package Metadata Operations
+    Task<Package>              UpdatePackageMetadataAsync(Guid                  packageId,           UpdatePackageMetadataRequest request, SessionInfo sessionInfo);
 }

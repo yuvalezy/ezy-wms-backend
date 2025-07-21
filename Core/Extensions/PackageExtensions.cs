@@ -6,7 +6,7 @@ using Core.Interfaces;
 namespace Core.Extensions;
 
 public static class PackageExtensions {
-    public static async Task<PackageDto> ToDto(this Package package, IExternalSystemAdapter adapter) {
+    public static async Task<PackageDto> ToDto(this Package package, IExternalSystemAdapter adapter, ISettings settings) {
         return new PackageDto {
             Id               = package.Id,
             Barcode          = package.Barcode,
@@ -21,7 +21,8 @@ public static class PackageExtensions {
             Notes            = package.Notes,
             CustomAttributes = ParseCustomAttributes(package.CustomAttributes),
             Contents         = await Task.WhenAll(package.Contents.Select(async c => await c.ToDto(adapter))),
-            LocationHistory  = await Task.WhenAll(package.LocationHistory.Select(async c => await c.ToDto(adapter)))
+            LocationHistory  = await Task.WhenAll(package.LocationHistory.Select(async c => await c.ToDto(adapter))),
+            MetadataDefinitions = settings.Package.MetadataDefinition
         };
     }
 

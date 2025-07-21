@@ -4,6 +4,23 @@
         <name>Core</name>
     </assembly>
     <members>
+        <member name="P:Core.DTOs.Package.PackageDto.MetadataDefinitions">
+            <summary>
+            Available metadata field definitions for this package
+            </summary>
+        </member>
+        <member name="T:Core.DTOs.Package.UpdatePackageMetadataRequest">
+            <summary>
+            Request model for updating package metadata fields
+            </summary>
+        </member>
+        <member name="P:Core.DTOs.Package.UpdatePackageMetadataRequest.Metadata">
+            <summary>
+            Metadata field values as key-value pairs
+            Key must match configured metadata definition ID
+            Value must be compatible with configured field type
+            </summary>
+        </member>
         <member name="T:Core.DTOs.PickList.FollowUpDocumentInfo">
             <summary>
             Information about a follow-up document created from a pick list
