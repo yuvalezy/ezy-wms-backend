@@ -175,6 +175,57 @@
             Idle Settings for auto log out, if null or zero, ignore
             </summary>
         </member>
+        <member name="T:Core.Models.Settings.PackageMetadataDefinition">
+            <summary>
+            Defines a custom metadata field that can be configured for packages
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Id">
+            <summary>
+            Unique identifier for the metadata field (e.g., "Volume", "Weight", "Note")
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Description">
+            <summary>
+            Human-readable description/label for the field
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Type">
+            <summary>
+            Data type for validation and UI rendering
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.MetadataFieldType">
+            <summary>
+            Supported data types for package metadata fields
+            </summary>
+        </member>
+        <member name="F:Core.Models.Settings.MetadataFieldType.String">
+            <summary>
+            Text/string value
+            </summary>
+        </member>
+        <member name="F:Core.Models.Settings.MetadataFieldType.Decimal">
+            <summary>
+            Decimal number value
+            </summary>
+        </member>
+        <member name="F:Core.Models.Settings.MetadataFieldType.Date">
+            <summary>
+            Date value
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.PackageSettings.MetadataDefinition">
+            <summary>
+            Configurable metadata field definitions for packages
+            </summary>
+        </member>
+        <member name="M:Core.Models.Settings.PackageSettings.ValidateMetadataDefinitions">
+            <summary>
+            Validates the metadata definitions for consistency and correctness
+            </summary>
+            <returns>List of validation error messages, empty if valid</returns>
+        </member>
         <member name="M:Core.Services.IPickListPackageService.AddPackageAsync(Core.DTOs.PickList.PickListAddPackageRequest,Core.Models.SessionInfo)">
             <summary>
             Adds an entire package to a pick list, creating pick list entries for all package contents
