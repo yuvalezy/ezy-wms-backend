@@ -104,7 +104,7 @@ public static class DependencyInjectionConfig {
                 SboServiceLayerDependencyInjection.ConfigureServices(services);
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
         }
 
         return services;
