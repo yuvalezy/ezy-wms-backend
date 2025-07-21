@@ -884,12 +884,12 @@
             Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PickingController.#ctor(Core.Interfaces.IPickListService,Core.Interfaces.IPickListLineService,Core.Interfaces.IPickListProcessService,Core.Services.IPickListPackageService,System.IServiceProvider)">
+        <member name="M:Service.Controllers.PickingController.#ctor(Core.Interfaces.IPickListService,Core.Interfaces.IPickListLineService,Core.Interfaces.IPickListProcessService,Core.Services.IPickListPackageService,Core.Interfaces.IPickListCheckService,System.IServiceProvider)">
             <summary>
             Picking Controller - Manages pick list operations including retrieval, item picking, processing, and cancellation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PickingController.GetPickings(Core.DTOs.PickList.PickListsRequest)">
+        <member name="M:Service.Controllers.PickingController.GetPickings(Core.DTOs.PickList.PickListsRequest,System.Boolean)">
             <summary>
             Gets a list of pick lists with optional filtering
             </summary>
@@ -960,6 +960,26 @@
             <response code="400">If the request is invalid</response>
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PickingController.StartCheck(System.Int32)">
+            <summary>
+            Starts a check process for a pick list (Supervisor only)
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PickingController.CheckItem(System.Int32,Core.DTOs.PickList.PickListCheckItemRequest)">
+            <summary>
+            Checks an item in the pick list
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PickingController.GetCheckSummary(System.Int32)">
+            <summary>
+            Gets the check summary for a pick list
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.PickingController.CompleteCheck(System.Int32)">
+            <summary>
+            Completes the check process (Supervisor only)
+            </summary>
         </member>
         <member name="T:Service.Controllers.TransferController">
             <summary>
