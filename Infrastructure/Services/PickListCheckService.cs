@@ -94,7 +94,7 @@ public class PickListCheckService(IMemoryCache cache, IPickListService pickListS
         };
     }
 
-    public async Task<PickListCheckSummaryResponse> GetCheckSummary(int pickListId) {
+    public async Task<PickListCheckSummaryResponse> GetCheckSummary(int pickListId, string warehouse) {
         if (!settings.Options.EnablePickingCheck) {
             throw new Exception("Picking check is not enabled");
         }
@@ -110,8 +110,8 @@ public class PickListCheckService(IMemoryCache cache, IPickListService pickListS
         // Get pick list details
         var pickList = await pickListService.GetPickList(
             pickListId,
-            new PickListDetailRequest { AvailableBins = true },
-            string.Empty
+            new PickListDetailRequest { AvailableBins = true, PickCheck = true },
+            warehouse
         );
 
         var summary = new PickListCheckSummaryResponse {

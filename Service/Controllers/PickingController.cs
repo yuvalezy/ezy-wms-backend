@@ -216,7 +216,8 @@ public class PickingController(IPickListService service, IPickListLineService li
     [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
     [ProducesResponseType(typeof(PickListCheckSummaryResponse), StatusCodes.Status200OK)]
     public async Task<PickListCheckSummaryResponse> GetCheckSummary(int id) {
-        return await checkService.GetCheckSummary(id);
+        var sessionInfo = HttpContext.GetSession();
+        return await checkService.GetCheckSummary(id, sessionInfo.Warehouse);
     }
 
     /// <summary>
