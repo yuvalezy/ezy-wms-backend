@@ -17,6 +17,7 @@ namespace Service.Configuration;
 public static class DependencyInjectionConfig {
     public static IServiceCollection ConfigureServices(this IServiceCollection services, Settings settings, IConfiguration configuration) {
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
 
         string? connString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrEmpty(connString)) {
@@ -47,6 +48,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<PickListPackageEligibilityService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();
+        services.AddScoped<IPickListCheckService, PickListCheckService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<IGoodsReceiptReportService, GoodsReceiptReportService>();
         services.AddScoped<IGoodsReceiptLineService, GoodsReceiptLineService>();
@@ -102,7 +104,7 @@ public static class DependencyInjectionConfig {
                 SboServiceLayerDependencyInjection.ConfigureServices(services);
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
         }
 
         return services;

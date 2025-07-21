@@ -4,6 +4,7 @@ using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    partial class SystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250721153759_PickCheck")]
+    partial class PickCheck
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1604,225 +1607,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("PickLists");
                 });
 
-            modelBuilder.Entity("Core.Entities.PickListCheckItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("BinEntry")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("CheckSessionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CheckedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CheckedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("CheckedQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ItemCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Unit")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CheckSessionId")
-                        .HasDatabaseName("IX_PickListCheckItem_CheckSessionId");
-
-                    b.HasIndex("CheckedAt")
-                        .HasDatabaseName("IX_PickListCheckItem_CheckedAt");
-
-                    b.HasIndex("CheckedByUserId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("ItemCode")
-                        .HasDatabaseName("IX_PickListCheckItem_ItemCode");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("CheckSessionId", "ItemCode")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListCheckItem_CheckSessionId_ItemCode");
-
-                    b.ToTable("PickListCheckItems");
-                });
-
-            modelBuilder.Entity("Core.Entities.PickListCheckPackage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CheckSessionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CheckedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CheckedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PackageBarcode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid>("PackageId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CheckSessionId")
-                        .HasDatabaseName("IX_PickListCheckPackage_CheckSessionId");
-
-                    b.HasIndex("CheckedAt")
-                        .HasDatabaseName("IX_PickListCheckPackage_CheckedAt");
-
-                    b.HasIndex("CheckedByUserId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("PackageId")
-                        .HasDatabaseName("IX_PickListCheckPackage_PackageId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("CheckSessionId", "PackageId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListCheckPackage_CheckSessionId_PackageId");
-
-                    b.ToTable("PickListCheckPackages");
-                });
-
-            modelBuilder.Entity("Core.Entities.PickListCheckSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsCancelled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsCompleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("PickListId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("StartedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("StartedByUserName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("IsCompleted")
-                        .HasDatabaseName("IX_PickListCheckSession_IsCompleted");
-
-                    b.HasIndex("PickListId")
-                        .HasDatabaseName("IX_PickListCheckSession_PickListId");
-
-                    b.HasIndex("StartedAt")
-                        .HasDatabaseName("IX_PickListCheckSession_StartedAt");
-
-                    b.HasIndex("StartedByUserId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("PickListId", "IsCompleted")
-                        .HasDatabaseName("IX_PickListCheckSession_PickListId_IsCompleted");
-
-                    b.ToTable("PickListCheckSessions");
-                });
-
             modelBuilder.Entity("Core.Entities.PickListPackage", b =>
                 {
                     b.Property<int>("AbsEntry")
@@ -2655,105 +2439,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("Core.Entities.PickListCheckItem", b =>
-                {
-                    b.HasOne("Core.Entities.PickListCheckSession", "CheckSession")
-                        .WithMany("CheckedItems")
-                        .HasForeignKey("CheckSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "CheckedByUser")
-                        .WithMany()
-                        .HasForeignKey("CheckedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Core.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CheckSession");
-
-                    b.Navigation("CheckedByUser");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Core.Entities.PickListCheckPackage", b =>
-                {
-                    b.HasOne("Core.Entities.PickListCheckSession", "CheckSession")
-                        .WithMany("CheckedPackages")
-                        .HasForeignKey("CheckSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "CheckedByUser")
-                        .WithMany()
-                        .HasForeignKey("CheckedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Core.Entities.Package", "Package")
-                        .WithMany()
-                        .HasForeignKey("PackageId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CheckSession");
-
-                    b.Navigation("CheckedByUser");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("Package");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Core.Entities.PickListCheckSession", b =>
-                {
-                    b.HasOne("Core.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Core.Entities.User", "StartedByUser")
-                        .WithMany()
-                        .HasForeignKey("StartedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("StartedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("Core.Entities.PickListPackage", b =>
                 {
                     b.HasOne("Core.Entities.User", "CreatedByUser")
@@ -2897,13 +2582,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("LocationHistory");
 
                     b.Navigation("Transactions");
-                });
-
-            modelBuilder.Entity("Core.Entities.PickListCheckSession", b =>
-                {
-                    b.Navigation("CheckedItems");
-
-                    b.Navigation("CheckedPackages");
                 });
 
             modelBuilder.Entity("Core.Entities.Transfer", b =>

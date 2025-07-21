@@ -17,7 +17,8 @@
       "Bash(rm:*)",
       "Bash(rg:*)",
       "Bash(powershell.exe:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(dotnet restore:*)"
     ],
     "deny": []
   }

@@ -19,6 +19,11 @@ public class SystemDbContext : DbContext {
     public DbSet<Transfer>          Transfers          { get; set; }
     public DbSet<PickList>          PickLists          { get; set; }
     public DbSet<PickListPackage>   PickListPackages   { get; set; }
+    
+    // Pick List Check Entities
+    public DbSet<PickListCheckSession> PickListCheckSessions { get; set; }
+    public DbSet<PickListCheckItem>    PickListCheckItems    { get; set; }
+    public DbSet<PickListCheckPackage> PickListCheckPackages { get; set; }
 
     // Object Lines Entites
     public DbSet<GoodsReceiptLine>      GoodsReceiptLines      { get; set; }
@@ -71,6 +76,9 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new InventoryCountingPackageContentConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
         modelBuilder.ApplyConfiguration(new PickListPackageConfiguration());
+        modelBuilder.ApplyConfiguration(new PickListCheckSessionConfiguration());
+        modelBuilder.ApplyConfiguration(new PickListCheckItemConfiguration());
+        modelBuilder.ApplyConfiguration(new PickListCheckPackageConfiguration());
         
         // Package configurations
         modelBuilder.ApplyConfiguration(new PackageConfiguration());

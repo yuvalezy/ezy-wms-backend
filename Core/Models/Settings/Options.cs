@@ -12,8 +12,11 @@ public record Options {
     public GoodsReceiptDocumentType GoodsReceiptType                            { get; set; } = GoodsReceiptDocumentType.Both;
     public UnitType                 DefaultUnitType                             { get; set; } = UnitType.Pack;
     public bool                     EnableUnitSelection                         { get; init; }
+
     /// <summary>
     /// Idle Settings for auto log out, if null or zero, ignore
     /// </summary>
-    public int?                     IdleLogoutTimeout                           { get; set; }
+    public int? IdleLogoutTimeout { get; set; }
+
+    public bool EnablePickingCheck { get; set; }
 }
