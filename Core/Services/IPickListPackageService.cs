@@ -19,3 +19,4 @@ public interface IPickListPackageService {
     /// </summary>
     Task ProcessPickListClosureAsync(int absEntry, PickListClosureInfo closureInfo, Guid userId);
 }
+
