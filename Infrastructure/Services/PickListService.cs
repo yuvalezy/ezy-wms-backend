@@ -26,22 +26,28 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 UpdateQuantity = p.UpdateQuantity,
                 PickPackOnly   = p.PickPackOnly,
                 SyncStatus     = SyncStatus.Synced,
-                CheckStarted   = false
+                CheckStarted   = false,
+                HasCheck       = false,
             })
-            .ToArray();
+            .ToList();
         int[] entries = response.Select(p => p.Entry).Distinct().ToArray();
 
         var dbPick = await db.PickLists
             .Where(p => entries.Contains(p.AbsEntry) && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
             .ToArrayAsync();
-        
-        // Get active check sessions if picking check is enabled
-        var activeCheckSessions = settings.Options.EnablePickingCheck 
+
+        // Get check session info if picking check is enabled
+        var checkSessionInfo = settings.Options.EnablePickingCheck
             ? await db.PickListCheckSessions
-                .Where(s => entries.Contains(s.PickListId) && !s.IsCompleted && !s.IsCancelled && !s.Deleted)
-                .ToDictionaryAsync(s => s.PickListId)
-            : new Dictionary<int, Core.Entities.PickListCheckSession>();
-        
+                .Where(s => entries.Contains(s.PickListId) && !s.Deleted)
+                .GroupBy(s => s.PickListId)
+                .Select(g => new {
+                    PickListId = g.Key,
+                    HasActiveSession = g.Any(s => !s.IsCompleted && !s.IsCancelled)
+                })
+                .ToDictionaryAsync(x => x.PickListId, x => x.HasActiveSession)
+            : new Dictionary<int, bool>();
+
         foreach (var r in response) {
             var values         = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
             int pickedQuantity = values.Sum(p => p.Quantity);
@@ -49,11 +55,16 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             r.UpdateQuantity += pickedQuantity;
             if (values.Any(v => v.SyncStatus is SyncStatus.Pending or SyncStatus.Failed))
                 r.SyncStatus = SyncStatus.Pending;
-            
-            // Check if picking check has started
-            if (settings.Options.EnablePickingCheck && activeCheckSessions.ContainsKey(r.Entry)) {
-                r.CheckStarted = true;
+
+            // Check if picking check exists and if it's active
+            if (settings.Options.EnablePickingCheck && checkSessionInfo.TryGetValue(r.Entry, out var hasActiveSession)) {
+                r.HasCheck = true;
+                r.CheckStarted = hasActiveSession;
             }
+        }
+
+        if (!request.DisplayCompleted) {
+            response.RemoveAll(v => v.OpenQuantity == 0);
         }
 
         return response;
@@ -79,7 +90,6 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             OpenQuantity   = pick.OpenQuantity,
             UpdateQuantity = pick.UpdateQuantity,
             PickPackOnly   = pick.PickPackOnly,
-            CheckStarted   = false,
             Detail         = []
         };
 
@@ -90,11 +100,17 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         response.OpenQuantity   -= dbPickQty;
         response.UpdateQuantity += dbPickQty;
 
-        // Check if picking check has started
+        // Check if picking check has started or exists
         if (settings.Options.EnablePickingCheck) {
-            var activeCheckSession = await db.PickListCheckSessions
-                .FirstOrDefaultAsync(s => s.PickListId == absEntry && !s.IsCompleted && !s.IsCancelled && !s.Deleted);
-            response.CheckStarted = activeCheckSession != null;
+            var checkSession = await db.PickListCheckSessions
+                .Where(s => s.PickListId == absEntry && !s.Deleted)
+                .Select(s => new { s.IsCompleted, s.IsCancelled })
+                .FirstOrDefaultAsync();
+
+            if (checkSession != null) {
+                response.HasCheck = true;
+                response.CheckStarted = !checkSession.IsCompleted && !checkSession.IsCancelled;
+            }
         }
 
         // Get picking details

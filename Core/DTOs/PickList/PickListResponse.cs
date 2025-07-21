@@ -18,6 +18,7 @@ public class PickListResponse {
     public List<PickListDetailResponse>? Detail         { get; set; }
     public bool                          PickPackOnly   { get; set; }
     public bool                          CheckStarted   { get; set; }
+    public bool                          HasCheck       { get; set; }
 }
 
 public class PickListDetailResponse {
