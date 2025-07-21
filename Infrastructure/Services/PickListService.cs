@@ -64,7 +64,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         }
 
         if (!request.DisplayCompleted) {
-            response.RemoveAll(v => v.OpenQuantity == 0);
+            response.RemoveAll(v => v is { OpenQuantity: 0, CheckStarted: false });
         }
 
         return response;
