@@ -243,7 +243,9 @@ public class PackageService(
             if (kvp.Value == null) {
                 existingMetadata.Remove(kvp.Key);
             } else {
-                existingMetadata[kvp.Key] = kvp.Value;
+                // Extract actual value from JsonElement if needed
+                var actualValue = ExtractValue(kvp.Value);
+                existingMetadata[kvp.Key] = actualValue;
             }
         }
         
@@ -310,10 +312,13 @@ public class PackageService(
     }
 
     private string? ValidateStringValue(object value) {
-        if (value is not string) {
-            return $"Expected string value, got {value.GetType().Name}";
+        if (value is string) return null;
+        
+        if (value is JsonElement element && element.ValueKind == JsonValueKind.String) {
+            return null;
         }
-        return null;
+        
+        return $"Expected string value, got {value.GetType().Name}";
     }
 
     private string? ValidateDecimalValue(object value) {
@@ -342,6 +347,20 @@ public class PackageService(
         if (DateTime.TryParse(value.ToString(), out _)) return null;
         
         return $"Expected date value, got {value.GetType().Name}";
+    }
+
+    private object ExtractValue(object value) {
+        if (value is JsonElement element) {
+            return element.ValueKind switch {
+                JsonValueKind.String => element.GetString()!,
+                JsonValueKind.Number => element.TryGetDecimal(out var dec) ? dec : element.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null!,
+                _ => element.ToString()
+            };
+        }
+        return value;
     }
 
     private Dictionary<string, object> ParseCustomAttributes(string? customAttributesJson) {
