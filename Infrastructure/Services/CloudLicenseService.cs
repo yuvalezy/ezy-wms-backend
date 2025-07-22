@@ -21,13 +21,9 @@ public class CloudLicenseService(
     
     private readonly string cloudEndpoint = settings.Licensing.CloudEndpoint ?? 
         throw new InvalidOperationException("Cloud endpoint not configured");
-    private readonly string bearerToken = settings.Licensing.BearerToken ?? 
-        throw new InvalidOperationException("Bearer token not configured");
 
     public async Task<CloudLicenseResponse> SendDeviceEventAsync(CloudLicenseRequest request) {
         try {
-            ConfigureHttpClient();
-            
             string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
@@ -79,8 +75,6 @@ public class CloudLicenseService(
 
     public async Task<AccountValidationResponse> ValidateAccountAsync(AccountValidationRequest request) {
         try {
-            ConfigureHttpClient();
-            
             string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
@@ -116,7 +110,6 @@ public class CloudLicenseService(
 
     public async Task<bool> IsCloudAvailableAsync() {
         try {
-            ConfigureHttpClient();
             var response = await httpClient.GetAsync($"{cloudEndpoint}/health");
             return response.IsSuccessStatusCode;
         }
@@ -167,12 +160,6 @@ public class CloudLicenseService(
             .CountAsync(q => q.Status == CloudSyncStatus.Pending || q.Status == CloudSyncStatus.Failed);
     }
 
-    private void ConfigureHttpClient() {
-        httpClient.DefaultRequestHeaders.Clear();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-        httpClient.DefaultRequestHeaders.Add("User-Agent", "WMS-License-Client/1.0");
-        httpClient.Timeout = TimeSpan.FromSeconds(30);
-    }
 
     private async Task ProcessQueueItemAsync(CloudSyncQueue item) {
         try {

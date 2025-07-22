@@ -75,7 +75,16 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ICloudLicenseService, CloudLicenseService>();
         
         // Configure HTTP client for cloud services
-        services.AddHttpClient<CloudLicenseService>();
+        services.AddHttpClient<CloudLicenseService>((serviceProvider, httpClient) => {
+            var settingsService = serviceProvider.GetRequiredService<ISettings>();
+            var bearerToken = settingsService.Licensing.BearerToken ?? 
+                throw new InvalidOperationException("Bearer token not configured");
+            
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "WMS-License-Client/1.0");
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+        });
 
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(options => {

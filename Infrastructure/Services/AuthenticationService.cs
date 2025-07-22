@@ -34,7 +34,7 @@ public class AuthenticationService(
                 }
 
                 registerDevice = true;
-            } 
+            }
 
             // Find all users and check password
             var users = await dbContext.Users
@@ -70,15 +70,21 @@ public class AuthenticationService(
                 return null;
             }
 
+            // Load warehouses
+            var warehouses = (await externalSystemAdapter.GetWarehousesAsync()).ToArray();
 
             // Handle warehouse selection
             string?            selectedWarehouse = null;
             WarehouseResponse? warehouse         = null;
-            if (authenticatedUser.Warehouses.Count == 1) {
+            if (warehouses.Length == 1) {
+                selectedWarehouse = warehouses[0].Id;
+                warehouse         = warehouses[0];
+            }
+            else if (authenticatedUser.Warehouses.Count == 1) {
                 selectedWarehouse = authenticatedUser.Warehouses.First();
 
                 //Validate that the warehouse exists in the system
-                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                warehouse = warehouses.FirstOrDefault(w => w.Id == selectedWarehouse);
                 if (warehouse == null) {
                     logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
                     return null;
@@ -86,9 +92,11 @@ public class AuthenticationService(
             }
             else if (authenticatedUser.SuperUser || authenticatedUser.Warehouses.Count > 1) {
                 if (string.IsNullOrEmpty(request.Warehouse)) {
-                    // Fetch available warehouses
-                    string[]? filter     = authenticatedUser.Warehouses.Count > 0 ? authenticatedUser.Warehouses.ToArray() : null;
-                    var       warehouses = await externalSystemAdapter.GetWarehousesAsync(filter);
+                    if (authenticatedUser.Warehouses.Count > 0) {
+                        string[] filter = authenticatedUser.Warehouses.ToArray();
+                        warehouses = warehouses.Where(w => filter.Contains(w.Id)).ToArray();
+                    }
+
                     throw new WarehouseSelectionRequiredException(warehouses);
                 }
 
@@ -101,7 +109,7 @@ public class AuthenticationService(
 
                 selectedWarehouse = request.Warehouse;
                 //Validate that the warehouse exists in the system
-                warehouse = await externalSystemAdapter.GetWarehouseAsync(selectedWarehouse);
+                warehouse = warehouses.FirstOrDefault(w => w.Id == selectedWarehouse);
                 if (warehouse == null) {
                     logger.LogWarning("Login failed: Warehouse {Warehouse} does not exist", selectedWarehouse);
                     return null;
@@ -138,6 +146,12 @@ public class AuthenticationService(
             await sessionManager.SetValueAsync(token, sessionInfo.ToJson(), TimeSpan.FromDays(1));
 
             return sessionInfo;
+        }
+        catch (WarehouseSelectionRequiredException) {
+            throw;
+        }
+        catch (DeviceRegistrationException) {
+            throw;
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error during login");
