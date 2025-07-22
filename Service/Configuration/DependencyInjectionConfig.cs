@@ -72,10 +72,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAccountStatusService, AccountStatusService>();
         services.AddScoped<ILicenseCacheService, LicenseCacheService>();
         services.AddScoped<ILicenseValidationService, LicenseValidationService>();
-        services.AddScoped<ICloudLicenseService, CloudLicenseService>();
         
         // Configure HTTP client for cloud services
-        services.AddHttpClient<CloudLicenseService>((serviceProvider, httpClient) => {
+        services.AddHttpClient<ICloudLicenseService, CloudLicenseService>((serviceProvider, httpClient) => {
             var settingsService = serviceProvider.GetRequiredService<ISettings>();
             var bearerToken = settingsService.Licensing.BearerToken ?? 
                 throw new InvalidOperationException("Bearer token not configured");
