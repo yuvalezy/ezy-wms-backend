@@ -76,14 +76,6 @@
         <EmbeddedResource Include="Queries\SQL\*.sql"/>
 
         <!-- Resx files -->
-        <EmbeddedResource Update="Resources\ErrorMessages.resx">
-            <Generator>ResXFileCodeGenerator</Generator>
-            <LastGenOutput>ErrorMessages.Designer.cs</LastGenOutput>
-        </EmbeddedResource>
-        <EmbeddedResource Update="Resources\ErrorMessages.es-PA.resx">
-            <Generator>ResXFileCodeGenerator</Generator>
-            <LastGenOutput>ErrorMessages.es-PA.Designer.cs</LastGenOutput>
-        </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
