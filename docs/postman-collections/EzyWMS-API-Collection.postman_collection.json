@@ -3637,6 +3637,149 @@
               ]
             }
           }
+        },
+        {
+          "name": "Gets item metadata field definitions configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/general/item-metadata-definitions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "general",
+                "item-metadata-definitions"
+              ]
+            },
+            "description": "Retrieves the configured metadata field definitions for items\n\n**Authorization Requirements:**\n- Policy: AnyRole_ItemManagement_ItemManagementSupervisor\n- Any of these roles: ItemManagement, ItemManagementSupervisor",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Gets metadata for a specific item by item code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemCode}}/metadata",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemCode}}",
+                "metadata"
+              ],
+              "variable": [
+                {
+                  "key": "itemCode",
+                  "value": "ITEM001",
+                  "description": "The item code to retrieve metadata for"
+                }
+              ]
+            },
+            "description": "Retrieves metadata for a specific item from the external system (SAP Business One)\n\n**Authorization Requirements:**\n- Policy: AnyRole_ItemManagement_ItemManagementSupervisor\n- Any of these roles: ItemManagement, ItemManagementSupervisor",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Updates metadata for a specific item by item code",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Device-UUID",
+                "value": "{{deviceUUID}}",
+                "type": "text",
+                "description": "Device UUID for license validation"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"PurchaseUnitVolume\": 12.5,\n    \"PurchaseWeightUnit\": 2.3,\n    \"U_CUSTOM_FIELD\": \"Updated Value\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/items/{{itemCode}}/metadata",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "items",
+                "{{itemCode}}",
+                "metadata"
+              ],
+              "variable": [
+                {
+                  "key": "itemCode",
+                  "value": "ITEM001",
+                  "description": "The item code to update metadata for"
+                }
+              ]
+            },
+            "description": "Updates metadata for a specific item in the external system (SAP Business One). Only writable fields can be updated - read-only fields (ItemCode, ItemName) will be rejected.\n\n**Authorization Requirements:**\n- Policy: AnyRole_ItemManagement_ItemManagementSupervisor\n- Any of these roles: ItemManagement, ItemManagementSupervisor",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
