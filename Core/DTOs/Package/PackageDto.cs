@@ -19,9 +19,4 @@ public class PackageDto {
     public          Dictionary<string, object>? CustomAttributes { get; set; } = [];
     public          PackageContentDto[]         Contents         { get; set; } = [];
     public          PackageLocationHistoryDto[] LocationHistory  { get; set; } = [];
-    
-    /// <summary>
-    /// Available metadata field definitions for this package
-    /// </summary>
-    public          PackageMetadataDefinition[] MetadataDefinitions { get; set; } = [];
 }

@@ -42,11 +42,6 @@
             Read-only fields (ItemCode, ItemName) will be rejected if included
             </summary>
         </member>
-        <member name="P:Core.DTOs.Package.PackageDto.MetadataDefinitions">
-            <summary>
-            Available metadata field definitions for this package
-            </summary>
-        </member>
         <member name="T:Core.DTOs.Package.UpdatePackageMetadataRequest">
             <summary>
             Request model for updating package metadata fields

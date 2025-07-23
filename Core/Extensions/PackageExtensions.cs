@@ -22,7 +22,6 @@ public static class PackageExtensions {
             CustomAttributes = ParseCustomAttributes(package.CustomAttributes),
             Contents         = await Task.WhenAll(package.Contents.Select(async c => await c.ToDto(adapter))),
             LocationHistory  = await Task.WhenAll(package.LocationHistory.Select(async c => await c.ToDto(adapter))),
-            MetadataDefinitions = settings.Package.MetadataDefinition
         };
     }
 
