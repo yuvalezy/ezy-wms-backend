@@ -49,7 +49,7 @@ public class ItemSettings {
         
         // Validate that read-only fields cannot be marked as required
         var invalidRequiredReadOnly = MetadataDefinition
-            .Where(x => x.ReadOnly && x.Required);
+            .Where(x => x is { ReadOnly: true, Required: true });
         
         foreach (var invalid in invalidRequiredReadOnly) {
             errors.Add($"Field '{invalid.Id}' cannot be both ReadOnly and Required");

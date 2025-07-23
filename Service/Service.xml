@@ -443,6 +443,14 @@
             <response code="200">Returns the metadata field definitions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="M:Service.Controllers.GeneralController.GetItemMetadataDefinitions">
+            <summary>
+            Gets the configured item metadata field definitions
+            </summary>
+            <returns>Array of item metadata field definitions</returns>
+            <response code="200">Returns the item metadata field definitions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
         <member name="T:Service.Controllers.GoodsReceiptController">
             <summary>
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
@@ -620,12 +628,12 @@
         </member>
         <member name="T:Service.Controllers.ItemsController">
             <summary>
-            Item Controller - Provides item/barcode/bin location utilities
+            Item Controller - Provides item/barcode/bin location utilities and metadata management
             </summary>
         </member>
-        <member name="M:Service.Controllers.ItemsController.#ctor(Core.Interfaces.IPublicService)">
+        <member name="M:Service.Controllers.ItemsController.#ctor(Core.Interfaces.IPublicService,Core.Interfaces.IItemService)">
             <summary>
-            Item Controller - Provides item/barcode/bin location utilities
+            Item Controller - Provides item/barcode/bin location utilities and metadata management
             </summary>
         </member>
         <member name="M:Service.Controllers.ItemsController.ScanBinLocation(System.String)">
@@ -697,6 +705,29 @@
             <response code="401">If the user is not authenticated</response>
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.UpdateItemMetadata(System.String,Core.DTOs.Items.UpdateItemMetadataRequest)">
+            <summary>
+            Updates metadata for a specific item
+            </summary>
+            <param name="itemCode">The item code to update metadata for</param>
+            <param name="request">The metadata update request containing field values</param>
+            <returns>The updated item metadata</returns>
+            <response code="200">Returns the updated item metadata</response>
+            <response code="400">If metadata validation fails or request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="404">If the item is not found</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.ItemsController.GetItemMetadata(System.String)">
+            <summary>
+            Retrieves metadata for a specific item
+            </summary>
+            <param name="itemCode">The item code to retrieve metadata for</param>
+            <returns>The item metadata</returns>
+            <response code="200">Returns the item metadata</response>
+            <response code="404">If the item is not found</response>
+            <response code="401">If the user is not authenticated</response>
         </member>
         <member name="T:Service.Controllers.PackageController">
             <summary>

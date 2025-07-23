@@ -7,73 +7,25 @@
         <member name="T:Core.DTOs.Items.ItemMetadataRequest">
             <summary>
             Request model for updating item metadata in external system (SAP Business One)
-            Contains only writable fields - read-only fields (ItemCode, ItemName) are excluded
+            Contains flexible metadata fields - external system validates field names and permissions
             </summary>
         </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataRequest.PurchaseUnitVolume">
+        <member name="P:Core.DTOs.Items.ItemMetadataRequest.Metadata">
             <summary>
-            Purchase unit volume (cubic measurement)
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataRequest.PurchaseWeightUnit">
-            <summary>
-            Purchase unit weight
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataRequest.U_LW_UPDATE_USER">
-            <summary>
-            User ID of the last person to update this item
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataRequest.U_LW_UPDATE_TIMESTAMP">
-            <summary>
-            Timestamp when the item was last updated
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataRequest.U_B1SStdTP">
-            <summary>
-            SAP Business One standard type field (maximum 50 characters)
+            Metadata field values as key-value pairs
+            External system (SAP) will validate field names and read-only restrictions
             </summary>
         </member>
         <member name="T:Core.DTOs.Items.ItemMetadataResponse">
             <summary>
             Response model containing complete item metadata from external system (SAP Business One)
-            Includes both read-only fields (loaded from SAP) and writable fields
+            Contains flexible metadata fields - external system determines available fields
             </summary>
         </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.ItemCode">
+        <member name="P:Core.DTOs.Items.ItemMetadataResponse.Metadata">
             <summary>
-            Item code - read-only, loaded from SAP Business One
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.ItemName">
-            <summary>
-            Item name/description - read-only, loaded from SAP Business One
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.PurchaseUnitVolume">
-            <summary>
-            Purchase unit volume (cubic measurement) - writable
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.PurchaseWeightUnit">
-            <summary>
-            Purchase unit weight - writable
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.U_LW_UPDATE_USER">
-            <summary>
-            User ID of the last person to update this item - writable
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.U_LW_UPDATE_TIMESTAMP">
-            <summary>
-            Timestamp when the item was last updated - writable
-            </summary>
-        </member>
-        <member name="P:Core.DTOs.Items.ItemMetadataResponse.U_B1SStdTP">
-            <summary>
-            SAP Business One standard type field (maximum 50 characters) - writable
+            All metadata field values as key-value pairs
+            External system (SAP) determines which fields are available and their values
             </summary>
         </member>
         <member name="T:Core.DTOs.Items.UpdateItemMetadataRequest">
@@ -263,17 +215,6 @@
             Null means it hasn't been processed yet
             </summary>
         </member>
-        <member name="T:Core.Exceptions.ItemMetadataValidationException">
-            <summary>
-            Exception thrown when item metadata validation fails
-            Used for read-only field violations, mandatory field validation, type mismatches, etc.
-            </summary>
-        </member>
-        <member name="T:Core.Exceptions.ItemNotFoundException">
-            <summary>
-            Exception thrown when an item is not found in the external system
-            </summary>
-        </member>
         <member name="M:Core.Interfaces.IExternalSystemAdapter.GetItemMetadataAsync(System.String)">
             <summary>
             Retrieves item metadata from the external system by item code
@@ -303,7 +244,7 @@
             <param name="request">The metadata update request containing field values</param>
             <param name="sessionInfo">Current user session information</param>
             <returns>Updated item metadata response</returns>
-            <exception cref="!:ItemNotFoundException">Thrown when the item is not found in the external system</exception>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException">Thrown when the item is not found in the external system</exception>
             <exception cref="!:ValidationException">Thrown when validation fails (read-only fields, mandatory fields, etc.)</exception>
             <exception cref="T:System.UnauthorizedAccessException">Thrown when user lacks permission to update item metadata</exception>
         </member>
@@ -360,30 +301,15 @@
         <member name="P:Core.Models.Settings.ItemSettings.MetadataDefinition">
             <summary>
             Configurable metadata field definitions for items loaded from external systems
-            </summary>
-        </member>
-        <member name="F:Core.Models.Settings.ItemSettings.ValidItemFields">
-            <summary>
-            Valid item field IDs that can be configured for metadata
-            </summary>
-        </member>
-        <member name="F:Core.Models.Settings.ItemSettings.ReadOnlyFields">
-            <summary>
-            Fields that are read-only and loaded from external system
+            External system (SAP) will validate field names and read-only restrictions
             </summary>
         </member>
         <member name="M:Core.Models.Settings.ItemSettings.ValidateMetadataDefinitions">
             <summary>
-            Validates the metadata definitions for consistency and correctness
+            Validates the metadata definitions for basic consistency
+            Field-specific validation (valid names, read-only restrictions) is handled by external system
             </summary>
             <returns>List of validation error messages, empty if valid</returns>
-        </member>
-        <member name="M:Core.Models.Settings.ItemSettings.GetExpectedFieldType(System.String)">
-            <summary>
-            Gets the expected field type for a given item field ID
-            </summary>
-            <param name="fieldId">The field identifier</param>
-            <returns>The expected MetadataFieldType, or null if not strictly defined</returns>
         </member>
         <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
             <summary>
