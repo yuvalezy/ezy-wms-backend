@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.DTOs.Items;
 using Core.DTOs.Settings;
@@ -13,12 +14,14 @@ using Service.Middlewares;
 namespace Service.Controllers;
 
 /// <summary>
-/// Item Controller - Provides item/barcode/bin location utilities
+/// Item Controller - Provides item/barcode/bin location utilities and metadata management
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ItemsController(IPublicService publicService) : ControllerBase {
+public class ItemsController(
+    IPublicService publicService,
+    IItemService itemService) : ControllerBase {
     /// <summary>
     /// Scans and validates a bin location barcode
     /// </summary>
@@ -149,5 +152,57 @@ public class ItemsController(IPublicService publicService) : ControllerBase {
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode([FromBody] UpdateBarCodeRequest request) {
         return await publicService.UpdateItemBarCode(HttpContext.GetSession().UserId, request);
+    }
+
+    /// <summary>
+    /// Updates metadata for a specific item
+    /// </summary>
+    /// <param name="itemCode">The item code to update metadata for</param>
+    /// <param name="request">The metadata update request containing field values</param>
+    /// <returns>The updated item metadata</returns>
+    /// <response code="200">Returns the updated item metadata</response>
+    /// <response code="400">If metadata validation fails or request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="404">If the item is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPut("{itemCode}/metadata")]
+    [RequireAnyRole(RoleType.ItemManagement, RoleType.ItemManagementSupervisor)]
+    [ProducesResponseType(typeof(ItemMetadataResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemMetadataResponse>> UpdateItemMetadata(
+        string itemCode,
+        [FromBody] UpdateItemMetadataRequest request) {
+        
+        var sessionInfo = HttpContext.GetSession();
+        
+        var updatedItem = await itemService.UpdateItemMetadataAsync(
+            itemCode, request, sessionInfo);
+            
+        return Ok(updatedItem);
+    }
+    
+    /// <summary>
+    /// Retrieves metadata for a specific item
+    /// </summary>
+    /// <param name="itemCode">The item code to retrieve metadata for</param>
+    /// <returns>The item metadata</returns>
+    /// <response code="200">Returns the item metadata</response>
+    /// <response code="404">If the item is not found</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpGet("{itemCode}/metadata")]
+    [ProducesResponseType(typeof(ItemMetadataResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemMetadataResponse>> GetItemMetadata(string itemCode) {
+        var itemMetadata = await itemService.GetItemMetadataAsync(itemCode);
+        
+        if (itemMetadata == null) {
+            throw new System.Collections.Generic.KeyNotFoundException($"Item '{itemCode}' not found");
+        }
+        
+        return Ok(itemMetadata);
     }
 }

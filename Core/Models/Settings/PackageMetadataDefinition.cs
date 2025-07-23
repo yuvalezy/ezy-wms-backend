@@ -21,7 +21,7 @@ public class PackageMetadataDefinition {
 }
 
 /// <summary>
-/// Supported data types for package metadata fields
+/// Supported data types for metadata fields
 /// </summary>
 public enum MetadataFieldType {
     /// <summary>
@@ -37,5 +37,10 @@ public enum MetadataFieldType {
     /// <summary>
     /// Date value
     /// </summary>
-    Date
+    Date,
+    
+    /// <summary>
+    /// Integer number value
+    /// </summary>
+    Integer
 }

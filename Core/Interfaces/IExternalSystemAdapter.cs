@@ -42,6 +42,22 @@ public interface IExternalSystemAdapter {
 
     Task<ItemUnitResponse> GetItemInfo(string itemCode);
 
+    // Item Metadata methods
+    /// <summary>
+    /// Retrieves item metadata from the external system by item code
+    /// </summary>
+    /// <param name="itemCode">The item code to retrieve metadata for</param>
+    /// <returns>Item metadata response with all configured fields, or null if item not found</returns>
+    Task<ItemMetadataResponse?> GetItemMetadataAsync(string itemCode);
+
+    /// <summary>
+    /// Updates item metadata in the external system
+    /// </summary>
+    /// <param name="itemCode">The item code to update</param>
+    /// <param name="request">The metadata update request containing writable field values</param>
+    /// <returns>Updated item metadata response</returns>
+    Task<ItemMetadataResponse> UpdateItemMetadataAsync(string itemCode, ItemMetadataRequest request);
+
     // Transfer
     Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
 

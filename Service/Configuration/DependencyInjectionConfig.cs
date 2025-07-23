@@ -64,6 +64,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPackageLocationService, PackageLocationService>();
         services.AddScoped<IPackageService, PackageService>();
 
+        // Item Management Services
+        services.AddScoped<IItemService, ItemService>();
+
         // Device Management Services
         services.AddScoped<IDeviceService, DeviceService>();
         

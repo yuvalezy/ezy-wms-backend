@@ -114,4 +114,17 @@ public class GeneralController(IPublicService publicService, ISettings settings)
         return Ok(settings.Package.MetadataDefinition);
     }
 
+    /// <summary>
+    /// Gets the configured item metadata field definitions
+    /// </summary>
+    /// <returns>Array of item metadata field definitions</returns>
+    /// <response code="200">Returns the item metadata field definitions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpGet("item-metadata-definitions")]
+    [ProducesResponseType(typeof(ItemMetadataDefinition[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<ItemMetadataDefinition[]> GetItemMetadataDefinitions() {
+        return Ok(settings.Item.MetadataDefinition);
+    }
+
 }
