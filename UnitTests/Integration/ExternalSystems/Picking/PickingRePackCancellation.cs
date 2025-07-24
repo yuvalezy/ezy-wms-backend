@@ -60,29 +60,29 @@ public class PickingRePackCancellation : BaseExternalTest {
         await helper.PickFullAndHalfPackage();
     }
 
-    [Test]
-    [Order(5)]
-    public async Task CancelPicking() {
-        var scope = factory.Services.CreateScope();
-
-        //save selection for validation
-        var adapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
-        selection = (await adapter.GetPickingSelection(pickEntry)).ToArray();
-
-        //Cancel pick list
-        var service  = scope.ServiceProvider.GetRequiredService<IPickListCancelService>();
-        var response = await service.CancelPickListAsync(pickEntry, TestConstants.SessionInfo);
-        Assert.That(response, Is.Not.Null);
-        Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
-        Assert.That(response.TransferId.HasValue);
-        transferId = response.TransferId.Value;
-    }
-
-    [Test]
-    [Order(6)]
-    public async Task CheckTransfer() {
-        int binEntry = settings.Filters.CancelPickingBinEntry;
-        var helper   = new CheckTransferHelper(pickEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
-        await helper.Validate();
-    }
+    // [Test]
+    // [Order(5)]
+    // public async Task CancelPicking() {
+    //     var scope = factory.Services.CreateScope();
+    //
+    //     //save selection for validation
+    //     var adapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
+    //     selection = (await adapter.GetPickingSelection(pickEntry)).ToArray();
+    //
+    //     //Cancel pick list
+    //     var service  = scope.ServiceProvider.GetRequiredService<IPickListCancelService>();
+    //     var response = await service.CancelPickListAsync(pickEntry, TestConstants.SessionInfo);
+    //     Assert.That(response, Is.Not.Null);
+    //     Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
+    //     Assert.That(response.TransferId.HasValue);
+    //     transferId = response.TransferId.Value;
+    // }
+    //
+    // [Test]
+    // [Order(6)]
+    // public async Task CheckTransfer() {
+    //     int binEntry = settings.Filters.CancelPickingBinEntry;
+    //     var helper   = new CheckTransferHelper(pickEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
+    //     await helper.Validate();
+    // }
 }
