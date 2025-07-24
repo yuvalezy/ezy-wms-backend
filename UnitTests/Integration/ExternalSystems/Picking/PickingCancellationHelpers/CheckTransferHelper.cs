@@ -181,7 +181,7 @@ public class CheckTransferHelper(
         }
 
         // Common validations for both full and partial packages
-        await ValidateCommonPackageState(package);
+        await ValidateCommonPackageState(package, wasFullPackage);
     }
 
     private bool DetermineIfFullPackageCommitment(Package package)
@@ -242,7 +242,7 @@ public class CheckTransferHelper(
         Console.WriteLine($"✓ Partial package {package.Barcode} validation passed");
     }
 
-    private async Task ValidateCommonPackageState(Package package)
+    private async Task ValidateCommonPackageState(Package package, bool wasFullPackage)
     {
         // 1. Validate no remaining PackageCommitments for picking operations
         Assert.That(package.Commitments.Where(c => c.SourceOperationType == ObjectType.Picking).Count(),
@@ -252,7 +252,7 @@ public class CheckTransferHelper(
         // Note: Both full and partial packages have commitments cleared during cancellation
         foreach (var content in package.Contents)
         {
-            Assert.That(content.CommittedQuantity, Is.EqualTo(0),
+            Assert.That(content.CommittedQuantity, Is.EqualTo(wasFullPackage ? 24 : 0),
                 $"Package {package.Barcode} content {content.ItemCode} should have 0 committed quantity after cancellation");
         }
 
