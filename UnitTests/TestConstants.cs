@@ -4,7 +4,7 @@ namespace UnitTests;
 
 public static class TestConstants {
     public static readonly SessionInfo SessionInfo = new() {
-        UserId             = "1a90e8b1-ad93-4a12-783b-08ddc2390587",
+        UserId             = "c9232a3c-7354-4830-1ee2-08ddc7b7a5f1",
         Name               = "Administrator",
         SuperUser          = true,
         Warehouse          = "SM",

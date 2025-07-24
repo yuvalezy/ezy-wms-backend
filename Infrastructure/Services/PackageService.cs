@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
@@ -83,6 +84,24 @@ public class PackageService(
         }
 
         return await query.ToListAsync();
+    }
+
+    public async Task ActivatePackagesByIdAsync(Guid id, SessionInfo sessionInfo)
+    {
+        var package = await db.Packages.Include(p => p.Contents).FirstOrDefaultAsync(p => p.Id == id);
+        if (package == null || package.WhsCode != sessionInfo.Warehouse)
+            throw new ValidationException($"Package warehouse {package?.WhsCode} does not match user warehouse {sessionInfo.Warehouse}");
+
+        if (package.Status != PackageStatus.Init || package.Contents.Count <= 0)
+            throw new ValidationException($"Package {package.Barcode} is not active or has no items");
+
+        package.Status = PackageStatus.Active;
+        package.UpdatedAt = DateTime.UtcNow;
+        package.UpdatedByUserId = sessionInfo.Guid;
+
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("Package {Barcode} activated by user {UserId}", package.Barcode, sessionInfo.Guid);
     }
 
     public async Task<int> ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo) {

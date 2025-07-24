@@ -128,9 +128,11 @@ public class CreateGoodsReceipt(SboCompany sboCompany, string testItem, ISetting
             };
             var package = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
             CreatedPackages.Add(package.Id);
+            await packageService.ActivatePackagesByIdAsync(package.Id, TestConstants.SessionInfo);
 
             var package2 = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
             CreatedPackages.Add(package2.Id);
+            await packageService.ActivatePackagesByIdAsync(package2.Id, TestConstants.SessionInfo);
         }
 
         using (var scope = factory.Services.CreateScope()) {
