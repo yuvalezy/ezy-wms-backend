@@ -20,6 +20,12 @@ public class PickRePackHelper(int pickEntry, WebApplicationFactory<Program> fact
     {
         await PickFullPackage();
         await AddHalfPackageItemToPickList();
+        
+        //Process
+        var processService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
+        var processResponse = await processService.ProcessPickList(pickEntry, TestConstants.SessionInfo.Guid);
+        Assert.That(processResponse, Is.Not.Null);
+        Assert.That(processResponse.Status, Is.EqualTo(ResponseStatus.Ok), processResponse.ErrorMessage ?? "No error message");
     }
 
     private async Task PickFullPackage()
