@@ -56,8 +56,8 @@ public class PickingRePackCancellation : BaseExternalTest {
     [Order(2)]
     public async Task PickFullAndHalfPackage() {
         int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
-        var helper = new PickAllHelper(pickEntry, factory, binEntry, salesEntry, testItem);
-        await helper.PickFullAndHalfPackage(packages);
+        var helper = new PickRePackHelper(pickEntry, factory, binEntry, salesEntry, testItem, packages);
+        await helper.PickFullAndHalfPackage();
     }
 
     [Test]
