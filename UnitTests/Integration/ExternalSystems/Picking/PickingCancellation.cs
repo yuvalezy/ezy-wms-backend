@@ -51,7 +51,8 @@ public class PickingCancellation : BaseExternalTest {
     [Order(2)]
     public async Task PickAll() {
         int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
-        await PickAllHelper.PickAll(pickEntry, selection, factory, binEntry, salesEntry, testItem);
+        var helper = new PickAllHelper(pickEntry, factory, binEntry, salesEntry, testItem);
+        await helper.PickAll();
     }
 
     [Test]
