@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Items;
+using Core.DTOs.Transfer;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
@@ -110,16 +111,21 @@ public class CheckTransferHelper(
         Assert.That(data, Is.Not.Null);
         Assert.That(data.ContainsKey(itemCode), Is.True, $"Transfer data should contain item {itemCode}");
         var itemData = data[itemCode];
-        Assert.That(itemData.Quantity, Is.EqualTo(expectedQuantity), $"Quantity should be {expectedQuantity}");
+        ValidatePickCancelTransferItemData(itemData, expectedQuantity);
+    }
+
+    private void ValidatePickCancelTransferItemData(TransferCreationDataResponse itemData, int validateQuantity)
+    {
+        Assert.That(itemData.Quantity, Is.EqualTo(validateQuantity), $"Quantity should be {validateQuantity}");
         Assert.That(itemData.SourceBins.Count, Is.EqualTo(1), "Source bins should be 1");
         ;
         var binSource = itemData.SourceBins.First();
         Assert.That(binSource.BinEntry, Is.EqualTo(binEntry), "Source bin should be the cancel bin");
-        Assert.That(binSource.Quantity, Is.EqualTo(expectedQuantity), $"Source bin quantity should be {expectedQuantity}");
+        Assert.That(binSource.Quantity, Is.EqualTo(validateQuantity), $"Source bin quantity should be {validateQuantity}");
         Assert.That(itemData.SourceBins.Count, Is.EqualTo(1), "Target bins should be 1");
         var binTarget = itemData.SourceBins.First();
         Assert.That(binTarget.BinEntry, Is.EqualTo(binEntry), "Target bin should be the cancel bin");
-        Assert.That(binTarget.Quantity, Is.EqualTo(expectedQuantity), $"Target bin quantity should be {expectedQuantity}");
+        Assert.That(binTarget.Quantity, Is.EqualTo(validateQuantity), $"Target bin quantity should be {validateQuantity}");
     }
 
     private async Task ValidatePackages()

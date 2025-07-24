@@ -129,6 +129,11 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
                                  packageStatuses.Contains(pc.Package.Status))
                     .SumAsync(pc => pc.Quantity);
 
+                var packages = await db.PackageContents
+                .Where(pc => pc.ItemCode == request.ItemCode &&
+                             pc.BinEntry == request.BinEntry.Value &&
+                             packageStatuses.Contains(pc.Package.Status)).ToArrayAsync();
+
                 decimal availableInBin = validationResult.AvailableQuantity - binSourceQuantity - packagedQuantity;
                 if (availableInBin < totalQuantity) {
                     throw new ApiErrorException((int)AddItemReturnValueType.QuantityMoreAvailable, new { request.ItemCode });

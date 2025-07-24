@@ -18,6 +18,8 @@ public class PickListCancelService(
     ITransferService                    transferService,
     ITransferLineService                transferLineService,
     ITransferPackageService             transferPackageService,
+    IPackageLocationService             packageLocationService,
+    IPackageContentService              packageContentService,
     IExternalSystemAdapter              adapter,
     ISettings                           settings,
     ILogger<PickListCancelService>      logger) : IPickListCancelService {
@@ -49,7 +51,7 @@ public class PickListCancelService(
             Comments = "Reubicación de artículos de picking"
         }, sessionInfo);
 
-        // Handle packages first, then regular items
+        // Handle packages with physical movements first, then regular items
         var processedItems = await HandlePackageCancellation(absEntry, transfer.Id, cancelBinEntry, sessionInfo);
         await HandleRegularItemCancellation(selection, processedItems, transfer.Id, cancelBinEntry, sessionInfo);
 
@@ -98,14 +100,11 @@ public class PickListCancelService(
             }
 
             if (IsFullPackageCommitment(package, commitments)) {
-                await HandleFullPackageCommitment(packageId, transferId, cancelBinEntry, sessionInfo, package, processedItems, absEntry);
+                await HandleFullPackageCommitment(packageId, transferId, cancelBinEntry, sessionInfo, package, processedItems, absEntry, commitments);
             }
             else {
                 await HandlePartialPackageCommitment(commitments, transferId, cancelBinEntry, sessionInfo, processedItems, absEntry);
             }
-
-            // Clean up package commitments
-            await ClearPackageCommitments(commitments, sessionInfo);
         }
         catch (Exception ex) {
             logger.LogError(ex, "Failed to process package {PackageId} during pick list cancellation {AbsEntry}",
@@ -113,8 +112,24 @@ public class PickListCancelService(
         }
     }
 
-    private async Task HandleFullPackageCommitment(Guid packageId, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, Package package, HashSet<string> processedItems, int absEntry) {
+    private async Task HandleFullPackageCommitment(Guid packageId, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, Package package, HashSet<string> processedItems, int absEntry, IEnumerable<PackageCommitment> commitments) {
         try {
+            // 1. Clean up package commitments FIRST (uncommit)
+            await ClearPackageCommitments(commitments, sessionInfo);
+
+            // 2. Move full package to cancel bin location physically
+            var pickListId = commitments.FirstOrDefault()?.SourceOperationId;
+            await packageLocationService.MovePackageAsync(new Core.DTOs.Package.MovePackageRequest {
+                PackageId = packageId,
+                ToWhsCode = sessionInfo.Warehouse,
+                ToBinEntry = cancelBinEntry,
+                UserId = sessionInfo.Guid,
+                SourceOperationType = ObjectType.Picking,
+                SourceOperationId = pickListId,
+                Notes = $"Moved during pick list cancellation {absEntry}"
+            });
+
+            // 3. Then add to transfer for SAP processing
             await transferPackageService.HandleSourcePackageScanAsync(new TransferAddSourcePackageRequest {
                 TransferId = transferId,
                 PackageId = packageId,
@@ -126,22 +141,34 @@ public class PickListCancelService(
                 processedItems.Add(content.ItemCode);
             }
 
-            logger.LogInformation("Added full package {PackageBarcode} to transfer for pick list cancellation {AbsEntry}",
+            logger.LogInformation("Uncommitted, moved full package {PackageBarcode} to cancel bin and added to transfer for pick list cancellation {AbsEntry}",
                 package.Barcode, absEntry);
         }
         catch (Exception ex) {
-            logger.LogWarning(ex, "Failed to add package {PackageId} to transfer during pick list cancellation {AbsEntry}, will fall back to item-based processing",
+            logger.LogWarning(ex, "Failed to uncommit, move package {PackageId} or add to transfer during pick list cancellation {AbsEntry}, will fall back to item-based processing",
                 packageId, absEntry);
         }
     }
 
     private async Task HandlePartialPackageCommitment(IEnumerable<PackageCommitment> commitments, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, HashSet<string> processedItems, int absEntry) {
+        // 1. Clean up package commitments FIRST (uncommit all items)
+        await ClearPackageCommitments(commitments, sessionInfo);
+
         foreach (var commitment in commitments) {
             try {
-                // Calculate units based on committed quantity
-                decimal quantity = commitment.Quantity;
+                // 2. Remove committed content from package physically
+                await packageContentService.RemoveItemFromPackageAsync(new Core.DTOs.Package.RemoveItemFromPackageRequest {
+                    PackageId = commitment.PackageId,
+                    ItemCode = commitment.ItemCode,
+                    Quantity = commitment.Quantity,
+                    UnitType = UnitType.Unit,
+                    SourceOperationType = ObjectType.Picking,
+                    SourceOperationId = commitment.SourceOperationId,
+                    Notes = $"Removed during pick list cancellation {absEntry}"
+                }, sessionInfo.Guid);
 
-                // For now, treat as units - could be enhanced to calculate packs/dozens
+                // 3. Then add to transfer for SAP processing
+                decimal quantity = commitment.Quantity;
                 var addRequest = new TransferAddItemRequest {
                     ID = transferId,
                     ItemCode = commitment.ItemCode,
@@ -155,11 +182,11 @@ public class PickListCancelService(
                 await transferLineService.AddItem(sessionInfo, addRequest);
                 processedItems.Add(commitment.ItemCode);
 
-                logger.LogInformation("Added partial package item {ItemCode} quantity {Quantity} to transfer for pick list cancellation {AbsEntry}",
-                    commitment.ItemCode, quantity, absEntry);
+                logger.LogInformation("Uncommitted, removed {Quantity} of {ItemCode} from partial package and added to transfer for pick list cancellation {AbsEntry}",
+                    quantity, commitment.ItemCode, absEntry);
             }
             catch (Exception ex) {
-                logger.LogWarning(ex, "Failed to add partial package item {ItemCode} to transfer during pick list cancellation {AbsEntry}",
+                logger.LogWarning(ex, "Failed to remove content from partial package or add item {ItemCode} to transfer during pick list cancellation {AbsEntry}",
                     commitment.ItemCode, absEntry);
             }
         }
