@@ -22,7 +22,7 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IPickListPackageService packageService, IPickListCheckService checkService, IServiceProvider serviceProvider) : ControllerBase {
+public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IPickListCancelService cancelService, IPickListPackageService packageService, IPickListCheckService checkService, IServiceProvider serviceProvider) : ControllerBase {
     /// <summary>
     /// Gets a list of pick lists with optional filtering
     /// </summary>
@@ -175,7 +175,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ProcessPickListCancelResponse> Cancel([FromBody] ProcessPickListRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var response    = await processService.CancelPickList(request.ID, sessionInfo);
+        var response    = await cancelService.CancelPickListAsync(request.ID, sessionInfo);
         return response;
     }
 

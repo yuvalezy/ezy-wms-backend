@@ -367,6 +367,14 @@
             </summary>
             <returns>List of validation error messages, empty if valid</returns>
         </member>
+        <member name="M:Core.Services.IPickListCancelService.CancelPickListAsync(System.Int32,Core.Models.SessionInfo)">
+            <summary>
+            Cancels a pick list and creates transfer to move items back to cancel bin location
+            </summary>
+            <param name="absEntry">Pick list AbsEntry to cancel</param> 
+            <param name="sessionInfo">User session information</param>
+            <returns>Cancellation response with transfer information</returns>
+        </member>
         <member name="M:Core.Services.IPickListPackageService.AddPackageAsync(Core.DTOs.PickList.PickListAddPackageRequest,Core.Models.SessionInfo)">
             <summary>
             Adds an entire package to a pick list, creating pick list entries for all package contents

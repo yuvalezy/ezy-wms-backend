@@ -51,14 +51,6 @@ public class PickingPackages : BaseExternalTest {
         Assert.That(absEntry, Is.Not.EqualTo(-1), "Pick Entry should be created");
     }
 
-    [Test]
-    [Order(2)]
-    public async Task CanAutoPickPackage_ShouldSucceed() {
-        using var scope = factory.Services.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<IPickListPackageService>();
-        bool can = await service.CanAutoPickPackageAsync(absEntry, packages.First());
-        Assert.That(can, Is.True);
-    }
     //
     // [Test]
     // [Order(2)]

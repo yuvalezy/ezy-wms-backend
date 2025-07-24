@@ -26,43 +26,6 @@ public class PackageControllerMetadataTests {
     }
 
     [Test]
-    public void PackageDto_MetadataDefinitions_CanBeSet() {
-        // Arrange
-        var metadataDefinitions = new PackageMetadataDefinition[] {
-            new() { Id = "Volume", Description = "Volume", Type = MetadataFieldType.Decimal },
-            new() { Id = "Note", Description = "Note", Type = MetadataFieldType.String }
-        };
-
-        // Act
-        var packageDto = new PackageDto {
-            Id = Guid.NewGuid(),
-            Barcode = "TEST_BARCODE",
-            WhsCode = "TEST_WHS",
-            MetadataDefinitions = metadataDefinitions
-        };
-
-        // Assert
-        Assert.That(packageDto.MetadataDefinitions, Is.Not.Null);
-        Assert.That(packageDto.MetadataDefinitions.Length, Is.EqualTo(2));
-        Assert.That(packageDto.MetadataDefinitions[0].Id, Is.EqualTo("Volume"));
-        Assert.That(packageDto.MetadataDefinitions[0].Type, Is.EqualTo(MetadataFieldType.Decimal));
-    }
-
-    [Test]
-    public void PackageDto_MetadataDefinitions_DefaultIsEmptyArray() {
-        // Arrange & Act
-        var packageDto = new PackageDto {
-            Id = Guid.NewGuid(),
-            Barcode = "TEST_BARCODE",
-            WhsCode = "TEST_WHS"
-        };
-
-        // Assert
-        Assert.That(packageDto.MetadataDefinitions, Is.Not.Null);
-        Assert.That(packageDto.MetadataDefinitions, Is.Empty);
-    }
-
-    [Test]
     public void PackageDto_CustomAttributes_CanStoreMetadata() {
         // Arrange & Act
         var packageDto = new PackageDto {

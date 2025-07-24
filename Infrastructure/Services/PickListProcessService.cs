@@ -1,9 +1,7 @@
 using Core.DTOs.PickList;
-using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Extensions;
 using Core.Interfaces;
-using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,10 +10,7 @@ namespace Infrastructure.Services;
 
 public class PickListProcessService(
     SystemDbContext                 db,
-    ITransferService                transferService,
-    ITransferLineService            transferLineService,
     IExternalSystemAdapter          adapter,
-    ISettings                       settings,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
@@ -177,79 +172,4 @@ public class PickListProcessService(
         }
     }
 
-    public async Task<ProcessPickListCancelResponse> CancelPickList(int absEntry, SessionInfo sessionInfo) {
-        //Process the picking in case something has not been synced into sbo
-        var response = await ProcessPickList(absEntry, sessionInfo.Guid);
-        if (response.Status != ResponseStatus.Ok && response.ErrorMessage != $"No open pick list items found for AbsEntry {absEntry}") {
-            return response.ToDto();
-        }
-
-        //Get a picked selection for bin locations
-        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
-        if (cancelBinEntry == 0) {
-            throw new Exception($"Initial Counting Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
-        }
-
-        //Get current picked data
-        var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
-
-        //Cancel Pick List
-        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry);
-        if (selection.Length == 0)
-            return response.ToDto();
-
-        //Create a new transfer with source selection for cancelled pick list
-        var transfer = await transferService.CreateTransfer(new CreateTransferRequest {
-            Name     = $"Cancelación Picking {absEntry}", //TODO: multi language
-            Comments = "Reubicación de artículos de picking"
-        }, sessionInfo);
-
-        //Add items into transfer
-        var items = selection
-            .GroupBy(v => new { v.ItemCode, BarCode                                                  = v.CodeBars, v.NumInBuy, v.PackUn })
-            .Select(v => new { v.Key.ItemCode, v.Key.BarCode, v.Key.NumInBuy, v.Key.PackUn, Quantity = v.Sum(w => w.Quantity) });
-        foreach (var item in items) {
-            var addRequest = new TransferAddItemRequest {
-                //TODO: add additional validations, don't know which yet
-                ID       = transfer.Id,
-                ItemCode = item.ItemCode,
-                BarCode  = item.BarCode,
-                Type     = SourceTarget.Source,
-            };
-
-            decimal quantity = item.Quantity;
-            decimal numInBuy = item.NumInBuy;
-            decimal packUn   = item.PackUn;
-            //Calculate packs
-            int packs = (int)Math.Floor(quantity / (numInBuy * packUn));
-
-            //Calculate dozens
-            int remainderAfterPacks = (int)(quantity - packs * numInBuy * packUn);
-            int dozens              = (int)Math.Floor(remainderAfterPacks / numInBuy);
-
-            //Calculate units
-            int units = (int)(remainderAfterPacks % numInBuy);
-
-            addRequest.BinEntry = cancelBinEntry;
-            if (packs > 0) {
-                addRequest.Quantity = packs;
-                addRequest.Unit     = UnitType.Pack;
-                await transferLineService.AddItem(sessionInfo, addRequest);
-            }
-
-            if (dozens > 0) {
-                addRequest.Quantity = dozens;
-                addRequest.Unit     = UnitType.Dozen;
-                await transferLineService.AddItem(sessionInfo, addRequest);
-            }
-
-            if (units > 0) {
-                addRequest.Quantity = units;
-                addRequest.Unit     = UnitType.Unit;
-                await transferLineService.AddItem(sessionInfo, addRequest);
-            }
-        }
-
-        return response.ToDto(transfer.Id);
-    }
 }

@@ -1,6 +1,7 @@
 ﻿using Core.DTOs.Items;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpers;
 using UnitTests.Integration.ExternalSystems.Shared;
@@ -63,8 +64,8 @@ public class PickingCancellation : BaseExternalTest {
         selection = (await adapter.GetPickingSelection(pickEntry)).ToArray();
 
         //Cancel pick list
-        var service  = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-        var response = await service.CancelPickList(pickEntry, TestConstants.SessionInfo);
+        var service  = scope.ServiceProvider.GetRequiredService<IPickListCancelService>();
+        var response = await service.CancelPickListAsync(pickEntry, TestConstants.SessionInfo);
         Assert.That(response, Is.Not.Null);
         Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
         Assert.That(response.TransferId.HasValue);

@@ -48,6 +48,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<PickListPackageEligibilityService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();
+        services.AddScoped<IPickListCancelService, PickListCancelService>();
         services.AddScoped<IPickListCheckService, PickListCheckService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<IGoodsReceiptReportService, GoodsReceiptReportService>();
