@@ -224,12 +224,10 @@ public class ExternalCommandService(
                 ["ObjectId"] = objectId,
             };
 
-            if (parameters != null)
+            parameters ??= new Dictionary<string, object>();
+            foreach (var param in parameters)
             {
-                foreach (var param in parameters)
-                {
-                    queryParameters[param.Key] = param.Value;
-                }
+                queryParameters[param.Key] = param.Value;
             }
 
             var queryResult = await ExecuteSingleQueryAsync(query, queryParameters, cancellationToken);
@@ -241,7 +239,13 @@ public class ExternalCommandService(
 
     private async Task<object> ExecuteSingleQueryAsync(CommandQuery query, Dictionary<string, object> parameters, CancellationToken cancellationToken)
     {
-        await using var connection = dbContext.Database.GetDbConnection();
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException("DefaultConnection connection string not found in configuration");
+        }
+
+        await using var connection = new SqlConnection(connectionString);
         try
         {
             await connection.OpenAsync(cancellationToken);
@@ -281,7 +285,10 @@ public class ExternalCommandService(
         }
         finally
         {
-            await connection.CloseAsync();
+            if (connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
         }
     }
 
@@ -359,15 +366,15 @@ public class ExternalCommandService(
 
         using var stringWriter = new StringWriter();
         using (var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
-        {
-            Indent = xmlSettings.IndentXml,
-            Encoding = Encoding.GetEncoding(settings.ExternalCommands.GlobalSettings.FileEncoding)
-        }))
+               {
+                   Indent = xmlSettings.IndentXml,
+                   Encoding = Encoding.GetEncoding(settings.ExternalCommands.GlobalSettings.FileEncoding)
+               }))
         {
             xmlDoc.WriteTo(xmlWriter);
             xmlWriter.Flush();
         }
-        
+
         return stringWriter.ToString();
     }
 
