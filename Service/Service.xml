@@ -456,7 +456,7 @@
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
             </summary>
         </member>
-        <member name="M:Service.Controllers.GoodsReceiptController.#ctor(Core.Interfaces.IGoodsReceiptService,Core.Interfaces.IGoodsReceiptReportService,Core.Interfaces.IGoodsReceiptLineService,Core.Services.IExternalCommandService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.GoodsReceiptController},Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.GoodsReceiptController.#ctor(Core.Interfaces.IGoodsReceiptService,Core.Interfaces.IGoodsReceiptReportService,Core.Interfaces.IGoodsReceiptLineService,Core.Services.IExternalCommandService,Core.Interfaces.ISettings)">
             <summary>
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
             </summary>

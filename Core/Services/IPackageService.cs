@@ -13,7 +13,7 @@ public interface IPackageService
     Task<Package?> GetPackageByBarcodeAsync(PackageByBarcodeRequest parameters);
     Task<IEnumerable<Package>> GetActivePackagesAsync(string? whsCode = null);
     Task ActivatePackagesByIdAsync(Guid id, SessionInfo sessionInfo);
-    Task<int> ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo);
+    Task<List<Guid>> ActivatePackagesBySourceAsync(ObjectType sourceOperationType, Guid sourceOperationId, SessionInfo sessionInfo);
     Task<Package> ClosePackageAsync(Guid packageId, SessionInfo sessionInfo);
     Task<Package> CancelPackageAsync(Guid packageId, SessionInfo sessionInfo, string? reason);
     Task<Package> LockPackageAsync(Guid packageId, SessionInfo sessionInfo, string? reason);

@@ -358,13 +358,16 @@ public class ExternalCommandService(
         }
 
         using var stringWriter = new StringWriter();
-        using var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
+        using (var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
         {
             Indent = xmlSettings.IndentXml,
             Encoding = Encoding.GetEncoding(settings.ExternalCommands.GlobalSettings.FileEncoding)
-        });
-
-        xmlDoc.WriteTo(xmlWriter);
+        }))
+        {
+            xmlDoc.WriteTo(xmlWriter);
+            xmlWriter.Flush();
+        }
+        
         return stringWriter.ToString();
     }
 

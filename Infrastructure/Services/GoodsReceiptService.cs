@@ -173,7 +173,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 }
 
                 // Activate any packages created during this operation if package feature is enabled
-                int activatedPackagesCount = 0;
+                var activatedPackagesCount = new List<Guid>();
                 if (settings.Options.EnablePackages) {
                     activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
                 }
@@ -213,7 +213,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 }
 
                 // Activate any packages created during this operation if package feature is enabled
-                int activatedPackagesCount = 0;
+                var activatedPackagesCount = new List<Guid>();
                 if (settings.Options.EnablePackages) {
                     activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
                 }

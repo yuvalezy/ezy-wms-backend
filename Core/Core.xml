@@ -275,6 +275,11 @@
             Triggered when a package is created
             </summary>
         </member>
+        <member name="F:Core.Enums.CommandTriggerType.ActivatePackage">
+            <summary>
+            Trigger when a package is activated
+            </summary>
+        </member>
         <member name="F:Core.Enums.CommandTriggerType.ClosePackage">
             <summary>
             Triggered when a package is closed

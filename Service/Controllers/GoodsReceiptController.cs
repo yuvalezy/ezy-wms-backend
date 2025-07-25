@@ -11,7 +11,6 @@ using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -27,7 +26,6 @@ public class GoodsReceiptController(
     IGoodsReceiptReportService receiptReportService,
     IGoodsReceiptLineService receiptLineService,
     IExternalCommandService externalCommandService,
-    ILogger<GoodsReceiptController> logger,
     ISettings settings)
 : ControllerBase
 {
@@ -304,7 +302,14 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        return await receiptService.ProcessGoodsReceipt(id, sessionInfo);
+        var response = await receiptService.ProcessGoodsReceipt(id, sessionInfo);
+
+        foreach (var packageId in response.ActivatedPackages)
+        {
+            await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.ActivatePackage, ObjectType.Package, packageId);
+        }
+
+        return response;
     }
 
     /// <summary>
