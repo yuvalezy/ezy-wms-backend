@@ -23,15 +23,17 @@ namespace Service.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class PackageController(
-    IPackageService                packageService,
-    IPackageContentService         contentService,
-    IPackageValidationService      validationService,
-    IPackageLocationService        locationService,
+    IPackageService packageService,
+    IPackageContentService contentService,
+    IPackageValidationService validationService,
+    IPackageLocationService locationService,
     IInventoryCountingsLineService countingService,
-    IExternalSystemAdapter         adapter,
-    ILogger<PackageController>     logger,
-    ISettings                      settings)
-    : ControllerBase {
+    IExternalSystemAdapter adapter,
+    IExternalCommandService externalCommandService,
+    ILogger<PackageController> logger,
+    ISettings settings)
+: ControllerBase
+{
     /// <summary>
     /// Creates a new package
     /// </summary>
@@ -47,21 +49,28 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageDto>> CreatePackage([FromBody] CreatePackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageDto>> CreatePackage([FromBody] CreatePackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
 
             // Determine required role based on operation type
             var requiredRole = GetRequiredRoleForOperation(request.SourceOperationType ?? ObjectType.Package);
 
-            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole))
+            {
                 return Forbid();
             }
 
             var package = await packageService.CreatePackageAsync(sessionInfo, request);
+
+            await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.CreatePackage, ObjectType.Package, package.Id);
+
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error creating package");
             return BadRequest(new { error = ex.Message });
         }
@@ -79,9 +88,10 @@ public class PackageController(
     [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PackageDto>> GetPackage(Guid id) {
+    public async Task<ActionResult<PackageDto>> GetPackage(Guid id)
+    {
         var sessionInfo = HttpContext.GetSession();
-        var package     = await packageService.GetPackageAsync(id);
+        var package = await packageService.GetPackageAsync(id);
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
 
@@ -106,15 +116,18 @@ public class PackageController(
     [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PackageDto>> GetPackageByBarcode([FromBody] PackageByBarcodeRequest parameters) {
-        var package     = await packageService.GetPackageByBarcodeAsync(parameters);
+    public async Task<ActionResult<PackageDto>> GetPackageByBarcode([FromBody] PackageByBarcodeRequest parameters)
+    {
+        var package = await packageService.GetPackageByBarcodeAsync(parameters);
         var sessionInfo = HttpContext.GetSession();
         if (package == null || sessionInfo.Warehouse != package.WhsCode)
             return NotFound();
 
-        if (parameters.ObjectType == ObjectType.InventoryCounting) {
+        if (parameters.ObjectType == ObjectType.InventoryCounting)
+        {
             bool isValid = await countingService.ValidateScanPackage(package.Id, parameters.ObjectId!.Value, parameters.BinEntry);
-            if (!isValid) {
+            if (!isValid)
+            {
                 return BadRequest(new { error = "Package is already counted in another bin location" });
             }
         }
@@ -131,9 +144,10 @@ public class PackageController(
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<PackageDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PackageDto>>> GetActivePackages() {
+    public async Task<ActionResult<IEnumerable<PackageDto>>> GetActivePackages()
+    {
         var sessionInfo = HttpContext.GetSession();
-        var packages    = await packageService.GetActivePackagesAsync(sessionInfo.Warehouse);
+        var packages = await packageService.GetActivePackagesAsync(sessionInfo.Warehouse);
         return Ok(packages.Select(async p => await p.ToDto(adapter, settings)));
     }
 
@@ -152,23 +166,30 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageDto>> ClosePackage(Guid id) {
-        try {
+    public async Task<ActionResult<PackageDto>> ClosePackage(Guid id)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
 
-            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.PackageManagement) && !sessionInfo.Roles.Contains(RoleType.PackageManagementSupervisor)) {
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.PackageManagement) && !sessionInfo.Roles.Contains(RoleType.PackageManagementSupervisor))
+            {
                 return Forbid();
             }
 
             var package = await packageService.ClosePackageAsync(id, sessionInfo);
 
-            if (settings.Package.Label.AutoPrint) {
+            if (settings.Package.Label.AutoPrint)
+            {
                 await TriggerLabelPrintingAsync(package);
             }
 
+            await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.ClosePackage, ObjectType.Package, package.Id);
+
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error closing package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -190,13 +211,16 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageDto>> CancelPackage(Guid id, [FromBody] CancelPackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageDto>> CancelPackage(Guid id, [FromBody] CancelPackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
-            var package     = await packageService.CancelPackageAsync(id, sessionInfo, request.Reason);
+            var package = await packageService.CancelPackageAsync(id, sessionInfo, request.Reason);
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error cancelling package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -215,13 +239,16 @@ public class PackageController(
     [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PackageDto>> LockPackage(Guid id, [FromBody] LockPackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageDto>> LockPackage(Guid id, [FromBody] LockPackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
-            var package     = await packageService.LockPackageAsync(id, sessionInfo, request.Reason);
+            var package = await packageService.LockPackageAsync(id, sessionInfo, request.Reason);
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error locking package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -242,13 +269,16 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageDto>> UnlockPackage(Guid id) {
-        try {
+    public async Task<ActionResult<PackageDto>> UnlockPackage(Guid id)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
-            var package     = await packageService.UnlockPackageAsync(id, sessionInfo);
+            var package = await packageService.UnlockPackageAsync(id, sessionInfo);
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error unlocking package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -270,14 +300,17 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageContentDto>> AddItemToPackage(Guid id, [FromBody] AddItemToPackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageContentDto>> AddItemToPackage(Guid id, [FromBody] AddItemToPackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
 
             // Determine required role based on operation type
             var requiredRole = GetRequiredRoleForOperation(request.SourceOperationType ?? ObjectType.Package);
 
-            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole))
+            {
                 return Forbid();
             }
 
@@ -285,7 +318,8 @@ public class PackageController(
             var content = await contentService.AddItemToPackageAsync(request, sessionInfo);
             return Ok(await content.ToDto(adapter));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error adding item to package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -307,14 +341,17 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageContentDto>> RemoveItemFromPackage(Guid id, [FromBody] RemoveItemFromPackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageContentDto>> RemoveItemFromPackage(Guid id, [FromBody] RemoveItemFromPackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
 
             // Determine required role based on operation type
             var requiredRole = GetRequiredRoleForOperation(request.SourceOperationType ?? ObjectType.Package);
 
-            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole))
+            {
                 return Forbid();
             }
 
@@ -322,7 +359,8 @@ public class PackageController(
             var content = await contentService.RemoveItemFromPackageAsync(request, sessionInfo.Guid);
             return Ok(await content.ToDto(adapter));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error removing item from package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -338,7 +376,8 @@ public class PackageController(
     [HttpGet("{id}/contents")]
     [ProducesResponseType(typeof(IEnumerable<PackageContentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PackageContentDto>>> GetPackageContents(Guid id) {
+    public async Task<ActionResult<IEnumerable<PackageContentDto>>> GetPackageContents(Guid id)
+    {
         var contents = await contentService.GetPackageContentsAsync(id);
         return Ok(contents.Select(async c => await c.ToDto(adapter)));
     }
@@ -353,7 +392,8 @@ public class PackageController(
     [HttpGet("{id}/transactions")]
     [ProducesResponseType(typeof(IEnumerable<PackageTransactionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PackageTransactionDto>>> GetPackageTransactions(Guid id) {
+    public async Task<ActionResult<IEnumerable<PackageTransactionDto>>> GetPackageTransactions(Guid id)
+    {
         var transactions = await contentService.GetPackageTransactionHistoryAsync(id);
         return Ok(transactions.Select(t => t.ToDto()));
     }
@@ -368,7 +408,8 @@ public class PackageController(
     [HttpGet("{id}/movements")]
     [ProducesResponseType(typeof(IEnumerable<PackageLocationHistoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PackageLocationHistoryDto>>> GetPackageMovements(Guid id) {
+    public async Task<ActionResult<IEnumerable<PackageLocationHistoryDto>>> GetPackageMovements(Guid id)
+    {
         var movements = await locationService.GetPackageLocationHistoryAsync(id);
         return Ok(movements.Select(async m => await m.ToDto(adapter)));
     }
@@ -383,7 +424,8 @@ public class PackageController(
     [HttpPost("validate-consistency")]
     [ProducesResponseType(typeof(IEnumerable<PackageInconsistencyDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PackageInconsistencyDto>>> ValidateConsistency([FromQuery] string? whsCode = null) {
+    public async Task<ActionResult<IEnumerable<PackageInconsistencyDto>>> ValidateConsistency([FromQuery] string? whsCode = null)
+    {
         var inconsistencies = await validationService.DetectInconsistenciesAsync(whsCode);
         return Ok(inconsistencies.Select(async i => await i.ToDto(adapter)));
     }
@@ -397,7 +439,8 @@ public class PackageController(
     [HttpPost("generate-barcode")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<object>> GenerateBarcode() {
+    public async Task<ActionResult<object>> GenerateBarcode()
+    {
         string barcode = await validationService.GeneratePackageBarcodeAsync();
         return Ok(new { barcode });
     }
@@ -418,23 +461,27 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PackageDto>> MovePackage(Guid id, [FromBody] MovePackageRequest request) {
-        try {
+    public async Task<ActionResult<PackageDto>> MovePackage(Guid id, [FromBody] MovePackageRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
 
             // Determine required role based on operation type
             var requiredRole = GetRequiredRoleForOperation(request.SourceOperationType ?? ObjectType.Package);
 
-            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole)) {
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(requiredRole))
+            {
                 return Forbid();
             }
 
             request.PackageId = id;
-            request.UserId    = sessionInfo.Guid;
+            request.UserId = sessionInfo.Guid;
             var package = await locationService.MovePackageAsync(request);
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error moving package {PackageId}", id);
             return BadRequest(new { error = ex.Message });
         }
@@ -450,7 +497,8 @@ public class PackageController(
     [HttpGet("{id}/validate")]
     [ProducesResponseType(typeof(PackageValidationResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PackageValidationResult>> ValidatePackage(Guid id) {
+    public async Task<ActionResult<PackageValidationResult>> ValidatePackage(Guid id)
+    {
         var result = await validationService.ValidatePackageConsistencyAsync(id);
         return Ok(result);
     }
@@ -474,43 +522,172 @@ public class PackageController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PackageDto>> UpdatePackageMetadata(
-        Guid id, 
-        [FromBody] UpdatePackageMetadataRequest request) {
-        try {
+        Guid id,
+        [FromBody] UpdatePackageMetadataRequest request)
+    {
+        try
+        {
             var sessionInfo = HttpContext.GetSession();
-            
+
             var package = await packageService.UpdatePackageMetadataAsync(id, request, sessionInfo);
             return Ok(await package.ToDto(adapter, settings));
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found")) {
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        {
             return NotFound(new { error = ex.Message });
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not accessible")) {
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not accessible"))
+        {
             return NotFound(new { error = "Package not found" }); // Don't leak warehouse info
         }
-        catch (ArgumentException ex) {
+        catch (ArgumentException ex)
+        {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             logger.LogError(ex, "Error updating package metadata for {PackageId}", id);
             return BadRequest(new { error = "An error occurred updating package metadata" });
         }
     }
 
-    private async Task TriggerLabelPrintingAsync(Core.Entities.Package package) {
+    private async Task TriggerLabelPrintingAsync(Core.Entities.Package package)
+    {
         logger.LogError("Triggering label print for package {Barcode}", package.Barcode);
         // TODO: Implement label printing integration
         await Task.CompletedTask;
     }
 
-    private RoleType GetRequiredRoleForOperation(ObjectType operationType) {
-        return operationType switch {
-            ObjectType.GoodsReceipt      => RoleType.GoodsReceipt,
-            ObjectType.Transfer          => RoleType.Transfer,
-            ObjectType.Picking           => RoleType.Picking,
+    /// <summary>
+    /// Gets available manual commands for packages
+    /// </summary>
+    /// <param name="screenName">The screen name where commands will be displayed</param>
+    /// <returns>List of available manual commands</returns>
+    /// <response code="200">Returns the list of manual commands</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpGet("manual-commands")]
+    [ProducesResponseType(typeof(IEnumerable<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<object>>> GetManualCommands([FromQuery] string screenName = "PackageList")
+    {
+        var commands = await externalCommandService.GetManualCommandsAsync(ObjectType.Package, screenName);
+
+        var result = commands.Select(c => new
+        {
+            c.Id,
+            c.Name,
+            c.Description,
+            ButtonText = c.UIConfiguration?.ButtonText ?? "Execute Command",
+            RequireConfirmation = c.UIConfiguration?.RequireConfirmation ?? true,
+            ConfirmationMessage = c.UIConfiguration?.ConfirmationMessage,
+            MaxBatchSize = c.UIConfiguration?.MaxBatchSize,
+            AllowBatchExecution = c.AllowBatchExecution
+        });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Executes a manual command for a specific package
+    /// </summary>
+    /// <param name="id">The unique identifier of the package</param>
+    /// <param name="commandId">The ID of the command to execute</param>
+    /// <returns>Command execution result</returns>
+    /// <response code="200">Command executed successfully</response>
+    /// <response code="400">If the command execution failed</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("{id:guid}/execute-command/{commandId}")]
+    [RequireAnyRole(RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> ExecuteManualCommand(Guid id, string commandId)
+    {
+        try
+        {
+            var sessionInfo = HttpContext.GetSession();
+
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.PackageManagement) && !sessionInfo.Roles.Contains(RoleType.PackageManagementSupervisor))
+            {
+                return Forbid();
+            }
+
+            await externalCommandService.ExecuteCommandAsync(commandId, id);
+
+            return Ok(new { message = "Command executed successfully" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error executing manual command {CommandId} for package {PackageId}", commandId, id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Executes a batch manual command for multiple packages
+    /// </summary>
+    /// <param name="request">The batch command request</param>
+    /// <returns>Command execution result</returns>
+    /// <response code="200">Command executed successfully</response>
+    /// <response code="400">If the command execution failed</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("execute-batch-command")]
+    [RequireAnyRole(RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> ExecuteBatchManualCommand([FromBody] ExecuteBatchCommandRequest request)
+    {
+        try
+        {
+            var sessionInfo = HttpContext.GetSession();
+
+            if (!sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.PackageManagement) && !sessionInfo.Roles.Contains(RoleType.PackageManagementSupervisor))
+            {
+                return Forbid();
+            }
+
+            await externalCommandService.ExecuteBatchCommandAsync(request.CommandId, request.PackageIds);
+
+            return Ok(new { message = $"Batch command executed successfully for {request.PackageIds.Length} packages" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error executing batch manual command {CommandId} for {PackageCount} packages", request.CommandId, request.PackageIds?.Length ?? 0);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    private RoleType GetRequiredRoleForOperation(ObjectType operationType)
+    {
+        return operationType switch
+        {
+            ObjectType.GoodsReceipt => RoleType.GoodsReceipt,
+            ObjectType.Transfer => RoleType.Transfer,
+            ObjectType.Picking => RoleType.Picking,
             ObjectType.InventoryCounting => RoleType.Counting,
-            ObjectType.Package           => RoleType.PackageManagement,
-            _                            => RoleType.PackageManagement
+            ObjectType.Package => RoleType.PackageManagement,
+            _ => RoleType.PackageManagement
         };
     }
+}
+
+/// <summary>
+/// Request model for executing batch commands
+/// </summary>
+public class ExecuteBatchCommandRequest
+{
+    /// <summary>
+    /// The ID of the command to execute
+    /// </summary>
+    public required string CommandId { get; set; }
+
+    /// <summary>
+    /// Array of package IDs to process
+    /// </summary>
+    public required Guid[] PackageIds { get; set; }
 }

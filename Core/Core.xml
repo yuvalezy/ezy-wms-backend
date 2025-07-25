@@ -210,6 +210,81 @@
             Null means it hasn't been processed yet
             </summary>
         </member>
+        <member name="T:Core.Enums.CommandDestinationType">
+            <summary>
+            Defines the type of destination for external command file delivery
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandDestinationType.LocalPath">
+            <summary>
+            Local file system path
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandDestinationType.NetworkPath">
+            <summary>
+            Network share path (UNC path)
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandDestinationType.FTP">
+            <summary>
+            FTP server
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandDestinationType.SFTP">
+            <summary>
+            SFTP (SSH File Transfer Protocol) server
+            </summary>
+        </member>
+        <member name="T:Core.Enums.CommandFileFormat">
+            <summary>
+            Defines the file format for external command output
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandFileFormat.XML">
+            <summary>
+            XML format
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandFileFormat.JSON">
+            <summary>
+            JSON format
+            </summary>
+        </member>
+        <member name="T:Core.Enums.CommandQueryResultType">
+            <summary>
+            Defines the expected result type of a command query
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandQueryResultType.Single">
+            <summary>
+            Query returns a single row
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandQueryResultType.Multiple">
+            <summary>
+            Query returns multiple rows
+            </summary>
+        </member>
+        <member name="T:Core.Enums.CommandTriggerType">
+            <summary>
+            Defines when an external command should be triggered
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandTriggerType.CreatePackage">
+            <summary>
+            Triggered when a package is created
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandTriggerType.ClosePackage">
+            <summary>
+            Triggered when a package is closed
+            </summary>
+        </member>
+        <member name="F:Core.Enums.CommandTriggerType.Manual">
+            <summary>
+            Manually triggered by user action
+            </summary>
+        </member>
         <member name="M:Core.Interfaces.IExternalSystemAdapter.GetItemMetadataAsync(System.String)">
             <summary>
             Retrieves item metadata from the external system by item code
@@ -258,6 +333,301 @@
         <member name="P:Core.Models.Settings.BackgroundPickListSyncOptions.ProcessPackageMovements">
             <summary>
             Whether to process package movements when pick lists are closed with follow-up documents
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.CommandDestination">
+            <summary>
+            Defines the destination configuration for external command file delivery
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Type">
+            <summary>
+            Type of destination
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Path">
+            <summary>
+            Path, URL, or host depending on destination type
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Host">
+            <summary>
+            Host for FTP/SFTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Port">
+            <summary>
+            Port for FTP/SFTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Username">
+            <summary>
+            Username for authentication
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.Password">
+            <summary>
+            Password for authentication (should be encrypted)
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.UseNetworkImpersonation">
+            <summary>
+            Whether to use network impersonation for NetworkPath destinations
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.UsePassiveMode">
+            <summary>
+            Use passive mode for FTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.UseSsl">
+            <summary>
+            Use SSL/TLS for FTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.PrivateKeyPath">
+            <summary>
+            Private key file path for SFTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.PrivateKeyPassphrase">
+            <summary>
+            Private key passphrase for SFTP connections
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandDestination.HostFingerprint">
+            <summary>
+            Host fingerprint for SFTP connections (for security verification)
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.CommandQuery">
+            <summary>
+            Defines a query to be executed as part of an external command
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandQuery.Name">
+            <summary>
+            Name of the query for identification
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandQuery.Query">
+            <summary>
+            SQL query to execute
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandQuery.ResultType">
+            <summary>
+            Expected result type (Single row or Multiple rows)
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandQuery.IsBatchQuery">
+            <summary>
+            Indicates if this query supports batch execution with multiple IDs
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.CommandUIConfiguration">
+            <summary>
+            Defines UI configuration for manual external commands
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandUIConfiguration.AllowedScreens">
+            <summary>
+            List of screens where this command can be triggered
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandUIConfiguration.ButtonText">
+            <summary>
+            Text to display on the trigger button
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandUIConfiguration.RequireConfirmation">
+            <summary>
+            Whether to require user confirmation before execution
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandUIConfiguration.ConfirmationMessage">
+            <summary>
+            Confirmation message to display (supports placeholders like {count})
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandUIConfiguration.MaxBatchSize">
+            <summary>
+            Maximum number of items that can be processed in batch
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.ExternalCommand">
+            <summary>
+            Defines an external command configuration
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Id">
+            <summary>
+            Unique identifier for the command
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Name">
+            <summary>
+            Human-readable name for the command
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Description">
+            <summary>
+            Description of what the command does
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.ObjectType">
+            <summary>
+            The object type this command applies to
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.TriggerType">
+            <summary>
+            When this command should be triggered
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Enabled">
+            <summary>
+            Whether this command is enabled
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.AllowBatchExecution">
+            <summary>
+            Whether this command supports batch execution for multiple items
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Queries">
+            <summary>
+            Queries to execute to gather data
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.FileFormat">
+            <summary>
+            File format for the generated output
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.FileNamePattern">
+            <summary>
+            Pattern for generating file names (supports placeholders like {Barcode}, {Timestamp})
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.Destination">
+            <summary>
+            Destination configuration for file delivery
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommand.UIConfiguration">
+            <summary>
+            UI configuration for manual commands
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.ExternalCommandsGlobalSettings">
+            <summary>
+            Global settings for external commands system
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.MaxConcurrentExecutions">
+            <summary>
+            Maximum number of commands that can execute concurrently
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.CommandTimeout">
+            <summary>
+            Command execution timeout in seconds
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.RetryPolicy">
+            <summary>
+            Retry policy configuration
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.FileEncoding">
+            <summary>
+            File encoding for generated files
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.XmlSettings">
+            <summary>
+            XML-specific settings
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsGlobalSettings.JsonSettings">
+            <summary>
+            JSON-specific settings
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.CommandRetryPolicy">
+            <summary>
+            Retry policy configuration for command execution
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandRetryPolicy.MaxRetries">
+            <summary>
+            Maximum number of retry attempts
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandRetryPolicy.RetryDelaySeconds">
+            <summary>
+            Delay between retry attempts in seconds
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.CommandRetryPolicy.RetryOnErrors">
+            <summary>
+            Error types that should trigger retries
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.XmlSettings">
+            <summary>
+            XML formatting settings
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.XmlSettings.RootElementName">
+            <summary>
+            Root element name for XML documents
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.XmlSettings.IncludeXmlDeclaration">
+            <summary>
+            Whether to include XML declaration
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.XmlSettings.IndentXml">
+            <summary>
+            Whether to indent XML for readability
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.JsonSettings">
+            <summary>
+            JSON formatting settings
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.JsonSettings.IndentJson">
+            <summary>
+            Whether to indent JSON for readability
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.JsonSettings.CamelCasePropertyNames">
+            <summary>
+            Whether to use camelCase for property names
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.JsonSettings.DateFormat">
+            <summary>
+            Date format string for JSON serialization
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.ExternalCommandsSettings">
+            <summary>
+            Settings for external commands system
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsSettings.Commands">
+            <summary>
+            List of configured external commands
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.ExternalCommandsSettings.GlobalSettings">
+            <summary>
+            Global settings for the external commands system
             </summary>
         </member>
         <member name="T:Core.Models.Settings.ItemMetadataDefinition">
@@ -366,6 +736,80 @@
             Validates the metadata definitions for consistency and correctness
             </summary>
             <returns>List of validation error messages, empty if valid</returns>
+        </member>
+        <member name="T:Core.Services.IExternalCommandService">
+            <summary>
+            Service for executing external commands
+            </summary>
+        </member>
+        <member name="M:Core.Services.IExternalCommandService.ExecuteCommandsAsync(Core.Enums.CommandTriggerType,Core.Enums.ObjectType,System.Guid,System.Collections.Generic.Dictionary{System.String,System.Object},System.Threading.CancellationToken)">
+            <summary>
+            Executes all commands that match the specified trigger type and object type
+            </summary>
+            <param name="triggerType">The trigger type to match</param>
+            <param name="objectType">The object type to match</param>
+            <param name="objectId">The ID of the object that triggered the command</param>
+            <param name="parameters">Additional parameters for command execution</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Task representing the execution operation</returns>
+        </member>
+        <member name="M:Core.Services.IExternalCommandService.ExecuteCommandAsync(System.String,System.Guid,System.Collections.Generic.Dictionary{System.String,System.Object},System.Threading.CancellationToken)">
+            <summary>
+            Executes a specific command by ID
+            </summary>
+            <param name="commandId">The command ID to execute</param>
+            <param name="objectId">The ID of the object</param>
+            <param name="parameters">Additional parameters for command execution</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Task representing the execution operation</returns>
+        </member>
+        <member name="M:Core.Services.IExternalCommandService.ExecuteBatchCommandAsync(System.String,System.Guid[],System.Collections.Generic.Dictionary{System.String,System.Object},System.Threading.CancellationToken)">
+            <summary>
+            Executes a batch command for multiple objects
+            </summary>
+            <param name="commandId">The command ID to execute</param>
+            <param name="objectIds">The IDs of the objects</param>
+            <param name="parameters">Additional parameters for command execution</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Task representing the execution operation</returns>
+        </member>
+        <member name="M:Core.Services.IExternalCommandService.GetManualCommandsAsync(Core.Enums.ObjectType,System.String)">
+            <summary>
+            Gets all commands that can be manually triggered for the specified object type
+            </summary>
+            <param name="objectType">The object type</param>
+            <param name="screenName">The screen name where the command will be triggered</param>
+            <returns>List of manual commands</returns>
+        </member>
+        <member name="M:Core.Services.IExternalCommandService.ValidateCommandAsync(Core.Models.Settings.ExternalCommand)">
+            <summary>
+            Validates a command configuration
+            </summary>
+            <param name="command">The command to validate</param>
+            <returns>List of validation errors (empty if valid)</returns>
+        </member>
+        <member name="T:Core.Services.IFileDeliveryService">
+            <summary>
+            Service for delivering files to various destinations (local, network, FTP, SFTP)
+            </summary>
+        </member>
+        <member name="M:Core.Services.IFileDeliveryService.DeliverFileAsync(System.String,System.String,Core.Models.Settings.CommandDestination,System.Threading.CancellationToken)">
+            <summary>
+            Delivers a file to the specified destination
+            </summary>
+            <param name="filePath">Path to the file to deliver</param>
+            <param name="fileName">Name of the file at destination</param>
+            <param name="destination">Destination configuration</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>Task representing the delivery operation</returns>
+        </member>
+        <member name="M:Core.Services.IFileDeliveryService.TestConnectionAsync(Core.Models.Settings.CommandDestination,System.Threading.CancellationToken)">
+            <summary>
+            Tests connectivity to a destination
+            </summary>
+            <param name="destination">Destination configuration</param>
+            <param name="cancellationToken">Cancellation token</param>
+            <returns>True if connection successful, false otherwise</returns>
         </member>
         <member name="M:Core.Services.IPickListCancelService.CancelPickListAsync(System.Int32,Core.Models.SessionInfo)">
             <summary>

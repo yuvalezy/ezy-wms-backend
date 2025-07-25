@@ -18,61 +18,68 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO;
 
 public class SboAdapter(
-    SboEmployeeRepository     employeeRepository,
-    SboGeneralRepository      generalRepository,
-    SboItemRepository         itemRepository,
-    SboPickingRepository      pickingRepository,
+    SboEmployeeRepository employeeRepository,
+    SboGeneralRepository generalRepository,
+    SboItemRepository itemRepository,
+    SboPickingRepository pickingRepository,
     SboGoodsReceiptRepository goodsReceiptRepository,
     SboInventoryCountingRepository inventoryCountingRepository,
-    SboCompany                sboCompany,
-    ISettings                 settings,
-    ILoggerFactory            loggerFactory) : IExternalSystemAdapter {
+    SboCompany sboCompany,
+    ISettings settings,
+    ILoggerFactory loggerFactory) : IExternalSystemAdapter
+{
     // General 
     public async Task<string?> GetCompanyNameAsync() => await generalRepository.GetCompanyNameAsync();
 
     // Vendor
-    public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync()                     => await generalRepository.GetVendorsAsync();
-    public async Task<ExternalValue<string>?>             GetVendorAsync(string       cardCode) => await generalRepository.GetVendorAsync(cardCode);
-    public async Task<bool>                               ValidateVendorsAsync(string id)       => await generalRepository.ValidateVendorsAsync(id);
+    public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync() => await generalRepository.GetVendorsAsync();
+    public async Task<ExternalValue<string>?> GetVendorAsync(string cardCode) => await generalRepository.GetVendorAsync(cardCode);
+    public async Task<bool> ValidateVendorsAsync(string id) => await generalRepository.ValidateVendorsAsync(id);
 
     // Users
-    public async Task<ExternalValue<string>?>             GetUserInfoAsync(string id) => await employeeRepository.GetByIdAsync(id);
-    public async Task<IEnumerable<ExternalValue<string>>> GetUsersAsync()             => await employeeRepository.GetAllAsync();
+    public async Task<ExternalValue<string>?> GetUserInfoAsync(string id) => await employeeRepository.GetByIdAsync(id);
+    public async Task<IEnumerable<ExternalValue<string>>> GetUsersAsync() => await employeeRepository.GetAllAsync();
 
     // Warehouses
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter = null) => await generalRepository.GetWarehousesAsync(filter);
-    public async Task<WarehouseResponse?>             GetWarehouseAsync(string     id)            => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
+    public async Task<WarehouseResponse?> GetWarehouseAsync(string id) => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
 
     // Items, Warehouse & Bins
-    public async Task<(int itemCount, int binCount)>                  GetItemAndBinCount(string       warehouse)                      => await generalRepository.GetItemAndBinCountAsync(warehouse);
-    public async Task<BinLocationResponse?>                           ScanBinLocationAsync(string     bin)                            => await generalRepository.ScanBinLocationAsync(bin);
-    public async Task<string?>                                        GetBinCodeAsync(int             binEntry)                       => await generalRepository.GetBinCodeAsync(binEntry);
-    public async Task<IEnumerable<ItemInfoResponse>>                  ScanItemBarCodeAsync(string     scanCode, bool    item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
-    public async Task<IEnumerable<ItemCheckResponse>>                 ItemCheckAsync(string?          itemCode, string? barcode)      => await itemRepository.ItemCheckAsync(itemCode, barcode);
-    public async Task<IEnumerable<BinContentResponse>>                BinCheckAsync(int               binEntry)                    => await generalRepository.BinCheckAsync(binEntry);
-    public async Task<IEnumerable<ItemBinStockResponse>>              ItemStockAsync(string           itemCode,  string   whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
-    public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items)   => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
+    public async Task<(int itemCount, int binCount)> GetItemAndBinCount(string warehouse) => await generalRepository.GetItemAndBinCountAsync(warehouse);
+    public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) => await generalRepository.ScanBinLocationAsync(bin);
+    public async Task<string?> GetBinCodeAsync(int binEntry) => await generalRepository.GetBinCodeAsync(binEntry);
+    public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
+    public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await itemRepository.ItemCheckAsync(itemCode, barcode);
+    public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) => await generalRepository.BinCheckAsync(binEntry);
+    public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
+    public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items) => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
 
-    public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request) {
+    public Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request)
+    {
         using var update = new ItemBarCodeUpdate(sboCompany, request.ItemCode, request.AddBarcodes, request.RemoveBarcodes);
         return Task.FromResult(update.Execute());
     }
 
     public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
-        await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
+    await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
+
     public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
-        int       series           = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data)
+    {
+        int series = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
         using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
-        try {
+        try
+        {
             return transferCreation.Execute();
         }
-        catch (Exception e) {
-            return new ProcessTransferResponse {
-                Success      = false,
-                Status       = ResponseStatus.Error,
+        catch (Exception e)
+        {
+            return new ProcessTransferResponse
+            {
+                Success = false,
+                Status = ResponseStatus.Error,
                 ErrorMessage = e.Message
             };
         }
@@ -106,44 +113,55 @@ public class SboAdapter(
 
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) => await pickingRepository.ValidatePickingAddItem(request);
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data) {
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data)
+    {
         using var update = new PickingUpdate(absEntry, data, sboCompany, settings.Filters.PickReady);
-        var result = new ProcessPickListResult {
-            Success        = true,
+        var result = new ProcessPickListResult
+        {
+            Success = true,
             DocumentNumber = absEntry,
         };
-        try {
+
+        try
+        {
             await update.Execute();
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             result.ErrorMessage = e.Message;
-            result.Success      = false;
+            result.Success = false;
         }
 
         return result;
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
-    
+
     public async Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry) => await pickingRepository.GetPickListClosureInfo(absEntry);
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
-    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry) {
+
+    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry)
+    {
         var helper = new PickingCancellation(sboCompany, absEntry, loggerFactory);
         return Task.FromResult(helper.Execute());
     }
 
     //Inventory Counting
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
-        int       series   = await generalRepository.GetSeries("1470000065");
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data)
+    {
+        int series = await generalRepository.GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
-        try {
+        try
+        {
             return creation.Execute();
         }
-        catch (Exception e) {
-            return new ProcessInventoryCountingResponse {
-                Success      = false,
-                Status       = ResponseStatus.Error,
+        catch (Exception e)
+        {
+            return new ProcessInventoryCountingResponse
+            {
+                Success = false,
+                Status = ResponseStatus.Error,
                 ErrorMessage = e.Message
             };
         }
@@ -166,41 +184,63 @@ public class SboAdapter(
 //     }
     }
 
-    public async Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode) {
+    public async Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode)
+    {
         return await inventoryCountingRepository.ValidateOpenInventoryCounting(whsCode, binEntry, itemCode);
     }
 
     // Goods Receipt methods
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse) {
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse)
+    {
         return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(itemCode, barcode, warehouse, specificDocuments);
     }
 
-    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
-        int       series   = await generalRepository.GetSeries("20");
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data)
+    {
+        int series = await generalRepository.GetSeries("20");
         using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
         return await Task.FromResult(creation.Execute());
     }
 
-    public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
+    public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents)
+    {
         await goodsReceiptRepository.ValidateGoodsReceiptDocuments(warehouse, type, documents);
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(
-        string           itemCode,
-        UnitType         unit,
-        string           warehouse,
+        string itemCode,
+        UnitType unit,
+        string warehouse,
         GoodsReceiptType type,
-        string?          cardCode,
-        List<ObjectKey>  specificDocuments) {
+        string? cardCode,
+        List<ObjectKey> specificDocuments)
+    {
         return await goodsReceiptRepository.AddItemSourceDocuments(itemCode, unit, warehouse, type, cardCode, specificDocuments);
     }
 
-    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
+    public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode)
+    {
         return await goodsReceiptRepository.AddItemTargetDocuments(warehouse, itemCode);
     }
 
-    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) {
+    public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs)
+    {
         return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
+
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
+
+    // Item Metadata
+    public async Task<ItemMetadataResponse?> GetItemMetadataAsync(string itemCode)
+    {
+        throw new Exception("Functionality is disabled for legacy SBO 9.2 aand lower");
+    }
+
+    public async Task<ItemMetadataResponse> UpdateItemMetadataAsync(string itemCode, ItemMetadataRequest request)
+    {
+        throw new Exception("Functionality is disabled for legacy SBO 9.2 aand lower");
+    }
+
+    // Picking Validation
+    public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) => await pickingRepository.ValidatePickingAddPackage(absEntry, values);
 }

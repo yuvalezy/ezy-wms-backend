@@ -18,4 +18,5 @@ public class Settings : ISettings {
     public ItemSettings                       Item               { get; set; } = new();
     public LicensingSettings                  Licensing          { get; set; } = new();
     public BackgroundServicesSettings         BackgroundServices { get; set; } = new();
+    public ExternalCommandsSettings           ExternalCommands   { get; set; } = new();
 }

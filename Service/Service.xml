@@ -223,7 +223,7 @@
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
         </member>
-        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService,Core.Interfaces.IInventoryCountingsLineService)">
+        <member name="M:Service.Controllers.CountingController.#ctor(Core.Interfaces.IInventoryCountingsService,Core.Interfaces.IInventoryCountingsLineService,Core.Services.IExternalCommandService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.CountingController})">
             <summary>
             Counting Controller - Manages inventory counting operations including creation, item counting, and processing
             </summary>
@@ -456,7 +456,7 @@
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
             </summary>
         </member>
-        <member name="M:Service.Controllers.GoodsReceiptController.#ctor(Core.Interfaces.IGoodsReceiptService,Core.Interfaces.IGoodsReceiptReportService,Core.Interfaces.IGoodsReceiptLineService,Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.GoodsReceiptController.#ctor(Core.Interfaces.IGoodsReceiptService,Core.Interfaces.IGoodsReceiptReportService,Core.Interfaces.IGoodsReceiptLineService,Core.Services.IExternalCommandService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.GoodsReceiptController},Core.Interfaces.ISettings)">
             <summary>
             Goods Receipt Controller - Manages goods receipt operations including creation, processing, and reporting
             </summary>
@@ -734,7 +734,7 @@
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>
         </member>
-        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IInventoryCountingsLineService,Core.Interfaces.IExternalSystemAdapter,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.PackageController.#ctor(Core.Services.IPackageService,Core.Services.IPackageContentService,Core.Services.IPackageValidationService,Core.Services.IPackageLocationService,Core.Interfaces.IInventoryCountingsLineService,Core.Interfaces.IExternalSystemAdapter,Core.Services.IExternalCommandService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.PackageController},Core.Interfaces.ISettings)">
             <summary>
             Package Controller - Manages package operations including creation, content management, location tracking, and validation
             </summary>
@@ -930,6 +930,53 @@
             <response code="403">If the user lacks required permissions</response>
             <response code="404">If the package is not found or not accessible</response>
             <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.GetManualCommands(System.String)">
+            <summary>
+            Gets available manual commands for packages
+            </summary>
+            <param name="screenName">The screen name where commands will be displayed</param>
+            <returns>List of available manual commands</returns>
+            <response code="200">Returns the list of manual commands</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.ExecuteManualCommand(System.Guid,System.String)">
+            <summary>
+            Executes a manual command for a specific package
+            </summary>
+            <param name="id">The unique identifier of the package</param>
+            <param name="commandId">The ID of the command to execute</param>
+            <returns>Command execution result</returns>
+            <response code="200">Command executed successfully</response>
+            <response code="400">If the command execution failed</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="M:Service.Controllers.PackageController.ExecuteBatchManualCommand(Service.Controllers.ExecuteBatchCommandRequest)">
+            <summary>
+            Executes a batch manual command for multiple packages
+            </summary>
+            <param name="request">The batch command request</param>
+            <returns>Command execution result</returns>
+            <response code="200">Command executed successfully</response>
+            <response code="400">If the command execution failed</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.ExecuteBatchCommandRequest">
+            <summary>
+            Request model for executing batch commands
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.ExecuteBatchCommandRequest.CommandId">
+            <summary>
+            The ID of the command to execute
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.ExecuteBatchCommandRequest.PackageIds">
+            <summary>
+            Array of package IDs to process
+            </summary>
         </member>
         <member name="T:Service.Controllers.PickingController">
             <summary>
