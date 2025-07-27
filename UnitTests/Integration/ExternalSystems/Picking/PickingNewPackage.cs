@@ -1,7 +1,9 @@
 ﻿using Core.DTOs.Items;
 using Core.DTOs.Package;
+using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,7 @@ namespace UnitTests.Integration.ExternalSystems.Picking;
 [TestFixture]
 public class PickingNewPackage : BaseExternalTest {
     private string[] testItems = new string[3];
+    private string testItemNoPackage = string.Empty;
     private string testCustomer = string.Empty;
     private int salesEntry = -1;
     private int absEntry = -1;
@@ -32,10 +35,14 @@ public class PickingNewPackage : BaseExternalTest {
         testItems[1] = (await itemHelper.Execute()).ItemCode;
         testItems[2] = (await itemHelper.Execute()).ItemCode;
 
-        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItems.ToArray()) {
-            Package = true
-        };
+        testItemNoPackage = (await itemHelper.Execute()).ItemCode;
 
+        // Create GRPO for no Package Item
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItemNoPackage);
+        await helper.Execute();
+
+        // Create GRPO for 3 package managed items
+        helper.Package = true;
         await helper.Execute();
         packages = helper.CreatedPackages;
 
@@ -48,7 +55,8 @@ public class PickingNewPackage : BaseExternalTest {
     [Test]
     [Order(1)]
     public async Task CreateSaleOrder_ReleaseToPicking() {
-        var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItems.ToArray());
+        var orderItems = new[] { testItemNoPackage }.Concat(testItems).ToArray();
+        var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, orderItems);
         await helper.Execute();
         salesEntry = helper.SalesEntry;
         absEntry = helper.AbsEntry;
@@ -77,9 +85,67 @@ public class PickingNewPackage : BaseExternalTest {
         var pickListPackage = await db.PickListPackages.FindAsync(pickListPackageId);
         Assert.That(pickListPackage, Is.Not.Null);
         Assert.That(pickListPackage.PackageId, Is.EqualTo(packageId));
-        Assert.That(pickListPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value));;
+        Assert.That(pickListPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value));
         Assert.That(pickListPackage.Type, Is.EqualTo(SourceTarget.Target));
         Assert.That(pickListPackage.PickEntry, Is.Null);
+    }
+
+    [Test]
+    [Order(3)]
+    public async Task AddItemNoContainer_IntoNewPackage() {
+        var scope = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
+        var request = new PickListAddItemRequest {
+            ID = absEntry,
+            Type = 17,
+            Entry = salesEntry,
+            ItemCode = testItemNoPackage,
+            Quantity = 1,
+            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            Unit = UnitType.Dozen,
+            PickEntry = 0,
+            PackageId = null,
+            PickingPackageId = packageId
+        };
+        await service.AddItem(TestConstants.SessionInfo, request);
+    }
+    
+    [Test]
+    [Order(4)]
+    public async Task AddPartialFromPackage_IntoNewPackage() {
+        var scope = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
+        var itemCode = testItems[0];
+        var itemPackages = packages[itemCode];
+        var request = new PickListAddItemRequest {
+            ID = absEntry,
+            Type = 17,
+            Entry = salesEntry,
+            ItemCode = itemCode,
+            Quantity = 1,
+            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            Unit = UnitType.Dozen,
+            PickEntry = 1,
+            PackageId = itemPackages[0],
+            PickingPackageId = packageId
+        };
+        await service.AddItem(TestConstants.SessionInfo, request);
+    }
+    [Test]
+    [Order(5)]
+    public async Task AddFullPackage_IntoNewPackage() {
+        var scope = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IPickListPackageService>();
+        var itemCode = testItems[1];
+        var itemPackages = packages[itemCode];
+        var request = new PickListAddPackageRequest {
+            ID = absEntry,
+            Type = 17,
+            Entry = salesEntry,
+            PackageId = itemPackages[0],
+            BinEntry = settings.Filters.InitialCountingBinEntry!.Value
+        };
+        await service.AddPackageAsync(request, TestConstants.SessionInfo);
     }
 
     //

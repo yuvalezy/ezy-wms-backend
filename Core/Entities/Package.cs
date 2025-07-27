@@ -213,6 +213,10 @@ public sealed class PackageCommitment : BaseEntity {
     public Guid SourceOperationId { get; set; }
 
     public Guid? SourceOperationLineId { get; set; }
+    /// <summary>
+    /// When creating a new package we need to track the source commited data to which new package it's going too
+    /// </summary>
+    public Guid? TargetPackageId { get; set; }
 
     public DateTime CommittedAt { get; set; } = DateTime.UtcNow;
 

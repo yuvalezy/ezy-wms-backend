@@ -9,4 +9,9 @@ public class PickListAddItemResponse : ResponseBase {
         Status = Core.Enums.ResponseStatus.Ok,
         ClosedDocument = false 
     };
+
+    public static PickListAddItemResponse Error(string errorMessage) => new() {
+        Status = Enums.ResponseStatus.Error,
+        ErrorMessage = errorMessage,
+    };
 }

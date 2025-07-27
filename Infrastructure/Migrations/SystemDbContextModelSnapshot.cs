@@ -58,7 +58,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("AccountStatus");
+                    b.ToTable("AccountStatus", (string)null);
 
                     b.HasData(
                         new
@@ -119,7 +119,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("AccountStatusAudits");
+                    b.ToTable("AccountStatusAudits", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.AuthorizationGroup", b =>
@@ -167,7 +167,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("AuthorizationGroups");
+                    b.ToTable("AuthorizationGroups", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.CancellationReason", b =>
@@ -282,7 +282,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("Status", "NextRetryAt");
 
-                    b.ToTable("CloudSyncQueues");
+                    b.ToTable("CloudSyncQueues", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.Device", b =>
@@ -346,7 +346,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.DeviceAudit", b =>
@@ -396,7 +396,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("DeviceAudits");
+                    b.ToTable("DeviceAudits", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
@@ -459,7 +459,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("GoodsReceipts");
+                    b.ToTable("GoodsReceipts", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptDocument", b =>
@@ -508,7 +508,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("GoodsReceiptDocuments");
+                    b.ToTable("GoodsReceiptDocuments", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptLine", b =>
@@ -583,7 +583,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("GoodsReceiptLines");
+                    b.ToTable("GoodsReceiptLines", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptSource", b =>
@@ -639,7 +639,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("GoodsReceiptSources");
+                    b.ToTable("GoodsReceiptSources", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.GoodsReceiptTarget", b =>
@@ -705,7 +705,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("GoodsReceiptTargets");
+                    b.ToTable("GoodsReceiptTargets", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.InventoryCounting", b =>
@@ -764,7 +764,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("InventoryCountings");
+                    b.ToTable("InventoryCountings", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.InventoryCountingLine", b =>
@@ -844,7 +844,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("InventoryCountingLines");
+                    b.ToTable("InventoryCountingLines", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.InventoryCountingPackage", b =>
@@ -917,7 +917,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("InventoryCountingId", "PackageId")
                         .IsUnique();
 
-                    b.ToTable("InventoryCountingPackages");
+                    b.ToTable("InventoryCountingPackages", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.InventoryCountingPackageContent", b =>
@@ -973,7 +973,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("InventoryCountingPackageId", "ItemCode");
 
-                    b.ToTable("InventoryCountingPackageContents");
+                    b.ToTable("InventoryCountingPackageContents", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.LicenseCache", b =>
@@ -1026,7 +1026,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("LicenseCaches");
+                    b.ToTable("LicenseCaches", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.Package", b =>
@@ -1110,7 +1110,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("WhsCode", "BinEntry")
                         .HasDatabaseName("IX_Package_Location");
 
-                    b.ToTable("Packages");
+                    b.ToTable("Packages", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PackageCommitment", b =>
@@ -1184,7 +1184,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SourceOperationType", "SourceOperationId")
                         .HasDatabaseName("IX_PackageCommitment_Operation");
 
-                    b.ToTable("PackageCommitments");
+                    b.ToTable("PackageCommitments", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PackageContent", b =>
@@ -1254,7 +1254,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("WhsCode", "BinEntry")
                         .HasDatabaseName("IX_PackageContent_Location");
 
-                    b.ToTable("PackageContents");
+                    b.ToTable("PackageContents", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PackageInconsistency", b =>
@@ -1371,7 +1371,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("InconsistencyType", "Severity")
                         .HasDatabaseName("IX_PackageInconsistency_TypeSeverity");
 
-                    b.ToTable("PackageInconsistencies");
+                    b.ToTable("PackageInconsistencies", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PackageLocationHistory", b =>
@@ -1447,7 +1447,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("PackageLocationHistory");
+                    b.ToTable("PackageLocationHistory", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PackageTransaction", b =>
@@ -1530,7 +1530,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SourceOperationType", "SourceOperationId")
                         .HasDatabaseName("IX_PackageTransaction_Operation");
 
-                    b.ToTable("PackageTransactions");
+                    b.ToTable("PackageTransactions", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PickList", b =>
@@ -1601,7 +1601,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("PickLists");
+                    b.ToTable("PickLists", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PickListCheckItem", b =>
@@ -1674,7 +1674,7 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_PickListCheckItem_CheckSessionId_ItemCode");
 
-                    b.ToTable("PickListCheckItems");
+                    b.ToTable("PickListCheckItems", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PickListCheckPackage", b =>
@@ -1741,7 +1741,7 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_PickListCheckPackage_CheckSessionId_PackageId");
 
-                    b.ToTable("PickListCheckPackages");
+                    b.ToTable("PickListCheckPackages", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PickListCheckSession", b =>
@@ -1820,16 +1820,21 @@ namespace Infrastructure.Migrations
                     b.HasIndex("PickListId", "IsCompleted")
                         .HasDatabaseName("IX_PickListCheckSession_PickListId_IsCompleted");
 
-                    b.ToTable("PickListCheckSessions");
+                    b.ToTable("PickListCheckSessions", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.PickListPackage", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("AbsEntry")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PickEntry")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PackageId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("AbsEntry")
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("AddedAt")
@@ -1855,17 +1860,12 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("PackageId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("PickEntry")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ProcessedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1873,7 +1873,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("Id");
+                    b.HasKey("AbsEntry", "PickEntry", "PackageId", "Type");
 
                     b.HasIndex("AddedAt")
                         .HasDatabaseName("IX_PickListPackage_AddedAt");
@@ -1888,20 +1888,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.HasIndex("AbsEntry", "PackageId", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListPackage_Unique_Target")
-                        .HasFilter("[PickEntry] IS NULL");
-
-                    b.HasIndex("AbsEntry", "PickEntry", "PackageId", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListPackage_Unique_Source")
-                        .HasFilter("[PickEntry] IS NOT NULL");
-
-                    b.ToTable("PickListPackages", t =>
-                        {
-                            t.HasCheckConstraint("CK_PickListPackage_PickEntry_Required_For_Source", "([Type] != 0 OR [PickEntry] IS NOT NULL)");
-                        });
+                    b.ToTable("PickListPackages", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.Transfer", b =>
@@ -1961,7 +1948,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("Transfers");
+                    b.ToTable("Transfers", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.TransferLine", b =>
@@ -2041,7 +2028,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.ToTable("TransferLines");
+                    b.ToTable("TransferLines", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.TransferPackage", b =>
@@ -2098,7 +2085,7 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_TransferPackages_TransferId_PackageId_Type");
 
-                    b.ToTable("TransferPackages");
+                    b.ToTable("TransferPackages", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.User", b =>
@@ -2167,7 +2154,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("AuthorizationGroupId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("Core.Entities.AccountStatusAudit", b =>
