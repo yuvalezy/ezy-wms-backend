@@ -35,8 +35,7 @@ public sealed class PickListPackage : BaseEntity {
     [Required]
     public int AbsEntry { get; set; }           // Pick operation identifier
 
-    [Required]
-    public int PickEntry { get; set; }          // Pick line identifier
+    public int? PickEntry { get; set; }         // Pick line identifier (required only for Source type)
 
     [Required]
     public Guid PackageId { get; set; }         // Source or target package

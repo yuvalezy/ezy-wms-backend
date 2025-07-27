@@ -7,7 +7,7 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpers;
 
-public class PickAllHelper(int pickEntry, WebApplicationFactory<Program> factory, int binEntry, int salesEntry, string testItem) : IDisposable
+public class PickAllHelper(int absEntry, WebApplicationFactory<Program> factory, int binEntry, int salesEntry, string testItem) : IDisposable
 {
     private readonly IServiceScope scope = factory.Services.CreateScope();
 
@@ -16,7 +16,7 @@ public class PickAllHelper(int pickEntry, WebApplicationFactory<Program> factory
         var lineService = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
         var request = new PickListAddItemRequest
         {
-            ID = pickEntry,
+            ID = absEntry,
             Type = 17,
             Entry = salesEntry,
             ItemCode = testItem,
@@ -42,7 +42,7 @@ public class PickAllHelper(int pickEntry, WebApplicationFactory<Program> factory
 
         //Process
         var processService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-        var processResponse = await processService.ProcessPickList(pickEntry, TestConstants.SessionInfo.Guid);
+        var processResponse = await processService.ProcessPickList(absEntry, TestConstants.SessionInfo.Guid);
         Assert.That(processResponse, Is.Not.Null);
         Assert.That(processResponse.Status, Is.EqualTo(ResponseStatus.Ok), processResponse.ErrorMessage ?? "No error message");
     }

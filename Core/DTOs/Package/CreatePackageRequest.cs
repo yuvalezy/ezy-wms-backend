@@ -9,7 +9,9 @@ public class CreatePackageRequest : IValidatableObject {
     public          Guid?                      SourceOperationId   { get; set; }
     public          Dictionary<string, object> CustomAttributes    { get; set; } = new();
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
-        if (SourceOperationType != ObjectType.Package && SourceOperationId == null) 
-            yield return new ValidationResult("SourceOperationId is required");
+        if (SourceOperationType is ObjectType.Package or ObjectType.Picking || SourceOperationId != null)
+            yield break;
+
+        yield return new ValidationResult("SourceOperationId is required");
     }
 }

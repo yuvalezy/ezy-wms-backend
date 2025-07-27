@@ -1,3 +1,4 @@
+using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Models;
 
@@ -18,5 +19,7 @@ public interface IPickListPackageService {
     /// Processes pick list closure by clearing commitments and optionally processing package movements
     /// </summary>
     Task ProcessPickListClosureAsync(int absEntry, PickListClosureInfo closureInfo, Guid userId);
+
+    Task<PackageDto> CreatePackageAsync(int absEntry, SessionInfo sessionInfo);
 }
 
