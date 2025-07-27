@@ -96,6 +96,15 @@ public class PickListPackageService(
                 return PickListPackageResponse.ErrorResponse(errorMessage ?? "Package cannot be fully picked");
             }
 
+            // New: Load New Picking Package if applies
+            Package? pickingPackage = null;
+            if (request.PickingPackageId != null) {
+                 pickingPackage = await db.Packages.Include(v => v.Contents).FirstOrDefaultAsync(v => v.Id == request.PickingPackageId.Value);
+                if (pickingPackage == null) {
+                    throw new KeyNotFoundException($"Picking package {request.PickingPackageId} not found");
+                }
+            }
+
             // 8. Create PickList entries for each package content
             var pickListIds = new List<Guid>();
 
@@ -185,12 +194,35 @@ public class PickListPackageService(
                     Quantity = content.Quantity,
                     SourceOperationType = ObjectType.Picking,
                     SourceOperationId = pickList.Id,
+                    TargetPackageId = request.PickingPackageId,
                     CommittedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     CreatedByUserId = sessionInfo.Guid
                 };
 
                 db.PackageCommitments.Add(commitment);
+                
+                // New: Add content to New Picking Package if applies
+                if (request.PickingPackageId != null) {
+                    var pickingPackageContent = pickingPackage!.Contents.FirstOrDefault(c => c.ItemCode == content.ItemCode );
+                    if (pickingPackageContent == null) {
+                        pickingPackageContent = new PackageContent {
+                            CreatedByUserId = sessionInfo.Guid,
+                            PackageId = request.PickingPackageId.Value,
+                            ItemCode = content.ItemCode,
+                            Quantity = content.Quantity,
+                            CommittedQuantity = 0,
+                            WhsCode = sessionInfo.Warehouse,
+                            BinEntry = request.BinEntry ?? package.BinEntry,
+                        };
+                        await db.PackageContents.AddAsync(pickingPackageContent);
+                    }
+                    else {
+                        pickingPackageContent.Quantity += content.Quantity;
+                        db.PackageContents.Update(pickingPackageContent);
+                    }
+                }
+
             }
 
             // 9. Create PickListPackage record
@@ -208,7 +240,7 @@ public class PickListPackageService(
             };
 
             db.PickListPackages.Add(pickListPackage);
-
+            
             await db.SaveChangesAsync();
 
             // Prepare response

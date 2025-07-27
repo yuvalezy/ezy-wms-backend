@@ -139,6 +139,11 @@
             Optional bin entry where the package is located
             </summary>
         </member>
+        <member name="P:Core.DTOs.PickList.PickListAddPackageRequest.PickingPackageId">
+            <summary>
+            Optional add package into a new picking package
+            </summary>
+        </member>
         <member name="P:Core.DTOs.PickList.PickListAutoPickRequest.TargetPackageId">
             <summary>
             Optional target package ID. If not provided, a new package will be created.
@@ -207,6 +212,11 @@
         <member name="M:Core.DTOs.PickList.PickListPackageResponse.ErrorResponse(System.String)">
             <summary>
             Creates an error response with the specified message
+            </summary>
+        </member>
+        <member name="P:Core.Entities.PackageCommitment.TargetPackageId">
+            <summary>
+            When creating a new package we need to track the source commited data to which new package it's going too
             </summary>
         </member>
         <member name="P:Core.Entities.PickListPackage.ProcessedAt">

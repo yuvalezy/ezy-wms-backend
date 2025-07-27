@@ -42,7 +42,10 @@ public class PickingNewPackage : BaseExternalTest {
         await helper.Execute();
 
         // Create GRPO for 3 package managed items
-        helper.Package = true;
+        helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItems) {
+            Package = true
+        };
+
         await helper.Execute();
         packages = helper.CreatedPackages;
 
@@ -143,7 +146,8 @@ public class PickingNewPackage : BaseExternalTest {
             Type = 17,
             Entry = salesEntry,
             PackageId = itemPackages[0],
-            BinEntry = settings.Filters.InitialCountingBinEntry!.Value
+            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            PickingPackageId = packageId
         };
         await service.AddPackageAsync(request, TestConstants.SessionInfo);
     }

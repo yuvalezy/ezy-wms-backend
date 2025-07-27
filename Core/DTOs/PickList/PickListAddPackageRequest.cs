@@ -31,4 +31,9 @@ public class PickListAddPackageRequest {
     /// Optional bin entry where the package is located
     /// </summary>
     public int? BinEntry { get; set; }
+
+    /// <summary>
+    /// Optional add package into a new picking package
+    /// </summary>
+    public Guid? PickingPackageId { get; set; }
 }

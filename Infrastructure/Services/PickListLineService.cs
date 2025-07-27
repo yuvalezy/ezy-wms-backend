@@ -93,30 +93,7 @@ public class PickListLineService(SystemDbContext db, IExternalSystemAdapter adap
 
             await AddItemPackage(sessionInfo, pickList, package, packageContent, request);
         
-            // If content is added to a new picking package
-            if (request.PickingPackageId != null) {
-                var pickingPackage = await db.Packages.Include(v => v.Contents).FirstOrDefaultAsync(v => v.Id == request.PickingPackageId.Value);
-                if (pickingPackage == null) {
-                    throw new KeyNotFoundException($"Picking package {request.PickingPackageId} not found");
-                }
-                var pickingPackageContent = pickingPackage.Contents.FirstOrDefault(c => c.ItemCode == request.ItemCode);
-                if (pickingPackageContent == null) {
-                    pickingPackageContent = new PackageContent {
-                        CreatedByUserId = sessionInfo.Guid,
-                        PackageId = request.PickingPackageId.Value,
-                        ItemCode = request.ItemCode,
-                        Quantity = request.Quantity,
-                        CommittedQuantity = 0,
-                        WhsCode = sessionInfo.Warehouse,
-                        BinEntry = request.BinEntry,
-                    };
-                    await db.PackageContents.AddAsync(pickingPackageContent);
-                }
-                else {
-                    pickingPackageContent.Quantity += request.Quantity;
-                    db.PackageContents.Update(pickingPackageContent);
-                }
-            }
+            await AddNewPackageContent(sessionInfo, request);
 
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -175,6 +152,32 @@ public class PickListLineService(SystemDbContext db, IExternalSystemAdapter adap
             };
 
             db.PickListPackages.Add(pickListPackage);
+        }
+    }
+    private async Task AddNewPackageContent(SessionInfo sessionInfo, PickListAddItemRequest request) {
+        // If content is added to a new picking package
+        if (request.PickingPackageId != null) {
+            var pickingPackage = await db.Packages.Include(v => v.Contents).FirstOrDefaultAsync(v => v.Id == request.PickingPackageId.Value);
+            if (pickingPackage == null) {
+                throw new KeyNotFoundException($"Picking package {request.PickingPackageId} not found");
+            }
+            var pickingPackageContent = pickingPackage.Contents.FirstOrDefault(c => c.ItemCode == request.ItemCode);
+            if (pickingPackageContent == null) {
+                pickingPackageContent = new PackageContent {
+                    CreatedByUserId = sessionInfo.Guid,
+                    PackageId = request.PickingPackageId.Value,
+                    ItemCode = request.ItemCode,
+                    Quantity = request.Quantity,
+                    CommittedQuantity = 0,
+                    WhsCode = sessionInfo.Warehouse,
+                    BinEntry = request.BinEntry,
+                };
+                await db.PackageContents.AddAsync(pickingPackageContent);
+            }
+            else {
+                pickingPackageContent.Quantity += request.Quantity;
+                db.PackageContents.Update(pickingPackageContent);
+            }
         }
     }
 
