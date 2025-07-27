@@ -29,11 +29,11 @@ public class InventoryTransferPackageCommitmentTest : BaseExternalTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory) {
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem) {
             Package = true
         };
         await helper.Execute();
-        createdPackages = helper.CreatedPackages;
+        createdPackages = helper.CreatedPackages[testItem];
     }
     
     [Test]

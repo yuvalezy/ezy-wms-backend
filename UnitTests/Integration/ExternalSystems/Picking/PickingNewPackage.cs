@@ -9,25 +9,27 @@ using UnitTests.Integration.ExternalSystems.Shared;
 namespace UnitTests.Integration.ExternalSystems.Picking;
 
 [TestFixture]
-public class PickingPackages : BaseExternalTest {
-    private string testItem     = string.Empty;
+public class PickingNewPackage : BaseExternalTest
+{
+    private string[] testItems = new string[3];
     private string testCustomer = string.Empty;
     private int    salesEntry   = -1;
     private int    absEntry    = -1;
     private Guid   transferId   = Guid.Empty;
 
     private PickingSelectionResponse[] selection = [];
-    private List<Guid>                 packages = [];
+    private Dictionary<string, List<Guid>> packages;
 
     [Test]
     [Order(0)]
     public async Task PrepareData() {
         //Generate new item
         var itemHelper = new CreateTestItem(sboCompany);
-        testItem = (await itemHelper.Execute()).ItemCode;
+        testItems[0] = (await itemHelper.Execute()).ItemCode;
+        testItems[1] = (await itemHelper.Execute()).ItemCode;
+        testItems[2] = (await itemHelper.Execute()).ItemCode;
 
-
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory) {
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItems.ToArray()) {
             Package = true
         };
         await helper.Execute();
@@ -42,7 +44,7 @@ public class PickingPackages : BaseExternalTest {
     [Test]
     [Order(1)]
     public async Task CreateSaleOrder_ReleaseToPicking() {
-        var helper = new CreateSalesOrder(sboCompany, testItem, salesOrdersSeries, testCustomer);
+        var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItems.ToArray());
         await helper.Execute();
         salesEntry = helper.SalesEntry;
         absEntry  = helper.AbsEntry;

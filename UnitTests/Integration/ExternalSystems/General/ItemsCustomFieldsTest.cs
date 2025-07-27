@@ -31,7 +31,7 @@ public class ItemsCustomFieldsTest : BaseExternalTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, itemData.ItemCode, settings, goodsReceiptSeries, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, itemData.ItemCode);
         await helper.Execute();
     }
 

@@ -1,3 +1,4 @@
+using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.DTOs.Transfer;
 using Core.Entities;
@@ -192,19 +193,21 @@ public class PickListCancelService(
         }
     }
 
-    private async Task HandleRegularItemCancellation(dynamic[] selection, HashSet<string> processedItems, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
+    private async Task HandleRegularItemCancellation(PickingSelectionResponse[] selection, HashSet<string> processedItems, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
         // Add items into transfer (only for items not handled by packages)
         var items = selection
             .Where(s => !processedItems.Contains(s.ItemCode)) // Skip items already handled by packages
             .GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars, v.NumInBuy, v.PackUn })
-            .Select(v => new { v.Key.ItemCode, v.Key.BarCode, v.Key.NumInBuy, v.Key.PackUn, Quantity = v.Sum(w => w.Quantity) });
+            .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, (int)v.Sum(w => w.Quantity) ));
 
         foreach (var item in items) {
             await ProcessRegularItem(item, transferId, cancelBinEntry, sessionInfo);
         }
     }
+    
+    private record RegularItemCancellationRequest(string ItemCode, string BarCode, int NumInBuy, int PackUn, int Quantity);
 
-    private async Task ProcessRegularItem(dynamic item, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
+    private async Task ProcessRegularItem(RegularItemCancellationRequest item, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
         var addRequest = new TransferAddItemRequest {
             ID = transferId,
             ItemCode = item.ItemCode,

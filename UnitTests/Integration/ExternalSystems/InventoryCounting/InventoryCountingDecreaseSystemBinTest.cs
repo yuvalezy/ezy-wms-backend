@@ -37,7 +37,7 @@ public class InventoryCountingDecreaseSystemBinTest : BaseExternalTest {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem);
         await helper.Execute();
     }
 

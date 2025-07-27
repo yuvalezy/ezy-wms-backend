@@ -29,13 +29,13 @@ public class PickingRePackCancellation : BaseExternalTest
         testItem = (await itemHelper.Execute()).ItemCode;
 
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory)
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem)
         {
             Package = true
         };
 
         await helper.Execute();
-        packages = helper.CreatedPackages;
+        packages = helper.CreatedPackages[testItem];
 
 
         //Get customer
@@ -47,7 +47,7 @@ public class PickingRePackCancellation : BaseExternalTest
     [Order(1)]
     public async Task CreateSaleOrder_ReleaseToPicking()
     {
-        var helper = new CreateSalesOrder(sboCompany, testItem, salesOrdersSeries, testCustomer);
+        var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItem);
         await helper.Execute();
         salesEntry = helper.SalesEntry;
         pickEntry = helper.AbsEntry;

@@ -26,7 +26,7 @@ public class PickingCancellation : BaseExternalTest {
         testItem = (await itemHelper.Execute()).ItemCode;
 
 
-        var helper = new CreateGoodsReceipt(sboCompany, testItem, settings, goodsReceiptSeries, factory);
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem);
         await helper.Execute();
 
 
@@ -38,7 +38,7 @@ public class PickingCancellation : BaseExternalTest {
     [Test]
     [Order(1)]
     public async Task CreateSaleOrder_ReleaseToPicking() {
-        var helper = new CreateSalesOrder(sboCompany, testItem, salesOrdersSeries, testCustomer);
+        var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItem);
         await helper.Execute();
         salesEntry = helper.SalesEntry;
         pickEntry  = helper.AbsEntry;

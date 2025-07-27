@@ -322,14 +322,16 @@ public class PickListPackageService(
 
         // Create a lookup of commitments by PickEntry, PackageId, and ItemCode
         var commitmentLookup = new Dictionary<(int PickEntry, Guid PackageId, string ItemCode), decimal>();
-        foreach (var commitment in packageCommitments) {
-            if (pickListIdToPickEntry.TryGetValue(commitment.SourceOperationId, out var pickEntry)) {
-                var key = (pickEntry, commitment.PackageId, commitment.ItemCode);
-                if (commitmentLookup.ContainsKey(key)) {
-                    commitmentLookup[key] += commitment.Quantity;
-                } else {
-                    commitmentLookup[key] = commitment.Quantity;
-                }
+        foreach (var commitment in packageCommitments)
+        {
+            if (!pickListIdToPickEntry.TryGetValue(commitment.SourceOperationId, out var pickEntry))
+                continue;
+
+            var key = (pickEntry, commitment.PackageId, commitment.ItemCode);
+            if (commitmentLookup.ContainsKey(key)) {
+                commitmentLookup[key] += commitment.Quantity;
+            } else {
+                commitmentLookup[key] = commitment.Quantity;
             }
         }
 
