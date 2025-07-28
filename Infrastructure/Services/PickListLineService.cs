@@ -71,7 +71,7 @@ public class PickListLineService(
 
             await AddItemPackage(sessionInfo, pickList, package, packageContent, request);
         
-            await AddNewPackageContent(sessionInfo, request);
+            await AddNewPackageContent(sessionInfo, request, pickList.Id);
 
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -99,7 +99,7 @@ public class PickListLineService(
         // Create PickListPackage record if not exists
         await packageOperations.CreatePickListPackageIfNotExists(sessionInfo, pickList, request, package);
     }
-    private async Task AddNewPackageContent(SessionInfo sessionInfo, PickListAddItemRequest request) {
+    private async Task AddNewPackageContent(SessionInfo sessionInfo, PickListAddItemRequest request, Guid pickListId) {
         // If content is added to a new picking package
         if (request.PickingPackageId != null) {
             await packageOperations.AddOrUpdatePackageContent(
@@ -107,7 +107,11 @@ public class PickListLineService(
                 request.PickingPackageId.Value, 
                 request.ItemCode, 
                 request.Quantity, 
-                request.BinEntry);
+                request.BinEntry,
+                request.ID,
+                request.Type,
+                request.Entry, 
+                pickListId);
         }
     }
 

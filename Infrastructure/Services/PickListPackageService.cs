@@ -143,7 +143,11 @@ public class PickListPackageService(
                         request.PickingPackageId.Value, 
                         content.ItemCode, 
                         (int)content.Quantity, 
-                        request.BinEntry ?? package.BinEntry);
+                        request.BinEntry ?? package.BinEntry,
+                        request.ID,
+                        request.Type,
+                        request.Entry, 
+                        pickList.Id);
                 }
 
             }

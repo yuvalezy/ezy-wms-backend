@@ -1,13 +1,15 @@
+using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class PickListPackageOperationsService(SystemDbContext db) {
+public class PickListPackageOperationsService(SystemDbContext db, IPackageContentService packageContentService) {
     public async Task<(Package?, PackageContent?, PickListAddItemResponse?)> ValidatePackageForItem(PickListAddItemRequest request) {
         if (request.PackageId == null) {
             return (null, null, null);
@@ -124,7 +126,7 @@ public class PickListPackageOperationsService(SystemDbContext db) {
 
     }
 
-    public async Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, int quantity, int? binEntry) {
+    public async Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, int quantity, int? binEntry, int id, int type, int entry, Guid pickListId) {
         var package = await db.Packages.Include(v => v.Contents).FirstOrDefaultAsync(v => v.Id == packageId);
         if (package == null) {
             throw new KeyNotFoundException($"Package {packageId} not found");
@@ -137,7 +139,7 @@ public class PickListPackageOperationsService(SystemDbContext db) {
                 PackageId = packageId,
                 ItemCode = itemCode,
                 Quantity = quantity,
-                CommittedQuantity = 0,
+                CommittedQuantity = quantity,
                 WhsCode = sessionInfo.Warehouse,
                 BinEntry = binEntry,
             };
@@ -145,8 +147,39 @@ public class PickListPackageOperationsService(SystemDbContext db) {
         }
         else {
             packageContent.Quantity += quantity;
+            packageContent.CommittedQuantity += quantity;
             db.PackageContents.Update(packageContent);
         }
+        
+        // Create the commitment entries
+        var commitment = new PackageCommitment {
+            Id = Guid.NewGuid(),
+            PackageId = packageId,
+            ItemCode = itemCode,
+            Quantity = quantity,
+            SourceOperationType = ObjectType.Picking,
+            SourceOperationId = pickListId,
+            CommittedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByUserId = sessionInfo.Guid
+        };
+
+        db.PackageCommitments.Add(commitment);
+        
+        //Add log of added items from source
+        await packageContentService.LogPackageTransactionAsync(new LogPackageTransactionRequest {
+            PackageId = packageId,
+            TransactionType = PackageTransactionType.Add,
+            ItemCode = itemCode,
+            Quantity = quantity,
+            UnitQuantity = quantity,
+            UnitType = UnitType.Unit,
+            SourceOperationType = ObjectType.Picking,
+            SourceOperationId = packageContent.Id,
+            UserId = sessionInfo.Guid,
+        });
+
+        await db.SaveChangesAsync();
     }
 
     private static PickListAddItemResponse? ValidatePackageStatus(Package package) {

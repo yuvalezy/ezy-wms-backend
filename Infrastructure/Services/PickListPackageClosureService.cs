@@ -154,21 +154,6 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
                     await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
 
-                    //Add log of added items from source
-                    await packageContentService.LogPackageTransactionAsync(new LogPackageTransactionRequest {
-                        PackageId = movement.SourcePackageId,
-                        TransactionType = PackageTransactionType.Add,
-                        ItemCode = movement.ItemCode,
-                        Quantity = (int)movement.TotalQuantity,
-                        UnitQuantity = (int)movement.TotalQuantity,
-                        UnitType = UnitType.Unit,
-                        SourceOperationType = ObjectType.PickingClosure,
-                        SourceOperationId = Guid.NewGuid(),
-                        UserId = userId,
-                        Notes = $"Pick list {absEntry}: Moved to target package {targetPackage.Package.Barcode}"
-                    });
-
-                    await db.SaveChangesAsync();
 
                     logger.LogInformation("Successfully moved {Quantity} units of {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
                         movement.TotalQuantity, movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);

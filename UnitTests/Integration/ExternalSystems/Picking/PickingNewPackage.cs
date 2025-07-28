@@ -182,14 +182,14 @@ public class PickingNewPackage : BaseExternalTest {
         var noPackageContent = package.Contents.FirstOrDefault(c => c.ItemCode == testItemNoPackage);
         Assert.That(noPackageContent, Is.Not.Null, "Target package should contain no-package item");
         Assert.That(noPackageContent.Quantity, Is.EqualTo(12), "No-package item quantity should be 12");
-        Assert.That(noPackageContent.CommittedQuantity, Is.EqualTo(0), "No-package item should have no commitments");
+        Assert.That(noPackageContent.CommittedQuantity, Is.EqualTo(12), "No-package item committed quantity should equal quantity");
         Assert.That(noPackageContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "No-package item should be in staging bin");
 
         //Validate target package partial package source (testItems[0])
         var partialContent = package.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
         Assert.That(partialContent, Is.Not.Null, "Target package should contain partial item");
         Assert.That(partialContent.Quantity, Is.EqualTo(12), "Partial item quantity should be 12");
-        Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Partial item should have no commitments");
+        Assert.That(partialContent.CommittedQuantity, Is.EqualTo(12), "Partial item committed quantity should equal quantity");
         Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Partial item should be in staging bin");
 
         // Verify source package for partial item has commitment
@@ -213,7 +213,7 @@ public class PickingNewPackage : BaseExternalTest {
         var fullContent = package.Contents.FirstOrDefault(c => c.ItemCode == testItems[1]);
         Assert.That(fullContent, Is.Not.Null, "Target package should contain full package item");
         Assert.That(fullContent.Quantity, Is.EqualTo(24), "Full package item should have positive quantity");
-        Assert.That(fullContent.CommittedQuantity, Is.EqualTo(0), "Full package item should have no commitments");
+        Assert.That(fullContent.CommittedQuantity, Is.EqualTo(24), "Full package item committed quantity should equal quantity");
         Assert.That(fullContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Full package item should be in staging bin");
 
         // Verify source package for full item is fully committed
@@ -264,7 +264,7 @@ public class PickingNewPackage : BaseExternalTest {
 
     [Test]
     [Order(8)]
-    public async Task Validate_SourcePackages_AfterProcess() {
+    public async Task Validate_SourcePackages_AfterDeliveryNoteCreated_PickListFinished() {
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
         
@@ -335,7 +335,7 @@ public class PickingNewPackage : BaseExternalTest {
 
     [Test]
     [Order(9)]
-    public async Task Validate_TargetPackage_AfterProcess() {
+    public async Task Validate_TargetPackage_AfterDeliveryNoteCreated_PickListFinished() {
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
         
@@ -346,7 +346,7 @@ public class PickingNewPackage : BaseExternalTest {
             .FirstOrDefaultAsync(p => p.Id == packageId);
         
         Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
-        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Active), "Target package should be Active after processing");
+        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Closed), "Target package should be Closed after processing");
         Assert.That(targetPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value), "Target package should be in staging bin");
         
         // Validate package contents - should still have 3 items with same quantities
