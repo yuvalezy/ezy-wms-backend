@@ -46,4 +46,5 @@ public abstract class BaseExternalTest {
     // Get document series for current period for new Inventory Goods Receipt
     internal const int salesOrdersSeries = 119;
     internal const int goodsReceiptSeries = 129;
+    internal const int deliveryNoteSeries = 116;
 }

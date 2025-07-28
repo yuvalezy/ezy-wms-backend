@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Adapters.CrossPlatform.SBO.Models;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.Entities;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ public class PickingUpdate(
     SboCompany     sboCompany,
     ILoggerFactory loggerFactory) : IDisposable {
     private readonly ILogger<PickingUpdate> logger = loggerFactory.CreateLogger<PickingUpdate>();
-    private          PickListResponse?      pickListResponse;
+    private          PickListSboResponse?      pickListResponse;
 
     public async Task Execute() {
         try {
@@ -28,7 +29,7 @@ public class PickingUpdate(
     }
 
     private async Task LoadPickList() {
-        pickListResponse = await sboCompany.GetAsync<PickListResponse>($"PickLists({absEntry})");
+        pickListResponse = await sboCompany.GetAsync<PickListSboResponse>($"PickLists({absEntry})");
         if (pickListResponse == null) {
             logger.LogError("Could not find Pick List {AbsEntry}", absEntry);
             throw new Exception($"Could not find Pick List {absEntry}");
@@ -108,7 +109,7 @@ public class PickingUpdate(
                 }
 
                 if (!found) {
-                    pickLine.DocumentLinesBinAllocations.Add(new PickListLineBinAllocation {
+                    pickLine.DocumentLinesBinAllocations.Add(new PickListLineSboBinAllocation {
                         BaseLineNumber = pickLine.LineNumber,
                         BinAbsEntry    = bin.BinEntry!.Value,
                         Quantity       = bin.Quantity,
@@ -129,82 +130,4 @@ public class PickingUpdate(
     public void Dispose() {
     }
 
-    private class PickListResponse {
-        [JsonPropertyName("Absoluteentry")]
-        public int AbsoluteEntry { get; set; }
-
-        [JsonPropertyName("Name")]
-        public string? Name { get; set; }
-
-        [JsonPropertyName("OwnerCode")]
-        public int OwnerCode { get; set; }
-
-        [JsonPropertyName("OwnerName")]
-        public string? OwnerName { get; set; }
-
-        [JsonPropertyName("PickDate")]
-        public DateTime PickDate { get; set; }
-
-        [JsonPropertyName("Remarks")]
-        public string? Remarks { get; set; }
-
-        [JsonPropertyName("Status")]
-        public string Status { get; set; } = string.Empty;
-
-        [JsonPropertyName("ObjectType")]
-        public string ObjectType { get; set; } = string.Empty;
-
-        [JsonPropertyName("UseBaseUnits")]
-        public string UseBaseUnits { get; set; } = string.Empty;
-
-        public PickListLine[] PickListsLines { get; set; }
-    }
-
-    private class PickListLine {
-        [JsonPropertyName("AbsoluteEntry")]
-        public int AbsoluteEntry { get; set; }
-
-        [JsonPropertyName("LineNumber")]
-        public int LineNumber { get; set; }
-
-        [JsonPropertyName("OrderEntry")]
-        public int OrderEntry { get; set; }
-
-        [JsonPropertyName("OrderRowID")]
-        public int OrderRowID { get; set; }
-
-        [JsonPropertyName("PickedQuantity")]
-        public double PickedQuantity { get; set; }
-
-        [JsonPropertyName("PickStatus")]
-        public string PickStatus { get; set; } = string.Empty;
-
-        [JsonPropertyName("ReleasedQuantity")]
-        public double ReleasedQuantity { get; set; }
-
-        [JsonPropertyName("PreviouslyReleasedQuantity")]
-        public double PreviouslyReleasedQuantity { get; set; }
-
-        [JsonPropertyName("BaseObjectType")]
-        public int BaseObjectType { get; set; }
-
-        public ICollection<PickListLineBinAllocation> DocumentLinesBinAllocations { get; set; }
-    }
-
-    private class PickListLineBinAllocation {
-        [JsonPropertyName("AllowNegativeQuantity")]
-        public string AllowNegativeQuantity { get; set; } = "tNO";
-
-        [JsonPropertyName("BaseLineNumber")]
-        public int BaseLineNumber { get; set; }
-
-        [JsonPropertyName("BinAbsEntry")]
-        public int BinAbsEntry { get; set; }
-
-        [JsonPropertyName("Quantity")]
-        public double Quantity { get; set; }
-
-        [JsonPropertyName("SerialAndBatchNumbersBaseLine")]
-        public int SerialAndBatchNumbersBaseLine { get; set; } = -1;
-    }
 }

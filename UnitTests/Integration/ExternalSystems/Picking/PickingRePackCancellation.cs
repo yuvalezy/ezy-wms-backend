@@ -3,7 +3,7 @@ using Core.Enums;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.Extensions.DependencyInjection;
-using UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpers;
+using UnitTests.Integration.ExternalSystems.Picking.Helpers;
 using UnitTests.Integration.ExternalSystems.Shared;
 
 namespace UnitTests.Integration.ExternalSystems.Picking;

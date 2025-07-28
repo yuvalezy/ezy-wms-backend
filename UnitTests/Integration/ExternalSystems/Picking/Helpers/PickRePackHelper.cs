@@ -1,6 +1,4 @@
-﻿using Core.DTOs.Items;
-using Core.DTOs.PickList;
-using Core.Entities;
+﻿using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Services;
@@ -10,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi;
 
-namespace UnitTests.Integration.ExternalSystems.Picking.PickingCancellationHelpers;
+namespace UnitTests.Integration.ExternalSystems.Picking.Helpers;
 
 public class PickRePackHelper(int pickEntry, WebApplicationFactory<Program> factory, int binEntry, int salesEntry, string testItem, List<Guid> packages) : IDisposable
 {
