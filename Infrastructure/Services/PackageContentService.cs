@@ -12,12 +12,12 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PackageContentService(SystemDbContext context, IExternalSystemAdapter adapter, ILogger<PackageContentService> logger) : IPackageContentService {
-    public async Task<PackageContent> AddItemToPackageAsync(AddItemToPackageRequest request, SessionInfo sessionInfo) {
+    public async Task<PackageContent> AddItemToPackageAsync(AddItemToPackageRequest request, string warehouse, Guid userId) {
         var package = await context.Packages
             .Include(p => p.Contents)
             .FirstOrDefaultAsync(p => p.Id == request.PackageId && !p.Deleted);
 
-        if (package == null || package.WhsCode != sessionInfo.Warehouse) {
+        if (package == null || package.WhsCode != warehouse) {
             throw new InvalidOperationException($"Package {request.PackageId} not found");
         }
 
@@ -51,7 +51,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
         if (existingContent != null) {
             existingContent.Quantity        += unitQuantity.Value;
             existingContent.UpdatedAt       =  DateTime.UtcNow;
-            existingContent.UpdatedByUserId =  sessionInfo.Guid;
+            existingContent.UpdatedByUserId =  userId;
 
             await LogPackageTransactionAsync(new LogPackageTransactionRequest {
                 PackageId             = request.PackageId,
@@ -63,8 +63,8 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
                 SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
                 SourceOperationId     = request.SourceOperationId,
                 SourceOperationLineId = request.SourceOperationLineId,
-                UserId                = sessionInfo.Guid,
-                Notes                 = "Item quantity increased in package"
+                UserId                = userId,
+                Notes                 = request.Notes ?? "Item quantity increased in package"
             });
 
             await context.SaveChangesAsync();
@@ -76,9 +76,9 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             PackageId       = request.PackageId,
             ItemCode        = request.ItemCode,
             Quantity        = unitQuantity.Value,
-            WhsCode         = sessionInfo.Warehouse,
+            WhsCode         = warehouse,
             BinEntry        = request.BinEntry,
-            CreatedByUserId = sessionInfo.Guid,
+            CreatedByUserId = userId,
         };
 
         context.PackageContents.Add(content);
@@ -93,7 +93,7 @@ public class PackageContentService(SystemDbContext context, IExternalSystemAdapt
             SourceOperationType   = request.SourceOperationType ?? ObjectType.Package,
             SourceOperationId     = request.SourceOperationId,
             SourceOperationLineId = request.SourceOperationLineId,
-            UserId                = sessionInfo.Guid,
+            UserId                = userId,
             Notes                 = "Item added to package"
         });
 

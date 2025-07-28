@@ -244,7 +244,7 @@ public class PackageService(
     // Content Management - used internally and by GoodsReceiptService
     public async Task<PackageContent> AddItemToPackageAsync(AddItemToPackageRequest request, SessionInfo sessionInfo)
     {
-        return await contentService.AddItemToPackageAsync(request, sessionInfo);
+        return await contentService.AddItemToPackageAsync(request, sessionInfo.Warehouse, sessionInfo.Guid);
     }
 
     /// <summary>

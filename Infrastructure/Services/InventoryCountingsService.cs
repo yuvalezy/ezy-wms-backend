@@ -577,7 +577,7 @@ public class InventoryCountingsService(
                             BinEntry = countingPackage.CountedBinEntry,
                             SourceOperationType = ObjectType.InventoryCounting,
                             SourceOperationId = countingId
-                        }, sessionInfo);
+                        }, sessionInfo.Warehouse, sessionInfo.Guid);
 
                         break;
                     case < 0:

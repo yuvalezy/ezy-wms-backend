@@ -315,7 +315,7 @@ public class PackageController(
             }
 
             request.PackageId = id;
-            var content = await contentService.AddItemToPackageAsync(request, sessionInfo);
+            var content = await contentService.AddItemToPackageAsync(request, sessionInfo.Warehouse, sessionInfo.Guid);
             return Ok(await content.ToDto(adapter));
         }
         catch (Exception ex)

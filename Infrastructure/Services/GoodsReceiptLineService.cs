@@ -126,7 +126,7 @@ public class GoodsReceiptLineService(
                     SourceOperationType   = ObjectType.GoodsReceipt,
                     SourceOperationId     = request.Id,
                     SourceOperationLineId = line.Id
-                }, sessionInfo);
+                }, sessionInfo.Warehouse, sessionInfo.Guid);
             }
 
             await db.SaveChangesAsync();
@@ -291,7 +291,7 @@ public class GoodsReceiptLineService(
                     SourceOperationId     = line.GoodsReceiptId,
                     SourceOperationLineId = line.Id
                 };
-                await packageContentService.AddItemToPackageAsync(addRequest, session);
+                await packageContentService.AddItemToPackageAsync(addRequest, session.Warehouse, session.Guid);
                 break;
             }
             case < 0: {

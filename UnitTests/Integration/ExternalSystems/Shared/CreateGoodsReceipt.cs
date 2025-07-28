@@ -140,6 +140,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
 
     private async Task CreatePackages(string item)
     {
+        var sessionInfo = TestConstants.SessionInfo;
         using (var scope = factory.Services.CreateScope())
         {
             var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
@@ -151,10 +152,10 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
 
             CreatedPackages[item] = [];
 
-            var package = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
+            var package = await packageService.CreatePackageAsync(sessionInfo, request);
             CreatedPackages[item].Add(package.Id);
 
-            var package2 = await packageService.CreatePackageAsync(TestConstants.SessionInfo, request);
+            var package2 = await packageService.CreatePackageAsync(sessionInfo, request);
             CreatedPackages[item].Add(package2.Id);
         }
 
@@ -174,7 +175,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
                     SourceOperationType = ObjectType.Package,
                 };
 
-                await packageService.AddItemToPackageAsync(request, TestConstants.SessionInfo);
+                await packageService.AddItemToPackageAsync(request, sessionInfo.Warehouse, sessionInfo.Guid);
             }
         }
 
@@ -183,7 +184,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
             var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
             foreach (var id in CreatedPackages[item])
             {
-                await packageService.ActivatePackagesByIdAsync(id, TestConstants.SessionInfo);
+                await packageService.ActivatePackagesByIdAsync(id, sessionInfo);
             }
         }
     }

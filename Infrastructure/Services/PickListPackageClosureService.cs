@@ -45,7 +45,10 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
             logger.LogInformation("Processing pick list closure for AbsEntry {AbsEntry}, Reason: {Reason}",
                 absEntry, closureInfo.ClosureReason);
 
-            // If closure was due to follow-up documents, process package movements FIRST
+            // FIRST: Process target package movements (source → target package consolidation)
+            await ProcessTargetPackageMovements(absEntry, userId);
+
+            // SECOND: If closure was due to follow-up documents, process package movements
             // We need to do this before clearing commitments so we know what was picked
             if (closureInfo.RequiresPackageMovement) {
                 await ProcessPackageMovementsFromFollowUpDocuments(absEntry, closureInfo, userId);
@@ -73,6 +76,144 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
         }
     }
 
+    private async Task ProcessTargetPackageMovements(int absEntry, Guid userId) {
+        logger.LogInformation("Processing target package movements for pick list {AbsEntry}", absEntry);
+
+        // Find all target packages for this pick list
+        var targetPackages = await db.PickListPackages
+            .Include(plp => plp.Package)
+            .ThenInclude(p => p.Contents)
+            .Where(plp => plp.AbsEntry == absEntry && plp.Type == SourceTarget.Target)
+            .ToListAsync();
+
+        if (targetPackages.Count == 0) {
+            logger.LogDebug("No target packages found for pick list {AbsEntry}", absEntry);
+            return;
+        }
+
+        // Get all pick list entries for this absEntry
+        var pickListEntries = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry)
+            .Select(p => new { p.Id, p.PickEntry, p.ItemCode, p.Quantity, p.BinEntry })
+            .ToListAsync();
+
+        var pickListIds = pickListEntries.Select(p => p.Id).ToList();
+
+        // Get all package commitments for this pick list that have target packages
+        var packageCommitments = await db.PackageCommitments
+            .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
+                         pickListIds.Contains(pc.SourceOperationId) &&
+                         pc.TargetPackageId != null)
+            .Include(pc => pc.Package)
+            .ToListAsync();
+
+        if (packageCommitments.Count == 0) {
+            logger.LogDebug("No package commitments with target packages found for pick list {AbsEntry}", absEntry);
+            return;
+        }
+
+        // Group commitments by target package
+        var commitmentsByTargetPackage = packageCommitments
+            .GroupBy(pc => pc.TargetPackageId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Process each target package
+        foreach (var targetPackage in targetPackages) {
+            if (!commitmentsByTargetPackage.TryGetValue(targetPackage.PackageId, out var commitments)) {
+                continue;
+            }
+
+            logger.LogInformation("Processing {CommitmentCount} commitments for target package {PackageId}", 
+                commitments.Count, targetPackage.PackageId);
+
+            // Group commitments by source package and item
+            var commitmentsBySourceAndItem = commitments
+                .GroupBy(c => new { c.PackageId, c.ItemCode })
+                .Select(g => new {
+                    SourcePackageId = g.Key.PackageId,
+                    ItemCode = g.Key.ItemCode,
+                    TotalQuantity = g.Sum(c => c.Quantity),
+                    SourcePackage = g.First().Package
+                })
+                .ToList();
+
+            // Process each source package → target package movement
+            foreach (var movement in commitmentsBySourceAndItem) {
+                try {
+                    // Remove item from source package
+                    var removeRequest = new RemoveItemFromPackageRequest {
+                        PackageId = movement.SourcePackageId,
+                        ItemCode = movement.ItemCode,
+                        Quantity = (int)movement.TotalQuantity,
+                        UnitType = UnitType.Unit,
+                        UnitQuantity = (int)movement.TotalQuantity,
+                        SourceOperationType = ObjectType.PickingClosure,
+                        SourceOperationId = Guid.NewGuid(),
+                        Notes = $"Pick list {absEntry}: Moved to target package {targetPackage.Package.Barcode}"
+                    };
+
+                    await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
+
+                    // Add item to target package
+                    var addRequest = new AddItemToPackageRequest {
+                        PackageId = targetPackage.PackageId,
+                        ItemCode = movement.ItemCode,
+                        Quantity = (int)movement.TotalQuantity,
+                        UnitType = UnitType.Unit,
+                        UnitQuantity = (int)movement.TotalQuantity,
+                        BinEntry = targetPackage.BinEntry,
+                        SourceOperationType = ObjectType.PickingClosure,
+                        SourceOperationId = Guid.NewGuid(),
+                        Notes = $"Pick list {absEntry}: Moved from source package {movement.SourcePackage.Barcode}"
+                    };
+
+                    await packageContentService.AddItemToPackageAsync(addRequest, targetPackage.Package.WhsCode, userId);
+
+                    logger.LogInformation("Successfully moved {Quantity} units of {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
+                        movement.TotalQuantity, movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
+                }
+                catch (Exception ex) {
+                    logger.LogError(ex, "Failed to move item {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
+                        movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
+                    throw;
+                }
+            }
+
+            // Update target package status to Active
+            var targetPackageEntity = await db.Packages.FindAsync(targetPackage.PackageId);
+            if (targetPackageEntity is { Status: PackageStatus.Init }) {
+                targetPackageEntity.Status = PackageStatus.Active;
+                targetPackageEntity.UpdatedAt = DateTime.UtcNow;
+                db.Packages.Update(targetPackageEntity);
+
+                logger.LogInformation("Updated target package {PackageId} status from Init to Active", targetPackage.PackageId);
+            }
+        }
+
+        // Check source packages and update their status if empty
+        var sourcePackageIds = packageCommitments.Select(pc => pc.PackageId).Distinct().ToList();
+        foreach (var sourcePackageId in sourcePackageIds) {
+            var remainingContents = await packageContentService.GetPackageContentsAsync(sourcePackageId);
+            if (remainingContents.Any(pc => pc.Quantity > 0)) {
+                continue;
+            }
+
+            var sourcePackage = await db.Packages.FindAsync(sourcePackageId);
+            if (sourcePackage == null) {
+                continue;
+            }
+
+            sourcePackage.Status = PackageStatus.Closed;
+            sourcePackage.UpdatedAt = DateTime.UtcNow;
+            db.Packages.Update(sourcePackage);
+
+            logger.LogInformation("Updated source package {PackageId} status to Closed (empty after movements)", sourcePackageId);
+        }
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Completed target package movements for pick list {AbsEntry}", absEntry);
+    }
+
     private async Task ProcessPackageMovementsFromFollowUpDocuments(int absEntry, PickListClosureInfo closureInfo, Guid userId) {
         // Get all PickList entries for this absEntry with their PickEntry values
         var pickListEntries = await db.PickLists
@@ -80,7 +221,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
         .Select(p => new { p.Id, p.PickEntry, p.ItemCode })
         .ToListAsync();
 
-        if (!pickListEntries.Any()) {
+        if (pickListEntries.Count == 0) {
             logger.LogDebug("No pick list entries found for AbsEntry {AbsEntry}", absEntry);
             return;
         }
@@ -95,7 +236,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
                      pickListIds.Contains(pc.SourceOperationId))
         .ToListAsync();
 
-        if (!packageCommitments.Any()) {
+        if (packageCommitments.Count == 0) {
             logger.LogDebug("No package commitments found for pick list {AbsEntry}", absEntry);
             return;
         }
@@ -239,7 +380,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
     }
 
     private async Task UpdateCommittedQuantitiesInBatch(List<Guid> packageIds) {
-        if (!packageIds.Any()) return;
+        if (packageIds.Count == 0) return;
 
         // Get fresh package contents to update committed quantities
         var packageContents = await db.PackageContents

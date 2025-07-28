@@ -6,7 +6,7 @@ namespace Core.Services;
 
 public interface IPackageContentService {
     // Content Management
-    Task<PackageContent>              AddItemToPackageAsync(AddItemToPackageRequest           request, SessionInfo sessionInfo);
+    Task<PackageContent> AddItemToPackageAsync(AddItemToPackageRequest request, string warehouse, Guid userId);
     Task<PackageContent>              RemoveItemFromPackageAsync(RemoveItemFromPackageRequest request, Guid        userId);
     Task<IEnumerable<PackageContent>> GetPackageContentsAsync(Guid                            packageId);
     Task<decimal>                     GetItemQuantityInPackageAsync(Guid                      packageId, string itemCode);
