@@ -346,56 +346,52 @@ public class PickingNewPackage : BaseExternalTest {
             .FirstOrDefaultAsync(p => p.Id == packageId);
         
         Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
-        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Closed), "Target package should be Closed after processing");
+        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Closed), "Target package should be Closed after delivery note processing");
         Assert.That(targetPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value), "Target package should be in staging bin");
         
-        // Validate package contents - should still have 3 items with same quantities
-        Assert.That(targetPackage.Contents.Count, Is.EqualTo(3), "Target package should contain 3 items");
+        // Validate package contents - should be empty (contents removed when quantity reaches 0)
+        Assert.That(targetPackage.Contents.Count, Is.EqualTo(0), "Target package should have no contents after delivery");
         
-        // Validate no-package item (testItemNoPackage) - should remain unchanged
-        var noPackageContent = targetPackage.Contents.FirstOrDefault(c => c.ItemCode == testItemNoPackage);
-        Assert.That(noPackageContent, Is.Not.Null, "Target package should contain no-package item");
-        Assert.That(noPackageContent.Quantity, Is.EqualTo(12), "No-package item quantity should remain 12");
-        Assert.That(noPackageContent.CommittedQuantity, Is.EqualTo(0), "No-package item should have no commitments");
+        // Validate transaction audit trail - should show both incoming and outgoing movements
+        // Check for incoming transactions from source packages during picking closure
+        var addTransactions = targetPackage.Transactions
+            .Where(t => t.TransactionType == PackageTransactionType.Add &&
+                       t.SourceOperationType == ObjectType.Picking)
+            .ToList();
+        Assert.That(addTransactions.Count, Is.EqualTo(3), "Should have 3 add transactions (no-package + partial + full)");
         
-        // Check audit trail for no-package item - should have original add transaction
-        var noPackageAddTransaction = targetPackage.Transactions
-            .FirstOrDefault(t => t.ItemCode == testItemNoPackage && 
-                                t.TransactionType == PackageTransactionType.Add &&
-                                t.SourceOperationType == ObjectType.PickingClosure);
-        Assert.That(noPackageAddTransaction, Is.Not.Null, "No-package item should have add transaction from closure");
-        Assert.That(noPackageAddTransaction.Quantity, Is.EqualTo(12), "Add transaction should show +12 quantity");
-        Assert.That(noPackageAddTransaction.Notes, Does.Not.Contain("source package"), "No-package item should not reference source package");
+        // Check for outgoing transactions from delivery note processing
+        var removeTransactions = targetPackage.Transactions
+            .Where(t => t.TransactionType == PackageTransactionType.Remove &&
+                       t.SourceOperationType == ObjectType.PickingClosure &&
+                       t.Notes.Contains("Delivery"))
+            .ToList();
+        Assert.That(removeTransactions.Count, Is.EqualTo(3), "Should have 3 removal transactions for delivery");
         
-        // Validate partial package item (testItems[0]) - moved from source package
-        var partialContent = targetPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
-        Assert.That(partialContent, Is.Not.Null, "Target package should contain partial item");
-        Assert.That(partialContent.Quantity, Is.EqualTo(12), "Partial item quantity should be 12");
-        Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Partial item should have no commitments");
+        // Validate specific item transactions
+        var noPackageAddTransaction = addTransactions.FirstOrDefault(t => t.ItemCode == testItemNoPackage);
+        Assert.That(noPackageAddTransaction, Is.Not.Null, "Should have add transaction for no-package item");
+        Assert.That(noPackageAddTransaction.Quantity, Is.EqualTo(12), "No-package add transaction should be +12");
         
-        // Check audit trail for partial item - should have add transaction from source package
-        var partialAddTransaction = targetPackage.Transactions
-            .FirstOrDefault(t => t.ItemCode == testItems[0] && 
-                                t.TransactionType == PackageTransactionType.Add &&
-                                t.SourceOperationType == ObjectType.PickingClosure);
-        Assert.That(partialAddTransaction, Is.Not.Null, "Partial item should have add transaction from source package");
-        Assert.That(partialAddTransaction.Quantity, Is.EqualTo(12), "Add transaction should show +12 quantity");
-        Assert.That(partialAddTransaction.Notes, Does.Contain("Moved from source package"), "Add transaction should reference source package");
+        var noPackageRemovalTransaction = removeTransactions.FirstOrDefault(t => t.ItemCode == testItemNoPackage);
+        Assert.That(noPackageRemovalTransaction, Is.Not.Null, "Should have removal transaction for no-package item");
+        Assert.That(noPackageRemovalTransaction.Quantity, Is.EqualTo(-12), "No-package removal transaction should be -12");
         
-        // Validate full package item (testItems[1]) - moved from source package
-        var fullContent = targetPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[1]);
-        Assert.That(fullContent, Is.Not.Null, "Target package should contain full package item");
-        Assert.That(fullContent.Quantity, Is.EqualTo(24), "Full package item quantity should be 24");
-        Assert.That(fullContent.CommittedQuantity, Is.EqualTo(0), "Full package item should have no commitments");
+        var partialAddTransaction = addTransactions.FirstOrDefault(t => t.ItemCode == testItems[0]);
+        Assert.That(partialAddTransaction, Is.Not.Null, "Should have add transaction for partial item");
+        Assert.That(partialAddTransaction.Quantity, Is.EqualTo(12), "Partial add transaction should be +12");
         
-        // Check audit trail for full package item - should have add transaction from source package
-        var fullAddTransaction = targetPackage.Transactions
-            .FirstOrDefault(t => t.ItemCode == testItems[1] && 
-                                t.TransactionType == PackageTransactionType.Add &&
-                                t.SourceOperationType == ObjectType.PickingClosure);
-        Assert.That(fullAddTransaction, Is.Not.Null, "Full package item should have add transaction from source package");
-        Assert.That(fullAddTransaction.Quantity, Is.EqualTo(24), "Add transaction should show +24 quantity");
-        Assert.That(fullAddTransaction.Notes, Does.Contain("Moved from source package"), "Add transaction should reference source package");
+        var partialRemovalTransaction = removeTransactions.FirstOrDefault(t => t.ItemCode == testItems[0]);
+        Assert.That(partialRemovalTransaction, Is.Not.Null, "Should have removal transaction for partial item");
+        Assert.That(partialRemovalTransaction.Quantity, Is.EqualTo(-12), "Partial removal transaction should be -12");
+        
+        var fullAddTransaction = addTransactions.FirstOrDefault(t => t.ItemCode == testItems[1]);
+        Assert.That(fullAddTransaction, Is.Not.Null, "Should have add transaction for full item");
+        Assert.That(fullAddTransaction.Quantity, Is.EqualTo(24), "Full add transaction should be +24");
+        
+        var fullRemovalTransaction = removeTransactions.FirstOrDefault(t => t.ItemCode == testItems[1]);
+        Assert.That(fullRemovalTransaction, Is.Not.Null, "Should have removal transaction for full item");
+        Assert.That(fullRemovalTransaction.Quantity, Is.EqualTo(-24), "Full removal transaction should be -24");
         
         // Validate PickListPackage record for target package
         var targetPickListPackage = await db.PickListPackages
@@ -405,21 +401,34 @@ public class PickingNewPackage : BaseExternalTest {
         Assert.That(targetPickListPackage.AbsEntry, Is.EqualTo(absEntry), "Target PickListPackage should reference correct pick list");
         Assert.That(targetPickListPackage.ProcessedAt, Is.Not.Null, "Target PickListPackage should be marked as processed");
         
-        // Validate total package contents match expected picking results
-        var totalNoPackageQuantity = targetPackage.Contents.Where(c => c.ItemCode == testItemNoPackage).Sum(c => c.Quantity);
-        var totalPartialQuantity = targetPackage.Contents.Where(c => c.ItemCode == testItems[0]).Sum(c => c.Quantity);
-        var totalFullQuantity = targetPackage.Contents.Where(c => c.ItemCode == testItems[1]).Sum(c => c.Quantity);
+        // Validate net transaction totals (add - remove should equal 0 for each item)
+        var noPackageNetQuantity = addTransactions.Where(t => t.ItemCode == testItemNoPackage).Sum(t => t.Quantity) +
+                                   removeTransactions.Where(t => t.ItemCode == testItemNoPackage).Sum(t => t.Quantity);
+        var partialNetQuantity = addTransactions.Where(t => t.ItemCode == testItems[0]).Sum(t => t.Quantity) +
+                                removeTransactions.Where(t => t.ItemCode == testItems[0]).Sum(t => t.Quantity);
+        var fullNetQuantity = addTransactions.Where(t => t.ItemCode == testItems[1]).Sum(t => t.Quantity) +
+                             removeTransactions.Where(t => t.ItemCode == testItems[1]).Sum(t => t.Quantity);
         
-        Assert.That(totalNoPackageQuantity, Is.EqualTo(12), "Total no-package quantity should be 12");
-        Assert.That(totalPartialQuantity, Is.EqualTo(12), "Total partial quantity should be 12");
-        Assert.That(totalFullQuantity, Is.EqualTo(24), "Total full package quantity should be 24");
+        Assert.That(noPackageNetQuantity, Is.EqualTo(0), "Net quantity for no-package item should be 0 (12 added, -12 removed)");
+        Assert.That(partialNetQuantity, Is.EqualTo(0), "Net quantity for partial item should be 0 (12 added, -12 removed)");
+        Assert.That(fullNetQuantity, Is.EqualTo(0), "Net quantity for full item should be 0 (24 added, -24 removed)");
         
-        // Validate no remaining commitments for target package
-        var targetCommitments = await db.PackageCommitments
-            .Where(pc => pc.TargetPackageId == packageId)
+        // Validate all pick list commitments are cleared
+        var remainingPickListCommitments = await db.PackageCommitments
+            .Where(pc => pc.SourceOperationType == ObjectType.Picking)
             .ToListAsync();
         
-        Assert.That(targetCommitments.Count, Is.EqualTo(0), "Target package should have no remaining commitments");
+        // Filter to only commitments related to our pick list
+        var pickListIds = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry)
+            .Select(p => p.Id)
+            .ToListAsync();
+            
+        var ourPickListCommitments = remainingPickListCommitments
+            .Where(pc => pickListIds.Contains(pc.SourceOperationId))
+            .ToList();
+        
+        Assert.That(ourPickListCommitments.Count, Is.EqualTo(0), "All pick list commitments should be cleared after delivery closure");
         
         // Validate package barcode exists and follows expected pattern
         Assert.That(targetPackage.Barcode, Is.Not.Null.And.Not.Empty, "Target package should have a barcode");
