@@ -1,7 +1,6 @@
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Text;
 using Core.Enums;
 using Core.Models.Settings;
 using Core.Services;

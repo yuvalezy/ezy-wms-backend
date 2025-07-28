@@ -1,7 +1,6 @@
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

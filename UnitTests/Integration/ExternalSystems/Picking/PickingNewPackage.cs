@@ -152,37 +152,15 @@ public class PickingNewPackage : BaseExternalTest {
         await service.AddPackageAsync(request, TestConstants.SessionInfo);
     }
 
-    //
-    // [Test]
-    // [Order(2)]
-    // public async Task PickAll() {
-    //     int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
-    //     await PickAllHelper.PickAll(pickEntry, selection, factory, binEntry, salesEntry, testItem);
-    // }
-    //
-    // [Test]
-    // [Order(5)]
-    // public async Task CancelPicking() {
-    //     var scope = factory.Services.CreateScope();
-    //
-    //     //save selection for validation
-    //     var adapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
-    //     selection = (await adapter.GetPickingSelection(pickEntry)).ToArray();
-    //
-    //     //Cancel pick list
-    //     var service  = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-    //     var response = await service.CancelPickList(pickEntry, TestConstants.SessionInfo);
-    //     Assert.That(response, Is.Not.Null);
-    //     Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "No error message");
-    //     Assert.That(response.TransferId.HasValue);
-    //     transferId = response.TransferId.Value;
-    // }
-    //
-    // [Test]
-    // [Order(6)]
-    // public async Task CheckTransfer() {
-    //     int binEntry = settings.Filters.CancelPickingBinEntry;
-    //     var helper   = new CheckTransferHelper(pickEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
-    //     await helper.Validate();
-    // }
+    [Test]
+    [Order(6)]
+    public async Task Validate_NewPackageContent() {
+        Assert.Fail("Not Implemented!");
+    }
+
+    [Test]
+    [Order(7)]
+    public async Task Process_AssertPackagesMovements() {
+        Assert.Fail("Not Implemented!");
+    }
 }

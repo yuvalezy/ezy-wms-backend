@@ -8,7 +8,6 @@ using Core.Models.Settings;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
