@@ -218,9 +218,11 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
         var pickListIds = pickListEntries.Select(p => p.Id).ToList();
 
         // Get all package commitments for this pick list
+        // Exclude commitments that have target packages (already processed in ProcessTargetPackageMovements)
         var packageCommitments = await db.PackageCommitments
         .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
-                     pickListIds.Contains(pc.SourceOperationId))
+                     pickListIds.Contains(pc.SourceOperationId) &&
+                     pc.TargetPackageId == null)
         .ToListAsync();
 
         if (packageCommitments.Count == 0) {

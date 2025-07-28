@@ -303,10 +303,8 @@ public class PickingNewPackage : BaseExternalTest {
         Assert.That(fullSourcePackage, Is.Not.Null, "Full source package should exist");
         Assert.That(fullSourcePackage.Status, Is.EqualTo(PackageStatus.Closed), "Full source package should be closed (empty)");
         
-        var fullSourceContent = fullSourcePackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[1]);
-        Assert.That(fullSourceContent, Is.Not.Null, "Full source package should contain the item record");
-        Assert.That(fullSourceContent.Quantity, Is.EqualTo(0), "Full source package should have zero quantity");
-        Assert.That(fullSourceContent.CommittedQuantity, Is.EqualTo(0), "Full source package should have no remaining commitments");
+        // Package contents should be removed when quantity reaches 0
+        Assert.That(fullSourcePackage.Contents.Count, Is.EqualTo(0), "Full source package should have no contents after being emptied");
         
         // Check audit trail for full source package - should have removal transaction
         var fullRemovalTransaction = fullSourcePackage.Transactions
