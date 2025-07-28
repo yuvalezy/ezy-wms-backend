@@ -81,10 +81,10 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
         // Find all target packages for this pick list
         var targetPackages = await db.PickListPackages
-            .Include(plp => plp.Package)
-            .ThenInclude(p => p.Contents)
-            .Where(plp => plp.AbsEntry == absEntry && plp.Type == SourceTarget.Target)
-            .ToListAsync();
+        .Include(plp => plp.Package)
+        .ThenInclude(p => p.Contents)
+        .Where(plp => plp.AbsEntry == absEntry && plp.Type == SourceTarget.Target)
+        .ToListAsync();
 
         if (targetPackages.Count == 0) {
             logger.LogDebug("No target packages found for pick list {AbsEntry}", absEntry);
@@ -93,19 +93,19 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
         // Get all pick list entries for this absEntry
         var pickListEntries = await db.PickLists
-            .Where(p => p.AbsEntry == absEntry)
-            .Select(p => new { p.Id, p.PickEntry, p.ItemCode, p.Quantity, p.BinEntry })
-            .ToListAsync();
+        .Where(p => p.AbsEntry == absEntry)
+        .Select(p => new { p.Id, p.PickEntry, p.ItemCode, p.Quantity, p.BinEntry })
+        .ToListAsync();
 
         var pickListIds = pickListEntries.Select(p => p.Id).ToList();
 
         // Get all package commitments for this pick list that have target packages
         var packageCommitments = await db.PackageCommitments
-            .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
-                         pickListIds.Contains(pc.SourceOperationId) &&
-                         pc.TargetPackageId != null)
-            .Include(pc => pc.Package)
-            .ToListAsync();
+        .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
+                     pickListIds.Contains(pc.SourceOperationId) &&
+                     pc.TargetPackageId != null)
+        .Include(pc => pc.Package)
+        .ToListAsync();
 
         if (packageCommitments.Count == 0) {
             logger.LogDebug("No package commitments with target packages found for pick list {AbsEntry}", absEntry);
@@ -114,8 +114,8 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
         // Group commitments by target package
         var commitmentsByTargetPackage = packageCommitments
-            .GroupBy(pc => pc.TargetPackageId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        .GroupBy(pc => pc.TargetPackageId!.Value)
+        .ToDictionary(g => g.Key, g => g.ToList());
 
         // Process each target package
         foreach (var targetPackage in targetPackages) {
@@ -123,19 +123,19 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
                 continue;
             }
 
-            logger.LogInformation("Processing {CommitmentCount} commitments for target package {PackageId}", 
+            logger.LogInformation("Processing {CommitmentCount} commitments for target package {PackageId}",
                 commitments.Count, targetPackage.PackageId);
 
             // Group commitments by source package and item
             var commitmentsBySourceAndItem = commitments
-                .GroupBy(c => new { c.PackageId, c.ItemCode })
-                .Select(g => new {
-                    SourcePackageId = g.Key.PackageId,
-                    ItemCode = g.Key.ItemCode,
-                    TotalQuantity = g.Sum(c => c.Quantity),
-                    SourcePackage = g.First().Package
-                })
-                .ToList();
+            .GroupBy(c => new { c.PackageId, c.ItemCode })
+            .Select(g => new {
+                SourcePackageId = g.Key.PackageId,
+                ItemCode = g.Key.ItemCode,
+                TotalQuantity = g.Sum(c => c.Quantity),
+                SourcePackage = g.First().Package
+            })
+            .ToList();
 
             // Process each source package → target package movement
             foreach (var movement in commitmentsBySourceAndItem) {
@@ -154,20 +154,21 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
                     await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
 
-                    // Add item to target package
-                    var addRequest = new AddItemToPackageRequest {
-                        PackageId = targetPackage.PackageId,
+                    //Add log of added items from source
+                    await packageContentService.LogPackageTransactionAsync(new LogPackageTransactionRequest {
+                        PackageId = movement.SourcePackageId,
+                        TransactionType = PackageTransactionType.Add,
                         ItemCode = movement.ItemCode,
                         Quantity = (int)movement.TotalQuantity,
-                        UnitType = UnitType.Unit,
                         UnitQuantity = (int)movement.TotalQuantity,
-                        BinEntry = targetPackage.BinEntry,
+                        UnitType = UnitType.Unit,
                         SourceOperationType = ObjectType.PickingClosure,
                         SourceOperationId = Guid.NewGuid(),
-                        Notes = $"Pick list {absEntry}: Moved from source package {movement.SourcePackage.Barcode}"
-                    };
+                        UserId = userId,
+                        Notes = $"Pick list {absEntry}: Moved to target package {targetPackage.Package.Barcode}"
+                    });
 
-                    await packageContentService.AddItemToPackageAsync(addRequest, targetPackage.Package.WhsCode, userId);
+                    await db.SaveChangesAsync();
 
                     logger.LogInformation("Successfully moved {Quantity} units of {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
                         movement.TotalQuantity, movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
@@ -175,6 +176,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
                 catch (Exception ex) {
                     logger.LogError(ex, "Failed to move item {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
                         movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
+
                     throw;
                 }
             }
