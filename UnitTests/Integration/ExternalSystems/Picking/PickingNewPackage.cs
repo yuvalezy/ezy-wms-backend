@@ -261,4 +261,15 @@ public class PickingNewPackage : BaseExternalTest {
         var pickListDetailService = scope.ServiceProvider.GetRequiredService<PickListDetailService>();
         await pickListDetailService.ProcessClosedPickListsWithPackages();
     }
+
+    [Test]
+    [Order(8)]
+    public async Task Validate_SourcePackages_AfterProcess() {
+        
+    }
+
+    [Test]
+    [Order(9)]
+    public async Task Validate_TargetPackage_AfterProcess() {
+    }
 }
