@@ -21,7 +21,8 @@
       "Bash(dotnet restore:*)",
       "Bash(tail:*)",
       "Bash(wc:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

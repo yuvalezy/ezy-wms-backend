@@ -27,8 +27,15 @@ using Microsoft.OpenApi.Models;
 using Service.Configuration;
 using Service.Middlewares;
 using Service.Swagger;
+using Service.Testing;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Check for test mode arguments
+if (args.Length > 0 && args[0] == "--test-sbo") {
+    await SboConnectionTester.RunTest(builder.Configuration);
+    return;
+}
 
 // Configure for Windows Service
 builder.Host.UseWindowsService();
