@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using Core.Extensions;
+using Core.Interfaces;
 using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -8,19 +9,19 @@ using WebApi;
 namespace UnitTests.Integration.ExternalSystems.InventoryTransfer.Helper;
 
 public class CancelTransferReleaseCommit(Guid transferId, string testItem, WebApplicationFactory<Program> factory, Guid packageId, ISettings settings) {
-    private readonly int  binEntry = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly int binEntry = settings.GetInitialCountingBinEntry(TestConstants.SessionInfo.Warehouse)!.Value;
 
     public async Task Execute() {
         using var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<ITransferService>();
         await service.CancelTransfer(transferId, TestConstants.SessionInfo);
-        
+
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
         var package = await db.Packages
-            .Include(v => v.Contents)
-            .Include(v => v.Commitments)
-            .FirstAsync(v => v.Id == packageId);
-        
+        .Include(v => v.Contents)
+        .Include(v => v.Commitments)
+        .FirstAsync(v => v.Id == packageId);
+
         Assert.That(package, Is.Not.Null);
         Assert.That(package.Contents.Any());
         var packageContent = package.Contents.First();

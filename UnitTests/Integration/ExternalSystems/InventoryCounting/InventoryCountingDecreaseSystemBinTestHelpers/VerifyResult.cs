@@ -1,5 +1,6 @@
 ﻿using Adapters.CrossPlatform.SBO.Services;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
@@ -11,7 +12,7 @@ public class VerifyResult(
     string                                                            testWarehouse,
     List<(int binEntry, string binCode, int quantity, UnitType unit)> binEntries,
     ISettings                                                         settings) {
-    private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly int testBinLocation = settings.GetInitialCountingBinEntry(testWarehouse)!.Value;
 
     public async Task Execute() {
         var response = await sboCompany.GetAsync<CountingVerification>($"InventoryCountings({countingEntry})");

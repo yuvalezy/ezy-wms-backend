@@ -1,4 +1,5 @@
-﻿using Core.Interfaces;
+﻿using Core.Extensions;
+using Core.Interfaces;
 using Core.Models.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using UnitTests.Integration.ExternalSystems.Shared;
@@ -27,7 +28,7 @@ public class ItemsCustomFieldsTest : BaseExternalTest {
     [Test]
     [Order(2)]
     public async Task Test_02_CreateGoodsReceipt_ShouldAddItemToSystemBin() {
-        if (!settings.Filters.InitialCountingBinEntry.HasValue) {
+        if (settings.GetInitialCountingBinEntry(TestConstants.SessionInfo.Warehouse) == null) {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 

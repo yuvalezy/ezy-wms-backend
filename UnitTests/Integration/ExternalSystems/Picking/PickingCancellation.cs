@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.Items;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,7 +51,7 @@ public class PickingCancellation : BaseExternalTest {
     [Test]
     [Order(2)]
     public async Task PickAll() {
-        int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
+        int binEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
         var helper = new PickAllHelper(absEntry, factory, binEntry, salesEntry, testItem);
         await helper.PickAll();
     }
@@ -76,7 +77,7 @@ public class PickingCancellation : BaseExternalTest {
     [Test]
     [Order(6)]
     public async Task CheckTransfer() {
-        int binEntry = settings.Filters.CancelPickingBinEntry;
+        int binEntry = settings.GetCancelPickingBinEntry(TestConstants.Warehouse);
         var helper   = new CheckTransferHelper(absEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
         await helper.Validate();
     }

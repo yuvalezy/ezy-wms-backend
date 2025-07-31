@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.InventoryCounting;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
@@ -9,7 +10,7 @@ using WebApi;
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 
 public class AddItems(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
-    private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly int testBinLocation = settings.GetInitialCountingBinEntry(testWarehouse)!.Value;
 
     private readonly List<(int binEntry, string binCode, int quantity, UnitType unit)> binEntries = [];
 

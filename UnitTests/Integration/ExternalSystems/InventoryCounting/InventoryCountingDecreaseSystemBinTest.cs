@@ -1,4 +1,5 @@
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
@@ -33,7 +34,7 @@ public class InventoryCountingDecreaseSystemBinTest : BaseExternalTest {
     [Test]
     [Order(2)]
     public async Task Test_02_CreateGoodsReceipt_ShouldAddItemToSystemBin() {
-        if (!settings.Filters.InitialCountingBinEntry.HasValue) {
+        if (settings.GetInitialCountingBinEntry(TestConstants.SessionInfo.Warehouse) == null) {
             throw new Exception("InitialCountingBinEntry is not set in appsettings.json filters");
         }
 

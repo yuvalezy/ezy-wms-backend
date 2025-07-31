@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.PickList;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -96,7 +97,7 @@ public class PickingCancellationNewPackage : BaseExternalTest {
     public async Task Validate_ValidateMovements() {
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
-        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
+        int cancelBinEntry = settings.GetCancelPickingBinEntry(TestConstants.Warehouse);
 
         // Validate source partial package (testItems[0])
         var sourcePartialPackageId = packages[testItems[0]][0];
@@ -112,19 +113,20 @@ public class PickingCancellationNewPackage : BaseExternalTest {
 
         var partialContent = sourcePartialPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
         Assert.That(partialContent, Is.Not.Null, "Source partial package should contain the item");
-        
+
         // After ProcessTargetPackageMovements, the partial source package should have reduced quantity
         Assert.That(partialContent.Quantity, Is.EqualTo(12), "Source partial package should have reduced quantity (24-12=12) after target package movements");
         Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Source partial package committed quantity should be 0 after ClearPickListCommitmentsAsync");
-        Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Source partial package should be in original bin");
+        Assert.That(partialContent.BinEntry, Is.EqualTo(settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value), "Source partial package should be in original bin");
 
         Assert.That(sourcePartialPackage.Commitments.Count, Is.EqualTo(0), "Source partial package should have no commitments after clearing");
 
         // Check for removal transaction from ProcessTargetPackageMovements
         var partialRemovalTransactions = sourcePartialPackage.Transactions
-            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
-                       t.SourceOperationType == ObjectType.PickingClosure)
-            .ToList();
+        .Where(t => t.TransactionType == PackageTransactionType.Remove &&
+                    t.SourceOperationType == ObjectType.PickingClosure)
+        .ToList();
+
         Assert.That(partialRemovalTransactions.Count, Is.GreaterThan(0), "Source partial package should have removal transaction from ProcessTargetPackageMovements");
 
         // Validate source full package (testItems[1])
@@ -144,9 +146,10 @@ public class PickingCancellationNewPackage : BaseExternalTest {
 
         // Check for removal transaction
         var fullRemovalTransactions = sourceFullPackage.Transactions
-            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
-                       t.SourceOperationType == ObjectType.PickingClosure)
-            .ToList();
+        .Where(t => t.TransactionType == PackageTransactionType.Remove &&
+                    t.SourceOperationType == ObjectType.PickingClosure)
+        .ToList();
+
         Assert.That(fullRemovalTransactions.Count, Is.GreaterThan(0), "Source full package should have removal transaction from ProcessTargetPackageMovements");
 
         // Validate target/new package
@@ -177,15 +180,17 @@ public class PickingCancellationNewPackage : BaseExternalTest {
         var transferPackages = await db.TransferPackages
         .Where(tp => tp.TransferId == transferId && tp.PackageId == packageId)
         .ToListAsync();
+
         Assert.That(transferPackages.Count, Is.GreaterThan(0), "Target package should be added to transfer");
 
         // Verify all commitments are cleared
         var remainingCommitments = await db.PackageCommitments
         .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
-                     (pc.PackageId == sourcePartialPackageId || 
+                     (pc.PackageId == sourcePartialPackageId ||
                       pc.PackageId == sourceFullPackageId ||
                       pc.TargetPackageId == packageId))
         .ToListAsync();
+
         Assert.That(remainingCommitments.Count, Is.EqualTo(0), "All package commitments should be cleared");
 
         await TestContext.Out.WriteLineAsync($"✓ Source partial package {sourcePartialPackageId}: Active with {partialContent.Quantity} remaining and CommittedQuantity = 0");

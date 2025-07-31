@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.PickList;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -59,6 +60,7 @@ public static class PickNewPackageHelper {
         var response = await service.CreatePackageAsync(absEntry, TestConstants.SessionInfo);
         var packageId = response.Id;
         var pickListPackageId = response.PickListPackageId!.Value;
+        var stageBinEntry = settings.GetStagingBinEntry(TestConstants.Warehouse)!.Value;
 
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
         var package = await db.Packages.FindAsync(packageId);
@@ -66,12 +68,12 @@ public static class PickNewPackageHelper {
         Assert.That(package.SourceOperationType, Is.EqualTo(ObjectType.Picking));
         Assert.That(package.SourceOperationId, Is.EqualTo(pickListPackageId));
         Assert.That(package.Status, Is.EqualTo(PackageStatus.Init));
-        Assert.That(package.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value));
+        Assert.That(package.BinEntry, Is.EqualTo(stageBinEntry));
 
         var pickListPackage = await db.PickListPackages.FindAsync(pickListPackageId);
         Assert.That(pickListPackage, Is.Not.Null);
         Assert.That(pickListPackage.PackageId, Is.EqualTo(packageId));
-        Assert.That(pickListPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value));
+        Assert.That(pickListPackage.BinEntry, Is.EqualTo(stageBinEntry));
         Assert.That(pickListPackage.Type, Is.EqualTo(SourceTarget.Target));
         Assert.That(pickListPackage.PickEntry, Is.Null);
 
@@ -93,7 +95,7 @@ public static class PickNewPackageHelper {
             Entry = salesEntry,
             ItemCode = testItemNoPackage,
             Quantity = 1,
-            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            BinEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value,
             Unit = UnitType.Dozen,
             PickEntry = 0,
             PackageId = null,
@@ -121,7 +123,7 @@ public static class PickNewPackageHelper {
             Entry = salesEntry,
             ItemCode = itemCode,
             Quantity = 1,
-            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            BinEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value,
             Unit = UnitType.Dozen,
             PickEntry = 1,
             PackageId = itemPackages[0],
@@ -148,7 +150,7 @@ public static class PickNewPackageHelper {
             Type = 17,
             Entry = salesEntry,
             PackageId = itemPackages[0],
-            BinEntry = settings.Filters.InitialCountingBinEntry!.Value,
+            BinEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value,
             PickingPackageId = packageId
         };
 
@@ -165,6 +167,7 @@ public static class PickNewPackageHelper {
         Dictionary<string, List<Guid>> packages) {
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+        int countBinEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
 
         // Get the created package with its contents and commitments
         var package = await db.Packages
@@ -174,7 +177,7 @@ public static class PickNewPackageHelper {
 
         Assert.That(package, Is.Not.Null, "Target package should exist");
         Assert.That(package.Status, Is.EqualTo(PackageStatus.Init), "Target package should be init");
-        Assert.That(package.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value), "Target package should be in staging bin");
+        Assert.That(package.BinEntry, Is.EqualTo(settings.GetStagingBinEntry(TestConstants.Warehouse)!.Value), "Target package should be in staging bin");
 
         // Validate package contents - should have 3 items: 1 no-package item + 1 partial + 1 full package
         Assert.That(package.Contents.Count, Is.EqualTo(3), "Target package should contain 3 items");
@@ -184,14 +187,14 @@ public static class PickNewPackageHelper {
         Assert.That(noPackageContent, Is.Not.Null, "Target package should contain no-package item");
         Assert.That(noPackageContent.Quantity, Is.EqualTo(12), "No-package item quantity should be 12");
         Assert.That(noPackageContent.CommittedQuantity, Is.EqualTo(12), "No-package item committed quantity should equal quantity");
-        Assert.That(noPackageContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "No-package item should be in staging bin");
+        Assert.That(noPackageContent.BinEntry, Is.EqualTo(countBinEntry), "No-package item should be in staging bin");
 
         //Validate target package partial package source (testItems[0])
         var partialContent = package.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
         Assert.That(partialContent, Is.Not.Null, "Target package should contain partial item");
         Assert.That(partialContent.Quantity, Is.EqualTo(12), "Partial item quantity should be 12");
         Assert.That(partialContent.CommittedQuantity, Is.EqualTo(12), "Partial item committed quantity should equal quantity");
-        Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Partial item should be in staging bin");
+        Assert.That(partialContent.BinEntry, Is.EqualTo(countBinEntry), "Partial item should be in staging bin");
 
         // Verify source package for partial item has commitment
         var sourcePackageId = packages[testItems[0]][0];
@@ -215,7 +218,7 @@ public static class PickNewPackageHelper {
         Assert.That(fullContent, Is.Not.Null, "Target package should contain full package item");
         Assert.That(fullContent.Quantity, Is.EqualTo(24), "Full package item should have positive quantity");
         Assert.That(fullContent.CommittedQuantity, Is.EqualTo(24), "Full package item committed quantity should equal quantity");
-        Assert.That(fullContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Full package item should be in staging bin");
+        Assert.That(fullContent.BinEntry, Is.EqualTo(countBinEntry), "Full package item should be in staging bin");
 
         // Verify source package for full item is fully committed
         var fullSourcePackageId = packages[testItems[1]][0];
@@ -244,7 +247,7 @@ public static class PickNewPackageHelper {
 
         var targetPackageRecord = pickListPackages.FirstOrDefault(plp => plp.PackageId == packageId && plp.Type == SourceTarget.Target);
         Assert.That(targetPackageRecord, Is.Not.Null, "Should have target package record");
-        Assert.That(targetPackageRecord.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value), "Target package record should be in staging bin");
+        Assert.That(targetPackageRecord.BinEntry, Is.EqualTo(settings.GetStagingBinEntry(TestConstants.Warehouse)!.Value), "Target package record should be in staging bin");
 
         var sourcePackageRecords = pickListPackages.Where(plp => plp.Type == SourceTarget.Source).ToList();
         Assert.That(sourcePackageRecords.Count, Is.EqualTo(2), "Should have 2 source package records");

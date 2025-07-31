@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.Transfer;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -11,7 +12,7 @@ using WebApi;
 namespace UnitTests.Integration.ExternalSystems.InventoryTransfer.Helper;
 
 public class AddPackageToTransferSource(Guid transferId, string testItem, WebApplicationFactory<Program> factory, Guid packageId, ISettings settings) {
-    private readonly int  binEntry = settings.Filters.InitialCountingBinEntry!.Value;
+    private readonly int  binEntry = settings.GetInitialCountingBinEntry(TestConstants.SessionInfo.Warehouse)!.Value;
     
     private Guid[]? transferLines;
 

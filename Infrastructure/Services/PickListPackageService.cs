@@ -202,11 +202,8 @@ public class PickListPackageService(
 
 
     public async Task<PackageDto> CreatePackageAsync(int absEntry, SessionInfo sessionInfo) {
-        if (!settings.Filters.StagingBinEntry.HasValue) {
-            throw new Exception("Staging bin entry is not configured");       
-        }
+        int binEntry = settings.GetStagingBinEntry(sessionInfo.Warehouse) ?? throw new Exception("Staging bin entry is not configured");
 
-        var binEntry = settings.Filters.StagingBinEntry.Value;
         var request = new CreatePackageRequest {
             BinEntry = binEntry,
             SourceOperationType = ObjectType.Picking,

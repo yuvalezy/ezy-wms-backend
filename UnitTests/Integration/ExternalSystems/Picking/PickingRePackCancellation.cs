@@ -1,5 +1,6 @@
 ﻿using Core.DTOs.Items;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +10,7 @@ using UnitTests.Integration.ExternalSystems.Shared;
 namespace UnitTests.Integration.ExternalSystems.Picking;
 
 [TestFixture]
-public class PickingRePackCancellation : BaseExternalTest
-{
+public class PickingRePackCancellation : BaseExternalTest {
     private string testItem = string.Empty;
     private string testCustomer = string.Empty;
     private int salesEntry = -1;
@@ -22,15 +22,13 @@ public class PickingRePackCancellation : BaseExternalTest
 
     [Test]
     [Order(0)]
-    public async Task PrepareData()
-    {
+    public async Task PrepareData() {
         //Generate new item
         var itemHelper = new CreateTestItem(sboCompany);
         testItem = (await itemHelper.Execute()).ItemCode;
 
 
-        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem)
-        {
+        var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItem) {
             Package = true
         };
 
@@ -45,8 +43,7 @@ public class PickingRePackCancellation : BaseExternalTest
 
     [Test]
     [Order(1)]
-    public async Task CreateSaleOrder_ReleaseToPicking()
-    {
+    public async Task CreateSaleOrder_ReleaseToPicking() {
         var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItem);
         await helper.Execute();
         salesEntry = helper.SalesEntry;
@@ -58,17 +55,15 @@ public class PickingRePackCancellation : BaseExternalTest
 
     [Test]
     [Order(2)]
-    public async Task PickFullAndHalfPackage()
-    {
-        int binEntry = settings.Filters.InitialCountingBinEntry!.Value;
+    public async Task PickFullAndHalfPackage() {
+        int binEntry = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
         var helper = new PickRePackHelper(pickEntry, factory, binEntry, salesEntry, testItem, packages);
         await helper.PickFullAndHalfPackage();
     }
 
     [Test]
     [Order(5)]
-    public async Task CancelPicking()
-    {
+    public async Task CancelPicking() {
         var scope = factory.Services.CreateScope();
 
         //save selection for validation
@@ -86,9 +81,8 @@ public class PickingRePackCancellation : BaseExternalTest
 
     [Test]
     [Order(6)]
-    public async Task CheckTransfer()
-    {
-        int binEntry = settings.Filters.CancelPickingBinEntry;
+    public async Task CheckTransfer() {
+        int binEntry = settings.GetCancelPickingBinEntry(TestConstants.Warehouse);
         var helper = new CheckTransferHelper(pickEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId, CheckTransferHelperType.FullAndHalfPackage, packages);
         await helper.Validate();
     }

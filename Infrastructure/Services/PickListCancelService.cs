@@ -33,7 +33,7 @@ public class PickListCancelService(
         }
 
         // Get cancel bin entry from settings
-        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
+        int cancelBinEntry = settings.GetCancelPickingBinEntry(sessionInfo.Warehouse);
         if (cancelBinEntry == 0) {
             throw new Exception("Cancel Picking Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
         }

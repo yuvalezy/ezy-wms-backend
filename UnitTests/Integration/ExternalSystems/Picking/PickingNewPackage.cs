@@ -1,6 +1,7 @@
 ﻿using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -178,7 +179,7 @@ public class PickingNewPackage : BaseExternalTest {
 
         Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
         Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Closed), "Target package should be Closed after delivery note processing");
-        Assert.That(targetPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value), "Target package should be in staging bin");
+        Assert.That(targetPackage.BinEntry, Is.EqualTo(settings.GetStagingBinEntry(TestConstants.Warehouse)!.Value), "Target package should be in staging bin");
 
         // Validate package contents - should be empty (contents removed when quantity reaches 0)
         Assert.That(targetPackage.Contents.Count, Is.EqualTo(0), "Target package should have no contents after delivery");

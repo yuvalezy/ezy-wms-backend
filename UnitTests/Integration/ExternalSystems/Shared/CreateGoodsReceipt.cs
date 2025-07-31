@@ -2,6 +2,7 @@
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Package;
 using Core.Enums;
+using Core.Extensions;
 using Core.Interfaces;
 using Core.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -10,16 +11,14 @@ using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.Shared;
 
-public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int series, WebApplicationFactory<Program> factory, params string[] items)
-{
-    private readonly int testBinLocation = settings.Filters.InitialCountingBinEntry!.Value;
+public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int series, WebApplicationFactory<Program> factory, params string[] items) {
+    private readonly int testBinLocation = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
     private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
 
     public bool Package { get; set; }
     public Dictionary<string, List<Guid>> CreatedPackages { get; set; } = [];
 
-    public async Task Execute()
-    {
+    public async Task Execute() {
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
 
         await CreateDocument();
@@ -31,8 +30,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         if (!Package)
             return;
 
-        foreach (var item in items)
-        {
+        foreach (var item in items) {
             await CreatePackages(item);
 
             await ValidatePackageContent(item);
@@ -40,27 +38,22 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
     }
 
 
-    private async Task CreateDocument()
-    {
+    private async Task CreateDocument() {
         // Generate an Inventory Goods Receipt: 20 boxes into testWarehouse with testItem into testBinLocation
-        var goodsReceiptData = new
-        {
+        var goodsReceiptData = new {
             Series = series,
             DocDate = DateTime.Now.ToString("yyyy-MM-dd"),
             DocDueDate = DateTime.Now.ToString("yyyy-MM-dd"),
             Comments = "Test Goods Receipt for Inventory Counting Unit Test",
             DocumentLines = items.Select(itemCode =>
-            new
-            {
+            new {
                 ItemCode = itemCode,
                 Quantity = 80,
                 WarehouseCode = testWarehouse,
                 UnitPrice = 10.0,
                 UseBaseUnits = "tNO",
-                DocumentLinesBinAllocations = new[]
-                {
-                    new
-                    {
+                DocumentLinesBinAllocations = new[] {
+                    new {
                         BinAbsEntry = testBinLocation,
                         Quantity = 80 * 12,
                         AllowNegativeQuantity = "tNO",
@@ -81,10 +74,8 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         await TestContext.Out.WriteLineAsync($"Created Goods Receipt with DocEntry: {docEntry}");
     }
 
-    private async Task ValidateWarehouseStock()
-    {
-        foreach (var item in items)
-        {
+    private async Task ValidateWarehouseStock() {
+        foreach (var item in items) {
             // Assert that stock of warehouse testWarehouse for item testItem has correct value
             var warehouseStockResponse = await sboCompany.GetAsync<JsonDocument>($"Items('{item}')");
             Assert.That(warehouseStockResponse, Is.Not.Null, "Warehouse stock information should be retrievable");
@@ -95,8 +86,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
 
             // Find stock for our test warehouse
             bool foundWarehouseStock = false;
-            foreach (var warehouseInfo in warehouseCollection.EnumerateArray())
-            {
+            foreach (var warehouseInfo in warehouseCollection.EnumerateArray()) {
                 if (!warehouseInfo.TryGetProperty("WarehouseCode", out var warehouseCode) || warehouseCode.GetString() != testWarehouse ||
                     !warehouseInfo.TryGetProperty("InStock", out var inStockProperty))
                     continue;
@@ -112,15 +102,12 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         }
     }
 
-    private async Task ValidateBinStock()
-    {
+    private async Task ValidateBinStock() {
         using var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
 
-        foreach (var item in items)
-        {
-            try
-            {
+        foreach (var item in items) {
+            try {
                 var result = (await service.ItemBinStockAsync(item, testWarehouse)).ToArray();
                 Assert.That(result, Is.Not.Null, "Item stock information should be retrievable");
                 Assert.That(result.Length, Is.EqualTo(1), "Item stock information should contain only one record");
@@ -130,22 +117,18 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
                 Assert.That(row.BinEntry, Is.EqualTo(testBinLocation), $"Bin location {testBinLocation} should have correct bin entry");
                 await TestContext.Out.WriteLineAsync($"Bin location {testBinLocation} stock: {row.Quantity}");
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 await TestContext.Out.WriteLineAsync($"SQL query failed: {ex.Message}");
                 throw;
             }
         }
     }
 
-    private async Task CreatePackages(string item)
-    {
+    private async Task CreatePackages(string item) {
         var sessionInfo = TestConstants.SessionInfo;
-        using (var scope = factory.Services.CreateScope())
-        {
+        using (var scope = factory.Services.CreateScope()) {
             var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-            var request = new CreatePackageRequest
-            {
+            var request = new CreatePackageRequest {
                 BinEntry = testBinLocation,
                 SourceOperationType = ObjectType.Package,
             };
@@ -159,13 +142,10 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
             CreatedPackages[item].Add(package2.Id);
         }
 
-        using (var scope = factory.Services.CreateScope())
-        {
+        using (var scope = factory.Services.CreateScope()) {
             var packageService = scope.ServiceProvider.GetRequiredService<IPackageContentService>();
-            foreach (var package in CreatedPackages[item])
-            {
-                var request = new AddItemToPackageRequest
-                {
+            foreach (var package in CreatedPackages[item]) {
+                var request = new AddItemToPackageRequest {
                     PackageId = package,
                     ItemCode = item,
                     Quantity = 2,
@@ -179,22 +159,18 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
             }
         }
 
-        using (var scope = factory.Services.CreateScope())
-        {
+        using (var scope = factory.Services.CreateScope()) {
             var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-            foreach (var id in CreatedPackages[item])
-            {
+            foreach (var id in CreatedPackages[item]) {
                 await packageService.ActivatePackagesByIdAsync(id, sessionInfo);
             }
         }
     }
 
-    private async Task ValidatePackageContent(string item)
-    {
+    private async Task ValidatePackageContent(string item) {
         using var scope = factory.Services.CreateScope();
         var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-        foreach (var id in CreatedPackages[item])
-        {
+        foreach (var id in CreatedPackages[item]) {
             var package = await packageService.GetPackageAsync(id);
             Assert.That(package.Contents.Count == 1);
             var content = package.Contents.First();
