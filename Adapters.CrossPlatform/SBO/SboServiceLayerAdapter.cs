@@ -140,6 +140,11 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
 //     }
     }
 
+    public async Task Canceltransfer(int transferEntry) {
+        using var transferCancel = new TransferCancel(sboCompany, transferEntry, loggerFactory);
+        await transferCancel.Execute();
+    }
+
     // Pick List
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickListsAsync(PickListsRequest request, string warehouse) => await pickingRepository.GetPickLists(request, warehouse);
 

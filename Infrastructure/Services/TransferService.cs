@@ -166,6 +166,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
 
     public async Task<ProcessTransferResponse> ProcessTransfer(Guid id, SessionInfo sessionInfo) {
         var transaction = await db.Database.BeginTransactionAsync();
+        int? transferEntry = null;
         try {
             var transfer = await db.Transfers
                 .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
@@ -192,6 +193,7 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
             var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData);
 
             if (result.Success) {
+                transferEntry = result.ExternalEntry;
                 // Move packages if package feature is enabled
                 if (settings.Options.EnablePackages) {
                     await transferPackageService.MovePackagesOnTransferProcessAsync(id, sessionInfo);
@@ -226,6 +228,9 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
             return result;
         }
         catch (Exception ex) {
+            if (transferEntry.HasValue) {
+                await adapter.Canceltransfer(transferEntry.Value);
+            }
             await transaction.RollbackAsync();
             throw;
         }
