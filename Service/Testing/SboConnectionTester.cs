@@ -2,8 +2,11 @@ using System;
 using System.Threading.Tasks;
 using Core.Interfaces;
 using Core.Models.Settings;
+using Core.Enums;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Service.Configuration;
 
 namespace Service.Testing;
 
@@ -30,23 +33,16 @@ public static class SboConnectionTester {
         Console.WriteLine($"  Server Type: {settings.SboSettings.ServerType}");
         Console.WriteLine($"  Service Layer URL: {settings.SboSettings.ServiceLayerUrl}");
         Console.WriteLine($"  Trusted Connection: {settings.SboSettings.TrustedConnection}");
-
-        string adapterType = configuration["ExternalAdapter"] ?? "Unknown";
-        Console.WriteLine($"  Adapter Type: {adapterType}");
+        Console.WriteLine($"  Adapter Type: {settings.ExternalAdapter}");
         Console.WriteLine();
 
-        // Test connection based on adapter type
+        // Test connection using the proper adapter
         try {
-            if (adapterType == "SboServiceLayer") {
-                await TestServiceLayerConnection(settings);
-            }
-            else {
-                Console.WriteLine("⚠️  Windows COM adapter testing not implemented in this test mode");
-                Console.WriteLine("   (COM interop requires full Windows environment)");
-            }
+            await TestConnectionUsingAdapter(settings, configuration);
         }
         catch (Exception ex) {
             Console.WriteLine($"❌ Connection test failed: {ex.Message}");
+            Environment.Exit(1);
         }
 
         Console.WriteLine();
@@ -54,26 +50,80 @@ public static class SboConnectionTester {
         Console.ReadKey();
     }
 
-    private async static Task TestServiceLayerConnection(ISettings settings) {
-        Console.WriteLine("Testing Service Layer connection...");
+    private async static Task TestConnectionUsingAdapter(Settings settings, IConfiguration configuration) {
+        Console.WriteLine($"Testing connection using {settings.ExternalAdapter} adapter...");
 
-        var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-        var logger = loggerFactory.CreateLogger<Adapters.CrossPlatform.SBO.Services.SboCompany>();
+        // Set up dependency injection
+        var services = new ServiceCollection();
+        
+        // Add logging
+        services.AddLogging(builder => {
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Information);
+        });
 
-        var sboCompany = new Adapters.CrossPlatform.SBO.Services.SboCompany(settings, logger);
+        // Add settings
+        services.AddSingleton<ISettings>(settings);
 
-        bool connected = await sboCompany.ConnectCompany();
+        // Configure the appropriate adapter
+        switch (settings.ExternalAdapter) {
+            case ExternalAdapterType.SboWindows:
+                SboWindowsDependencyInjection.ConfigureServices(services);
+                break;
+            case ExternalAdapterType.SboServiceLayer:
+                SboServiceLayerDependencyInjection.ConfigureServices(services);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
+        }
 
-        if (connected) {
-            Console.WriteLine("✅ Successfully connected to SAP Business One Service Layer");
-            Console.WriteLine($"   Session ID: {sboCompany.SessionId}");
+        // Build service provider
+        await using var serviceProvider = services.BuildServiceProvider();
+
+        if (settings.ExternalAdapter == ExternalAdapterType.SboWindows) {
+            await TestWindowsConnection(serviceProvider);
         }
         else {
-            Console.WriteLine("❌ Failed to connect to SAP Business One Service Layer");
+            await TestServiceLayerConnection(serviceProvider);
         }
+    }
 
-        Console.WriteLine();
-        Console.WriteLine("Press any key to exit...");
-        Console.ReadKey();
+    private async static Task TestWindowsConnection(IServiceProvider serviceProvider) {
+        Console.WriteLine("Testing Windows COM connection...");
+        
+        try {
+            var sboCompany = serviceProvider.GetRequiredService<Adapters.Windows.SBO.Services.SboCompany>();
+            bool connected = sboCompany.ConnectCompany();
+            
+            if (connected) {
+                Console.WriteLine("✅ Successfully connected to SAP Business One via COM");
+            }
+            else {
+                Console.WriteLine("❌ Failed to connect to SAP Business One via COM");
+            }
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"❌ Windows COM connection failed: {ex.Message}", ex);
+        }
+    }
+
+    private async static Task TestServiceLayerConnection(IServiceProvider serviceProvider) {
+        Console.WriteLine("Testing Service Layer connection...");
+        
+        try {
+            var sboCompany = serviceProvider.GetRequiredService<Adapters.CrossPlatform.SBO.Services.SboCompany>();
+            bool connected = await sboCompany.ConnectCompany();
+            
+            if (connected) {
+                Console.WriteLine("✅ Successfully connected to SAP Business One Service Layer");
+                Console.WriteLine($"   Session ID: {sboCompany.SessionId}");
+            }
+            else {
+                Console.WriteLine("❌ Failed to connect to SAP Business One Service Layer");
+            }
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"❌ Service Layer connection failed: {ex.Message}", ex);
+        }
     }
 }
