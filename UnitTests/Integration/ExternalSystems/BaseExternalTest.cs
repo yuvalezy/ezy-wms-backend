@@ -25,6 +25,12 @@ public abstract class BaseExternalTest {
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                     .Build();
+
+                builder.ConfigureLogging(logging => {
+                    logging.ClearProviders();
+                    logging.AddConsole();
+                    logging.SetMinimumLevel(LogLevel.Error);
+                });
             });
 
         // Create a service scope and resolve the service from it

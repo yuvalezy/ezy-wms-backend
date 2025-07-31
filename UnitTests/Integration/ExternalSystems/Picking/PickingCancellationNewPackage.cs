@@ -281,15 +281,6 @@ public class PickingCancellationNewPackage : BaseExternalTest {
 
         Assert.That(sourcePartialPackage, Is.Not.Null, "Source partial package should exist");
 
-        await TestContext.Out.WriteLineAsync($"DEBUG: Source Partial Package {sourcePartialPackageId}:");
-        await TestContext.Out.WriteLineAsync($"  Status: {sourcePartialPackage.Status}");
-        await TestContext.Out.WriteLineAsync($"  Contents Count: {sourcePartialPackage.Contents.Count}");
-        foreach (var content in sourcePartialPackage.Contents) {
-            await TestContext.Out.WriteLineAsync($"    Item: {content.ItemCode}, Qty: {content.Quantity}, Committed: {content.CommittedQuantity}");
-        }
-        await TestContext.Out.WriteLineAsync($"  Commitments Count: {sourcePartialPackage.Commitments.Count}");
-        await TestContext.Out.WriteLineAsync($"  Transactions Count: {sourcePartialPackage.Transactions.Count}");
-
         Assert.That(sourcePartialPackage.Status, Is.EqualTo(PackageStatus.Active), "Source partial package should still be Active");
 
         var partialContent = sourcePartialPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
