@@ -252,6 +252,15 @@ public class PickingCancellationNewPackage : BaseExternalTest {
         Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "Unknown error occured");
         Assert.That(response.TransferId, Is.Not.Null, "TransferId should be returned");
         transferId = response.TransferId.Value;
+        
+        await TestContext.Out.WriteLineAsync(
+            $"""
+             declare @NewPackageId uniqueidentifier = '{packageId}';
+             declare @PartialPackageId uniqueidentifier = '{packages[testItems[0]][0]}';
+             declare @FullPackageId uniqueidentifier = '{packages[testItems[1]][0]}';
+             declare @TransferId uniqueidentifier = '{transferId}';
+             declare @PackageId uniqueidentifier = @NewPackageId;
+             """);
     }
 
     [Test]
