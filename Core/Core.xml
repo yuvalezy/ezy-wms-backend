@@ -844,11 +844,6 @@
             Adds an entire package to a pick list, creating pick list entries for all package contents
             </summary>
         </member>
-        <member name="M:Core.Services.IPickListPackageService.ClearPickListCommitmentsAsync(System.Int32,System.Guid)">
-            <summary>
-            Clears all package commitments for a specific pick operation
-            </summary>
-        </member>
         <member name="M:Core.Services.IPickListPackageService.ProcessPickListClosureAsync(System.Int32,Core.DTOs.PickList.PickListClosureInfo,System.Guid)">
             <summary>
             Processes pick list closure by clearing commitments and optionally processing package movements

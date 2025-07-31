@@ -22,7 +22,8 @@
       "Bash(tail:*)",
       "Bash(wc:*)",
       "Bash(python:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dotnet test:*)"
     ],
     "deny": []
   }

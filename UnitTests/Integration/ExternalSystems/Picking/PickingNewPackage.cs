@@ -1,9 +1,7 @@
 ﻿using Core.DTOs.Items;
-using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Infrastructure.Services;
@@ -21,13 +19,10 @@ public class PickingNewPackage : BaseExternalTest {
     private string testCustomer = string.Empty;
     private int salesEntry = -1;
     private int absEntry = -1;
-    private Guid transferId = Guid.Empty;
 
-    private PickingSelectionResponse[] selection = [];
     private Dictionary<string, List<Guid>> packages;
     private Guid packageId;
     private Guid pickListPackageId;
-    private int deliveryNoteEntry;
 
     [Test]
     [Order(0)]
@@ -257,8 +252,7 @@ public class PickingNewPackage : BaseExternalTest {
         await pickingProcess.ProcessPickList(absEntry, TestConstants.SessionInfo.Guid);
         var deliveryNote = new CreateDeliveryNote(sboCompany, absEntry, deliveryNoteSeries, testCustomer);
         await deliveryNote.Execute();
-        deliveryNoteEntry = deliveryNote.DeliveryEntry;
-        var pickListDetailService = scope.ServiceProvider.GetRequiredService<PickListDetailService>();
+        var pickListDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
         await pickListDetailService.ProcessClosedPickListsWithPackages();
     }
 

@@ -160,7 +160,6 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
                     await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
 
-
                     logger.LogInformation("Successfully moved {Quantity} units of {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
                         movement.TotalQuantity, movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
                 }
