@@ -67,9 +67,9 @@ public static class SboConnectionTester {
 
         // Configure the appropriate adapter
         switch (settings.ExternalAdapter) {
-            case ExternalAdapterType.SboWindows:
-                SboWindowsDependencyInjection.ConfigureServices(services);
-                break;
+            // case ExternalAdapterType.SboWindows:
+            //     SboWindowsDependencyInjection.ConfigureServices(services);
+            //     break;
             case ExternalAdapterType.SboServiceLayer:
                 SboServiceLayerDependencyInjection.ConfigureServices(services);
                 break;
@@ -80,32 +80,32 @@ public static class SboConnectionTester {
         // Build service provider
         await using var serviceProvider = services.BuildServiceProvider();
 
-        if (settings.ExternalAdapter == ExternalAdapterType.SboWindows) {
-            await TestWindowsConnection(serviceProvider);
-        }
-        else {
+        // if (settings.ExternalAdapter == ExternalAdapterType.SboWindows) {
+        //     await TestWindowsConnection(serviceProvider);
+        // }
+        // else {
             await TestServiceLayerConnection(serviceProvider);
-        }
+        // }
     }
 
-    private async static Task TestWindowsConnection(IServiceProvider serviceProvider) {
-        Console.WriteLine("Testing Windows COM connection...");
-        
-        try {
-            var sboCompany = serviceProvider.GetRequiredService<Adapters.Windows.SBO.Services.SboCompany>();
-            bool connected = sboCompany.ConnectCompany();
-            
-            if (connected) {
-                Console.WriteLine("✅ Successfully connected to SAP Business One via COM");
-            }
-            else {
-                Console.WriteLine("❌ Failed to connect to SAP Business One via COM");
-            }
-        }
-        catch (Exception ex) {
-            Console.WriteLine($"❌ Windows COM connection failed: {ex.Message}", ex);
-        }
-    }
+    // private async static Task TestWindowsConnection(IServiceProvider serviceProvider) {
+    //     Console.WriteLine("Testing Windows COM connection...");
+    //     
+    //     try {
+    //         var sboCompany = serviceProvider.GetRequiredService<Adapters.Windows.SBO.Services.SboCompany>();
+    //         bool connected = sboCompany.ConnectCompany();
+    //         
+    //         if (connected) {
+    //             Console.WriteLine("✅ Successfully connected to SAP Business One via COM");
+    //         }
+    //         else {
+    //             Console.WriteLine("❌ Failed to connect to SAP Business One via COM");
+    //         }
+    //     }
+    //     catch (Exception ex) {
+    //         Console.WriteLine($"❌ Windows COM connection failed: {ex.Message}", ex);
+    //     }
+    // }
 
     private async static Task TestServiceLayerConnection(IServiceProvider serviceProvider) {
         Console.WriteLine("Testing Service Layer connection...");
