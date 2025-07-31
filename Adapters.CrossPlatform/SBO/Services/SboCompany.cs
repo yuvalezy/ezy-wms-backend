@@ -61,8 +61,20 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
                 }
             }
 
-            logger.LogError("Failed to connect to Service Layer. Status: {StatusCode}", response.StatusCode);
-            return false;
+            string errorContent = await response.Content.ReadAsStringAsync();
+            string errorMessage;
+            
+            try {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
+                errorMessage = errorResponse?.Error?.Message ?? errorResponse?.Error?.Details?[0]?.Message ?? $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
+            }
+            catch {
+                errorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
+            }
+
+            logger.LogError("Failed to connect to Service Layer: {ErrorMessage}", errorMessage);
+            throw new Exception($"SBO Service Layer Connection Error: {errorMessage}");
         }
         finally {
             connectionSemaphore.Release();

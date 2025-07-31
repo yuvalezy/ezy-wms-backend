@@ -6,7 +6,7 @@ using SAPbobsCOM;
 namespace Adapters.Windows.SBO.Services;
 
 public class SboCompany(ISettings settings) {
-    private SboSettings sboSettings = settings.SboSettings ?? throw new InvalidOperationException("SBO settings are not configured.");
+    private readonly SboSettings sboSettings = settings.SboSettings ?? throw new InvalidOperationException("SBO settings are not configured.");
     
     public  Mutex       TransactionMutex { get; set; } = new(false, "CompanyTransactionMutex");
     public  Mutex       ConnectionMutex  { get; set; } = new(false, "ConnectionMutex");
