@@ -160,6 +160,34 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
                     await packageContentService.RemoveItemFromPackageAsync(removeRequest, userId);
 
+                    // Update committed quantity in source package content
+                    var sourceContent = await db.PackageContents
+                        .FirstOrDefaultAsync(pc => pc.PackageId == movement.SourcePackageId && 
+                                                   pc.ItemCode == movement.ItemCode);
+                    
+                    if (sourceContent != null) {
+                        sourceContent.CommittedQuantity -= movement.TotalQuantity;
+                        if (sourceContent.CommittedQuantity < 0) {
+                            sourceContent.CommittedQuantity = 0;
+                        }
+                        sourceContent.UpdatedAt = DateTime.UtcNow;
+                        sourceContent.UpdatedByUserId = userId;
+                    }
+
+                    // Remove the package commitments for this movement
+                    var commitmentsToRemove = await db.PackageCommitments
+                        .Where(pc => pc.PackageId == movement.SourcePackageId &&
+                                     pc.ItemCode == movement.ItemCode &&
+                                     pc.SourceOperationType == ObjectType.Picking &&
+                                     pickListIds.Contains(pc.SourceOperationId))
+                        .ToListAsync();
+                    
+                    if (commitmentsToRemove.Any()) {
+                        db.PackageCommitments.RemoveRange(commitmentsToRemove);
+                        logger.LogInformation("Removed {Count} package commitments for item {ItemCode} from package {PackageId}",
+                            commitmentsToRemove.Count, movement.ItemCode, movement.SourcePackageId);
+                    }
+
                     logger.LogInformation("Successfully moved {Quantity} units of {ItemCode} from package {SourcePackageId} to package {TargetPackageId}",
                         movement.TotalQuantity, movement.ItemCode, movement.SourcePackageId, targetPackage.PackageId);
                 }

@@ -246,129 +246,134 @@ public class PickingCancellationNewPackage : BaseExternalTest {
     [Test]
     [Order(7)]
     public async Task Process_AssertPackagesMovements() {
+        var declare = $"""
+                       declare @NewPackageId uniqueidentifier = '{packageId}';
+                       declare @PartialPackageId uniqueidentifier = '{packages[testItems[0]][0]}';
+                       declare @FullPackageId uniqueidentifier = '{packages[testItems[1]][0]}';
+                       declare @TransferId uniqueidentifier = '{transferId}';
+                       declare @PackageId uniqueidentifier = @NewPackageId;
+                       """;
+
         var scope = factory.Services.CreateScope();
         var pickingCancel = scope.ServiceProvider.GetRequiredService<IPickListCancelService>();
         var response = await pickingCancel.CancelPickListAsync(absEntry, TestConstants.SessionInfo);
         Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "Unknown error occured");
         Assert.That(response.TransferId, Is.Not.Null, "TransferId should be returned");
         transferId = response.TransferId.Value;
-        
-        await TestContext.Out.WriteLineAsync(
-            $"""
-             declare @NewPackageId uniqueidentifier = '{packageId}';
-             declare @PartialPackageId uniqueidentifier = '{packages[testItems[0]][0]}';
-             declare @FullPackageId uniqueidentifier = '{packages[testItems[1]][0]}';
-             declare @TransferId uniqueidentifier = '{transferId}';
-             declare @PackageId uniqueidentifier = @NewPackageId;
-             """);
+
+        await TestContext.Out.WriteLineAsync(declare);
     }
 
     [Test]
     [Order(8)]
     public async Task Validate_ValidateMovements() {
-        // var scope = factory.Services.CreateScope();
-        // var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
-        // int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
-        //
-        // // Validate source partial package (testItems[0])
-        // var sourcePartialPackageId = packages[testItems[0]][0];
-        // var sourcePartialPackage = await db.Packages
-        // .Include(p => p.Contents)
-        // .Include(p => p.Commitments)
-        // .Include(p => p.Transactions)
-        // .FirstOrDefaultAsync(p => p.Id == sourcePartialPackageId);
-        //
-        // Assert.That(sourcePartialPackage, Is.Not.Null, "Source partial package should exist");
-        //
-        // await TestContext.Out.WriteLineAsync($"DEBUG: Source Partial Package {sourcePartialPackageId}:");
-        // await TestContext.Out.WriteLineAsync($"  Status: {sourcePartialPackage.Status}");
-        // await TestContext.Out.WriteLineAsync($"  Contents Count: {sourcePartialPackage.Contents.Count}");
-        // foreach (var content in sourcePartialPackage.Contents) {
-        //     await TestContext.Out.WriteLineAsync($"    Item: {content.ItemCode}, Qty: {content.Quantity}, Committed: {content.CommittedQuantity}");
-        // }
-        // await TestContext.Out.WriteLineAsync($"  Commitments Count: {sourcePartialPackage.Commitments.Count}");
-        // await TestContext.Out.WriteLineAsync($"  Transactions Count: {sourcePartialPackage.Transactions.Count}");
-        //
-        // Assert.That(sourcePartialPackage.Status, Is.EqualTo(PackageStatus.Active), "Source partial package should still be Active");
-        //
-        // var partialContent = sourcePartialPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
-        // if (partialContent == null) {
-        //     await TestContext.Out.WriteLineAsync($"ERROR: partialContent is null for item {testItems[0]}");
-        //     await TestContext.Out.WriteLineAsync($"Available items in package:");
-        //     foreach (var content in sourcePartialPackage.Contents) {
-        //         await TestContext.Out.WriteLineAsync($"  - {content.ItemCode}: Qty={content.Quantity}, Committed={content.CommittedQuantity}");
-        //     }
-        //     await TestContext.Out.WriteLineAsync($"Looking for testItems[0] = {testItems[0]}");
-        // }
-        // Assert.That(partialContent, Is.Not.Null, "Source partial package should contain the item");
-        // Assert.That(partialContent.Quantity, Is.EqualTo(24), "Source partial package should have full original quantity since no physical movement occurred during cancellation");
-        // Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Source partial package committed quantity should be 0");
-        // Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Source partial package should be in original bin");
-        //
-        // Assert.That(sourcePartialPackage.Commitments.Count, Is.EqualTo(0), "Source partial package should have no commitments");
-        //
-        // // Note: Since no physical movement occurred during cancellation, there should be no removal transactions
-        // var partialOutgoingTransactions = sourcePartialPackage.Transactions.Where(t => t.TransactionType == PackageTransactionType.Remove).ToList();
-        // // Remove this assertion as no physical movements occur during cancellation
-        // // Assert.That(partialOutgoingTransactions.Count, Is.GreaterThan(0), "Source partial package should have outgoing transactions");
-        //
-        // // Validate source full package (testItems[1])
-        // var sourceFullPackageId = packages[testItems[1]][0];
-        // var sourceFullPackage = await db.Packages
-        // .Include(p => p.Contents)
-        // .Include(p => p.Commitments)
-        // .Include(p => p.Transactions)
-        // .FirstOrDefaultAsync(p => p.Id == sourceFullPackageId);
-        //
-        // Assert.That(sourceFullPackage, Is.Not.Null, "Source full package should exist");
-        // Assert.That(sourceFullPackage.Status, Is.EqualTo(PackageStatus.Active), "Source full package should remain Active since no physical movement occurred during cancellation");
-        //
-        // var fullContent = sourceFullPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[1]);
-        // Assert.That(fullContent, Is.Not.Null, "Source full package should still contain the item");
-        // Assert.That(fullContent.Quantity, Is.EqualTo(24), "Source full package should have full original quantity");
-        //
-        // Assert.That(sourceFullPackage.Commitments.Count, Is.EqualTo(0), "Source full package should have no commitments");
-        //
-        // // Note: Since no physical movement occurred during cancellation, there should be no removal transactions
-        // var fullOutgoingTransactions = sourceFullPackage.Transactions.Where(t => t.TransactionType == PackageTransactionType.Remove).ToList();
-        // // Remove this assertion as no physical movements occur during cancellation
-        // // Assert.That(fullOutgoingTransactions.Count, Is.GreaterThan(0), "Source full package should have outgoing transactions");
-        //
-        // // Validate target/new package
-        // var targetPackage = await db.Packages
-        // .Include(p => p.Contents)
-        // .Include(p => p.Commitments)
-        // .Include(p => p.Transactions)
-        // .FirstOrDefaultAsync(p => p.Id == packageId);
-        //
-        // Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
-        // Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Init), "Target package should remain Init status since no physical consolidation occurred during cancellation");
-        // Assert.That(targetPackage.BinEntry, Is.EqualTo(cancelBinEntry), "Target package should be moved to cancel bin");
-        //
-        // // Validate target package contents are in cancel bin
-        // foreach (var content in targetPackage.Contents) {
-        //     Assert.That(content.BinEntry, Is.EqualTo(cancelBinEntry), $"Target package content {content.ItemCode} should be in cancel bin");
-        // }
-        //
-        // // Note: Target package should have the content that was added during the picking process before cancellation
-        // // but no additional transactions should occur during cancellation since we don't physically move items
-        // var incomingTransactions = targetPackage.Transactions.Where(t => t.TransactionType == PackageTransactionType.Add).ToList();
-        // Assert.That(incomingTransactions.Count, Is.GreaterThan(0), "Target package should have incoming transactions from the original picking process");
-        //
-        // // Validate transfer was created and contains the target package
-        // var transfer = await db.Transfers.FirstOrDefaultAsync(t => t.Id == transferId);
-        // Assert.That(transfer, Is.Not.Null, "Transfer should be created");
-        // Assert.That(transfer.Name, Does.Contain($"Cancelación Picking {absEntry}"), "Transfer should have correct name");
-        //
-        // // Validate transfer contains target package in source selection
-        // var transferPackages = await db.TransferPackages
-        // .Where(tp => tp.TransferId == transferId && tp.PackageId == packageId)
-        // .ToListAsync();
-        // Assert.That(transferPackages.Count, Is.GreaterThan(0), "Target package should be added to transfer");
-        //
-        // await TestContext.Out.WriteLineAsync($"✓ Source partial package {sourcePartialPackageId}: Active with {partialContent.Quantity} remaining (no physical movement during cancellation)");
-        // await TestContext.Out.WriteLineAsync($"✓ Source full package {sourceFullPackageId}: Active with {fullContent.Quantity} remaining (no physical movement during cancellation)");
-        // await TestContext.Out.WriteLineAsync($"✓ Target package {packageId}: Moved to cancel bin {cancelBinEntry}");
-        // await TestContext.Out.WriteLineAsync($"✓ Transfer {transferId}: Created with target package included");
+        var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
+
+        // Validate source partial package (testItems[0])
+        var sourcePartialPackageId = packages[testItems[0]][0];
+        var sourcePartialPackage = await db.Packages
+        .Include(p => p.Contents)
+        .Include(p => p.Commitments)
+        .Include(p => p.Transactions)
+        .FirstOrDefaultAsync(p => p.Id == sourcePartialPackageId);
+
+        Assert.That(sourcePartialPackage, Is.Not.Null, "Source partial package should exist");
+
+        await TestContext.Out.WriteLineAsync($"DEBUG: Source Partial Package {sourcePartialPackageId}:");
+        await TestContext.Out.WriteLineAsync($"  Status: {sourcePartialPackage.Status}");
+        await TestContext.Out.WriteLineAsync($"  Contents Count: {sourcePartialPackage.Contents.Count}");
+        foreach (var content in sourcePartialPackage.Contents) {
+            await TestContext.Out.WriteLineAsync($"    Item: {content.ItemCode}, Qty: {content.Quantity}, Committed: {content.CommittedQuantity}");
+        }
+        await TestContext.Out.WriteLineAsync($"  Commitments Count: {sourcePartialPackage.Commitments.Count}");
+        await TestContext.Out.WriteLineAsync($"  Transactions Count: {sourcePartialPackage.Transactions.Count}");
+
+        Assert.That(sourcePartialPackage.Status, Is.EqualTo(PackageStatus.Active), "Source partial package should still be Active");
+
+        var partialContent = sourcePartialPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
+        Assert.That(partialContent, Is.Not.Null, "Source partial package should contain the item");
+        
+        // After ProcessTargetPackageMovements, the partial source package should have reduced quantity
+        Assert.That(partialContent.Quantity, Is.EqualTo(12), "Source partial package should have reduced quantity (24-12=12) after target package movements");
+        Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Source partial package committed quantity should be 0 after ClearPickListCommitmentsAsync");
+        Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Source partial package should be in original bin");
+
+        Assert.That(sourcePartialPackage.Commitments.Count, Is.EqualTo(0), "Source partial package should have no commitments after clearing");
+
+        // Check for removal transaction from ProcessTargetPackageMovements
+        var partialRemovalTransactions = sourcePartialPackage.Transactions
+            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
+                       t.SourceOperationType == ObjectType.PickingClosure)
+            .ToList();
+        Assert.That(partialRemovalTransactions.Count, Is.GreaterThan(0), "Source partial package should have removal transaction from ProcessTargetPackageMovements");
+
+        // Validate source full package (testItems[1])
+        var sourceFullPackageId = packages[testItems[1]][0];
+        var sourceFullPackage = await db.Packages
+        .Include(p => p.Contents)
+        .Include(p => p.Commitments)
+        .Include(p => p.Transactions)
+        .FirstOrDefaultAsync(p => p.Id == sourceFullPackageId);
+
+        Assert.That(sourceFullPackage, Is.Not.Null, "Source full package should exist");
+        Assert.That(sourceFullPackage.Status, Is.EqualTo(PackageStatus.Closed), "Source full package should be Closed (empty) after target package movements");
+
+        // Full package should have no contents after being emptied
+        Assert.That(sourceFullPackage.Contents.Count, Is.EqualTo(0), "Source full package should have no contents after being emptied");
+        Assert.That(sourceFullPackage.Commitments.Count, Is.EqualTo(0), "Source full package should have no commitments");
+
+        // Check for removal transaction
+        var fullRemovalTransactions = sourceFullPackage.Transactions
+            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
+                       t.SourceOperationType == ObjectType.PickingClosure)
+            .ToList();
+        Assert.That(fullRemovalTransactions.Count, Is.GreaterThan(0), "Source full package should have removal transaction from ProcessTargetPackageMovements");
+
+        // Validate target/new package
+        var targetPackage = await db.Packages
+        .Include(p => p.Contents)
+        .Include(p => p.Commitments)
+        .Include(p => p.Transactions)
+        .FirstOrDefaultAsync(p => p.Id == packageId);
+
+        Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
+        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Active), "Target package should be Active after ProcessTargetPackageMovements");
+        Assert.That(targetPackage.BinEntry, Is.EqualTo(cancelBinEntry), "Target package should be moved to cancel bin");
+
+        // Validate target package contents are in cancel bin
+        foreach (var content in targetPackage.Contents) {
+            Assert.That(content.BinEntry, Is.EqualTo(cancelBinEntry), $"Target package content {content.ItemCode} should be in cancel bin");
+        }
+
+        // Target package should have the consolidated content from source packages
+        Assert.That(targetPackage.Contents.Count, Is.EqualTo(3), "Target package should have 3 items after consolidation");
+
+        // Validate transfer was created and contains the target package
+        var transfer = await db.Transfers.FirstOrDefaultAsync(t => t.Id == transferId);
+        Assert.That(transfer, Is.Not.Null, "Transfer should be created");
+        Assert.That(transfer.Name, Does.Contain($"Cancelación Picking {absEntry}"), "Transfer should have correct name");
+
+        // Validate transfer contains target package in source selection
+        var transferPackages = await db.TransferPackages
+        .Where(tp => tp.TransferId == transferId && tp.PackageId == packageId)
+        .ToListAsync();
+        Assert.That(transferPackages.Count, Is.GreaterThan(0), "Target package should be added to transfer");
+
+        // Verify all commitments are cleared
+        var remainingCommitments = await db.PackageCommitments
+        .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
+                     (pc.PackageId == sourcePartialPackageId || 
+                      pc.PackageId == sourceFullPackageId ||
+                      pc.TargetPackageId == packageId))
+        .ToListAsync();
+        Assert.That(remainingCommitments.Count, Is.EqualTo(0), "All package commitments should be cleared");
+
+        await TestContext.Out.WriteLineAsync($"✓ Source partial package {sourcePartialPackageId}: Active with {partialContent.Quantity} remaining and CommittedQuantity = 0");
+        await TestContext.Out.WriteLineAsync($"✓ Source full package {sourceFullPackageId}: Closed (empty) after target package movements");
+        await TestContext.Out.WriteLineAsync($"✓ Target package {packageId}: Active and moved to cancel bin {cancelBinEntry}");
+        await TestContext.Out.WriteLineAsync($"✓ Transfer {transferId}: Created with target package included");
+        await TestContext.Out.WriteLineAsync($"✓ All commitments cleared successfully");
     }
 }
