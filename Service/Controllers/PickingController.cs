@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
@@ -266,5 +267,25 @@ public class PickingController(IPickListService service, IPickListLineService li
         }
         
         return Ok();
+    }
+
+    /// <summary>
+    /// Creates a new package for a pick list
+    /// </summary>
+    /// <param name="absEntry">The pick list entry ID</param>
+    /// <returns>The created package</returns>
+    /// <response code="200">Returns the created package</response>
+    /// <response code="400">If the request is invalid</response>
+    /// <response code="403">If the user lacks required permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("package/{absEntry:int}")]
+    [RequireRolePermission(RoleType.Picking)]
+    [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<PackageDto> CreatePackage(int absEntry) {
+        var sessionInfo = HttpContext.GetSession();
+        return await packageService.CreatePackageAsync(absEntry, sessionInfo);
     }
 }

@@ -1090,6 +1090,17 @@
             Cancels the check process (Supervisor only)
             </summary>
         </member>
+        <member name="M:Service.Controllers.PickingController.CreatePackage(System.Int32)">
+            <summary>
+            Creates a new package for a pick list
+            </summary>
+            <param name="absEntry">The pick list entry ID</param>
+            <returns>The created package</returns>
+            <response code="200">Returns the created package</response>
+            <response code="400">If the request is invalid</response>
+            <response code="403">If the user lacks required permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
         <member name="T:Service.Controllers.TransferController">
             <summary>
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management

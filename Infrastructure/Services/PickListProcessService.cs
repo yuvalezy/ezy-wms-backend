@@ -63,6 +63,15 @@ public class PickListProcessService(
                 };
             }
 
+            if (result.ErrorMessage == "Cannot process document if the Status is closed") {
+                await UpdatePickListsSyncStatus(absEntry, SyncStatus.ExternalCancel, result.ErrorMessage, userId);
+                return new ProcessPickListResponse {
+                    Status       = ResponseStatus.Error,
+                    Message      = "Failed to process pick list",
+                    ErrorMessage = result.ErrorMessage
+                };
+            }
+
             // Update pick lists to Failed
             await UpdatePickListsSyncStatus(absEntry, SyncStatus.Failed, result.ErrorMessage, userId);
 
