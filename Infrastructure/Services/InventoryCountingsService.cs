@@ -242,7 +242,7 @@ public class InventoryCountingsService(
                 try
                 {
                     // Get warehouse stock for items without bins
-                    var stocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                    var stocks = await adapter.ItemBinStockAsync(itemGroup.ItemCode, warehouse);
                     int warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
                     // Subtract quantities already counted in bins
                     systemQuantity += Math.Max(0, warehouseSystemQuantity - systemQuantity);
@@ -265,7 +265,7 @@ public class InventoryCountingsService(
                     int systemBinStock = 0;
                     try
                     {
-                        var systemBinStocks = await adapter.ItemStockAsync(itemGroup.ItemCode, warehouse);
+                        var systemBinStocks = await adapter.ItemBinStockAsync(itemGroup.ItemCode, warehouse);
                         var systemBinStockResponse = systemBinStocks.FirstOrDefault(s => s.BinEntry == initialCountingBinEntry.Value);
                         systemBinStock = systemBinStockResponse?.Quantity ?? 0;
                     }
@@ -364,7 +364,7 @@ public class InventoryCountingsService(
                 else
                 {
                     // Get stock from warehouse if no specific bin
-                    var stocks = await adapter.ItemStockAsync(group.Key.ItemCode, firstLine.InventoryCounting.WhsCode);
+                    var stocks = await adapter.ItemBinStockAsync(group.Key.ItemCode, firstLine.InventoryCounting.WhsCode);
                     systemQuantity = stocks.Sum(s => s.Quantity);
                 }
             }
@@ -453,7 +453,7 @@ public class InventoryCountingsService(
                 else
                 {
                     // Get stock from warehouse if no specific bin
-                    var stocks = await adapter.ItemStockAsync(group.Key.ItemCode, counting.WhsCode);
+                    var stocks = await adapter.ItemBinStockAsync(group.Key.ItemCode, counting.WhsCode);
                     systemQuantity = stocks.Sum(s => s.Quantity);
                     binCode = "No Bin";
                 }

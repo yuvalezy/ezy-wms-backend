@@ -35,7 +35,8 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false);
     Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode);
     Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry);
-    Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode);
+    Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode);
+    Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode);
     Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items);
     Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request);
     Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);

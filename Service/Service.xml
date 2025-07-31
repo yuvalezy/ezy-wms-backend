@@ -694,6 +694,18 @@
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="500">If a server error occurs</response>
         </member>
+        <member name="M:Service.Controllers.ItemsController.ItemBinStock(Core.DTOs.Items.ItemBarCodeRequest)">
+            <summary>
+            Gets item stock information across bins in the current warehouse
+            </summary>
+            <param name="request">The request containing item code to check stock for</param>
+            <returns>Item stock information across all bins</returns>
+            <response code="200">Returns the item stock information</response>
+            <response code="400">If the item code is missing or invalid</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="500">If a server error occurs</response>
+        </member>
         <member name="M:Service.Controllers.ItemsController.UpdateItemBarCode(Core.DTOs.Settings.UpdateBarCodeRequest)">
             <summary>
             Updates or creates item barcode associations (supervisor roles only)

@@ -1,11 +1,6 @@
-using Core.DTOs.Package;
-
 namespace Core.DTOs.Items;
 
-public class ItemBinStockResponse {
+public class ItemBinStockResponse : ItemStockResponse {
     public required string BinCode { get; set; }
-
-    public int                  BinEntry { get; set; }
-    public int                  Quantity { get; set; }
-    public PackageStockValue[]? Packages { get; set; }
+    public int BinEntry { get; set; }
 }

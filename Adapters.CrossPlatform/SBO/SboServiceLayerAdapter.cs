@@ -78,7 +78,9 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
     public async Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false) => await itemRepository.ScanItemBarCodeAsync(scanCode, item);
     public async Task<IEnumerable<ItemCheckResponse>> ItemCheckAsync(string? itemCode, string? barcode) => await itemRepository.ItemCheckAsync(itemCode, barcode);
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) => await generalRepository.BinCheckAsync(binEntry);
-    public async Task<IEnumerable<ItemBinStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
+    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) => await itemRepository.ItemStockAsync(itemCode, whsCode);
+
+    public async Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode) => await itemRepository.ItemBinStockAsync(itemCode, whsCode);
     public async Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items) => await itemRepository.ItemsWarehouseStockAsync(warehouse, items);
 
     public async Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request)

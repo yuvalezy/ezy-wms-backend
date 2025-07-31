@@ -141,6 +141,24 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         }
     }
 
+    public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
+        const string query = """
+                             select T0."OnHand"
+                             from OITW T0
+                             where T0."ItemCode" = @ItemCode
+                               and T0."WhsCode" = @WhsCode
+                               and T0."OnHand" > 0
+                             order by 1
+                             """;
+        var parameters = new[] {
+            new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = whsCode }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => new ItemStockResponse {
+            Quantity = Convert.ToInt32(reader[0]),
+        });
+    }
     public async Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode) {
         const string query = """
                              select T1."BinCode", T0."OnHandQty", T1."AbsEntry"

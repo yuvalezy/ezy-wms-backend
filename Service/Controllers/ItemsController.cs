@@ -118,18 +118,45 @@ public class ItemsController(
     [HttpPost("ItemStock")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
         RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor, RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
-    [ProducesResponseType(typeof(IEnumerable<ItemBinStockResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ItemStockResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<ItemBinStockResponse>>> ItemStock([FromBody] ItemBarCodeRequest request) {
+    public async Task<ActionResult<IEnumerable<ItemStockResponse>>> ItemStock([FromBody] ItemBarCodeRequest request) {
         if (string.IsNullOrWhiteSpace(request.ItemCode)) {
             return BadRequest("Item code is required.");
         }
 
         string warehouse = HttpContext.GetSession().Warehouse;
         return Ok(await publicService.ItemStockAsync(request.ItemCode, warehouse));
+    }
+    
+    /// <summary>
+    /// Gets item stock information across bins in the current warehouse
+    /// </summary>
+    /// <param name="request">The request containing item code to check stock for</param>
+    /// <returns>Item stock information across all bins</returns>
+    /// <response code="200">Returns the item stock information</response>
+    /// <response code="400">If the item code is missing or invalid</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="500">If a server error occurs</response>
+    [HttpPost("ItemBinStock")]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor, RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+    [ProducesResponseType(typeof(IEnumerable<ItemBinStockResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<ItemBinStockResponse>>> ItemBinStock([FromBody] ItemBarCodeRequest request) {
+        if (string.IsNullOrWhiteSpace(request.ItemCode)) {
+            return BadRequest("Item code is required.");
+        }
+
+        string warehouse = HttpContext.GetSession().Warehouse;
+        return Ok(await publicService.ItemBinStockAsync(request.ItemCode, warehouse));
     }
 
     /// <summary>
@@ -143,8 +170,7 @@ public class ItemsController(
     /// <response code="403">If the user lacks required supervisor permissions</response>
     /// <response code="500">If a server error occurs</response>
     [HttpPost("UpdateItemBarCode")]
-    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
-        RoleType.GoodsReceiptConfirmationSupervisor)]
+    [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor, RoleType.GoodsReceiptConfirmationSupervisor)]
     [ProducesResponseType(typeof(UpdateItemBarCodeResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

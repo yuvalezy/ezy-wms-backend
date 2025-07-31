@@ -121,7 +121,7 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         {
             try
             {
-                var result = (await service.ItemStockAsync(item, testWarehouse)).ToArray();
+                var result = (await service.ItemBinStockAsync(item, testWarehouse)).ToArray();
                 Assert.That(result, Is.Not.Null, "Item stock information should be retrievable");
                 Assert.That(result.Length, Is.EqualTo(1), "Item stock information should contain only one record");
                 var row = result[0];
