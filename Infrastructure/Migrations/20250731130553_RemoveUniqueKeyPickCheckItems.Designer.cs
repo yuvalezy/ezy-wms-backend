@@ -4,6 +4,7 @@ using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    partial class SystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250731130553_RemoveUniqueKeyPickCheckItems")]
+    partial class RemoveUniqueKeyPickCheckItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1157,9 +1160,6 @@ namespace Infrastructure.Migrations
                     b.Property<int>("SourceOperationType")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("TargetPackageId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -1827,11 +1827,16 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entities.PickListPackage", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("AbsEntry")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PickEntry")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PackageId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("AbsEntry")
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("AddedAt")
@@ -1857,17 +1862,12 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("PackageId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("PickEntry")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ProcessedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1875,7 +1875,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("Id");
+                    b.HasKey("AbsEntry", "PickEntry", "PackageId", "Type");
 
                     b.HasIndex("AddedAt")
                         .HasDatabaseName("IX_PickListPackage_AddedAt");
@@ -1890,20 +1890,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("UpdatedByUserId");
 
-                    b.HasIndex("AbsEntry", "PackageId", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListPackage_Unique_Target")
-                        .HasFilter("[PickEntry] IS NULL");
-
-                    b.HasIndex("AbsEntry", "PickEntry", "PackageId", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("IX_PickListPackage_Unique_Source")
-                        .HasFilter("[PickEntry] IS NOT NULL");
-
-                    b.ToTable("PickListPackages", t =>
-                        {
-                            t.HasCheckConstraint("CK_PickListPackage_PickEntry_Required_For_Source", "([Type] != 0 OR [PickEntry] IS NOT NULL)");
-                        });
+                    b.ToTable("PickListPackages");
                 });
 
             modelBuilder.Entity("Core.Entities.Transfer", b =>

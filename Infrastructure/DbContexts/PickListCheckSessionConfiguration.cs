@@ -74,8 +74,7 @@ public class PickListCheckItemConfiguration : IEntityTypeConfiguration<PickListC
             .HasDatabaseName("IX_PickListCheckItem_CheckedAt");
 
         builder.HasIndex(p => new { p.CheckSessionId, p.ItemCode })
-            .HasDatabaseName("IX_PickListCheckItem_CheckSessionId_ItemCode")
-            .IsUnique();
+            .HasDatabaseName("IX_PickListCheckItem_CheckSessionId_ItemCode");
 
         // Relationships
         builder.HasOne(p => p.CheckSession)
