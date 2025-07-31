@@ -38,6 +38,8 @@ public class PickListCancelService(
             throw new Exception("Cancel Picking Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
         }
 
+        //Move and active new packages so source packages are up to date and taken into consideration in the selection for sbo cancellation where it also transfers stock in sbo
+        await pickListPackageClosureService.ProcessTargetPackageMovements(absEntry, sessionInfo.Guid);
         // Get current picked data from SAP
         var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
 
@@ -53,7 +55,6 @@ public class PickListCancelService(
         }, sessionInfo);
 
         // Handle packages with physical movements first, then regular items
-        await pickListPackageClosureService.ProcessTargetPackageMovements(absEntry, sessionInfo.Guid);
         var processedItems = await HandlePackageCancellation(absEntry, transfer.Id, cancelBinEntry, sessionInfo);
         await HandleRegularItemCancellation(selection, processedItems, transfer.Id, cancelBinEntry, sessionInfo);
 

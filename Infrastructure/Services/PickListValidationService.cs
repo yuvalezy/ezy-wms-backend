@@ -39,9 +39,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         return validationResult.BinOnHand - result;
     }
 
-    public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(
-        int absEntry, string itemCode, int requestedQuantity, PickingValidationResult[] validationResults) {
-        
+    public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(int absEntry, string itemCode, int quantity, IEnumerable<PickingValidationResult> validationResults) {
         var dbPickedQuantity = await db.PickLists
             .Where(v => v.AbsEntry == absEntry && v.ItemCode == itemCode && 
                         (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing))
