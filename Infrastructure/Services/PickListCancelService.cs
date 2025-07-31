@@ -14,17 +14,17 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PickListCancelService(
-    SystemDbContext                     db,
-    IPickListProcessService             pickListProcessService,
-    ITransferService                    transferService,
-    ITransferLineService                transferLineService,
-    ITransferPackageService             transferPackageService,
-    IPackageLocationService             packageLocationService,
-    IPackageContentService              packageContentService,
-    IExternalSystemAdapter              adapter,
-    ISettings                           settings,
-    ILogger<PickListCancelService>      logger) : IPickListCancelService {
-    
+    SystemDbContext db,
+    IPickListProcessService pickListProcessService,
+    ITransferService transferService,
+    ITransferLineService transferLineService,
+    ITransferPackageService transferPackageService,
+    IPackageLocationService packageLocationService,
+    IPackageContentService packageContentService,
+    IPickListPackageClosureService pickListPackageClosureService,
+    IExternalSystemAdapter adapter,
+    ISettings settings,
+    ILogger<PickListCancelService> logger) : IPickListCancelService {
     public async Task<ProcessPickListCancelResponse> CancelPickListAsync(int absEntry, SessionInfo sessionInfo) {
         // Process the picking in case something has not been synced into SAP B1
         var response = await pickListProcessService.ProcessPickList(absEntry, sessionInfo.Guid);
@@ -53,6 +53,7 @@ public class PickListCancelService(
         }, sessionInfo);
 
         // Handle packages with physical movements first, then regular items
+        await pickListPackageClosureService.ProcessTargetPackageMovements(absEntry, sessionInfo.Guid);
         var processedItems = await HandlePackageCancellation(absEntry, transfer.Id, cancelBinEntry, sessionInfo);
         await HandleRegularItemCancellation(selection, processedItems, transfer.Id, cancelBinEntry, sessionInfo);
 
@@ -68,11 +69,11 @@ public class PickListCancelService(
 
         try {
             var pickListPackages = await db.PickListPackages
-                .Where(plp => plp.AbsEntry == absEntry)
-                .Include(plp => plp.Package)
-                .ThenInclude(p => p.Contents)
-                .Include(plp => plp.Package.Commitments)
-                .ToListAsync();
+            .Where(plp => plp.AbsEntry == absEntry)
+            .Include(plp => plp.Package)
+            .ThenInclude(p => p.Contents)
+            .Include(plp => plp.Package.Commitments)
+            .ToListAsync();
 
             // Group by PackageId to handle each package once
             var packageGroups = pickListPackages.GroupBy(plp => plp.PackageId);
@@ -113,7 +114,8 @@ public class PickListCancelService(
         }
     }
 
-    private async Task HandleFullPackageCommitment(Guid packageId, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, Package package, HashSet<string> processedItems, int absEntry, IEnumerable<PackageCommitment> commitments) {
+    private async Task HandleFullPackageCommitment(Guid packageId, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, Package package, HashSet<string> processedItems, int absEntry,
+        IEnumerable<PackageCommitment> commitments) {
         try {
             // 1. Clean up package commitments FIRST (uncommit)
             await ClearPackageCommitments(commitments, sessionInfo);
@@ -151,7 +153,8 @@ public class PickListCancelService(
         }
     }
 
-    private async Task HandlePartialPackageCommitment(IEnumerable<PackageCommitment> commitments, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, HashSet<string> processedItems, int absEntry) {
+    private async Task HandlePartialPackageCommitment(IEnumerable<PackageCommitment> commitments, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo, HashSet<string> processedItems,
+        int absEntry) {
         // 1. Clean up package commitments FIRST (uncommit all items)
         await ClearPackageCommitments(commitments, sessionInfo);
 
@@ -196,15 +199,15 @@ public class PickListCancelService(
     private async Task HandleRegularItemCancellation(PickingSelectionResponse[] selection, HashSet<string> processedItems, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
         // Add items into transfer (only for items not handled by packages)
         var items = selection
-            .Where(s => !processedItems.Contains(s.ItemCode)) // Skip items already handled by packages
-            .GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars, v.NumInBuy, v.PackUn })
-            .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, (int)v.Sum(w => w.Quantity) ));
+        .Where(s => !processedItems.Contains(s.ItemCode)) // Skip items already handled by packages
+        .GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars, v.NumInBuy, v.PackUn })
+        .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, (int)v.Sum(w => w.Quantity)));
 
         foreach (var item in items) {
             await ProcessRegularItem(item, transferId, cancelBinEntry, sessionInfo);
         }
     }
-    
+
     private record RegularItemCancellationRequest(string ItemCode, string BarCode, int NumInBuy, int PackUn, int Quantity);
 
     private async Task ProcessRegularItem(RegularItemCancellationRequest item, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
@@ -266,8 +269,8 @@ public class PickListCancelService(
             foreach (var commitment in commitments) {
                 // Find the corresponding package content and reduce committed quantity
                 var packageContent = await db.PackageContents
-                    .FirstOrDefaultAsync(pc => pc.PackageId == commitment.PackageId &&
-                                              pc.ItemCode == commitment.ItemCode);
+                .FirstOrDefaultAsync(pc => pc.PackageId == commitment.PackageId &&
+                                           pc.ItemCode == commitment.ItemCode);
 
                 if (packageContent != null) {
                     packageContent.CommittedQuantity -= commitment.Quantity;
@@ -295,8 +298,8 @@ public class PickListCancelService(
         // Note: We need to find a way to link absEntry to the actual pick operation ID
         // For now, we'll get all picking commitments for this package and let the caller filter
         return await db.PackageCommitments
-            .Where(pc => pc.PackageId == packageId &&
-                        pc.SourceOperationType == ObjectType.Picking)
-            .ToListAsync();
+        .Where(pc => pc.PackageId == packageId &&
+                     pc.SourceOperationType == ObjectType.Picking)
+        .ToListAsync();
     }
 }

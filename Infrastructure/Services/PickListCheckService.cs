@@ -1,4 +1,5 @@
 using Core.DTOs.PickList;
+using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;

@@ -13,8 +13,8 @@ public class PickListLineService(
     SystemDbContext db, 
     IExternalSystemAdapter adapter, 
     ILogger<PickListService> logger,
-    PickListValidationService validationService,
-    PickListPackageOperationsService packageOperations) : IPickListLineService {
+    IPickListValidationService validationService,
+    IPickListPackageOperationsService packageOperations) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {

@@ -15,11 +15,11 @@ namespace Infrastructure.Services;
 public class PickListPackageService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
-    PickListPackageEligibilityService eligibilityService,
+    IPickListPackageEligibilityService eligibilityService,
     IPackageService packageService,
-    PickListValidationService validationService,
-    PickListPackageOperationsService packageOperations,
-    PickListPackageClosureService closureService,
+    IPickListValidationService validationService,
+    IPickListPackageOperationsService packageOperations,
+    IPickListPackageClosureService closureService,
     ISettings settings,
     ILogger<PickListPackageService> logger) : IPickListPackageService {
     public async Task<PickListPackageResponse> AddPackageAsync(PickListAddPackageRequest request, SessionInfo sessionInfo) {

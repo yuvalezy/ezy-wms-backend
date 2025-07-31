@@ -2,6 +2,7 @@ using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class PickListPackageOperationsService(SystemDbContext db, IPackageContentService packageContentService) {
+public class PickListPackageOperationsService(SystemDbContext db, IPackageContentService packageContentService) : IPickListPackageOperationsService {
     public async Task<(Package?, PackageContent?, PickListAddItemResponse?)> ValidatePackageForItem(PickListAddItemRequest request) {
         if (request.PackageId == null) {
             return (null, null, null);

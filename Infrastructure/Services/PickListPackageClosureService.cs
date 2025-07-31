@@ -1,6 +1,7 @@
 using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListPackageClosureService(SystemDbContext db, IPackageContentService packageContentService, ILogger<PickListPackageClosureService> logger) {
+public class PickListPackageClosureService(SystemDbContext db, IPackageContentService packageContentService, ILogger<PickListPackageClosureService> logger, ISettings settings)
+: IPickListPackageClosureService {
     public async Task ClearPickListCommitmentsAsync(int absEntry, Guid userId) {
         // Get all package commitments for this pick list
         var pickListIds = await db.PickLists
@@ -76,7 +78,11 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
         }
     }
 
-    private async Task ProcessTargetPackageMovements(int absEntry, Guid userId) {
+    public async Task ProcessTargetPackageMovements(int absEntry, Guid userId) {
+        if (!settings.Options.EnablePackages) {
+            return;
+        }
+
         logger.LogInformation("Processing target package movements for pick list {AbsEntry}", absEntry);
 
         // Find all target packages for this pick list

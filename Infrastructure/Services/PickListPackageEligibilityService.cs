@@ -1,4 +1,5 @@
 using Core.Entities;
+using Core.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
@@ -6,7 +7,7 @@ namespace Infrastructure.Services;
 /// <summary>
 /// Service for checking if packages can be fully picked based on pick list requirements
 /// </summary>
-public class PickListPackageEligibilityService(ILogger<PickListPackageEligibilityService> logger) {
+public class PickListPackageEligibilityService(ILogger<PickListPackageEligibilityService> logger) : IPickListPackageEligibilityService {
     
     /// <summary>
     /// Checks if a package can be fully picked given the available open quantities

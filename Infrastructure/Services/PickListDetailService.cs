@@ -14,8 +14,8 @@ public class PickListDetailService(
     IExternalSystemAdapter            adapter,
     ILogger<PickListDetailService>    logger,
     ISettings                         settings,
-    PickListPackageEligibilityService eligibilityService,
-    IPickListPackageService           packageService) {
+    IPickListPackageEligibilityService eligibilityService,
+    IPickListPackageService           packageService) : IPickListDetailService {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {

@@ -59,7 +59,7 @@ public class BackgroundPickListSyncService(
 
             using var scope           = scopeFactory.CreateScope();
             var       pickListService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-            var       pickListDetailService = scope.ServiceProvider.GetRequiredService<PickListDetailService>();
+            var       pickListDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
 
             // First, process any closed pick lists with packages if enabled
             if (options.CheckClosedPickLists) {

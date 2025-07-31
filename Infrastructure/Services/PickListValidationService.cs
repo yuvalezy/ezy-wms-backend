@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class PickListValidationService(SystemDbContext db, IExternalSystemAdapter adapter) {
+public class PickListValidationService(SystemDbContext db, IExternalSystemAdapter adapter) : IPickListValidationService {
     public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? ValidationResult)> ValidateItemForPicking(
         PickListAddItemRequest request) {
         
