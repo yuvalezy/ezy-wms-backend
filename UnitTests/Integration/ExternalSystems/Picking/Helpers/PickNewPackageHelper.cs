@@ -1,39 +1,30 @@
-﻿using Adapters.CrossPlatform.SBO.Services;
-using Core.DTOs.PickList;
+﻿using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DbContexts;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using UnitTests.Integration.ExternalSystems.Shared;
+using WebApi;
 
-namespace UnitTests.Integration.ExternalSystems.Picking;
+namespace UnitTests.Integration.ExternalSystems.Picking.Helpers;
 
-[TestFixture]
-public class PickingNewPackageExternalCancel : BaseExternalTest {
-    private readonly string[] testItems = new string[3];
-    private string testItemNoPackage = string.Empty;
-    private string testCustomer = string.Empty;
-    private int salesEntry = -1;
-    private int absEntry = -1;
-    private Guid transferId = Guid.Empty;
+public static class PickNewPackageHelper {
+    public async static Task<(string[] testItems, string testItemNoPackage, Dictionary<string, List<Guid>> packages, string testCustomer)> PrepareTestData(
+        Adapters.CrossPlatform.SBO.Services.SboCompany sboCompany, ISettings settings,
+        int goodsReceiptSeries,
+        WebApplicationFactory<Program> factory) {
+        var testItems = new string[3];
 
-    private Dictionary<string, List<Guid>> packages;
-    private Guid packageId;
-    private Guid pickListPackageId;
-    private int deliveryNoteEntry;
-
-    [Test]
-    [Order(0)]
-    public async Task PrepareData() {
-        //Generate new item
+        // Generate new items
         var itemHelper = new CreateTestItem(sboCompany);
         testItems[0] = (await itemHelper.Execute()).ItemCode;
         testItems[1] = (await itemHelper.Execute()).ItemCode;
         testItems[2] = (await itemHelper.Execute()).ItemCode;
 
-        testItemNoPackage = (await itemHelper.Execute()).ItemCode;
+        var testItemNoPackage = (await itemHelper.Execute()).ItemCode;
 
         // Create GRPO for no Package Item
         var helper = new CreateGoodsReceipt(sboCompany, settings, goodsReceiptSeries, factory, testItemNoPackage);
@@ -45,35 +36,29 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
         };
 
         await helper.Execute();
-        packages = helper.CreatedPackages;
+        var packages = helper.CreatedPackages;
 
+        // Get customer
+        var testCustomer = await SboDataHelper.GetCustomer(sboCompany);
 
-        //Get customer
-        testCustomer = await SboDataHelper.GetCustomer(sboCompany);
-        await TestContext.Out.WriteLineAsync($"Test customer: {testCustomer}");
+        return (testItems, testItemNoPackage, packages, testCustomer);
     }
 
-    [Test]
-    [Order(1)]
-    public async Task CreateSaleOrder_ReleaseToPicking() {
+    public async static Task<(int salesEntry, int absEntry)> CreateSalesOrderAndReleaseToPickingAsync(Adapters.CrossPlatform.SBO.Services.SboCompany sboCompany, int salesOrdersSeries,
+        string testCustomer, string testItemNoPackage, string[] testItems) {
         var orderItems = new[] { testItemNoPackage }.Concat(testItems).ToArray();
         var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, orderItems);
         await helper.Execute();
-        salesEntry = helper.SalesEntry;
-        absEntry = helper.AbsEntry;
-        await TestContext.Out.WriteLineAsync($"Created sales order with DocEntry: {salesEntry}");
-        Assert.That(salesEntry, Is.Not.EqualTo(-1), "Sales Entry should be created");
-        Assert.That(absEntry, Is.Not.EqualTo(-1), "Pick Entry should be created");
+
+        return (helper.SalesEntry, helper.AbsEntry);
     }
 
-    [Test]
-    [Order(2)]
-    public async Task CreatePicking_NewPackage() {
+    public async static Task<(Guid packageId, Guid pickListPackageId)> CreatePickingNewPackageAsync(WebApplicationFactory<Program> factory, ISettings settings, int absEntry) {
         var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPickListPackageService>();
         var response = await service.CreatePackageAsync(absEntry, TestConstants.SessionInfo);
-        packageId = response.Id;
-        pickListPackageId = response.PickListPackageId!.Value;
+        var packageId = response.Id;
+        var pickListPackageId = response.PickListPackageId!.Value;
 
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
         var package = await db.Packages.FindAsync(packageId);
@@ -89,11 +74,17 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
         Assert.That(pickListPackage.BinEntry, Is.EqualTo(settings.Filters.StagingBinEntry!.Value));
         Assert.That(pickListPackage.Type, Is.EqualTo(SourceTarget.Target));
         Assert.That(pickListPackage.PickEntry, Is.Null);
+
+        return (packageId, pickListPackageId);
     }
 
-    [Test]
-    [Order(3)]
-    public async Task AddItemNoContainer_IntoNewPackage() {
+    public async static Task AddItemNoContainerIntoNewPackageAsync(
+        WebApplicationFactory<Program> factory,
+        ISettings settings,
+        int absEntry,
+        int salesEntry,
+        string testItemNoPackage,
+        Guid packageId) {
         var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
         var request = new PickListAddItemRequest {
@@ -112,9 +103,14 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
         await service.AddItem(TestConstants.SessionInfo, request);
     }
 
-    [Test]
-    [Order(4)]
-    public async Task AddPartialFromPackage_IntoNewPackage() {
+    public async static Task AddPartialFromPackageIntoNewPackageAsync(
+        WebApplicationFactory<Program> factory,
+        ISettings settings,
+        int absEntry,
+        int salesEntry,
+        string[] testItems,
+        Dictionary<string, List<Guid>> packages,
+        Guid packageId) {
         var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPickListLineService>();
         var itemCode = testItems[0];
@@ -135,9 +131,14 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
         await service.AddItem(TestConstants.SessionInfo, request);
     }
 
-    [Test]
-    [Order(5)]
-    public async Task AddFullPackage_IntoNewPackage() {
+    public async static Task AddFullPackageIntoNewPackageAsync(
+        WebApplicationFactory<Program> factory,
+        ISettings settings,
+        int absEntry,
+        int salesEntry,
+        string[] testItems,
+        Dictionary<string, List<Guid>> packages,
+        Guid packageId) {
         var scope = factory.Services.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IPickListPackageService>();
         var itemCode = testItems[1];
@@ -154,9 +155,14 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
         await service.AddPackageAsync(request, TestConstants.SessionInfo);
     }
 
-    [Test]
-    [Order(6)]
-    public async Task Validate_NewPackageContent() {
+    public async static Task ValidateNewPackageContentAsync(
+        WebApplicationFactory<Program> factory,
+        ISettings settings,
+        int absEntry,
+        Guid packageId,
+        string testItemNoPackage,
+        string[] testItems,
+        Dictionary<string, List<Guid>> packages) {
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
 
@@ -242,132 +248,5 @@ public class PickingNewPackageExternalCancel : BaseExternalTest {
 
         var sourcePackageRecords = pickListPackages.Where(plp => plp.Type == SourceTarget.Source).ToList();
         Assert.That(sourcePackageRecords.Count, Is.EqualTo(2), "Should have 2 source package records");
-    }
-
-    [Test]
-    [Order(7)]
-    public async Task Process_AssertPackagesMovements() {
-        var scope = factory.Services.CreateScope();
-        var sboCompany = scope.ServiceProvider.GetRequiredService<SboCompany>();
-        Assert.That(await sboCompany.ConnectCompany());
-        
-        var closePickListData = new {
-            PickList = new {
-                Absoluteentry = absEntry
-            }
-        };
-        
-        var response = await sboCompany.PostAsync("PickListsService_Close", closePickListData);
-        Assert.That(response.success, Is.True, response.errorMessage ?? "Unknown error occured");;
-
-        var picklistDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
-        await picklistDetailService.ProcessClosedPickListsWithPackages();
-        
-        var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
-        transferId = (await db.Transfers.OrderByDescending(v => v.CreatedAt).LastAsync()).Id;
-    }
-
-    [Test]
-    [Order(8)]
-    public async Task Validate_ValidateMovements() {
-        var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
-        int cancelBinEntry = settings.Filters.CancelPickingBinEntry;
-
-        // Validate source partial package (testItems[0])
-        var sourcePartialPackageId = packages[testItems[0]][0];
-        var sourcePartialPackage = await db.Packages
-        .Include(p => p.Contents)
-        .Include(p => p.Commitments)
-        .Include(p => p.Transactions)
-        .FirstOrDefaultAsync(p => p.Id == sourcePartialPackageId);
-
-        Assert.That(sourcePartialPackage, Is.Not.Null, "Source partial package should exist");
-
-        Assert.That(sourcePartialPackage.Status, Is.EqualTo(PackageStatus.Active), "Source partial package should still be Active");
-
-        var partialContent = sourcePartialPackage.Contents.FirstOrDefault(c => c.ItemCode == testItems[0]);
-        Assert.That(partialContent, Is.Not.Null, "Source partial package should contain the item");
-        
-        // After ProcessTargetPackageMovements, the partial source package should have reduced quantity
-        Assert.That(partialContent.Quantity, Is.EqualTo(12), "Source partial package should have reduced quantity (24-12=12) after target package movements");
-        Assert.That(partialContent.CommittedQuantity, Is.EqualTo(0), "Source partial package committed quantity should be 0 after ClearPickListCommitmentsAsync");
-        Assert.That(partialContent.BinEntry, Is.EqualTo(settings.Filters.InitialCountingBinEntry!.Value), "Source partial package should be in original bin");
-
-        Assert.That(sourcePartialPackage.Commitments.Count, Is.EqualTo(0), "Source partial package should have no commitments after clearing");
-
-        // Check for removal transaction from ProcessTargetPackageMovements
-        var partialRemovalTransactions = sourcePartialPackage.Transactions
-            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
-                       t.SourceOperationType == ObjectType.PickingClosure)
-            .ToList();
-        Assert.That(partialRemovalTransactions.Count, Is.GreaterThan(0), "Source partial package should have removal transaction from ProcessTargetPackageMovements");
-
-        // Validate source full package (testItems[1])
-        var sourceFullPackageId = packages[testItems[1]][0];
-        var sourceFullPackage = await db.Packages
-        .Include(p => p.Contents)
-        .Include(p => p.Commitments)
-        .Include(p => p.Transactions)
-        .FirstOrDefaultAsync(p => p.Id == sourceFullPackageId);
-
-        Assert.That(sourceFullPackage, Is.Not.Null, "Source full package should exist");
-        Assert.That(sourceFullPackage.Status, Is.EqualTo(PackageStatus.Closed), "Source full package should be Closed (empty) after target package movements");
-
-        // Full package should have no contents after being emptied
-        Assert.That(sourceFullPackage.Contents.Count, Is.EqualTo(0), "Source full package should have no contents after being emptied");
-        Assert.That(sourceFullPackage.Commitments.Count, Is.EqualTo(0), "Source full package should have no commitments");
-
-        // Check for removal transaction
-        var fullRemovalTransactions = sourceFullPackage.Transactions
-            .Where(t => t.TransactionType == PackageTransactionType.Remove && 
-                       t.SourceOperationType == ObjectType.PickingClosure)
-            .ToList();
-        Assert.That(fullRemovalTransactions.Count, Is.GreaterThan(0), "Source full package should have removal transaction from ProcessTargetPackageMovements");
-
-        // Validate target/new package
-        var targetPackage = await db.Packages
-        .Include(p => p.Contents)
-        .Include(p => p.Commitments)
-        .Include(p => p.Transactions)
-        .FirstOrDefaultAsync(p => p.Id == packageId);
-
-        Assert.That(targetPackage, Is.Not.Null, "Target package should exist");
-        Assert.That(targetPackage.Status, Is.EqualTo(PackageStatus.Active), "Target package should be Active after ProcessTargetPackageMovements");
-        Assert.That(targetPackage.BinEntry, Is.EqualTo(cancelBinEntry), "Target package should be moved to cancel bin");
-
-        // Validate target package contents are in cancel bin
-        foreach (var content in targetPackage.Contents) {
-            Assert.That(content.BinEntry, Is.EqualTo(cancelBinEntry), $"Target package content {content.ItemCode} should be in cancel bin");
-        }
-
-        // Target package should have the consolidated content from source packages
-        Assert.That(targetPackage.Contents.Count, Is.EqualTo(3), "Target package should have 3 items after consolidation");
-
-        // Validate transfer was created and contains the target package
-        var transfer = await db.Transfers.FirstOrDefaultAsync(t => t.Id == transferId);
-        Assert.That(transfer, Is.Not.Null, "Transfer should be created");
-        Assert.That(transfer.Name, Does.Contain($"Cancelación Picking {absEntry}"), "Transfer should have correct name");
-
-        // Validate transfer contains target package in source selection
-        var transferPackages = await db.TransferPackages
-        .Where(tp => tp.TransferId == transferId && tp.PackageId == packageId)
-        .ToListAsync();
-        Assert.That(transferPackages.Count, Is.GreaterThan(0), "Target package should be added to transfer");
-
-        // Verify all commitments are cleared
-        var remainingCommitments = await db.PackageCommitments
-        .Where(pc => pc.SourceOperationType == ObjectType.Picking &&
-                     (pc.PackageId == sourcePartialPackageId || 
-                      pc.PackageId == sourceFullPackageId ||
-                      pc.TargetPackageId == packageId))
-        .ToListAsync();
-        Assert.That(remainingCommitments.Count, Is.EqualTo(0), "All package commitments should be cleared");
-
-        await TestContext.Out.WriteLineAsync($"✓ Source partial package {sourcePartialPackageId}: Active with {partialContent.Quantity} remaining and CommittedQuantity = 0");
-        await TestContext.Out.WriteLineAsync($"✓ Source full package {sourceFullPackageId}: Closed (empty) after target package movements");
-        await TestContext.Out.WriteLineAsync($"✓ Target package {packageId}: Active and moved to cancel bin {cancelBinEntry}");
-        await TestContext.Out.WriteLineAsync($"✓ Transfer {transferId}: Created with target package included");
-        await TestContext.Out.WriteLineAsync($"✓ All commitments cleared successfully");
     }
 }
