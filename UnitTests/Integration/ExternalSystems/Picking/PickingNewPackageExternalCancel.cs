@@ -1,4 +1,5 @@
-﻿using Core.DTOs.PickList;
+﻿using Adapters.CrossPlatform.SBO.Services;
+using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Services;
@@ -10,7 +11,7 @@ using UnitTests.Integration.ExternalSystems.Shared;
 namespace UnitTests.Integration.ExternalSystems.Picking;
 
 [TestFixture]
-public class PickingCancellationNewPackage : BaseExternalTest {
+public class PickingNewPackageExternalCancel : BaseExternalTest {
     private readonly string[] testItems = new string[3];
     private string testItemNoPackage = string.Empty;
     private string testCustomer = string.Empty;
@@ -247,11 +248,23 @@ public class PickingCancellationNewPackage : BaseExternalTest {
     [Order(7)]
     public async Task Process_AssertPackagesMovements() {
         var scope = factory.Services.CreateScope();
-        var pickingCancel = scope.ServiceProvider.GetRequiredService<IPickListCancelService>();
-        var response = await pickingCancel.CancelPickListAsync(absEntry, TestConstants.SessionInfo);
-        Assert.That(response.Status, Is.EqualTo(ResponseStatus.Ok), response.ErrorMessage ?? "Unknown error occured");
-        Assert.That(response.TransferId, Is.Not.Null, "TransferId should be returned");
-        transferId = response.TransferId.Value;
+        var sboCompany = scope.ServiceProvider.GetRequiredService<SboCompany>();
+        Assert.That(await sboCompany.ConnectCompany());
+        
+        var closePickListData = new {
+            PickList = new {
+                Absoluteentry = absEntry
+            }
+        };
+        
+        var response = await sboCompany.PostAsync("PickListsService_Close", closePickListData);
+        Assert.That(response.success, Is.True, response.errorMessage ?? "Unknown error occured");;
+
+        var picklistDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
+        await picklistDetailService.ProcessClosedPickListsWithPackages();
+        
+        var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+        transferId = (await db.Transfers.OrderByDescending(v => v.CreatedAt).LastAsync()).Id;
     }
 
     [Test]

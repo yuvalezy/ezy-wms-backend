@@ -254,15 +254,6 @@ public class PickingNewPackage : BaseExternalTest {
         await deliveryNote.Execute();
         var pickListDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
         await pickListDetailService.ProcessClosedPickListsWithPackages();
-
-        var declareHelper = $"""
-                             declare @NewPackageId uniqueidentifier = '{packageId}';
-                             declare @PartialPackageId uniqueidentifier = '{packages[testItems[0]][0]}';
-                             declare @FullPackageId uniqueidentifier = '{packages[testItems[1]][0]}';
-                             declare @PackageId uniqueidentifier = @NewPackageId;
-                             """;
-
-        await TestContext.Out.WriteLineAsync(declareHelper);
     }
 
     [Test]
