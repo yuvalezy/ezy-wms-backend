@@ -169,8 +169,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         queryBuilder.AppendLine("Case");
         queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") is null Then 'E'");
         queryBuilder.AppendLine($"    When X0.\"ObjType\" = 18 and X2.\"isIns\" = '{(type == GoodsReceiptType.SpecificOrders ? 'N' : 'Y')}' Then 'R'");
-        queryBuilder.AppendLine("    When Sum(COALESCE(X3.\"Quantity\", X4.\"Quantity\", 0)) = 0 Then 'W'");
-        queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' Then 'O'");
+        queryBuilder.AppendLine("    When X0.\"ObjType\" <> 20 and Sum(COALESCE(X3.\"Quantity\", X4.\"Quantity\", 0)) = 0 Then 'W'");
+        queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' or X0.\"ObjType\" = 20 or X0.\"ObjType\" = 18 and X2.\"isIns\" = 'N' Then 'O'");
         queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
         queryBuilder.AppendLine($"from ({documentsQuery}) X0");
         queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "OPOR" : "OPDN")} X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
