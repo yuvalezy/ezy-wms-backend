@@ -25,7 +25,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 PICKS."Status" "Status",
                 (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 17) AS "SalesOrders",
                 (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 13) AS "Invoices",
-                (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 67) AS "Transfers",
+                (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 1250000001) AS "Transfers",
                 COALESCE(SUM(PKL1."RelQtty" + PKL1."PickQtty"), 0) AS "Quantity",
                 COALESCE(SUM(PKL1."RelQtty"), 0) AS "OpenQuantity",
                 COALESCE(SUM(CASE WHEN PKL1."PickStatus" = 'Y' THEN PKL1."PickQtty" ELSE 0 END), 0) AS "UpdateQuantity"
@@ -42,7 +42,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                   """);
 
         if (pickPackOnly is not null) {
-            sb.Append(""" inner join OCRD on OCRD."CardCode" = T2."BPCardCode" """);
+            sb.Append(""" left outer join OCRD on OCRD."CardCode" = T2."BPCardCode" """);
         }
 
         sb.Append("""
@@ -192,7 +192,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
                             SELECT 
-                                T2."ItemCode" as "ItemCode",
+                                COALESCE(T3."ItemCode", T4."ItemCode", T5."ItemCode") as "ItemCode",
                                 OITM."ItemName" as "ItemName",
                                 SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
                                 SUM(PKL1."PickQtty") AS "Picked",
@@ -208,23 +208,12 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         queryBuilder.Append("""
                             FROM PKL1
-                            INNER JOIN OILM T2 
-                                ON T2."TransType" = PKL1."BaseObject" 
-                                AND T2."DocEntry" = PKL1."OrderEntry" 
-                                AND T2."DocLineNum" = PKL1."OrderLine"
-                            INNER JOIN OITM 
-                                ON OITM."ItemCode" = T2."ItemCode"
-                            WHERE 
-                                PKL1."AbsEntry" = @AbsEntry
-                                AND PKL1."BaseObject" = @Type
-                                AND PKL1."OrderEntry" = @Entry
-                            Group by 
-                                T2."ItemCode",
-                                OITM."ItemName",
-                            	OITM."NumInBuy",
-                            	OITM."BuyUnitMsr",
-                            	OITM."PurPackUn",
-                            	OITM."PurPackMsr"
+                            left outer join RDR1 T3 on T3."DocEntry" = PKL1."OrderEntry" and T3."LineNum" = PKL1."OrderLine" and T3."ObjType" = PKL1."BaseObject"
+                            left outer join INV1 T4 on T4."DocEntry" = PKL1."OrderEntry" and T4."LineNum" = PKL1."OrderLine" and T4."ObjType" = PKL1."BaseObject"
+                            left outer join WTQ1 T5 on T5."DocEntry" = PKL1."OrderEntry" and T5."LineNum" = PKL1."OrderLine" and T5."ObjType" = PKL1."BaseObject"
+                            INNER JOIN OITM ON OITM."ItemCode" = COALESCE(T3."ItemCode", T4."ItemCode", T5."ItemCode")
+                            WHERE PKL1."AbsEntry" = @AbsEntry AND PKL1."BaseObject" = @Type AND PKL1."OrderEntry" = @Entry
+                            Group by T5."ItemCode", T4."ItemCode", T3."ItemCode", OITM."ItemName", OITM."NumInBuy", OITM."BuyUnitMsr", OITM."PurPackUn", OITM."PurPackMsr"
                             """);
 
         // Add custom fields to GROUP BY clause
@@ -233,7 +222,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         queryBuilder.Append("""
                              ORDER BY 
                                 CASE WHEN SUM(PKL1."RelQtty") = 0 THEN 1 ELSE 0 END,
-                                T2."ItemCode"
+                                "ItemCode"
                             """);
 
         return (queryBuilder.ToString(), customFields);
@@ -346,7 +335,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                   """);
 
         if (!string.IsNullOrWhiteSpace(pickPackOnly)) {
-            sb.Append("inner join OCRD on OCRD.\"CardCode\" = T2.\"BPCardCode\" ");
+            sb.Append("left outer join OCRD on OCRD.\"CardCode\" = T2.\"BPCardCode\" ");
         }
 
         sb.Append("""
