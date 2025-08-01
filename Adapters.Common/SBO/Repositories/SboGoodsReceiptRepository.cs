@@ -167,17 +167,35 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         var queryBuilder = new StringBuilder();
         queryBuilder.AppendLine("select X0.\"ObjType\", X0.\"DocNum\", X0.\"DocEntry\",");
         queryBuilder.AppendLine("Case");
-        queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") is null Then 'E'");
-        queryBuilder.AppendLine($"    When X0.\"ObjType\" = 18 and X2.\"isIns\" = '{(type == GoodsReceiptType.SpecificOrders ? 'N' : 'Y')}' Then 'R'");
-        queryBuilder.AppendLine("    When X0.\"ObjType\" <> 20 and Sum(COALESCE(X3.\"Quantity\", X4.\"Quantity\", 0)) = 0 Then 'W'");
-        queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' or X0.\"ObjType\" = 20 or X0.\"ObjType\" = 18 and X2.\"isIns\" = 'N' Then 'O'");
-        queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
+        if (type == GoodsReceiptType.SpecificTransfers) {
+            queryBuilder.AppendLine("    When X1.\"DocStatus\" is null Then 'E'");
+            queryBuilder.AppendLine("    When X0.\"ObjType\" = 67 Then 'O'");
+            queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
+        }
+        else {
+            queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") is null Then 'E'");
+            queryBuilder.AppendLine($"    When X0.\"ObjType\" = 18 and X2.\"isIns\" = '{(type == GoodsReceiptType.SpecificOrders ? 'N' : 'Y')}' Then 'R'");
+            queryBuilder.AppendLine("    When X0.\"ObjType\" <> 20 and Sum(COALESCE(X3.\"Quantity\", X4.\"Quantity\", 0)) = 0 Then 'W'");
+            queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' or X0.\"ObjType\" = 20 or X0.\"ObjType\" = 18 and X2.\"isIns\" = 'N' Then 'O'");
+            queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
+        }
         queryBuilder.AppendLine($"from ({documentsQuery}) X0");
-        queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "OPOR" : "OPDN")} X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
-        queryBuilder.AppendLine("left outer join OPCH X2 on X2.\"DocEntry\" = X0.\"DocEntry\" and X2.\"ObjType\" = X0.\"ObjType\"");
-        queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "POR1" : "PDN1")} X3 on X3.\"DocEntry\" = X1.\"DocEntry\" and X3.\"WhsCode\" = @WhsCode");
-        queryBuilder.AppendLine("left outer join PCH1 X4 on X4.\"DocEntry\" = X2.\"DocEntry\" and X4.\"WhsCode\" = @WhsCode");
-        queryBuilder.AppendLine("group by X0.\"ObjType\", X0.\"DocNum\", X0.\"DocEntry\", X1.\"DocStatus\", X2.\"DocStatus\", X2.\"isIns\"");
+        if (type == GoodsReceiptType.SpecificTransfers) {
+            queryBuilder.AppendLine("left outer join OWTR X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
+            queryBuilder.AppendLine("left outer join WTR1 X3 on X3.\"DocEntry\" = X1.\"DocEntry\" and X3.\"WhsCode\" = @WhsCode");
+        }
+        else {
+            queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "OPOR" : "OPDN")} X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
+            queryBuilder.AppendLine("left outer join OPCH X2 on X2.\"DocEntry\" = X0.\"DocEntry\" and X2.\"ObjType\" = X0.\"ObjType\"");
+            queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "POR1" : "PDN1")} X3 on X3.\"DocEntry\" = X1.\"DocEntry\" and X3.\"WhsCode\" = @WhsCode");
+            queryBuilder.AppendLine("left outer join PCH1 X4 on X4.\"DocEntry\" = X2.\"DocEntry\" and X4.\"WhsCode\" = @WhsCode");
+        }
+        if (type == GoodsReceiptType.SpecificTransfers) {
+            queryBuilder.AppendLine("group by X0.\"ObjType\", X0.\"DocNum\", X0.\"DocEntry\", X1.\"DocStatus\"");
+        }
+        else {
+            queryBuilder.AppendLine("group by X0.\"ObjType\", X0.\"DocNum\", X0.\"DocEntry\", X1.\"DocStatus\", X2.\"DocStatus\", X2.\"isIns\"");
+        }
 
         await dbService.ExecuteReaderAsync(queryBuilder.ToString(),
             [new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse }],

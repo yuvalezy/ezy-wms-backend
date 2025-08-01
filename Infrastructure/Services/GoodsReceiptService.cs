@@ -74,8 +74,16 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         if (request.Statuses?.Length > 0)
             query = query.Where(gr => request.Statuses.Contains(gr.Status));
 
-        if (request.Confirm.HasValue) {
-            query = request.Confirm.Value ? query.Where(gr => gr.Type == GoodsReceiptType.SpecificReceipts) : query.Where(gr => gr.Type != GoodsReceiptType.SpecificReceipts);
+        switch (request.ProcessType) {
+            case GoodsReceiptProcessType.Regular:
+                query = query.Where(gr => gr.Type != GoodsReceiptType.SpecificReceipts && gr.Type != GoodsReceiptType.SpecificTransfers);
+                break;
+            case GoodsReceiptProcessType.Confirmation:
+                query = query.Where(gr => gr.Type == GoodsReceiptType.SpecificReceipts);
+                break;
+            case GoodsReceiptProcessType.TransferConfirmation:
+                query = query.Where(gr => gr.Type == GoodsReceiptType.SpecificTransfers);
+                break;
         }
 
         if (!string.IsNullOrWhiteSpace(request.GoodsReceipt) && int.TryParse(request.GoodsReceipt, out int goodsReceipt)) {
