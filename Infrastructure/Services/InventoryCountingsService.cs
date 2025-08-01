@@ -118,7 +118,7 @@ public class InventoryCountingsService(
             await db.SaveChangesAsync();
 
             // Prepare data for SAP B1 inventory counting creation
-            var countingData = await PrepareCountingData(id, counting.WhsCode);
+            var countingData = await PrepareCountingData(id, counting.WhsCode, sessionInfo.EnableBinLocations);
 
             // Call external system to process the counting
             var result = await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse, countingData);
@@ -158,7 +158,7 @@ public class InventoryCountingsService(
         }
     }
 
-    private async Task<Dictionary<string, InventoryCountingCreationDataResponse>> PrepareCountingData(Guid countingId, string warehouse) {
+    private async Task<Dictionary<string, InventoryCountingCreationDataResponse>> PrepareCountingData(Guid countingId, string warehouse, bool enableBinLocation) {
         var lines = await db.InventoryCountingLines
         .Where(icl => icl.InventoryCountingId == countingId && icl.LineStatus != LineStatus.Closed)
         .GroupBy(icl => icl.ItemCode)
@@ -169,7 +169,7 @@ public class InventoryCountingsService(
         .ToListAsync();
 
         var countingData = new Dictionary<string, InventoryCountingCreationDataResponse>();
-        int? initialCountingBinEntry = settings.GetInitialCountingBinEntry(warehouse);
+        int? initialCountingBinEntry = enableBinLocation ? settings.GetInitialCountingBinEntry(warehouse) : null;
 
         foreach (var itemGroup in lines) {
             int totalCountedQuantity = 0;
