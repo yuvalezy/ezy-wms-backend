@@ -50,7 +50,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         foreach (var r in response) {
             var values = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
-            int pickedQuantity = values.Sum(p => p.Quantity);
+            int pickedQuantity = values.Where(p => p.Status != ObjectStatus.Closed).Sum(p => p.Quantity);
             r.OpenQuantity -= pickedQuantity;
             r.UpdateQuantity += pickedQuantity;
             if (values.Any(v => v.SyncStatus is SyncStatus.Pending or SyncStatus.Failed && v.Status != ObjectStatus.Closed))
