@@ -36,7 +36,7 @@ public class GoodsReceiptLineItemProcessService(
 
 
         var specificDocuments = goodsReceipt.Documents.Select(d => new ObjectKey(d.ObjType, d.DocEntry, d.DocNumber)).ToList();
-        var validationResult  = await adapter.ValidateGoodsReceiptAddItem(request.ItemCode, request.BarCode, specificDocuments, warehouse);
+        var validationResult  = await adapter.ValidateGoodsReceiptAddItem(request.ItemCode, request.BarCode, specificDocuments, warehouse, request.Unit == UnitType.Unit);
         if (!validationResult.IsValid) {
             logger.LogWarning("External adapter validation failed for item {ItemCode}: {ErrorMessage}", request.ItemCode, validationResult.ErrorMessage);
             return new ValidateGoodsReceiptAndItemResponse(new GoodsReceiptAddItemResponse {

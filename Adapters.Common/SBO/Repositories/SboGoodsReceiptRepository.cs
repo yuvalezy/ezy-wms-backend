@@ -21,22 +21,24 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
     private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, string warehouse, List<ObjectKey> specificDocuments) {
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, string warehouse, List<ObjectKey> specificDocuments, bool useBaseUnit) {
         var response = new GoodsReceiptValidationResult {
-            IsValid      = true,
+            IsValid = true,
             ErrorMessage = null,
-            ReturnValue  = 0
+            ReturnValue = 0
         };
+
         const string checkItem =
-            """
-            select Case
-                When @BarCode <> T0.CodeBars and T3.BcdCode is null Then -2
-                When T0.PrchseItem = 'N' Then -5
-                Else 0 End ValidationMessage
-            from OITM T0
-                left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
-            where T0."ItemCode" = @ItemCode
-            """;
+        """
+        select Case
+            When @BarCode <> T0.CodeBars and T3.BcdCode is null Then -2
+            When T0.PrchseItem = 'N' Then -5
+            Else 0 End ValidationMessage
+        from OITM T0
+            left outer join OBCD T3 on T3.ItemCode = T0.ItemCode and T3.BcdCode = @BarCode
+        where T0."ItemCode" = @ItemCode
+        """;
+
         int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
             new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = barcode }
@@ -44,18 +46,18 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
         switch (result) {
             case null:
-                response.ReturnValue  = -1;
-                response.IsValid      = false;
+                response.ReturnValue = -1;
+                response.IsValid = false;
                 response.ErrorMessage = "Item not found";
                 return await Task.FromResult(response);
             case -2:
-                response.ReturnValue  = -2;
-                response.IsValid      = false;
+                response.ReturnValue = -2;
+                response.IsValid = false;
                 response.ErrorMessage = "Invalid barcode";
                 break;
             case -5:
-                response.ReturnValue  = -5;
-                response.IsValid      = false;
+                response.ReturnValue = -5;
+                response.IsValid = false;
                 response.ErrorMessage = "Item is not for purchase";
                 break;
         }
@@ -65,22 +67,24 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
         var parameters = new List<SqlParameter> {
             new("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
-            new("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+            new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse },
+            new("@UseBaseUn", SqlDbType.Char, 1) { Value = useBaseUnit ? "Y" : "N" }
         };
+
         var sb = new StringBuilder(" select 1 from ( ");
 
         for (int i = 0; i < specificDocuments.Count; i++) {
             if (i > 0) sb.Append(" union ");
             sb.Append($"select @ObjType{i} \"ObjType\", @DocEntry{i} \"DocEntry\"");
-            parameters.Add(new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = specificDocuments[i].Type });
+            parameters.Add(new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value = specificDocuments[i].Type });
             parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = specificDocuments[i].Entry });
         }
 
         sb.Append("""
                   ) X0
-                       left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode
-                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode
-                       left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode
+                       left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode and X1."UseBaseUn" = @UseBaseUn
+                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode and X2."UseBaseUn" = @UseBaseUn
+                       left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode and X3."UseBaseUn" = @UseBaseUn
                   where X1."LineNum" is not null
                      or X2."LineNum" is not null
                      or X3."LineNum" is not null
@@ -88,8 +92,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
         int validateDocuments = await dbService.QuerySingleAsync(sb.ToString(), parameters.ToArray(), reader => reader.GetInt32(0));
         if (validateDocuments != 1) {
-            response.ReturnValue  = -6;
-            response.IsValid      = false;
+            response.ReturnValue = -6;
+            response.IsValid = false;
             response.ErrorMessage = "Item was not found in any of the source documents";
         }
 
@@ -97,55 +101,57 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(
-        string           itemCode, UnitType unit,
-        string           warehouse,
+        string itemCode, UnitType unit,
+        string warehouse,
         GoodsReceiptType type,
-        string?          cardCode,
-        List<ObjectKey>  specificDocuments) {
+        string? cardCode,
+        List<ObjectKey> specificDocuments) {
         return await sourceDocumentRetrieval.GetAllSourceDocuments(itemCode, warehouse, unit, type, cardCode, specificDocuments);
     }
 
     public async Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode) {
         const string query =
-            """
-            -- Priority 1: Reserved A/R Invoices (highest priority)
-            select 1 [Priority], T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
-            from INV1 T0
-                     inner join OINV T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y'
-            where T0."ItemCode" = @ItemCode
-              and T0."InvntSttus" = 'O'        -- Open inventory status
-              and T0."WhsCode" = @WhsCode
+        """
+        -- Priority 1: Reserved A/R Invoices (highest priority)
+        select 1 [Priority], T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+        from INV1 T0
+                 inner join OINV T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O' and T1."isIns" = 'Y'
+        where T0."ItemCode" = @ItemCode
+          and T0."InvntSttus" = 'O'        -- Open inventory status
+          and T0."WhsCode" = @WhsCode
 
-            -- Priority 2: Open Sales Orders
-            union
-            select 2, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
-            from RDR1 T0
-                     inner join ORDR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
-            where T0."ItemCode" = @ItemCode
-              and T0."InvntSttus" = 'O'
-              and T0."WhsCode" = @WhsCode
+        -- Priority 2: Open Sales Orders
+        union
+        select 2, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+        from RDR1 T0
+                 inner join ORDR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+        where T0."ItemCode" = @ItemCode
+          and T0."InvntSttus" = 'O'
+          and T0."WhsCode" = @WhsCode
 
-            -- Priority 3: Open Transfer Requests (lowest priority)
-            union
-            select 3, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
-            from WTQ1 T0
-                     inner join OWTQ T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
-            where T0."ItemCode" = @ItemCode
-              and T0."InvntSttus" = 'O'
-              and T0."FromWhsCod" = @WhsCode    -- From our warehouse
-              and T0."WhsCode" = @WhsCode
-            """;
+        -- Priority 3: Open Transfer Requests (lowest priority)
+        union
+        select 3, T0."ObjType", T1.DocDate, T0."DocEntry", T0."LineNum", T0."OpenInvQty"
+        from WTQ1 T0
+                 inner join OWTQ T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+        where T0."ItemCode" = @ItemCode
+          and T0."InvntSttus" = 'O'
+          and T0."FromWhsCod" = @WhsCode    -- From our warehouse
+          and T0."WhsCode" = @WhsCode
+        """;
+
         var result = await dbService.QueryAsync(query, [
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
-            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse }
         ], reader => new GoodsReceiptAddItemTargetDocumentsResponse() {
             Priority = reader.GetInt16(0),
-            Type     = reader.GetInt32(1),
-            Date     = reader.GetDateTime(2),
-            Entry    = reader.GetInt32(3),
-            LineNum  = reader.GetInt32(4),
+            Type = reader.GetInt32(1),
+            Date = reader.GetDateTime(2),
+            Entry = reader.GetInt32(3),
+            LineNum = reader.GetInt32(4),
             Quantity = reader.GetInt32(5)
         });
+
         return result;
     }
 
@@ -175,11 +181,12 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
         await dbService.ExecuteReaderAsync(queryBuilder.ToString(),
             [new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse }],
-            reader => {
-                string docStatus      = reader.GetString(reader.GetOrdinal("DocStatus"));
-                int    objectType     = reader.GetInt32(reader.GetOrdinal("ObjType"));
-                int    documentNumber = reader.GetInt32(reader.GetOrdinal("DocNum"));
-                int    documentEntry  = reader.IsDBNull(reader.GetOrdinal("DocEntry")) ? -1 : reader.GetInt32(reader.GetOrdinal("DocEntry"));
+            reader =>
+            {
+                string docStatus = reader.GetString(reader.GetOrdinal("DocStatus"));
+                int objectType = reader.GetInt32(reader.GetOrdinal("ObjType"));
+                int documentNumber = reader.GetInt32(reader.GetOrdinal("DocNum"));
+                int documentEntry = reader.IsDBNull(reader.GetOrdinal("DocEntry")) ? -1 : reader.GetInt32(reader.GetOrdinal("DocEntry"));
                 if (docStatus != "O") {
                     throw new ApiErrorException(-1, new { objectType, documentEntry, documentNumber, docStatus });
                 }
@@ -195,39 +202,44 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         var (query, customFields) = BuildProcessDocumentsDataQuery(docs);
         var parameters = new SqlParameter[docs.Length * 2];
         for (int i = 0; i < docs.Length; i++) {
-            parameters[i * 2]     = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type };
+            parameters[i * 2] = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value = docs[i].Type };
             parameters[i * 2 + 1] = new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry };
         }
 
         var control = new Dictionary<(int Type, int Entry), GoodsReceiptValidateProcessDocumentsDataResponse>();
-        var response = await dbService.QueryAsync(query.headerQuery, parameters, reader => {
+        var response = await dbService.QueryAsync(query.headerQuery, parameters, reader =>
+        {
             var value = new GoodsReceiptValidateProcessDocumentsDataResponse {
-                ObjectType     = reader.GetInt32(0),
-                DocumentEntry  = reader.GetInt32(1),
+                ObjectType = reader.GetInt32(0),
+                DocumentEntry = reader.GetInt32(1),
                 DocumentNumber = reader.GetInt32(2),
-                Vendor         = new ExternalValue<string> { Id = reader.GetString(3), Name = reader[4]!.ToString() }
+                Vendor = new ExternalValue<string> { Id = reader.GetString(3), Name = reader[4]!.ToString() }
             };
+
             control.Add((value.ObjectType, value.DocumentEntry), value);
             return value;
         });
 
         parameters = new SqlParameter[docs.Length * 2];
         for (int i = 0; i < docs.Length; i++) {
-            parameters[i * 2]     = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value  = docs[i].Type };
+            parameters[i * 2] = new SqlParameter($"@ObjType{i}", SqlDbType.Int) { Value = docs[i].Type };
             parameters[i * 2 + 1] = new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = docs[i].Entry };
         }
 
-        await dbService.ExecuteReaderAsync(query.linesQuery, parameters, reader => {
+        await dbService.ExecuteReaderAsync(query.linesQuery, parameters, reader =>
+        {
             var value = control[(reader.GetInt32("ObjType"), reader.GetInt32("DocEntry"))];
             var item = new GoodsReceiptValidateProcessDocumentsDataLineResponse {
-                LineNumber       = reader.GetInt32("LineNum"),
+                LineNumber = reader.GetInt32("LineNum"),
                 DocumentQuantity = (int)reader.GetDecimal("OpenInvQty"),
                 VisualLineNumber = reader.GetInt32("VisOrder")
             };
+
             ItemResponseHelper.PopulateItemResponse(reader, item);
             CustomFieldsHelper.ReadCustomFields(reader, customFields, item);
             value.Lines.Add(item);
         });
+
         return response;
     }
 
@@ -281,7 +293,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
         if (data.Count == 0)
             return;
-        string[] items      = data.Select(v => v.Key).Distinct().ToArray();
+
+        string[] items = data.Select(v => v.Key).Distinct().ToArray();
         var parameters = new SqlParameter[items.Length];
         var sb = new StringBuilder(
             $"""
@@ -291,16 +304,19 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                     from OITM
                     where "ItemCode" in (
              """);
+
         for (int i = 0; i < items.Length; i++) {
             if (i > 0)
                 sb.Append(" , ");
+
             sb.Append($"@ItemCode{i}");
             parameters[i] = new SqlParameter($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] };
         }
 
         sb.Append(")");
 
-        await dbService.ExecuteReaderAsync(sb.ToString(), parameters, reader => {
+        await dbService.ExecuteReaderAsync(sb.ToString(), parameters, reader =>
+        {
             var itemData = data[reader.GetString("ItemCode")];
             foreach (var value in itemData.Where(value => !value.UseBaseUnit)) {
                 value.Quantity /= Convert.ToInt32(reader["NumInBuy"]);
@@ -310,5 +326,4 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             }
         });
     }
-    
 }
