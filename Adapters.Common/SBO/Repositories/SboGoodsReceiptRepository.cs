@@ -83,11 +83,14 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         sb.Append("""
                   ) X0
                        left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode and X1."UseBaseUn" = @UseBaseUn
-                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode and X2."UseBaseUn" = @UseBaseUn
-                       left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode and X3."UseBaseUn" = @UseBaseUn
+                       left outer join OPCH X5 on X5."DocEntry" = X0."DocEntry" and X5."ObjType" = X0."ObjType" 
+                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode and (X5."isIns" = 'N' or X5."isIns" = 'Y' and X2."UseBaseUn" = @UseBaseUn)
+                       left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode
+                       left outer join WTR1 X4 on X4."DocEntry" = X0."DocEntry" and X4."ObjType" = X0."ObjType" and X4."ItemCode" = @ItemCode and X4."WhsCode" = @WhsCode
                   where X1."LineNum" is not null
                      or X2."LineNum" is not null
                      or X3."LineNum" is not null
+                  or X4."LineNum" is not null
                   """);
 
         int validateDocuments = await dbService.QuerySingleAsync(sb.ToString(), parameters.ToArray(), reader => reader.GetInt32(0));
@@ -275,6 +278,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                               from ({sbDocs}) T0
                               left outer join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."ObjType" = T0."ObjType"
                               left outer join OPCH T2 on T2."DocEntry" = T0."DocEntry" and T2."ObjType" = T0."ObjType"
+                              left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
                               left outer join OPDN T3 on T3."DocEntry" = T0."DocEntry" and T3."ObjType" = T0."ObjType"
                               """;
 

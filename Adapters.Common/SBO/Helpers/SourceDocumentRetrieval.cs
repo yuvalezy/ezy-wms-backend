@@ -70,11 +70,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
         });
     }
 
-    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetGoodsReceiptSourceDocuments(
-        string itemCode,
-        string warehouse,
-        UnitType unit,
-        GoodsReceiptType type,
+    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetGoodsReceiptSourceDocuments(string itemCode, string warehouse, UnitType unit, GoodsReceiptType type,
         List<ObjectKey> specificDocuments) {
         int[] entries = specificDocuments.Where(v => v.Type == 20).Select(v => v.Entry).ToArray();
         if (type != GoodsReceiptType.SpecificReceipts || entries.Length == 0) {
@@ -194,6 +190,55 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             Number = reader.GetInt32(4),
         });
     }
+    private async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetTransfersSourceDocuments(string itemCode, string warehouse, UnitType unit, GoodsReceiptType type,
+        List<ObjectKey> specificDocuments) {
+        int[] entries = specificDocuments.Where(v => v.Type == 67).Select(v => v.Entry).ToArray();
+        if (type != GoodsReceiptType.SpecificTransfers || entries.Length == 0) {
+            return [];
+        }
+
+        var parameters = new List<SqlParameter> {
+            new("@WhsCode", SqlDbType.NVarChar, 8) { Value = warehouse },
+            new("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
+            new("@Unit", SqlDbType.SmallInt) { Value = (short)unit }
+        };
+
+        var sb = new StringBuilder();
+        sb.Append("""
+                  select T0."ObjType", T0."DocEntry", T0."LineNum", T0."InvQty", T1."DocNum"
+                  from WTR1 T0
+                  inner join OWTR T1 on T1."DocEntry" = T0."DocEntry" and T1."CANCELED" not in ('C', 'Y')
+                  """);
+
+        sb.Append(" and T0.\"DocEntry\" in (");
+        for (int i = 0; i < entries.Length; i++) {
+            if (i > 0)
+                sb.Append(", ");
+
+            sb.Append($"@DocEntry{i}");
+            parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = entries[i] });
+        }
+
+        sb.Append(") ");
+
+        sb.Append("""
+                  where T0."ItemCode" = @ItemCode
+                  /* and T0."LineStatus" = 'O' -- form confirmation this is not necessary */
+                  and T0."WhsCode" = @WhsCode
+                  /* and T0."InvQty" > 0 -- form confirmation this is not necessary */
+                  /* and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y') */
+                  order by T1."CreateDate", T1.CreateTS;
+                  """);
+
+        return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
+        new GoodsReceiptAddItemSourceDocumentResponse {
+            Type = 20,
+            Entry = reader.GetInt32(1),
+            LineNum = reader.GetInt32(2),
+            Quantity = (int)reader.GetDecimal(3),
+            Number = reader.GetInt32(4),
+        });
+    }
 
     public async Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> GetAllSourceDocuments(
         string itemCode,
@@ -212,6 +257,9 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         var apInvoices = await GetAPInvoiceSourceDocuments(itemCode, warehouse, unit, type, cardCode, specificDocuments);
         response.AddRange(apInvoices);
+
+        var transfers = await GetTransfersSourceDocuments(itemCode, warehouse, unit, type, specificDocuments);
+        response.AddRange(transfers);
 
         return response;
     }
