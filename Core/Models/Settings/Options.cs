@@ -16,6 +16,7 @@ public record Options {
 
     //Transfer
     public bool TransferTargetItems { get; init; }
+    public bool EnableTransferConfirm { get; init; }
 
     //Packages & Units
     public bool EnablePackages { get; init; }
@@ -25,8 +26,8 @@ public record Options {
     /// <summary>
     /// Idle Settings for auto log out, if null or zero, ignore
     /// </summary>
-    public int? IdleLogoutTimeout { get; set; }
+    public int? IdleLogoutTimeout { get; init; }
 
     //Pick List
-    public bool EnablePickingCheck { get; set; }
+    public bool EnablePickingCheck { get; init; }
 }
