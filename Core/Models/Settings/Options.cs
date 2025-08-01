@@ -2,8 +2,10 @@ using Core.Enums;
 
 namespace Core.Models.Settings;
 
-public record Options
-{
+public record Options {
+    //General
+    public bool EnableUseBaseUn { get; set; } = true;
+
     // Goods Receipt
     public bool GoodsReceiptDraft { get; init; }
     public bool GoodsReceiptModificationsRequiredSupervisor { get; init; }
