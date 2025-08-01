@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PickListLineService(
-    SystemDbContext db, 
-    IExternalSystemAdapter adapter, 
+    SystemDbContext db,
+    IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
     IPickListValidationService validationService,
     IPickListPackageOperationsService packageOperations) : IPickListLineService {
@@ -40,17 +40,24 @@ public class PickListLineService(
                 return PickListAddItemResponse.Error(errorMessage!);
             }
 
-            int binOnHand = await validationService.CalculateBinOnHandQuantity(request.ItemCode, request.BinEntry, validationResult);
+
+            int itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
+            int openQuantity = validationResult.OpenQuantity;
+            (itemStock, openQuantity) = await validationService.CalculateBinOnHandQuantity(request.ItemCode, request.BinEntry, itemStock, openQuantity);
 
             var (quantityValid, quantityError, selectedValidation) = await validationService.ValidateQuantityAgainstPickList(
                 request.ID, request.ItemCode, request.Quantity, [validationResult]);
-            
+
             if (!quantityValid || selectedValidation == null) {
                 return PickListAddItemResponse.Error(quantityError!);
             }
 
-            if (request.Quantity > binOnHand) {
+            if (request.Quantity > itemStock) {
                 return PickListAddItemResponse.Error("Quantity exceeds bin available stock");
+            }
+
+            if (request.Quantity > openQuantity) {
+                return PickListAddItemResponse.Error("Quantity exceeds open quantity");
             }
 
             var pickList = new PickList {
@@ -70,7 +77,7 @@ public class PickListLineService(
             await db.PickLists.AddAsync(pickList);
 
             await AddItemPackage(sessionInfo, pickList, package, packageContent, request);
-        
+
             await AddNewPackageContent(sessionInfo, request, pickList.Id);
 
             await db.SaveChangesAsync();
@@ -99,20 +106,20 @@ public class PickListLineService(
         // Create PickListPackage record if not exists
         await packageOperations.CreatePickListPackageIfNotExists(sessionInfo, pickList, request, package);
     }
+
     private async Task AddNewPackageContent(SessionInfo sessionInfo, PickListAddItemRequest request, Guid pickListId) {
         // If content is added to a new picking package
         if (request.PickingPackageId != null) {
             await packageOperations.AddOrUpdatePackageContent(
-                sessionInfo, 
-                request.PickingPackageId.Value, 
-                request.ItemCode, 
-                request.Quantity, 
+                sessionInfo,
+                request.PickingPackageId.Value,
+                request.ItemCode,
+                request.Quantity,
                 request.BinEntry,
                 request.ID,
                 request.Type,
-                request.Entry, 
+                request.Entry,
                 pickListId);
         }
     }
-
 }

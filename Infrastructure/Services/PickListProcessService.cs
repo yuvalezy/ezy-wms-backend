@@ -100,7 +100,8 @@ public class PickListProcessService(
             // Get distinct pick entries with pending or failed sync status
             var pendingPickEntries = await db.PickLists
                 .Where(p => (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
-                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
+                            && p.BinEntry != null)
                 .Select(p => p.AbsEntry)
                 .Distinct()
                 .ToArrayAsync();

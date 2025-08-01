@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Helpers;
 
-public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSelectionResponse[] selection, string warehouse, int cancelBinEntry, ILoggerFactory loggerFactory) {
+public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSelectionResponse[] selection, string warehouse, int cancelBinEntry, ILoggerFactory loggerFactory, bool enableBinLocations) {
     private readonly ILogger<PickingCancellation> logger = loggerFactory.CreateLogger<PickingCancellation>();
 
     public async Task<ProcessPickListResponse> Execute() {
@@ -19,35 +19,7 @@ public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSel
                     Absoluteentry = absEntry
                 }
             };
-
-            var transferData = new {
-                DocDate       = DateTime.UtcNow.ToString("yyyy-MM-dd"),
-                FromWarehouse = warehouse,
-                ToWarehouse   = warehouse,
-                StockTransferLines = selection.GroupBy(v => v.ItemCode)
-                    .Select(v => new {
-                        ItemCode          = v.Key,
-                        Quantity          = v.Sum(w => w.Quantity),
-                        FromWarehouseCode = warehouse,
-                        WarehouseCode     = warehouse,
-                        StockTransferLinesBinAllocations = v
-                            .Select(x => new {
-                                BinAbsEntry   = x.BinEntry,
-                                Quantity      = x.Quantity,
-                                BinActionType = "batFromWarehouse"
-                            })
-                            .Concat([
-                                new {
-                                BinAbsEntry   = cancelBinEntry,
-                                Quantity      = v.Sum(w => w.Quantity),
-                                BinActionType = "batToWarehouse"
-                            }
-                            ])
-                            .ToList()
-                    })
-                    .ToList()
-            };
-
+            
             // Execute both operations in a single batch transaction
             var closePickListOperation = new SboCompany.BatchOperation {
                 Method = "POST",
@@ -55,13 +27,47 @@ public class PickingCancellation(SboCompany sboCompany, int absEntry, PickingSel
                 Body = JsonSerializer.Serialize(closePickListData)
             };
 
-            var transferOperation = new SboCompany.BatchOperation {
-                Method = "POST",
-                Endpoint = "StockTransfers",
-                Body = JsonSerializer.Serialize(transferData)
-            };
+            SboCompany.BatchOperation[] operations = [closePickListOperation];
 
-            (bool success, string? errorMessage, var responses) = await sboCompany.ExecuteBatchAsync(closePickListOperation, transferOperation);
+            if (enableBinLocations) {
+                var transferData = new {
+                    DocDate = DateTime.UtcNow.ToString("yyyy-MM-dd"),
+                    FromWarehouse = warehouse,
+                    ToWarehouse = warehouse,
+                    StockTransferLines = selection.GroupBy(v => v.ItemCode)
+                    .Select(v => new {
+                        ItemCode = v.Key,
+                        Quantity = v.Sum(w => w.Quantity),
+                        FromWarehouseCode = warehouse,
+                        WarehouseCode = warehouse,
+                        StockTransferLinesBinAllocations = v
+                        .Select(x => new {
+                            BinAbsEntry = x.BinEntry,
+                            Quantity = x.Quantity,
+                            BinActionType = "batFromWarehouse"
+                        })
+                        .Concat([
+                            new {
+                                BinAbsEntry = cancelBinEntry,
+                                Quantity = v.Sum(w => w.Quantity),
+                                BinActionType = "batToWarehouse"
+                            }
+                        ])
+                        .ToList()
+                    })
+                    .ToList()
+                };
+
+                var transferOperation = new SboCompany.BatchOperation {
+                    Method = "POST",
+                    Endpoint = "StockTransfers",
+                    Body = JsonSerializer.Serialize(transferData)
+                };
+                Array.Resize(ref operations, 2);;
+                operations[1] = transferOperation;
+            }
+
+            (bool success, string? errorMessage, var responses) = await sboCompany.ExecuteBatchAsync(operations);
             
             if (!success) {
                 logger.LogError("Failed to execute batch operation for pick list cancellation. Error: {ErrorMessage}", errorMessage);

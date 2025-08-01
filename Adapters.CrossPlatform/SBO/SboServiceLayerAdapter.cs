@@ -1,5 +1,6 @@
 ﻿using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Repositories;
+using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO.Helpers;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.GoodsReceipt;
@@ -26,6 +27,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
     private readonly SboGoodsReceiptRepository goodsReceiptRepository;
     private readonly SboInventoryCountingRepository inventoryCountingRepository;
     private readonly SboCompany sboCompany;
+    private readonly SboDatabaseService databaseService;
     private readonly ILoggerFactory loggerFactory;
     private readonly ItemSettings itemSettings;
 
@@ -37,6 +39,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
         SboInventoryCountingRepository inventoryCountingRepository,
         ISettings settings,
         SboCompany sboCompany,
+        SboDatabaseService databaseService,
         ILoggerFactory loggerFactory)
     {
         this.employeeRepository = employeeRepository;
@@ -46,6 +49,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
         this.goodsReceiptRepository = goodsReceiptRepository;
         this.inventoryCountingRepository = inventoryCountingRepository;
         this.sboCompany = sboCompany;
+        this.databaseService = databaseService;
         this.itemSettings = settings.Item;
         this.loggerFactory = loggerFactory;
         if (string.IsNullOrWhiteSpace(settings.SboSettings?.ServiceLayerUrl))
@@ -161,7 +165,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data)
     {
-        using var update = new PickingUpdate(absEntry, data, sboCompany, loggerFactory);
+        using var update = new PickingUpdate(absEntry, data, sboCompany, databaseService, loggerFactory);
         var result = new ProcessPickListResult
         {
             Success = true,
@@ -186,9 +190,9 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
 
-    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry)
+    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations)
     {
-        var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, warehouse, transferBinEntry, loggerFactory);
+        var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, warehouse, transferBinEntry, loggerFactory, enableBinLocations);
         return await pickingCancellation.Execute();
     }
 

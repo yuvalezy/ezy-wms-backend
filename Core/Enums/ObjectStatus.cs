@@ -10,6 +10,7 @@ public enum ObjectStatus {
 }
 
 public enum SyncStatus {
+    Unknown = -1,
     Pending = 0,
     Processing = 1,
     Synced = 2,

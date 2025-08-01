@@ -142,7 +142,7 @@ public class SboAdapter(
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
 
-    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry) {
+    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations) {
         var helper = new PickingCancellation(sboCompany, absEntry, loggerFactory);
         return Task.FromResult(helper.Execute());
     }

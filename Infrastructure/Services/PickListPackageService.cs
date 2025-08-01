@@ -81,8 +81,9 @@ public class PickListPackageService(
                 if (!isValid || validationResult == null) {
                     throw new Exception($"Validation failed for item code: {content.ItemCode} in package {request.PackageId}: {errorMessage}");
                 }
-
-                int binOnHand = await validationService.CalculateBinOnHandQuantity(content.ItemCode, request.BinEntry, validationResult);
+                int itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
+                int openQuantity = validationResult.OpenQuantity;
+                (itemStock, openQuantity) = await validationService.CalculateBinOnHandQuantity(content.ItemCode, request.BinEntry, itemStock, openQuantity);
 
                 var (quantityValid, quantityError, selectedValidation) = await validationService.ValidateQuantityAgainstPickList(
                     request.ID, content.ItemCode, (int)content.Quantity, [validationResult]);
@@ -91,8 +92,12 @@ public class PickListPackageService(
                     throw new Exception($"Quantity validation failed for item code: {content.ItemCode} in package {request.PackageId}: {quantityError}");
                 }
 
-                if (content.Quantity > binOnHand) {
+                if (content.Quantity > itemStock) {
                     throw new Exception($"Quantity exceeds bin available stock for item code: {content.ItemCode} in package {request.PackageId}");
+                }
+
+                if (content.Quantity > openQuantity) {
+                    throw new Exception($"Quantity exceeds open quantity for item code: {content.ItemCode} in package {request.PackageId}");
                 }
 
                 var pickEntryToUse = selectedValidation.PickEntry ?? request.Entry;

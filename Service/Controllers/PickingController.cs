@@ -39,7 +39,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<PickListResponse>> GetPickings( [FromQuery] PickListsRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var pickLists = await service.GetPickLists(request, sessionInfo.Warehouse);
+        var pickLists = await service.GetPickLists(request, sessionInfo.Warehouse, sessionInfo.EnableBinLocations);
         
         // Otherwise, filter as before (optional - depends on current implementation)
         return pickLists;

@@ -74,7 +74,7 @@ public interface IExternalSystemAdapter {
     Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries);
     Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry);
     Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry);
-    Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry);
+    Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations);
 
     // Inventory Counting methods
     Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);

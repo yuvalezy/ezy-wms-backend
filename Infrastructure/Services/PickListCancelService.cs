@@ -33,8 +33,9 @@ public class PickListCancelService(
         }
 
         // Get cancel bin entry from settings
-        int cancelBinEntry = settings.GetCancelPickingBinEntry(sessionInfo.Warehouse);
-        if (cancelBinEntry == 0) {
+        var enableBinLocations = sessionInfo.EnableBinLocations;
+        int cancelBinEntry = enableBinLocations ? settings.GetCancelPickingBinEntry(sessionInfo.Warehouse) : 0;
+        if (enableBinLocations && cancelBinEntry == 0) {
             throw new Exception("Cancel Picking Bin Entry is not set in the Settings.Filters.CancelPickingBinEntry");
         }
 
@@ -44,13 +45,13 @@ public class PickListCancelService(
         var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
 
         // Cancel Pick List in SAP
-        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry);
+        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry, enableBinLocations);
         if (selection.Length == 0)
             return response.ToDto();
 
         // Create a new transfer for cancelled pick list items
         var transfer = await transferService.CreateTransfer(new CreateTransferRequest {
-            Name = $"Cancelación Picking {absEntry}", // TODO: multi language
+            Name = $"Cancelación Picking {absEntry}", 
             Comments = "Reubicación de artículos de picking"
         }, sessionInfo);
 
