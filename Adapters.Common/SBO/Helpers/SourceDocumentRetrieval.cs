@@ -232,7 +232,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         return await dbService.QueryAsync(sb.ToString(), parameters.ToArray(), reader =>
         new GoodsReceiptAddItemSourceDocumentResponse {
-            Type = 20,
+            Type = 67,
             Entry = reader.GetInt32(1),
             LineNum = reader.GetInt32(2),
             Quantity = (int)reader.GetDecimal(3),
