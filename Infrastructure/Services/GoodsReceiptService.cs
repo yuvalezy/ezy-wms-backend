@@ -168,7 +168,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             }
 
             // if configuration, just set status to finished
-            if (goodsReceipt.Type == GoodsReceiptType.SpecificReceipts) {
+            if (goodsReceipt.Type is GoodsReceiptType.SpecificReceipts or GoodsReceiptType.SpecificTransfers) {
                 goodsReceipt.Status          = ObjectStatus.Finished;
                 goodsReceipt.UpdatedAt       = DateTime.UtcNow;
                 goodsReceipt.UpdatedByUserId = session.Guid;
