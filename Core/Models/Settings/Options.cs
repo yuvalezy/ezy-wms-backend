@@ -5,6 +5,7 @@ namespace Core.Models.Settings;
 public record Options {
     //General
     public bool EnableUseBaseUn { get; set; } = true;
+    public ScannerMode ScannerMode { get; set; } = ScannerMode.ItemBarcode;
 
     // Goods Receipt
     public bool GoodsReceiptDraft { get; init; }
