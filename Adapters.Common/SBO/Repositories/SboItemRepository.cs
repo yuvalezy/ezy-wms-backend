@@ -240,7 +240,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return (queryBuilder.ToString(), customFields);
     }
 
-    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) {
+    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string? barcode, string warehouse, int? binEntry, bool enableBin) {
         var result = new ValidateAddItemResult();
 
         // Validate item and get basic item info
@@ -259,7 +259,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
         var itemParams = new[] {
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
-            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = barCode },
+            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = !string.IsNullOrWhiteSpace(barcode) ? barcode : DBNull.Value },
             new SqlParameter("@WhsCode", SqlDbType.NVarChar, 8) { Value   = warehouse }
         };
 
@@ -284,7 +284,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         result.PurPackUn   = itemData.PurPackUn;
 
         // Validate barcode
-        result.IsValidBarCode = barCode == itemData.MainBarcode || itemData.Barcode != null;
+        result.IsValidBarCode = string.IsNullOrWhiteSpace(barcode) || barcode == itemData.MainBarcode || itemData.Barcode != null;
 
         // Check if it's an inventory item
         result.IsInventoryItem = itemData.StockItem;

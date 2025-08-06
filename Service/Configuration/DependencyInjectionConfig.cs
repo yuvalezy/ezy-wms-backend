@@ -114,9 +114,9 @@ public static class DependencyInjectionConfig {
             provider.GetRequiredService<CloudSyncBackgroundService>());
 
         switch (settings.ExternalAdapter) {
-            case ExternalAdapterType.SboWindows:
-                SboWindowsDependencyInjection.ConfigureServices(services);
-                break;
+            // case ExternalAdapterType.SboWindows:
+            //     SboWindowsDependencyInjection.ConfigureServices(services);
+            //     break;
             case ExternalAdapterType.SboServiceLayer:
                 SboServiceLayerDependencyInjection.ConfigureServices(services);
                 break;

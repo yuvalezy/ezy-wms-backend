@@ -39,7 +39,7 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<ItemBinStockResponse>> ItemBinStockAsync(string itemCode, string whsCode);
     Task<Dictionary<string, ItemWarehouseStockResponse>> ItemsWarehouseStockAsync(string warehouse, string[] items);
     Task<UpdateItemBarCodeResponse> UpdateItemBarCode(UpdateBarCodeRequest request);
-    Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin);
+    Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string? barCode, string warehouse, int? binEntry, bool enableBin);
 
     Task<ItemUnitResponse> GetItemInfo(string itemCode);
 
@@ -82,7 +82,7 @@ public interface IExternalSystemAdapter {
 
     // Goods Receipt methods
     Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
-    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse, bool useBaseUnit);
+    Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string? barcode, List<ObjectKey> specificDocuments, string warehouse, bool useBaseUnit);
     Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
     Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents);
 

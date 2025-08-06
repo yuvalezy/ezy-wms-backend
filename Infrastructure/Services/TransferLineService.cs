@@ -14,11 +14,14 @@ namespace Infrastructure.Services;
 public class TransferLineService(
     SystemDbContext            db,
     IExternalSystemAdapter     adapter,
+    ISettings                  settings,
     ITransferValidationService transferValidationService) : ITransferLineService {
     public async Task<TransferAddItemResponse> AddItem(SessionInfo info, TransferAddItemRequest request) {
         // Standard item transfer logic only - package operations are now handled by dedicated endpoints
         if (!await transferValidationService.ValidateAddItemAsync(info, request))
             return new TransferAddItemResponse { ClosedTransfer = true };
+        if (request.Type == SourceTarget.Source && string.IsNullOrWhiteSpace(request.BarCode) && settings.Options.ScannerMode == ScannerMode.ItemBarcode)
+            return new TransferAddItemResponse { ErrorMessage = $"Barcode is required for source transfer lines" };
 
         var transaction = await db.Database.BeginTransactionAsync();
         try {

@@ -29,14 +29,13 @@ public sealed class GoodsReceipt : BaseEntity {
     public required string WhsCode { get; set; }
 
     // Navigation properties
-    public ICollection<GoodsReceiptLine>     Lines     { get; set; } = new List<GoodsReceiptLine>();
+    public ICollection<GoodsReceiptLine> Lines { get; set; } = new List<GoodsReceiptLine>();
     public ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
 }
 
 public sealed class GoodsReceiptLine : BaseEntity {
-    [Required]
     [StringLength(254)]
-    public required string BarCode { get; set; }
+    public string? BarCode { get; set; }
 
     [MaxLength(4000)]
     public string? Comments { get; set; }
@@ -66,7 +65,7 @@ public sealed class GoodsReceiptLine : BaseEntity {
     [ForeignKey("GoodsReceipt")]
     public Guid GoodsReceiptId { get; set; }
 
-    public GoodsReceipt        GoodsReceipt       { get; set; } = null!;
+    public GoodsReceipt GoodsReceipt { get; set; } = null!;
     public CancellationReason? CancellationReason { get; set; }
 
     public ICollection<GoodsReceiptTarget> Targets { get; set; } = new List<GoodsReceiptTarget>();

@@ -6,7 +6,7 @@ namespace Core.DTOs.Transfer;
 public class TransferAddItemRequest : IValidatableObject {
     public Guid         ID       { get; set; }
     public string       ItemCode { get; set; }
-    public string       BarCode  { get; set; }
+    public string?       BarCode  { get; set; }
     public int?         BinEntry { get; set; }
     public UnitType?    Unit     { get; set; }
     public int          Quantity { get; set; }
@@ -25,7 +25,6 @@ public class TransferAddItemRequest : IValidatableObject {
             yield return new ValidationResult("Unit is a required parameter", [nameof(Unit)]);
         if (string.IsNullOrWhiteSpace(ItemCode))
             yield return new ValidationResult("Item Code is a required parameter", [nameof(ItemCode)]);
-        if (Type == SourceTarget.Source && string.IsNullOrWhiteSpace(BarCode))
-            yield return new ValidationResult("Barcode is a required paramter", [nameof(BarCode)]);
+
     }
 }

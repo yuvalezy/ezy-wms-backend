@@ -30,9 +30,8 @@ public sealed class InventoryCounting : BaseEntity {
 }
 
 public sealed class InventoryCountingLine : BaseEntity {
-    [Required]
     [StringLength(254)]
-    public required string BarCode { get; set; }
+    public  string? BarCode { get; set; }
 
     public int? BinEntry { get; set; }
 

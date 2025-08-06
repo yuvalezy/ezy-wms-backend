@@ -21,7 +21,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
     private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, string warehouse, List<ObjectKey> specificDocuments, bool useBaseUnit) {
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string? barcode, string warehouse, List<ObjectKey> specificDocuments, bool useBaseUnit) {
         var response = new GoodsReceiptValidationResult {
             IsValid = true,
             ErrorMessage = null,
@@ -41,7 +41,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
 
         int? result = await dbService.QuerySingleAsync<int?>(checkItem, [
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = itemCode },
-            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = barcode }
+            new SqlParameter("@BarCode", SqlDbType.NVarChar, 254) { Value = !string.IsNullOrWhiteSpace(barcode) ? barcode : DBNull.Value }
         ], reader => reader.GetInt32(0));
 
         switch (result) {
@@ -182,6 +182,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             queryBuilder.AppendLine("    When COALESCE(X1.\"DocStatus\", X2.\"DocStatus\") = 'O' or X0.\"ObjType\" = 20 or X0.\"ObjType\" = 18 and X2.\"isIns\" = 'N' Then 'O'");
             queryBuilder.AppendLine("    Else 'C' End \"DocStatus\"");
         }
+
         queryBuilder.AppendLine($"from ({documentsQuery}) X0");
         if (type == GoodsReceiptType.SpecificTransfers) {
             queryBuilder.AppendLine("left outer join OWTR X1 on X1.\"DocEntry\" = X0.\"DocEntry\" and X1.\"ObjType\" = X0.\"ObjType\"");
@@ -193,6 +194,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             queryBuilder.AppendLine($"left outer join {(type == GoodsReceiptType.SpecificOrders ? "POR1" : "PDN1")} X3 on X3.\"DocEntry\" = X1.\"DocEntry\" and X3.\"WhsCode\" = @WhsCode");
             queryBuilder.AppendLine("left outer join PCH1 X4 on X4.\"DocEntry\" = X2.\"DocEntry\" and X4.\"WhsCode\" = @WhsCode");
         }
+
         if (type == GoodsReceiptType.SpecificTransfers) {
             queryBuilder.AppendLine("group by X0.\"ObjType\", X0.\"DocNum\", X0.\"DocEntry\", X1.\"DocStatus\"");
         }

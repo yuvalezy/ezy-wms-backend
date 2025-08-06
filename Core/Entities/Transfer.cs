@@ -11,7 +11,7 @@ public sealed class Transfer : BaseEntity {
 
     [MaxLength(100)]
     public string? Name { get; set; }
-    
+
     [MaxLength(4000)]
     public string? Comments { get; set; }
 
@@ -31,9 +31,8 @@ public sealed class Transfer : BaseEntity {
 }
 
 public sealed class TransferLine : BaseEntity {
-    [Required]
     [StringLength(254)]
-    public required string BarCode { get; set; }
+    public string? BarCode { get; set; }
 
     public int? BinEntry { get; set; }
 
@@ -54,7 +53,7 @@ public sealed class TransferLine : BaseEntity {
     public int Quantity { get; set; }
 
     public int? StatusReason { get; set; }
-    
+
     [ForeignKey("CancellationReason")]
     public Guid? CancellationReasonId { get; set; }
 
@@ -75,21 +74,21 @@ public sealed class TransferLine : BaseEntity {
 public sealed class TransferPackage : BaseEntity {
     [ForeignKey("Transfer")]
     public Guid TransferId { get; set; }
-    
+
     [Required]
     public Guid PackageId { get; set; }
-    
+
     [Required]
     public SourceTarget Type { get; set; } = SourceTarget.Source;
-    
+
     public int? BinEntry { get; set; }
-    
+
     [Required]
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
-    
+
     [Required]
     public Guid AddedByUserId { get; set; }
-    
+
     // Navigation properties
     public Transfer Transfer { get; set; } = null!;
 }

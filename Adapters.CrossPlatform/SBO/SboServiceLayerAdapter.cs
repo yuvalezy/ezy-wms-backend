@@ -93,7 +93,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
         return await update.Execute();
     }
 
-    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string barCode, string warehouse, int? binEntry, bool enableBin) =>
+    public async Task<ValidateAddItemResult> GetItemValidationInfo(string itemCode, string? barCode, string warehouse, int? binEntry, bool enableBin) =>
     await itemRepository.GetItemValidationInfo(itemCode, barCode, warehouse, binEntry, enableBin);
 
     public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
@@ -223,7 +223,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter
     }
 
     // Goods Receipt methods
-    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string barcode, List<ObjectKey> specificDocuments, string warehouse, bool useBaseUnit)
+    public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string? barcode, List<ObjectKey> specificDocuments, string warehouse, bool useBaseUnit)
     {
         return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(itemCode, barcode, warehouse, specificDocuments, useBaseUnit);
     }
