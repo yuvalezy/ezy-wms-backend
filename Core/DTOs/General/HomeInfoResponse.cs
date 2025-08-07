@@ -9,4 +9,5 @@ public class HomeInfoResponse {
     public int Picking             { get; set; }
     public int Counting            { get; set; }
     public int Transfers           { get; set; }
+    public int TransfersConfirmation { get; set; }
 }

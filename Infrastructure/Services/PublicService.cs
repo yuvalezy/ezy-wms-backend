@@ -23,15 +23,16 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
         var itemAndBinCountTask = adapter.GetItemAndBinCount(warehouse);
         var pickingDocumentsTask = adapter.GetPickListsAsync(new PickListsRequest(), warehouse);
 
-        int activePackageCount = await db.Packages.CountAsync(v => v.Status == PackageStatus.Active);
+        int activePackageCount = await db.Packages.CountAsync(v => v.Status == PackageStatus.Active && v.WhsCode == warehouse);
         var goodsReceiptResult = db.GoodsReceipts
-        .Where(a => a.Status == ObjectStatus.Open || a.Status == ObjectStatus.InProgress);
+        .Where(a => (a.Status == ObjectStatus.Open || a.Status == ObjectStatus.InProgress) && a.WhsCode == warehouse);
 
-        int goodsReceiptCount = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts);
+        int goodsReceiptCount = await goodsReceiptResult.CountAsync(v => v.Type != GoodsReceiptType.SpecificReceipts && v.Type != GoodsReceiptType.SpecificTransfers);
         int receiptConfirmationCount = await goodsReceiptResult.CountAsync(v => v.Type == GoodsReceiptType.SpecificReceipts);
+        int transferConfirmationCount = await goodsReceiptResult.CountAsync(v => v.Type == GoodsReceiptType.SpecificTransfers);
 
-        int countingCount = await db.InventoryCountings.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
-        int transfersCount = await db.Transfers.CountAsync(v => v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress);
+        int countingCount = await db.InventoryCountings.CountAsync(v => (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress) && v.WhsCode == warehouse);
+        int transfersCount = await db.Transfers.CountAsync(v => (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress) && v.WhsCode == warehouse);;
 
         await Task.WhenAll(itemAndBinCountTask, pickingDocumentsTask);
 
@@ -46,7 +47,8 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             ReceiptConfirmation = receiptConfirmationCount,
             Picking = pickingDocuments.Count(),
             Counting = countingCount,
-            Transfers = transfersCount
+            Transfers = transfersCount,
+            TransfersConfirmation = transferConfirmationCount
         };
     }
 
