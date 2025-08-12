@@ -683,6 +683,36 @@
             ItemCode and ItemName are always read-only
             </summary>
         </member>
+        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Calculated">
+            <summary>
+            Optional calculation configuration for computed metadata fields
+            </summary>
+        </member>
+        <member name="T:Core.Models.Settings.Calculated">
+            <summary>
+            Defines calculation settings for computed metadata fields
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.Calculated.Formula">
+            <summary>
+            The formula expression used to calculate the field value
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.Calculated.Dependencies">
+            <summary>
+            Array of field IDs that this calculated field depends on
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.Calculated.Precision">
+            <summary>
+            Number of decimal places to round the calculated result to (for numeric fields)
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.Calculated.ClearDependenciesOnManualEdit">
+            <summary>
+            When true, dependency fields are cleared when the calculated field is manually edited
+            </summary>
+        </member>
         <member name="P:Core.Models.Settings.ItemSettings.MetadataDefinition">
             <summary>
             Configurable metadata field definitions for items loaded from external systems
