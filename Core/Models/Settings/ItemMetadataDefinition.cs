@@ -56,4 +56,9 @@ public class Calculated {
     /// Number of decimal places to round the calculated result to (for numeric fields)
     /// </summary>
     public int Precision { get; set; } = 0;
+
+    /// <summary>
+    /// When true, dependency fields are cleared when the calculated field is manually edited
+    /// </summary>
+    public bool ClearDependenciesOnManualEdit { get; set; } = false;
 }
