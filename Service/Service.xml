@@ -435,7 +435,7 @@
             <response code="403">If the user lacks required goods receipt permissions</response>
             <response code="500">If a server error occurs</response>
         </member>
-        <member name="M:Service.Controllers.GeneralController.GetPackageMetadataDefinitions">
+        <member name="M:Service.Controllers.GeneralController.GetMetadataDefinitions">
             <summary>
             Gets the configured package metadata field definitions
             </summary>

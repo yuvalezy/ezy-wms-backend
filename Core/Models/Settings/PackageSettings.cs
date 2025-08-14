@@ -11,7 +11,7 @@ public class PackageSettings {
     /// <summary>
     /// Configurable metadata field definitions for packages
     /// </summary>
-    public PackageMetadataDefinition[] MetadataDefinition { get; set; } = [];
+    public MetadataDefinition[] MetadataDefinition { get; set; } = [];
 
     /// <summary>
     /// Validates the metadata definitions for consistency and correctness

@@ -650,40 +650,59 @@
             Global settings for the external commands system
             </summary>
         </member>
-        <member name="T:Core.Models.Settings.ItemMetadataDefinition">
+        <member name="P:Core.Models.Settings.ItemSettings.MetadataDefinition">
+            <summary>
+            Configurable metadata field definitions for items loaded from external systems
+            External system (SAP) will validate field names and read-only restrictions
+            </summary>
+        </member>
+        <member name="M:Core.Models.Settings.ItemSettings.ValidateMetadataDefinitions">
+            <summary>
+            Validates the metadata definitions for basic consistency
+            Field-specific validation (valid names, read-only restrictions) is handled by external system
+            </summary>
+            <returns>List of validation error messages, empty if valid</returns>
+        </member>
+        <member name="T:Core.Models.Settings.MetadataDefinition">
             <summary>
             Defines a custom metadata field that can be configured for items loaded from external systems
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Id">
+        <member name="P:Core.Models.Settings.MetadataDefinition.Id">
             <summary>
             Unique identifier for the metadata field (e.g., "ItemCode", "PurchaseUnitVolume", "U_B1SStdTP")
             Must match one of the supported item fields exactly
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Description">
+        <member name="P:Core.Models.Settings.MetadataDefinition.Description">
             <summary>
             Human-readable description/label for the field
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Type">
+        <member name="P:Core.Models.Settings.MetadataDefinition.Type">
             <summary>
             Data type for validation and UI rendering
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Required">
+        <member name="P:Core.Models.Settings.MetadataDefinition.Step">
+            <summary>
+            Specifies the step increment for decimal type fields
+            Only applicable when Type is set to Decimal
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.MetadataDefinition.Required">
             <summary>
             Whether this field is required when updating item metadata
             Cannot be true for read-only fields
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.ReadOnly">
+        <member name="P:Core.Models.Settings.MetadataDefinition.ReadOnly">
             <summary>
             Whether this field is read-only (loaded from external system, cannot be modified)
             ItemCode and ItemName are always read-only
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemMetadataDefinition.Calculated">
+        <member name="P:Core.Models.Settings.MetadataDefinition.Calculated">
             <summary>
             Optional calculation configuration for computed metadata fields
             </summary>
@@ -713,44 +732,6 @@
             When true, dependency fields are cleared when the calculated field is manually edited
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemSettings.MetadataDefinition">
-            <summary>
-            Configurable metadata field definitions for items loaded from external systems
-            External system (SAP) will validate field names and read-only restrictions
-            </summary>
-        </member>
-        <member name="M:Core.Models.Settings.ItemSettings.ValidateMetadataDefinitions">
-            <summary>
-            Validates the metadata definitions for basic consistency
-            Field-specific validation (valid names, read-only restrictions) is handled by external system
-            </summary>
-            <returns>List of validation error messages, empty if valid</returns>
-        </member>
-        <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
-            <summary>
-            Idle Settings for auto log out, if null or zero, ignore
-            </summary>
-        </member>
-        <member name="T:Core.Models.Settings.PackageMetadataDefinition">
-            <summary>
-            Defines a custom metadata field that can be configured for packages
-            </summary>
-        </member>
-        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Id">
-            <summary>
-            Unique identifier for the metadata field (e.g., "Volume", "Weight", "Note")
-            </summary>
-        </member>
-        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Description">
-            <summary>
-            Human-readable description/label for the field
-            </summary>
-        </member>
-        <member name="P:Core.Models.Settings.PackageMetadataDefinition.Type">
-            <summary>
-            Data type for validation and UI rendering
-            </summary>
-        </member>
         <member name="T:Core.Models.Settings.MetadataFieldType">
             <summary>
             Supported data types for metadata fields
@@ -774,6 +755,11 @@
         <member name="F:Core.Models.Settings.MetadataFieldType.Integer">
             <summary>
             Integer number value
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
+            <summary>
+            Idle Settings for auto log out, if null or zero, ignore
             </summary>
         </member>
         <member name="P:Core.Models.Settings.PackageSettings.MetadataDefinition">

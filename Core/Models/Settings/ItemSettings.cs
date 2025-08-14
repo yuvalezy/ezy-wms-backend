@@ -9,7 +9,7 @@ public class ItemSettings {
     /// Configurable metadata field definitions for items loaded from external systems
     /// External system (SAP) will validate field names and read-only restrictions
     /// </summary>
-    public ItemMetadataDefinition[] MetadataDefinition { get; set; } = [];
+    public MetadataDefinition[] MetadataDefinition { get; set; } = [];
 
     /// <summary>
     /// Validates the metadata definitions for basic consistency

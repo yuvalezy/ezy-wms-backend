@@ -3,7 +3,7 @@ namespace Core.Models.Settings;
 /// <summary>
 /// Defines a custom metadata field that can be configured for items loaded from external systems
 /// </summary>
-public class ItemMetadataDefinition {
+public class MetadataDefinition {
     /// <summary>
     /// Unique identifier for the metadata field (e.g., "ItemCode", "PurchaseUnitVolume", "U_B1SStdTP")
     /// Must match one of the supported item fields exactly
@@ -19,6 +19,12 @@ public class ItemMetadataDefinition {
     /// Data type for validation and UI rendering
     /// </summary>
     public required MetadataFieldType Type { get; set; }
+    
+    /// <summary>
+    /// Specifies the step increment for decimal type fields
+    /// Only applicable when Type is set to Decimal
+    /// </summary>
+    public int? Step { get; set; }
 
     /// <summary>
     /// Whether this field is required when updating item metadata
@@ -61,4 +67,28 @@ public class Calculated {
     /// When true, dependency fields are cleared when the calculated field is manually edited
     /// </summary>
     public bool ClearDependenciesOnManualEdit { get; set; } = false;
+}
+/// <summary>
+/// Supported data types for metadata fields
+/// </summary>
+public enum MetadataFieldType {
+    /// <summary>
+    /// Text/string value
+    /// </summary>
+    String,
+    
+    /// <summary>
+    /// Decimal number value
+    /// </summary>
+    Decimal,
+    
+    /// <summary>
+    /// Date value
+    /// </summary>
+    Date,
+    
+    /// <summary>
+    /// Integer number value
+    /// </summary>
+    Integer
 }

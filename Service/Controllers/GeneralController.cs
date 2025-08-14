@@ -108,9 +108,9 @@ public class GeneralController(IPublicService publicService, ISettings settings)
     /// <response code="200">Returns the metadata field definitions</response>
     /// <response code="401">If the user is not authenticated</response>
     [HttpGet("package-metadata-definitions")]
-    [ProducesResponseType(typeof(PackageMetadataDefinition[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MetadataDefinition[]), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<PackageMetadataDefinition[]> GetPackageMetadataDefinitions() {
+    public ActionResult<MetadataDefinition[]> GetMetadataDefinitions() {
         return Ok(settings.Package.MetadataDefinition);
     }
 
@@ -121,9 +121,9 @@ public class GeneralController(IPublicService publicService, ISettings settings)
     /// <response code="200">Returns the item metadata field definitions</response>
     /// <response code="401">If the user is not authenticated</response>
     [HttpGet("item-metadata-definitions")]
-    [ProducesResponseType(typeof(ItemMetadataDefinition[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(MetadataDefinition[]), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<ItemMetadataDefinition[]> GetItemMetadataDefinitions() {
+    public ActionResult<MetadataDefinition[]> GetItemMetadataDefinitions() {
         return Ok(settings.Item.MetadataDefinition);
     }
 

@@ -319,7 +319,7 @@ public class PackageService(
     /// <returns>Validation errors, empty if valid</returns>
     private IEnumerable<string> ValidateMetadata(
         Dictionary<string, object?> metadata,
-        PackageMetadataDefinition[] metadataDefinitions)
+        MetadataDefinition[] metadataDefinitions)
     {
         var errors = new List<string>();
 
@@ -353,7 +353,7 @@ public class PackageService(
     /// <summary>
     /// Validates a single metadata field value against its definition
     /// </summary>
-    private string? ValidateMetadataFieldValue(object value, PackageMetadataDefinition definition)
+    private string? ValidateMetadataFieldValue(object value, MetadataDefinition definition)
     {
         try
         {
