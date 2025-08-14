@@ -11,7 +11,7 @@ public interface ISettings {
     public Options Options { get; set; }
     public Filters Filters { get; set; }
     public Dictionary<string, CustomField[]>? CustomFields { get; set; }
-    public Dictionary<string, WarehouseSettings>? WarehouseSettings { get; set; }
+    public Dictionary<string, WarehouseSettings>? Warehouses { get; set; }
     public SessionManagementSettings SessionManagement { get; set; }
     public SboSettings? SboSettings { get; set; }
     public ExternalAdapterType ExternalAdapter { get; set; }

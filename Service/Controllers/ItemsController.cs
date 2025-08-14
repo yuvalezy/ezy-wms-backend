@@ -131,7 +131,7 @@ public class ItemsController(
         string warehouse = HttpContext.GetSession().Warehouse;
         return Ok(await publicService.ItemStockAsync(request.ItemCode, warehouse));
     }
-    
+
     /// <summary>
     /// Gets item stock information across bins in the current warehouse
     /// </summary>
@@ -198,18 +198,16 @@ public class ItemsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ItemMetadataResponse>> UpdateItemMetadata(
-        string itemCode,
-        [FromBody] UpdateItemMetadataRequest request) {
-        
+    public async Task<ActionResult<ItemMetadataResponse>> UpdateItemMetadata(string itemCode, [FromBody] UpdateItemMetadataRequest request) {
+        itemCode = Uri.UnescapeDataString(itemCode);
+
         var sessionInfo = HttpContext.GetSession();
-        
-        var updatedItem = await itemService.UpdateItemMetadataAsync(
-            itemCode, request, sessionInfo);
-            
+
+        var updatedItem = await itemService.UpdateItemMetadataAsync(itemCode, request, sessionInfo);
+
         return Ok(updatedItem);
     }
-    
+
     /// <summary>
     /// Retrieves metadata for a specific item
     /// </summary>
@@ -223,12 +221,13 @@ public class ItemsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ItemMetadataResponse>> GetItemMetadata(string itemCode) {
+        itemCode = Uri.UnescapeDataString(itemCode);
         var itemMetadata = await itemService.GetItemMetadataAsync(itemCode);
-        
+
         if (itemMetadata == null) {
-            throw new System.Collections.Generic.KeyNotFoundException($"Item '{itemCode}' not found");
+            throw new KeyNotFoundException($"Item '{itemCode}' not found");
         }
-        
+
         return Ok(itemMetadata);
     }
 }

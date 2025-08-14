@@ -387,6 +387,7 @@ public class GoodsReceiptController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<GoodsReceiptReportAllDetailsResponse>>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var sessionInfo = HttpContext.GetSession();
+        itemCode = Uri.UnescapeDataString(itemCode);
 
         // Get document type to determine required role
         var document = await receiptService.GetGoodsReceipt(id);
