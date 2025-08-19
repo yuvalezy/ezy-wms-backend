@@ -23,9 +23,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 PICKS."PickDate",
                 COALESCE(Cast(PICKS."Remarks" as varchar(8000)), '') AS "Remarks",
                 PICKS."Status" "Status",
-                (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 17) AS "SalesOrders",
-                (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 13) AS "Invoices",
-                (SELECT COUNT(*) FROM PKL1 WHERE PKL1."AbsEntry" = PICKS."AbsEntry" AND PKL1."BaseObject" = 1250000001) AS "Transfers",
+                   Sum(Case When PKL1."BaseObject" = 17 Then 1 Else 0 End)                             AS "SalesOrders",
+                   Sum(Case When PKL1."BaseObject" = 13 Then 1 Else 0 End)                             AS "Invoices",
+                   Sum(Case When PKL1."BaseObject" = 1250000001 Then 1 Else 0 End)                     AS "Transfers",
                 COALESCE(SUM(PKL1."RelQtty" + PKL1."PickQtty"), 0) AS "Quantity",
                 COALESCE(SUM(PKL1."RelQtty"), 0) AS "OpenQuantity",
                 COALESCE(SUM(CASE WHEN PKL1."PickStatus" = 'Y' THEN PKL1."PickQtty" ELSE 0 END), 0) AS "UpdateQuantity"
