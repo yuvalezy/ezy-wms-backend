@@ -217,6 +217,15 @@ public class SboAdapter(
         return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
 
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation, List<(string ItemCode, decimal Quantity)> negativeItems, List<(string ItemCode, decimal Quantity)> positiveItems) {
+        int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);
+        int exitSeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenExit);
+        var confirmationAdjustments =
+        new ConfirmationAdjustments(number, warehouse, enableBinLocation, defaultBinLocation, negativeItems, positiveItems, entrySeries, exitSeries, sboCompany, loggerFactory);
+
+        return await confirmationAdjustments.Execute();
+    }
+
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
 
     // Item Metadata
