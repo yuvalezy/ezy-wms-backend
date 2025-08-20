@@ -15,6 +15,8 @@ public record Options {
     public GoodsReceiptDocumentType GoodsReceiptType { get; set; } = GoodsReceiptDocumentType.Both;
     public bool GoodsReceiptTargetDocuments { get; set; }
     public bool GoodsReceiptPackages { get; set; } = true;
+    
+    public bool GoodsReceiptConfirmationAdjustStock { get; set; }
 
     //Transfer
     public bool TransferTargetItems { get; init; }
