@@ -7,7 +7,7 @@ public class ConfirmationAdjustmentsResponse {
     public int? InventoryGoodsIssueAdjustmentExit { get; set; }
 
     public static ConfirmationAdjustmentsResponse Ok(int? entry = null, int? exit = null) => new() {
-        Success = false,
+        Success = true,
         InventoryGoodsIssueAdjustmentEntry = entry,
         InventoryGoodsIssueAdjustmentExit = exit
     };

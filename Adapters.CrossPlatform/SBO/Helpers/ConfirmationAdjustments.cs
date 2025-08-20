@@ -97,7 +97,7 @@ public class ConfirmationAdjustments(
             logger.LogDebug("Posting inventory goods issue with {LineCount} lines to SAP Service Layer",
                 negativeItems.Count);
 
-            var (success, errorMessage) = await sboCompany.PostAsync("InventoryGenExits", goodsIssueData);
+            var (success, errorMessage, response) = await sboCompany.PostAsync<AdjustmentResponse>("InventoryGenExits", goodsIssueData);
 
             if (success) {
                 logger.LogInformation("Successfully created inventory goods issue for confirmation {Number}", number);
@@ -106,7 +106,7 @@ public class ConfirmationAdjustments(
                 logger.LogError("Failed to create inventory goods issue: {Error}", errorMessage);
             }
 
-            return (success, errorMessage, null);
+            return (success, errorMessage, response?.DocEntry);;
         }
         catch (Exception ex) {
             logger.LogError(ex, "Exception creating inventory goods issue: {Error}", ex.Message);
@@ -143,7 +143,7 @@ public class ConfirmationAdjustments(
             logger.LogDebug("Posting inventory goods receipt with {LineCount} lines to SAP Service Layer",
                 positiveItems.Count);
 
-            var (success, errorMessage) = await sboCompany.PostAsync("InventoryGenEntries", goodsReceiptData);
+            var (success, errorMessage, response) = await sboCompany.PostAsync<AdjustmentResponse>("InventoryGenEntries", goodsReceiptData);
 
             if (success) {
                 logger.LogInformation("Successfully created inventory goods receipt for confirmation {Number}", number);
@@ -152,11 +152,15 @@ public class ConfirmationAdjustments(
                 logger.LogError("Failed to create inventory goods receipt: {Error}", errorMessage);
             }
 
-            return (success, errorMessage, null);
+            return (success, errorMessage, response?.DocEntry);
         }
         catch (Exception ex) {
             logger.LogError(ex, "Exception creating inventory goods receipt: {Error}", ex.Message);
             return (false, $"Exception creating inventory goods receipt: {ex.Message}", null);
         }
+    }
+    private class AdjustmentResponse {
+        public int DocEntry { get; set; }
+        public int DocNum { get; set; }
     }
 }
