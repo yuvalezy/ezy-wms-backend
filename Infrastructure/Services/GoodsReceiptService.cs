@@ -221,20 +221,15 @@ public class GoodsReceiptService(
 
                     var negativeItems = differenceControl
                     .Where(x => x.Value < 0)
-                    .Select(x => new { ItemCode = x.Key, Quantity = Math.Abs(x.Value) })
+                    .Select(x => (ItemCode: x.Key, Quantity: Math.Abs(x.Value)))
                     .ToList();
-
-                    if (negativeItems.Count > 0) {
-                        //todo use difference report to execute inventory goods issue / goods receipt
-                    }
-
                     var positiveItems = differenceControl
                     .Where(x => x.Value > 0)
-                    .Select(x => new { ItemCode = x.Key, Quantity = x.Value })
+                    .Select(x => (ItemCode: x.Key, Quantity: x.Value))
                     .ToList();
 
-                    if (positiveItems.Count > 0) {
-                        //todo use difference report to execute inventory goods issue / goods receipt
+                    if (negativeItems.Count > 0 || positiveItems.Count > 0) {
+                        await adapter.ProcessConfirmationAdjustments(goodsReceipt.Number, session.Warehouse, session.EnableBinLocations, session.DefaultBinLocation, negativeItems, positiveItems);   
                     }
                 }
 
