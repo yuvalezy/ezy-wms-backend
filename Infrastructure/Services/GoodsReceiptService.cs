@@ -1,6 +1,7 @@
 using Core.DTOs.GoodsReceipt;
 using Core.Entities;
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Core.Services;
@@ -46,6 +47,16 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (request.Type != GoodsReceiptType.All && request.Documents.Count > 0) {
             await adapter.ValidateGoodsReceiptDocuments(warehouse, request.Type, request.Documents);
+        }
+
+        if (request.Type == GoodsReceiptType.SpecificReceipts) {
+            foreach (var document in request.Documents) {
+                if (db.GoodsReceiptDocuments
+                    .Include(v => v.GoodsReceipt)
+                    .Any(v => v.DocEntry == document.DocumentEntry && v.ObjType == document.ObjectType && v.GoodsReceipt.Status == ObjectStatus.Finished)) {
+                    throw new ApiErrorException(-2, new {docStatus = "F", documentEntry = document.DocumentEntry, documentNumber = document.DocumentNumber, objectType = document.ObjectType});
+                }
+            }
         }
     }
 
