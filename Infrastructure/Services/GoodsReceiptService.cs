@@ -229,7 +229,13 @@ public class GoodsReceiptService(
                     .ToList();
 
                     if (negativeItems.Count > 0 || positiveItems.Count > 0) {
-                        await adapter.ProcessConfirmationAdjustments(goodsReceipt.Number, session.Warehouse, session.EnableBinLocations, session.DefaultBinLocation, negativeItems, positiveItems);   
+                        var response = await adapter.ProcessConfirmationAdjustments(goodsReceipt.Number, session.Warehouse, session.EnableBinLocations, session.DefaultBinLocation, negativeItems, positiveItems);
+                        if (!response.Success) {
+                            throw new Exception($"Error processing confirmation adjustments: {response.ErrorMessage}");
+                        }
+
+                        goodsReceipt.InventoryGoodsIssueAdjustmentEntry = response.InventoryGoodsIssueAdjustmentEntry;
+                        goodsReceipt.InventoryGoodsIssueAdjustmentExit = response.InventoryGoodsIssueAdjustmentExit;
                     }
                 }
 

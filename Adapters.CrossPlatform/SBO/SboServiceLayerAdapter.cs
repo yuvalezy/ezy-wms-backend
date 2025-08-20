@@ -1,4 +1,5 @@
 ﻿using Adapters.Common.SBO.Enums;
+using Adapters.Common.SBO.Models;
 using Adapters.Common.SBO.Repositories;
 using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO.Helpers;
@@ -233,7 +234,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) =>
     await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
 
-    public async Task<(bool success, string? errorMessage)> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation,
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation,
         List<(string ItemCode, decimal Quantity)> negativeItems,
         List<(string ItemCode, decimal Quantity)> positiveItems) {
         int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);

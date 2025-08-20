@@ -28,6 +28,9 @@ public sealed class GoodsReceipt : BaseEntity {
     [StringLength(8)]
     public required string WhsCode { get; set; }
 
+    public int? InventoryGoodsIssueAdjustmentEntry { get; set; }
+    public int? InventoryGoodsIssueAdjustmentExit { get; set; }
+
     // Navigation properties
     public ICollection<GoodsReceiptLine> Lines { get; set; } = new List<GoodsReceiptLine>();
     public ICollection<GoodsReceiptDocument> Documents { get; set; } = new List<GoodsReceiptDocument>();
