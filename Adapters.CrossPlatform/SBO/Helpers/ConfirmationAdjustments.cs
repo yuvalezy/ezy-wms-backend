@@ -26,35 +26,69 @@ public class ConfirmationAdjustments(
         try {
             await sboCompany.ConnectCompany();
 
-            int? entry = null, exit = null;
-
+            // Prepare batch operations
+            var operations = new List<SboCompany.BatchOperation>();
+            
             if (negativeItems.Count > 0) {
-                logger.LogInformation("Creating inventory goods issue for {Count} negative items", negativeItems.Count);
-                (bool issueSuccess, string? issueError, exit) = await CreateInventoryGoodsIssue();
-                if (!issueSuccess) {
-                    logger.LogError("Failed to create inventory goods issue: {Error}", issueError);
-                    return ConfirmationAdjustmentsResponse.Error(issueError ?? "Failed to create inventory goods issue");
-                    ;
-                }
-
-                logger.LogInformation("Successfully created inventory goods issue");
+                logger.LogInformation("Preparing inventory goods issue for {Count} negative items", negativeItems.Count);
+                operations.Add(CreateInventoryGoodsIssueOperation());
             }
 
             if (positiveItems.Count > 0) {
-                logger.LogInformation("Creating inventory goods receipt for {Count} positive items", positiveItems.Count);
-                (bool receiptSuccess, string? receiptError, entry) = await CreateInventoryGoodsReceipt();
-                if (!receiptSuccess) {
-                    logger.LogError("Failed to create inventory goods receipt: {Error}", receiptError);
-                    return ConfirmationAdjustmentsResponse.Error(receiptError ?? "Failed to create inventory goods receipt");
-                    ;
-                }
-
-                logger.LogInformation("Successfully created inventory goods receipt");
+                logger.LogInformation("Preparing inventory goods receipt for {Count} positive items", positiveItems.Count);
+                operations.Add(CreateInventoryGoodsReceiptOperation());
             }
 
-            if (negativeItems.Count == 0 && positiveItems.Count == 0) {
+            if (operations.Count == 0) {
                 logger.LogInformation("No inventory adjustments needed for confirmation {Number}", number);
                 return ConfirmationAdjustmentsResponse.Ok();
+            }
+
+            // Execute batch operations
+            logger.LogInformation("Executing batch operation with {Count} operations for confirmation {Number}", 
+                operations.Count, number);
+            (bool success, string? errorMessage, var responses) = await sboCompany.ExecuteBatchAsync(operations.ToArray());
+            
+            if (!success) {
+                logger.LogError("Failed to execute batch operation for confirmation adjustments. Error: {ErrorMessage}", errorMessage);
+                return ConfirmationAdjustmentsResponse.Error(errorMessage ?? "Failed to process confirmation adjustments");
+            }
+
+            // Extract document entries from responses
+            int? entry = null, exit = null;
+            int responseIndex = 0;
+            
+            if (negativeItems.Count > 0 && responseIndex < responses.Count) {
+                var issueResponse = responses[responseIndex];
+                if (issueResponse.StatusCode == 201 && issueResponse.Body != null) {
+                    try {
+                        using var doc = JsonDocument.Parse(issueResponse.Body);
+                        if (doc.RootElement.TryGetProperty("DocEntry", out var docEntryElement)) {
+                            exit = docEntryElement.GetInt32();
+                            logger.LogInformation("Successfully created inventory goods issue with DocEntry {DocEntry}", exit);
+                        }
+                    }
+                    catch (Exception ex) {
+                        logger.LogWarning("Failed to parse goods issue response: {Error}", ex.Message);
+                    }
+                }
+                responseIndex++;
+            }
+            
+            if (positiveItems.Count > 0 && responseIndex < responses.Count) {
+                var receiptResponse = responses[responseIndex];
+                if (receiptResponse.StatusCode == 201 && receiptResponse.Body != null) {
+                    try {
+                        using var doc = JsonDocument.Parse(receiptResponse.Body);
+                        if (doc.RootElement.TryGetProperty("DocEntry", out var docEntryElement)) {
+                            entry = docEntryElement.GetInt32();
+                            logger.LogInformation("Successfully created inventory goods receipt with DocEntry {DocEntry}", entry);
+                        }
+                    }
+                    catch (Exception ex) {
+                        logger.LogWarning("Failed to parse goods receipt response: {Error}", ex.Message);
+                    }
+                }
             }
 
             logger.LogInformation("Successfully completed all confirmation adjustments for confirmation {Number}", number);
@@ -68,99 +102,72 @@ public class ConfirmationAdjustments(
         }
     }
 
-    private async Task<(bool success, string? errorMessage, int? exit)> CreateInventoryGoodsIssue() {
-        try {
-            var goodsIssueData = new {
-                Series = exitSeries,
-                DocDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                DocDueDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                Comments = $"Ajuste de inventario para confirmación de WMS {number} - Salida de mercancías",
-                DocumentLines = negativeItems.Select((item, index) => new {
-                    ItemCode = item.ItemCode,
-                    Quantity = Math.Abs(item.Quantity),
-                    WarehouseCode = warehouse,
-                    UseBaseUnits = "tYES",
-                    DocumentLinesBinAllocations = enableBinLocation && defaultBinLocation.HasValue
-                    ? new[] {
-                        new {
-                            BinAbsEntry = defaultBinLocation.Value,
-                            Quantity = Math.Abs(item.Quantity),
-                            AllowNegativeQuantity = "tNO",
-                            SerialAndBatchNumbersBaseLine = -1,
-                            BaseLineNumber = index
-                        }
+    private SboCompany.BatchOperation CreateInventoryGoodsIssueOperation() {
+        var goodsIssueData = new {
+            Series = exitSeries,
+            DocDate = DateTime.Now.ToString("yyyy-MM-dd"),
+            DocDueDate = DateTime.Now.ToString("yyyy-MM-dd"),
+            Comments = $"Ajuste de inventario para confirmación de WMS {number} - Salida de mercancías",
+            DocumentLines = negativeItems.Select((item, index) => new {
+                ItemCode = item.ItemCode,
+                Quantity = Math.Abs(item.Quantity),
+                WarehouseCode = warehouse,
+                UseBaseUnits = "tYES",
+                DocumentLinesBinAllocations = enableBinLocation && defaultBinLocation.HasValue
+                ? new[] {
+                    new {
+                        BinAbsEntry = defaultBinLocation.Value,
+                        Quantity = Math.Abs(item.Quantity),
+                        AllowNegativeQuantity = "tNO",
+                        SerialAndBatchNumbersBaseLine = -1,
+                        BaseLineNumber = index
                     }
-                    : Array.Empty<object>()
-                })
-            };
+                }
+                : Array.Empty<object>()
+            })
+        };
 
-            logger.LogDebug("Posting inventory goods issue with {LineCount} lines to SAP Service Layer",
-                negativeItems.Count);
+        logger.LogDebug("Prepared inventory goods issue operation with {LineCount} lines", negativeItems.Count);
 
-            var (success, errorMessage, response) = await sboCompany.PostAsync<AdjustmentResponse>("InventoryGenExits", goodsIssueData);
-
-            if (success) {
-                logger.LogInformation("Successfully created inventory goods issue for confirmation {Number}", number);
-            }
-            else {
-                logger.LogError("Failed to create inventory goods issue: {Error}", errorMessage);
-            }
-
-            return (success, errorMessage, response?.DocEntry);;
-        }
-        catch (Exception ex) {
-            logger.LogError(ex, "Exception creating inventory goods issue: {Error}", ex.Message);
-            return (false, $"Exception creating inventory goods issue: {ex.Message}", null);
-        }
+        return new SboCompany.BatchOperation {
+            Method = "POST",
+            Endpoint = "InventoryGenExits",
+            Body = JsonSerializer.Serialize(goodsIssueData)
+        };
     }
 
-    private async Task<(bool success, string? errorMessage, int? entry)> CreateInventoryGoodsReceipt() {
-        try {
-            var goodsReceiptData = new {
-                Series = entrySeries,
-                DocDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                DocDueDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                Comments = $"Ajuste de inventario para confirmación de WMS {number} - Entrada de mercancías",
-                DocumentLines = positiveItems.Select((item, index) => new {
-                    ItemCode = item.ItemCode,
-                    Quantity = item.Quantity,
-                    WarehouseCode = warehouse,
-                    UseBaseUnits = "tYES",
-                    DocumentLinesBinAllocations = enableBinLocation && defaultBinLocation.HasValue
-                    ? new[] {
-                        new {
-                            BinAbsEntry = defaultBinLocation.Value,
-                            Quantity = item.Quantity,
-                            AllowNegativeQuantity = "tNO",
-                            SerialAndBatchNumbersBaseLine = -1,
-                            BaseLineNumber = index
-                        }
+    private SboCompany.BatchOperation CreateInventoryGoodsReceiptOperation() {
+        var goodsReceiptData = new {
+            Series = entrySeries,
+            DocDate = DateTime.Now.ToString("yyyy-MM-dd"),
+            DocDueDate = DateTime.Now.ToString("yyyy-MM-dd"),
+            Comments = $"Ajuste de inventario para confirmación de WMS {number} - Entrada de mercancías",
+            DocumentLines = positiveItems.Select((item, index) => new {
+                ItemCode = item.ItemCode,
+                Quantity = item.Quantity,
+                WarehouseCode = warehouse,
+                UseBaseUnits = "tYES",
+                DocumentLinesBinAllocations = enableBinLocation && defaultBinLocation.HasValue
+                ? new[] {
+                    new {
+                        BinAbsEntry = defaultBinLocation.Value,
+                        Quantity = item.Quantity,
+                        AllowNegativeQuantity = "tNO",
+                        SerialAndBatchNumbersBaseLine = -1,
+                        BaseLineNumber = index
                     }
-                    : Array.Empty<object>()
-                })
-            };
+                }
+                : Array.Empty<object>()
+            })
+        };
 
-            logger.LogDebug("Posting inventory goods receipt with {LineCount} lines to SAP Service Layer",
-                positiveItems.Count);
+        logger.LogDebug("Prepared inventory goods receipt operation with {LineCount} lines", positiveItems.Count);
 
-            var (success, errorMessage, response) = await sboCompany.PostAsync<AdjustmentResponse>("InventoryGenEntries", goodsReceiptData);
-
-            if (success) {
-                logger.LogInformation("Successfully created inventory goods receipt for confirmation {Number}", number);
-            }
-            else {
-                logger.LogError("Failed to create inventory goods receipt: {Error}", errorMessage);
-            }
-
-            return (success, errorMessage, response?.DocEntry);
-        }
-        catch (Exception ex) {
-            logger.LogError(ex, "Exception creating inventory goods receipt: {Error}", ex.Message);
-            return (false, $"Exception creating inventory goods receipt: {ex.Message}", null);
-        }
+        return new SboCompany.BatchOperation {
+            Method = "POST",
+            Endpoint = "InventoryGenEntries",
+            Body = JsonSerializer.Serialize(goodsReceiptData)
+        };
     }
-    private class AdjustmentResponse {
-        public int DocEntry { get; set; }
-        public int DocNum { get; set; }
-    }
+    // AdjustmentResponse class removed - no longer needed with batch operations
 }
