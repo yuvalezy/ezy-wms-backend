@@ -10,24 +10,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adapter, IPackageService packageService, ISettings settings) : IGoodsReceiptService {
+public class GoodsReceiptService(
+    SystemDbContext db,
+    IExternalSystemAdapter adapter,
+    IPackageService packageService,
+    IGoodsReceiptReportService receiptReportService,
+    ISettings settings) : IGoodsReceiptService {
     public async Task<GoodsReceiptResponse> CreateGoodsReceipt(CreateGoodsReceiptRequest request, SessionInfo session) {
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
         var now = DateTime.UtcNow;
         var goodsReceipt = new GoodsReceipt {
-            WhsCode         = session.Warehouse,
-            Type            = request.Type,
-            CardCode        = request.Type == GoodsReceiptType.All ? request.Vendor : null,
-            Name            = request.Name,
-            Date            = now,
-            Status          = ObjectStatus.Open,
+            WhsCode = session.Warehouse,
+            Type = request.Type,
+            CardCode = request.Type == GoodsReceiptType.All ? request.Vendor : null,
+            Name = request.Name,
+            Date = now,
+            Status = ObjectStatus.Open,
             CreatedByUserId = session.Guid,
-            CreatedByUser   = db.Users.First(u => u.Id == session.Guid),
+            CreatedByUser = db.Users.First(u => u.Id == session.Guid),
             Documents = request.Documents.Select(d => new GoodsReceiptDocument {
                 CreatedByUserId = session.Guid,
-                DocEntry        = d.DocumentEntry,
-                DocNumber       = d.DocumentNumber,
-                ObjType         = d.ObjectType,
+                DocEntry = d.DocumentEntry,
+                DocNumber = d.DocumentNumber,
+                ObjType = d.ObjectType,
             }).ToArray()
         };
 
@@ -54,7 +59,7 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 if (db.GoodsReceiptDocuments
                     .Include(v => v.GoodsReceipt)
                     .Any(v => v.DocEntry == document.DocumentEntry && v.ObjType == document.ObjectType && v.GoodsReceipt.Status == ObjectStatus.Finished)) {
-                    throw new ApiErrorException(-2, new {docStatus = "F", documentEntry = document.DocumentEntry, documentNumber = document.DocumentNumber, objectType = document.ObjectType});
+                    throw new ApiErrorException(-2, new { docStatus = "F", documentEntry = document.DocumentEntry, documentNumber = document.DocumentNumber, objectType = document.ObjectType });
                 }
             }
         }
@@ -62,9 +67,9 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
     public async Task<IEnumerable<GoodsReceiptResponse>> GetGoodsReceipts(GoodsReceiptsRequest request, string warehouse) {
         var query = db.GoodsReceipts
-            .Include(gr => gr.Documents)
-            .Include(gr => gr.CreatedByUser)
-            .Where(gr => gr.WhsCode == warehouse);
+        .Include(gr => gr.Documents)
+        .Include(gr => gr.CreatedByUser)
+        .Where(gr => gr.WhsCode == warehouse);
 
         if (!string.IsNullOrWhiteSpace(request.Name))
             query = query.Where(r => EF.Functions.Like(r.Name.ToLower(), $"%{request.Name!.ToLower()}%"));
@@ -74,8 +79,10 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
         if (request.Date.HasValue)
             query = query.Where(gr => gr.Date.Date == request.Date.Value.Date);
+
         if (request.DateFrom.HasValue)
             query = query.Where(gr => gr.Date.Date >= request.DateFrom.Value.Date);
+
         if (request.DateTo.HasValue)
             query = query.Where(gr => gr.Date.Date <= request.DateTo.Value.Date);
 
@@ -119,20 +126,20 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
     public async Task<GoodsReceiptResponse?> GetGoodsReceipt(Guid id) {
         var goodsReceipt = await db.GoodsReceipts
-            .Include(gr => gr.CreatedByUser)
-            .Include(gr => gr.Documents)
-            .Include(gr => gr.Lines)
-            .ThenInclude(l => l.CancellationReason)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(gr => gr.Id == id);
+        .Include(gr => gr.CreatedByUser)
+        .Include(gr => gr.Documents)
+        .Include(gr => gr.Lines)
+        .ThenInclude(l => l.CancellationReason)
+        .AsNoTracking()
+        .FirstOrDefaultAsync(gr => gr.Id == id);
 
         return goodsReceipt == null ? null : await MapToResponse(goodsReceipt);
     }
 
     public async Task<bool> CancelGoodsReceipt(Guid id, SessionInfo session) {
         var goodsReceipt = await db.GoodsReceipts
-            .Include(gr => gr.Lines)
-            .FirstOrDefaultAsync(gr => gr.Id == id);
+        .Include(gr => gr.Lines)
+        .FirstOrDefaultAsync(gr => gr.Id == id);
 
         if (goodsReceipt == null)
             return false;
@@ -140,21 +147,22 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         if (goodsReceipt.Status != ObjectStatus.Open && goodsReceipt.Status != ObjectStatus.InProgress)
             return false;
 
-        goodsReceipt.Status          = ObjectStatus.Cancelled;
-        goodsReceipt.UpdatedAt       = DateTime.UtcNow;
+        goodsReceipt.Status = ObjectStatus.Cancelled;
+        goodsReceipt.UpdatedAt = DateTime.UtcNow;
         goodsReceipt.UpdatedByUserId = session.Guid;
 
         // Cancel all open lines
         foreach (var line in goodsReceipt.Lines.Where(l => l.LineStatus != LineStatus.Closed)) {
-            line.LineStatus      = LineStatus.Closed;
-            line.UpdatedAt       = DateTime.UtcNow;
+            line.LineStatus = LineStatus.Closed;
+            line.UpdatedAt = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;
         }
 
         var packages = await db
-            .Packages
-            .Where(v => v.SourceOperationId == id)
-            .ToArrayAsync();
+        .Packages
+        .Where(v => v.SourceOperationId == id)
+        .ToArrayAsync();
+
         foreach (var package in packages) {
             await packageService.CancelPackageAsync(package.Id, session, "Goods receipt cancelled");
         }
@@ -167,8 +175,8 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
         var transaction = await db.Database.BeginTransactionAsync();
         try {
             var goodsReceipt = await db.GoodsReceipts
-                .Include(gr => gr.Lines.Where(l => l.LineStatus != LineStatus.Closed))
-                .FirstOrDefaultAsync(gr => gr.Id == id);
+            .Include(gr => gr.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+            .FirstOrDefaultAsync(gr => gr.Id == id);
 
             if (goodsReceipt == null) {
                 throw new InvalidOperationException($"Goods receipt {id} not found");
@@ -180,14 +188,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
 
             // if configuration, just set status to finished
             if (goodsReceipt.Type is GoodsReceiptType.SpecificReceipts or GoodsReceiptType.SpecificTransfers) {
-                goodsReceipt.Status          = ObjectStatus.Finished;
-                goodsReceipt.UpdatedAt       = DateTime.UtcNow;
+                goodsReceipt.Status = ObjectStatus.Finished;
+                goodsReceipt.UpdatedAt = DateTime.UtcNow;
                 goodsReceipt.UpdatedByUserId = session.Guid;
 
                 // Close all open lines
                 foreach (var line in goodsReceipt.Lines) {
-                    line.LineStatus      = LineStatus.Closed;
-                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.LineStatus = LineStatus.Closed;
+                    line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = session.Guid;
                 }
 
@@ -197,19 +205,52 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                     activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
                 }
 
+                if (settings.Options.GoodsReceiptConfirmationAdjustStock) {
+                    var data = await receiptReportService.GetGoodsReceiptValidateProcess(id);
+                    var differenceControl = new Dictionary<string, decimal>();
+                    foreach (var value in data) {
+                        foreach (var line in value.Lines) {
+                            decimal difference = line.Quantity - line.DocumentQuantity;
+                            if (difference == 0)
+                                continue;
+
+                            differenceControl.TryAdd(line.ItemCode, 0);
+                            differenceControl[line.ItemCode] += difference;
+                        }
+                    }
+
+                    var negativeItems = differenceControl
+                    .Where(x => x.Value < 0)
+                    .Select(x => new { ItemCode = x.Key, Quantity = Math.Abs(x.Value) })
+                    .ToList();
+
+                    if (negativeItems.Count > 0) {
+                        //todo use difference report to execute inventory goods issue / goods receipt
+                    }
+
+                    var positiveItems = differenceControl
+                    .Where(x => x.Value > 0)
+                    .Select(x => new { ItemCode = x.Key, Quantity = x.Value })
+                    .ToList();
+
+                    if (positiveItems.Count > 0) {
+                        //todo use difference report to execute inventory goods issue / goods receipt
+                    }
+                }
+
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
-                    Status            = ResponseStatus.Ok,
-                    Success           = true,
+                    Status = ResponseStatus.Ok,
+                    Success = true,
                     ActivatedPackages = activatedPackagesCount
                 };
             }
 
             // Update status to Processing
-            goodsReceipt.Status          = ObjectStatus.Processing;
-            goodsReceipt.UpdatedAt       = DateTime.UtcNow;
+            goodsReceipt.Status = ObjectStatus.Processing;
+            goodsReceipt.UpdatedAt = DateTime.UtcNow;
             goodsReceipt.UpdatedByUserId = session.Guid;
             await db.SaveChangesAsync();
 
@@ -220,14 +261,14 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
             var result = await adapter.ProcessGoodsReceipt(goodsReceipt.Number, session.Warehouse, goodsReceiptData);
 
             if (result.Success) {
-                goodsReceipt.Status          = ObjectStatus.Finished;
-                goodsReceipt.UpdatedAt       = DateTime.UtcNow;
+                goodsReceipt.Status = ObjectStatus.Finished;
+                goodsReceipt.UpdatedAt = DateTime.UtcNow;
                 goodsReceipt.UpdatedByUserId = session.Guid;
 
                 // Close all open lines
                 foreach (var line in goodsReceipt.Lines) {
-                    line.LineStatus      = LineStatus.Closed;
-                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.LineStatus = LineStatus.Closed;
+                    line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = session.Guid;
                 }
 
@@ -241,25 +282,25 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
-                    Status            = ResponseStatus.Ok,
-                    Success           = true,
-                    DocumentNumber    = result.DocumentNumber,
+                    Status = ResponseStatus.Ok,
+                    Success = true,
+                    DocumentNumber = result.DocumentNumber,
                     ActivatedPackages = activatedPackagesCount
                 };
             }
 
             await transaction.RollbackAsync();
             return new ProcessGoodsReceiptResponse {
-                Status       = ResponseStatus.Error,
-                Success      = false,
+                Status = ResponseStatus.Error,
+                Success = false,
                 ErrorMessage = result.ErrorMessage
             };
         }
         catch (Exception ex) {
             await transaction.RollbackAsync();
             return new ProcessGoodsReceiptResponse {
-                Status       = ResponseStatus.Error,
-                Success      = false,
+                Status = ResponseStatus.Error,
+                Success = false,
                 ErrorMessage = ex.Message
             };
         }
@@ -269,32 +310,32 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
     private async Task<GoodsReceiptResponse> MapToResponse(GoodsReceipt goodsReceipt) {
         var vendor = !string.IsNullOrWhiteSpace(goodsReceipt.CardCode) ? await adapter.GetVendorAsync(goodsReceipt.CardCode) : null;
         return new GoodsReceiptResponse {
-            ID                = goodsReceipt.Id,
-            Number            = goodsReceipt.Number,
-            Name              = goodsReceipt.Name,
-            Vendor            = vendor,
-            Date              = goodsReceipt.Date,
-            Status            = goodsReceipt.Status,
-            Type              = goodsReceipt.Type,
-            WhsCode           = goodsReceipt.WhsCode,
+            ID = goodsReceipt.Id,
+            Number = goodsReceipt.Number,
+            Name = goodsReceipt.Name,
+            Vendor = vendor,
+            Date = goodsReceipt.Date,
+            Status = goodsReceipt.Status,
+            Type = goodsReceipt.Type,
+            WhsCode = goodsReceipt.WhsCode,
             CreatedByUserName = goodsReceipt.CreatedByUser?.FullName,
             Lines = goodsReceipt.Lines.Select(l => new GoodsReceiptLineResponse {
-                ID                   = l.Id,
-                BarCode              = l.BarCode,
-                ItemCode             = l.ItemCode,
-                ItemName             = l.ItemCode, // todo Would need item master
-                Quantity             = l.Quantity,
-                Unit                 = l.Unit,
-                LineStatus           = l.LineStatus,
-                Date                 = l.Date,
-                Comments             = l.Comments,
-                StatusReason         = l.StatusReason,
+                ID = l.Id,
+                BarCode = l.BarCode,
+                ItemCode = l.ItemCode,
+                ItemName = l.ItemCode, // todo Would need item master
+                Quantity = l.Quantity,
+                Unit = l.Unit,
+                LineStatus = l.LineStatus,
+                Date = l.Date,
+                Comments = l.Comments,
+                StatusReason = l.StatusReason,
                 CancellationReasonId = l.CancellationReasonId
             }).ToList(),
             Documents = goodsReceipt.Documents?.Select(d => new GoodsReceiptDocumentResponse {
-                DocumentEntry  = d.DocEntry,
+                DocumentEntry = d.DocEntry,
                 DocumentNumber = d.DocNumber,
-                ObjectType     = d.ObjType,
+                ObjectType = d.ObjType,
             }).ToList()
         };
     }
@@ -307,23 +348,23 @@ public class GoodsReceiptService(SystemDbContext db, IExternalSystemAdapter adap
                 data[line.ItemCode] = [];
 
             var sources = await db.GoodsReceiptSources
-                .Where(s => s.GoodsReceiptLineId == line.Id)
-                .Select(s => new GoodsReceiptSourceDataResponse {
-                    SourceType  = s.SourceType,
-                    SourceEntry = s.SourceEntry,
-                    SourceLine  = s.SourceLine,
-                    Quantity    = s.Quantity
-                })
-                .ToListAsync();
+            .Where(s => s.GoodsReceiptLineId == line.Id)
+            .Select(s => new GoodsReceiptSourceDataResponse {
+                SourceType = s.SourceType,
+                SourceEntry = s.SourceEntry,
+                SourceLine = s.SourceLine,
+                Quantity = s.Quantity
+            })
+            .ToListAsync();
 
             data[line.ItemCode].Add(new GoodsReceiptCreationDataResponse {
-                ItemCode    = line.ItemCode,
-                BarCode     = line.BarCode,
-                Quantity    = line.Quantity,
+                ItemCode = line.ItemCode,
+                BarCode = line.BarCode,
+                Quantity = line.Quantity,
                 UseBaseUnit = line.Unit == UnitType.Unit,
-                Date        = line.Date,
-                Comments    = line.Comments,
-                Sources     = sources
+                Date = line.Date,
+                Comments = line.Comments,
+                Sources = sources
             });
         }
 
