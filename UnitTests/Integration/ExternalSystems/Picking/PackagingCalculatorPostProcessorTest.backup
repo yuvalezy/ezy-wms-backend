@@ -1,0 +1,221 @@
+using Core.Entities;
+using Core.Enums;
+using Core.Interfaces;
+using Core.Models;
+using Customer.Extensions;
+using Infrastructure.DbContexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using UnitTests.Integration.ExternalSystems.Shared;
+
+namespace UnitTests.Integration.ExternalSystems.Picking;
+
+[TestFixture]
+public class PackagingCalculatorPostProcessorTest : BaseExternalTest {
+    private const int TestAbsEntry = 276;
+    
+    [Test]
+    public async Task PackagingCalculatorPostProcessor_ShouldExecuteSuccessfully_WithAbsEntry276() {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<PackagingCalculatorPostProcessorTest>>();
+        
+        var processor = new PackagingCalculatorPostProcessor();
+        var context = new PickingPostProcessorContext {
+            AbsEntry = TestAbsEntry,
+            ProcessedData = await GetTestProcessedData(dbContext),
+            Configuration = GetTestConfiguration(),
+            Logger = logger,
+            ServiceProvider = scope.ServiceProvider
+        };
+
+        // Act & Assert
+        await TestContext.Out.WriteLineAsync($"Testing PackagingCalculatorPostProcessor with AbsEntry {TestAbsEntry}");
+        
+        // First, test if the processor is enabled
+        var isEnabled = processor.IsEnabled(GetTestConfiguration());
+        Assert.That(isEnabled, Is.True, "Processor should be enabled with test configuration");
+
+        // Execute the processor - this should handle the Int64 to Int32 casting issue
+        var exception = await AssertDoesNotThrowAsync(async () => {
+            await processor.ExecuteAsync(context, CancellationToken.None);
+        });
+        
+        if (exception != null) {
+            await TestContext.Out.WriteLineAsync($"Processor execution failed: {exception.Message}");
+            await TestContext.Out.WriteLineAsync($"Stack trace: {exception.StackTrace}");
+            
+            // If it's the casting issue we're expecting, provide detailed information
+            if (exception is InvalidCastException castEx) {
+                await TestContext.Out.WriteLineAsync($"Casting exception detected: {castEx.Message}");
+                await TestContext.Out.WriteLineAsync("This indicates a data type mismatch in the database query results");
+            }
+            
+            throw exception;
+        }
+        
+        await TestContext.Out.WriteLineAsync("PackagingCalculatorPostProcessor executed successfully");
+    }
+    
+    [Test]
+    public async Task PackagingCalculatorPostProcessor_ShouldHandleDataTypeCasting() {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<PackagingCalculatorPostProcessorTest>>();
+        
+        // Create a custom processor to test data type handling
+        var processor = new TestablePackagingCalculatorPostProcessor();
+        
+        // Act & Assert
+        await TestContext.Out.WriteLineAsync("Testing data type casting in EF queries");
+        
+        try {
+            // Test the specific query that's causing the casting issue
+            var pickingData = await processor.TestGetPickingDataWithBarcodes(TestAbsEntry, dbContext, logger);
+            
+            await TestContext.Out.WriteLineAsync($"Successfully retrieved {pickingData.Count} picking records");
+            
+            foreach (var item in pickingData.Take(5)) { // Show first 5 records
+                await TestContext.Out.WriteLineAsync($"PickEntry: {item.PickEntry}, ItemCode: {item.ItemCode}, Quantity: {item.Quantity}, Barcode: {item.Barcode ?? "NULL"}");
+            }
+        }
+        catch (InvalidCastException ex) {
+            await TestContext.Out.WriteLineAsync($"Casting exception occurred: {ex.Message}");
+            
+            // Try to diagnose which field is causing the issue
+            await DiagnoseQueryFieldTypes(dbContext);
+            
+            throw;
+        }
+    }
+    
+    [Test]
+    public async Task PackagingCalculatorPostProcessor_Configuration_ShouldHandleStringAndBooleanValues() {
+        // Test different configuration formats
+        var configurations = new Dictionary<string, Dictionary<string, object>> {
+            ["BooleanTrue"] = new() { ["Enabled"] = true },
+            ["BooleanFalse"] = new() { ["Enabled"] = false },
+            ["StringTrue"] = new() { ["Enabled"] = "true" },
+            ["StringFalse"] = new() { ["Enabled"] = "false" },
+            ["StringCapitalTrue"] = new() { ["Enabled"] = "True" },
+            ["StringCapitalFalse"] = new() { ["Enabled"] = "False" },
+            ["MissingEnabled"] = new(),
+            ["NullEnabled"] = new() { ["Enabled"] = null! }
+        };
+        
+        var processor = new PackagingCalculatorPostProcessor();
+        
+        foreach (var (name, config) in configurations) {
+            var isEnabled = processor.IsEnabled(config);
+            var expectedEnabled = name.Contains("True", StringComparison.OrdinalIgnoreCase);
+            
+            await TestContext.Out.WriteLineAsync($"Configuration '{name}': {config.GetValueOrDefault("Enabled", "MISSING")} -> Enabled: {isEnabled}");
+            
+            Assert.That(isEnabled, Is.EqualTo(expectedEnabled), 
+                $"Configuration '{name}' should return {expectedEnabled}");
+        }
+    }
+    
+    
+    private async Task<List<Core.Entities.PickList>> GetTestProcessedData(SystemDbContext dbContext) {
+        return await dbContext.PickLists
+            .Where(p => p.AbsEntry == TestAbsEntry)
+            .ToListAsync();
+    }
+    
+    private static Dictionary<string, object> GetTestConfiguration() {
+        return new Dictionary<string, object> {
+            ["Enabled"] = true,
+            ["BatchSize"] = 100,
+            ["TimeoutSeconds"] = 30
+        };
+    }
+    
+    private async Task DiagnoseQueryFieldTypes(SystemDbContext dbContext) {
+        await TestContext.Out.WriteLineAsync("Diagnosing database field types...");
+        
+        try {
+            // Test a simpler version of the query to identify the problematic field
+            var simpleQuery = @"
+                select TOP 1 
+                       T0.""PickEntry"", 
+                       T0.""ItemCode"", 
+                       T0.""Quantity""
+                from ""PickLists"" T0
+                where T0.""AbsEntry"" = {0}";
+                
+            var results = await dbContext.Database
+                .SqlQueryRaw<PickingDataSimple>(simpleQuery, TestAbsEntry)
+                .ToListAsync();
+                
+            await TestContext.Out.WriteLineAsync($"Simple query returned {results.Count} records");
+        }
+        catch (Exception ex) {
+            await TestContext.Out.WriteLineAsync($"Simple query also failed: {ex.Message}");
+        }
+    }
+    
+    private static async Task<Exception?> AssertDoesNotThrowAsync(Func<Task> action) {
+        try {
+            await action();
+            return null;
+        }
+        catch (Exception ex) {
+            return ex;
+        }
+    }
+}
+
+// Test helper class to expose protected methods
+public class TestablePackagingCalculatorPostProcessor : PackagingCalculatorPostProcessor {
+    public async Task<List<PickingDataWithBarcode>> TestGetPickingDataWithBarcodes(int absEntry, SystemDbContext dbContext, ILogger logger) {
+        // Use reflection or create a modified version of the original method for testing
+        var query = @"
+            select T0.""PickEntry"", 
+                   ROW_NUMBER() OVER (PARTITION BY T0.""PickEntry"", T0.""ItemCode"", T0.""Unit"" ORDER BY T0.""PickEntry"") RowNumber, 
+                   T0.""ItemCode"", 
+                   T0.""Quantity"", 
+                   T2.""Barcode""
+            from ""PickLists"" T0
+                     left outer join ""PackageCommitments"" T1 on T1.""SourceOperationId"" = T0.""Id""
+                     left outer join ""Packages"" T2 on T2.""Id"" = T1.""PackageId""
+            where T0.""AbsEntry"" = {0}
+            order by T0.""PickEntry""";
+
+        logger.LogDebug("Testing EF database query for picking data with barcodes for AbsEntry {AbsEntry}", absEntry);
+
+        // Modified to handle potential casting issues
+        var result = new List<PickingDataWithBarcode>();
+        
+        using var command = dbContext.Database.GetDbConnection().CreateCommand();
+        command.CommandText = query.Replace("{0}", absEntry.ToString());
+        
+        await dbContext.Database.OpenConnectionAsync();
+        
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync()) {
+            var item = new PickingDataWithBarcode {
+                ItemCode = reader["ItemCode"].ToString()!,
+                PickEntry = (int)reader["PickEntry"],
+                RowNumber = (long)reader["RowNumber"],
+                Quantity = (int)reader["Quantity"],
+                Barcode = reader["Barcode"]?.ToString()
+            };
+
+            result.Add(item);
+        }
+
+        logger.LogDebug("Found {Count} picking records with barcode data", result.Count);
+        return result;
+    }
+}
+
+// Simplified model for diagnosis
+public class PickingDataSimple {
+    public int PickEntry { get; set; }
+    public required string ItemCode { get; set; }
+    public int Quantity { get; set; }
+}

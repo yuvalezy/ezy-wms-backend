@@ -25,7 +25,7 @@ public static class DependencyInjectionConfig {
         }
 
         services.AddDbContext<SystemDbContext>(options =>
-            options.UseSqlServer(connString));
+        options.UseSqlServer(connString));
 
         if (settings.SessionManagement.Type == SessionManagementType.InMemory)
             services.AddSingleton<ISessionManager, InMemorySessionManager>();
@@ -75,46 +75,51 @@ public static class DependencyInjectionConfig {
 
         // Device Management Services
         services.AddScoped<IDeviceService, DeviceService>();
-        
+
         // Post Processing Services
         services.AddSingleton<IPickingPostProcessorFactory, PickingPostProcessorFactory>();
-        
+
         // License Management Services
         services.AddScoped<ILicenseEncryptionService, LicenseEncryptionService>();
         services.AddScoped<IAccountStatusService, AccountStatusService>();
         services.AddScoped<ILicenseCacheService, LicenseCacheService>();
         services.AddScoped<ILicenseValidationService, LicenseValidationService>();
-        
+
         // Configure HTTP client for cloud services
-        services.AddHttpClient<ICloudLicenseService, CloudLicenseService>((serviceProvider, httpClient) => {
+        services.AddHttpClient<ICloudLicenseService, CloudLicenseService>((serviceProvider, httpClient) =>
+        {
             var settingsService = serviceProvider.GetRequiredService<ISettings>();
-            var bearerToken = settingsService.Licensing.BearerToken ?? 
-                throw new InvalidOperationException("Bearer token not configured");
-            
-            httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+            var bearerToken = settingsService.Licensing.BearerToken ??
+                              throw new InvalidOperationException("Bearer token not configured");
+
+            httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearerToken);
+
             httpClient.DefaultRequestHeaders.Add("User-Agent", "WMS-License-Client/1.0");
             httpClient.Timeout = TimeSpan.FromSeconds(30);
         });
 
         // Configure BackgroundPickListSyncService
-        services.Configure<BackgroundPickListSyncOptions>(options => {
+        services.Configure<BackgroundPickListSyncOptions>(options =>
+        {
             options.IntervalSeconds = settings.BackgroundServices.PickListSync.IntervalSeconds;
             options.Enabled = settings.BackgroundServices.PickListSync.Enabled;
         });
+
         services.AddSingleton<BackgroundPickListSyncService>();
-        services.AddHostedService<BackgroundPickListSyncService>(provider => 
-            provider.GetRequiredService<BackgroundPickListSyncService>());
+        services.AddHostedService<BackgroundPickListSyncService>(provider =>
+        provider.GetRequiredService<BackgroundPickListSyncService>());
 
         // Configure CloudSyncBackgroundService
-        services.Configure<CloudSyncBackgroundOptions>(options => {
+        services.Configure<CloudSyncBackgroundOptions>(options =>
+        {
             options.SyncIntervalMinutes = settings.BackgroundServices.CloudSync.SyncIntervalMinutes;
             options.ValidationIntervalHours = settings.BackgroundServices.CloudSync.ValidationIntervalHours;
             options.Enabled = settings.BackgroundServices.CloudSync.Enabled;
         });
+
         services.AddSingleton<CloudSyncBackgroundService>();
-        services.AddHostedService<CloudSyncBackgroundService>(provider => 
-            provider.GetRequiredService<CloudSyncBackgroundService>());
+        services.AddHostedService<CloudSyncBackgroundService>(provider => provider.GetRequiredService<CloudSyncBackgroundService>());
 
         switch (settings.ExternalAdapter) {
             // case ExternalAdapterType.SboWindows:

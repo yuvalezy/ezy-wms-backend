@@ -55,9 +55,24 @@ public class PackagingCalculatorPostProcessor : IPickingPostProcessor {
     }
 
     public bool IsEnabled(Dictionary<string, object>? configuration) {
-        // Enable this processor if configuration is provided
-        return configuration?.ContainsKey("Enabled") == true && 
-               (bool)(configuration["Enabled"] ?? false);
+        if (configuration?.ContainsKey("Enabled") != true) {
+            return false;
+        }
+
+        var enabledValue = configuration["Enabled"];
+        
+        // Handle boolean values directly
+        if (enabledValue is bool boolValue) {
+            return boolValue;
+        }
+        
+        // Handle string values
+        if (enabledValue is string stringValue) {
+            return bool.TryParse(stringValue, out var parsedValue) && parsedValue;
+        }
+        
+        // Default to false for any other type
+        return false;
     }
 
     private async Task<List<PickingDataWithBarcode>> GetPickingDataWithBarcodes(int absEntry, SystemDbContext dbContext, ILogger logger) {
@@ -150,16 +165,21 @@ WITH src AS (
          WHERE w.""Barcode"" IS NOT NULL
      )
 -- Final union
-SELECT * FROM non_packaged
-UNION ALL
-SELECT * FROM packaged
-ORDER BY ""OrderLine"", ""Packs"" DESC";
+select ""BaseObject"", ""OrderEntry"", ""OrderLine"", Sum(""Packs"") ""Packs"", ""Barcode""
+from (SELECT *
+      FROM non_packaged
+      UNION ALL
+      SELECT *
+      FROM packaged) X0
+group by ""BaseObject"", ""OrderEntry"", ""OrderLine"", ""Barcode""
+ORDER BY ""OrderLine"", ""Packs"" DESC
+";
 
         var results = await sboDatabase.QueryAsync(query, null, reader => new PackageCalculationResult {
-            BaseObject = Convert.ToInt32(reader["BaseObject"]),
-            OrderEntry = Convert.ToInt32(reader["OrderEntry"]), 
-            OrderLine = Convert.ToInt32(reader["OrderLine"]),
-            Packs = Convert.ToInt32(reader["Packs"]),
+            BaseObject = Convert.ToInt64(reader["BaseObject"]),
+            OrderEntry = Convert.ToInt64(reader["OrderEntry"]), 
+            OrderLine = Convert.ToInt64(reader["OrderLine"]),
+            Packs = Convert.ToInt64(reader["Packs"]),
             Barcode = reader["Barcode"]?.ToString()
         });
 
@@ -184,26 +204,29 @@ ORDER BY ""OrderLine"", ""Packs"" DESC";
                 var orderEntry = orderGroup.Key;
                 logger.LogDebug("Updating order {OrderEntry} with {LineCount} line updates", orderEntry, orderGroup.Count());
 
-                foreach (var calc in orderGroup) {
-                    try {
-                        // Update the specific order line
-                        var updateData = new {
-                            SerialNum = calc.Barcode,
-                            PackQty = calc.Packs
-                        };
+                // Build DocumentLines array for batch update
+                var documentLines = orderGroup.Select(calc => new {
+                    LineNum = calc.OrderLine,
+                    SerialNum = calc.Barcode,
+                    PackageQuantity = calc.Packs
+                }).ToArray();
 
-                        var result = await sboCompany.PatchAsync($"Orders({calc.OrderEntry})/Lines({calc.OrderLine})", updateData);
-                        
-                        if (!result.success) {
-                            logger.LogError("Failed to update Order {OrderEntry} Line {OrderLine}: {Error}", 
-                                calc.OrderEntry, calc.OrderLine, result.errorMessage);
-                        } else {
-                            logger.LogDebug("Successfully updated Order {OrderEntry} Line {OrderLine} with SerialNum={SerialNum}, PackQty={PackQty}", 
-                                calc.OrderEntry, calc.OrderLine, calc.Barcode, calc.Packs);
-                        }
-                    }
-                    catch (Exception ex) {
-                        logger.LogError(ex, "Error updating Order {OrderEntry} Line {OrderLine}", calc.OrderEntry, calc.OrderLine);
+                var updateData = new {
+                    DocumentLines = documentLines
+                };
+
+                var result = await sboCompany.PatchAsync($"Orders({orderEntry})", updateData);
+                
+                if (!result.success) {
+                    logger.LogError("Failed to update Order {OrderEntry}: {Error}", 
+                        orderEntry, result.errorMessage);
+                } else {
+                    logger.LogInformation("Successfully updated Order {OrderEntry} with {LineCount} lines", 
+                        orderEntry, documentLines.Length);
+                    
+                    foreach (var line in documentLines) {
+                        logger.LogDebug("  Line {LineNum}: SerialNum={SerialNum}, PackQty={PackQty}", 
+                            line.LineNum, line.SerialNum, line.PackageQuantity);
                     }
                 }
             }
@@ -219,16 +242,16 @@ ORDER BY ""OrderLine"", ""Packs"" DESC";
 // Data models for the post processor
 public class PickingDataWithBarcode {
     public int PickEntry { get; set; }
-    public int RowNumber { get; set; }
+    public long RowNumber { get; set; }
     public required string ItemCode { get; set; }
     public int Quantity { get; set; }
     public string? Barcode { get; set; }
 }
 
 public class PackageCalculationResult {
-    public int BaseObject { get; set; }
-    public int OrderEntry { get; set; }
-    public int OrderLine { get; set; }
-    public int Packs { get; set; }
+    public long BaseObject { get; set; }
+    public long OrderEntry { get; set; }
+    public long OrderLine { get; set; }
+    public long Packs { get; set; }
     public string? Barcode { get; set; }
 }
