@@ -76,6 +76,9 @@ public static class DependencyInjectionConfig {
         // Device Management Services
         services.AddScoped<IDeviceService, DeviceService>();
         
+        // Post Processing Services
+        services.AddSingleton<IPickingPostProcessorFactory, PickingPostProcessorFactory>();
+        
         // License Management Services
         services.AddScoped<ILicenseEncryptionService, LicenseEncryptionService>();
         services.AddScoped<IAccountStatusService, AccountStatusService>();

@@ -1,8 +1,10 @@
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
@@ -10,6 +12,8 @@ namespace Infrastructure.Services;
 public class PickListProcessService(
     SystemDbContext                 db,
     IExternalSystemAdapter          adapter,
+    IPickingPostProcessorFactory    postProcessorFactory,
+    IServiceProvider                serviceProvider,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
@@ -56,6 +60,9 @@ public class PickListProcessService(
             if (result.Success) {
                 // Update pick lists to Closed and Synced
                 await UpdatePickListsSyncStatus(absEntry, SyncStatus.Synced, null, userId);
+
+                // Execute post-processing hooks
+                await ExecutePostProcessors(absEntry, pickingData);
 
                 return new ProcessPickListResponse {
                     Status         = ResponseStatus.Ok,
@@ -179,6 +186,49 @@ public class PickListProcessService(
             logger.LogError(ex, "Failed to update sync status for AbsEntry {AbsEntry}", absEntry);
             throw;
         }
+    }
+
+    private async Task ExecutePostProcessors(int absEntry, List<Core.Entities.PickList> processedData) {
+        try {
+            var enabledProcessors = postProcessorFactory.GetEnabledProcessors();
+            
+            if (!enabledProcessors.Any()) {
+                logger.LogDebug("No enabled post-processors found for pick list {AbsEntry}", absEntry);
+                return;
+            }
+
+            foreach (var processor in enabledProcessors) {
+                try {
+                    logger.LogInformation("Executing post-processor {ProcessorId} for pick list {AbsEntry}", processor.Id, absEntry);
+
+                    var context = new PickingPostProcessorContext {
+                        AbsEntry = absEntry,
+                        ProcessedData = processedData,
+                        Configuration = GetProcessorConfiguration(processor.Id),
+                        Logger = logger,
+                        ServiceProvider = serviceProvider
+                    };
+
+                    await processor.ExecuteAsync(context);
+                    logger.LogInformation("Successfully executed post-processor {ProcessorId} for pick list {AbsEntry}", processor.Id, absEntry);
+                }
+                catch (Exception ex) {
+                    logger.LogError(ex, "Failed to execute post-processor {ProcessorId} for pick list {AbsEntry}", processor.Id, absEntry);
+                    // Continue with other processors even if one fails
+                }
+            }
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error during post-processor execution for pick list {AbsEntry}", absEntry);
+            // Don't rethrow - post-processing failures shouldn't break the main flow
+        }
+    }
+
+    private Dictionary<string, object>? GetProcessorConfiguration(string processorId) {
+        var processorSettings = serviceProvider.GetRequiredService<Core.Interfaces.ISettings>()
+            .PickingPostProcessing.Processors
+            .FirstOrDefault(p => p.Id == processorId);
+        return processorSettings?.Configuration;
     }
 
 }
