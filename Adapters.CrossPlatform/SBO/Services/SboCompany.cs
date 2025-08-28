@@ -155,6 +155,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = content;
 
+        logger.LogDebug("Sending to service layer method: {httpMethod} {endpoint} with body: {body}", httpMethod.Method, endpoint, json);
         var response = await httpClient.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {

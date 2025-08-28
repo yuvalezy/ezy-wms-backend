@@ -121,14 +121,13 @@ public class PickingUpdate(
         var sourceData = !isBin ? await GetSourceMeasureData() : [];
 
         foreach (var pickLine in pickListResponse.PickListsLines) {
-            var matchingData = lines.FirstOrDefault(v => v.PickEntry == pickLine.LineNumber);
-            if (matchingData == null) {
+            var line = lines.FirstOrDefault(v => v.PickEntry == pickLine.LineNumber);
+            if (line == null) {
                 continue;
             }
 
-            double pickedQuantity = matchingData.Quantity;
-            logger.LogDebug("Processing pick line {LineNumber} with quantity {Quantity} for pick list {AbsEntry}",
-                pickLine.LineNumber, pickedQuantity, absEntry);
+            double pickedQuantity = line.Quantity;
+            logger.LogDebug("Processing pick line {LineNumber} with quantity {Quantity} for pick list {AbsEntry}", pickLine.LineNumber, pickedQuantity, absEntry);
 
             int measureUnit = isBin
             ? 1
@@ -142,17 +141,16 @@ public class PickingUpdate(
             }
             else {
                 pickLine.ReleasedQuantity += pickedQuantity;
-                pickLine.PickedQuantity += (pickedQuantity / measureUnit);
+                pickLine.PickedQuantity += pickedQuantity / measureUnit;
             }
 
             pickLine.PickStatus = pickLine.PickedQuantity == 0   ? "ps_Released" :
             pickLine.PickedQuantity == pickLine.ReleasedQuantity ? "ps_Picked" :
                                                                    "ps_PartiallyPicked";
 
-            logger.LogDebug("Processing {BinCount} bin allocations for pick line {LineNumber}",
-                matchingData.Bins.Count, pickLine.LineNumber);
+            logger.LogDebug("Processing {BinCount} bin allocations for pick line {LineNumber}", line.Bins.Count, pickLine.LineNumber);
 
-            foreach (var bin in matchingData.Bins) {
+            foreach (var bin in line.Bins) {
                 if (bin.BinEntry == null) {
                     continue;
                 }
@@ -162,8 +160,7 @@ public class PickingUpdate(
                     if (allocation.BinAbsEntry == bin.BinEntry) {
                         allocation.Quantity += bin.Quantity;
                         found = true;
-                        logger.LogDebug("Updated existing bin allocation for BinEntry {BinEntry} with quantity {Quantity}",
-                            bin.BinEntry, bin.Quantity);
+                        logger.LogDebug("Updated existing bin allocation for BinEntry {BinEntry} with quantity {Quantity}", bin.BinEntry, bin.Quantity);
 
                         break;
                     }

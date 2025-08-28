@@ -207,31 +207,52 @@ public class PickListPackageService(
 
 
     public async Task<PackageDto> CreatePackageAsync(int absEntry, SessionInfo sessionInfo) {
-        int binEntry = settings.GetStagingBinEntry(sessionInfo.Warehouse) ?? throw new Exception("Staging bin entry is not configured");
+        try {
+            logger.LogDebug("Starting package creation for pick list {AbsEntry} by user {UserId}", absEntry, sessionInfo.Guid);
+            
+            int binEntry = settings.GetStagingBinEntry(sessionInfo.Warehouse) ?? throw new InvalidOperationException($"Staging bin entry is not configured for warehouse {sessionInfo.Warehouse}");
+            
+            logger.LogDebug("Creating package for pick list {AbsEntry} with staging bin {BinEntry}", absEntry, binEntry);
 
-        var request = new CreatePackageRequest {
-            BinEntry = binEntry,
-            SourceOperationType = ObjectType.Picking,
-        };
+            var request = new CreatePackageRequest {
+                BinEntry = binEntry,
+                SourceOperationType = ObjectType.Picking,
+            };
 
-        var package = await packageService.CreatePackageAsync(sessionInfo, request);
-        var userId = sessionInfo.Guid;
-        var pickListPackage = new PickListPackage {
-            CreatedByUserId = userId,
-            AbsEntry = absEntry,
-            PackageId = package.Id,
-            Type = SourceTarget.Target,
-            BinEntry = binEntry,
-            AddedAt = DateTime.UtcNow,
-            AddedByUserId = userId,
-        };
-        await db.PickListPackages.AddAsync(pickListPackage);
-        
-        package.SourceOperationId = pickListPackage.Id;
-        await db.SaveChangesAsync();
+            var package = await packageService.CreatePackageAsync(sessionInfo, request);
+            logger.LogDebug("Package {PackageId} created successfully", package.Id);
+            
+            var userId = sessionInfo.Guid;
+            var pickListPackage = new PickListPackage {
+                CreatedByUserId = userId,
+                AbsEntry = absEntry,
+                PackageId = package.Id,
+                Type = SourceTarget.Target,
+                BinEntry = binEntry,
+                AddedAt = DateTime.UtcNow,
+                AddedByUserId = userId,
+            };
+            
+            await db.PickListPackages.AddAsync(pickListPackage);
+            logger.LogDebug("Pick list package record created for AbsEntry {AbsEntry} and PackageId {PackageId}", absEntry, package.Id);
+            
+            package.SourceOperationId = pickListPackage.Id;
+            await db.SaveChangesAsync();
+            logger.LogDebug("Database changes saved successfully");
 
-        var response = await package.ToDto(adapter, settings);
-        response.PickListPackageId = pickListPackage.Id;
-        return response;
+            var response = await package.ToDto(adapter, settings);
+            response.PickListPackageId = pickListPackage.Id;
+            
+            logger.LogDebug("Package creation completed for pick list {AbsEntry}, PackageId: {PackageId}", absEntry, package.Id);
+            return response;
+        }
+        catch (InvalidOperationException ex) {
+            logger.LogError(ex, "Invalid operation during package creation for pick list {AbsEntry}: {Message}", absEntry, ex.Message);
+            throw;
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Unexpected error creating package for pick list {AbsEntry}: {Message}", absEntry, ex.Message);
+            throw new InvalidOperationException($"Failed to create package for pick list {absEntry}: {ex.Message}", ex);
+        }
     }
 }

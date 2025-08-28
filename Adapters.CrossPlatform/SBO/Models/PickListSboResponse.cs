@@ -50,7 +50,8 @@ public class PickListSboLine {
     public double PickedQuantity { get; set; }
 
     [JsonPropertyName("PickStatus")]
-    public string PickStatus { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PickStatus { get; set; } 
 
     [JsonPropertyName("ReleasedQuantity")]
     public double ReleasedQuantity { get; set; }

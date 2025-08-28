@@ -23,42 +23,68 @@ public class PackageService(
 {
     public async Task<Package> CreatePackageAsync(SessionInfo sessionInfo, CreatePackageRequest request)
     {
-        if (!settings.Options.EnablePackages)
+        try
         {
-            throw new InvalidOperationException("Package feature is not enabled");
+            logger.LogDebug("Starting package creation for user {UserId} in warehouse {Warehouse}", 
+                sessionInfo.Guid, sessionInfo.Warehouse);
+            
+            if (!settings.Options.EnablePackages)
+            {
+                throw new InvalidOperationException("Package feature is not enabled");
+            }
+
+            logger.LogDebug("Generating package barcode");
+            string barcode = await validationService.GeneratePackageBarcodeAsync();
+            logger.LogDebug("Generated barcode: {Barcode}", barcode);
+
+            string whsCode = sessionInfo.Warehouse;
+            var userId = sessionInfo.Guid;
+            
+            logger.LogDebug("Creating package entity with barcode {Barcode}, bin entry {BinEntry}, source operation type {SourceOperationType}", 
+                barcode, request.BinEntry, request.SourceOperationType);
+            
+            var package = new Package
+            {
+                Id = Guid.NewGuid(),
+                Barcode = barcode,
+                Status = PackageStatus.Init,
+                WhsCode = whsCode,
+                BinEntry = request.BinEntry,
+                CreatedByUserId = userId,
+                ClosedAt = null,
+                ClosedBy = null,
+                Notes = null,
+                SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
+                SourceOperationId = request.SourceOperationId,
+                CustomAttributes = SerializeCustomAttributes(request.CustomAttributes)
+            };
+
+            db.Packages.Add(package);
+            logger.LogDebug("Package entity added to database context with ID {PackageId}", package.Id);
+
+            logger.LogDebug("Logging location movement for package {PackageId}", package.Id);
+            await locationService.LogLocationMovementAsync(package.Id, PackageMovementType.Created,
+                null, null, whsCode, request.BinEntry,
+                request.SourceOperationType ?? ObjectType.Package, request.SourceOperationId, userId);
+
+            await db.SaveChangesAsync();
+            logger.LogDebug("Database changes saved successfully for package {PackageId}", package.Id);
+
+            logger.LogInformation("Package created: {Barcode} by user {UserId}", barcode, userId);
+
+            return package;
         }
-
-        string barcode = await validationService.GeneratePackageBarcodeAsync();
-
-        string whsCode = sessionInfo.Warehouse;
-        var userId = sessionInfo.Guid;
-        var package = new Package
+        catch (InvalidOperationException ex)
         {
-            Id = Guid.NewGuid(),
-            Barcode = barcode,
-            Status = PackageStatus.Init,
-            WhsCode = whsCode,
-            BinEntry = request.BinEntry,
-            CreatedByUserId = userId,
-            ClosedAt = null,
-            ClosedBy = null,
-            Notes = null,
-            SourceOperationType = request.SourceOperationType ?? ObjectType.Package,
-            SourceOperationId = request.SourceOperationId,
-            CustomAttributes = SerializeCustomAttributes(request.CustomAttributes)
-        };
-
-        db.Packages.Add(package);
-
-        await locationService.LogLocationMovementAsync(package.Id, PackageMovementType.Created,
-            null, null, whsCode, request.BinEntry,
-            request.SourceOperationType ?? ObjectType.Package, request.SourceOperationId, userId);
-
-        await db.SaveChangesAsync();
-
-        logger.LogInformation("Package created: {Barcode} by user {UserId}", barcode, userId);
-
-        return package;
+            logger.LogError(ex, "Invalid operation during package creation: {Message}", ex.Message);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error creating package for user {UserId}: {Message}", 
+                sessionInfo.Guid, ex.Message);
+            throw new InvalidOperationException($"Failed to create package: {ex.Message}", ex);
+        }
     }
 
     public async Task<Package?> GetPackageAsync(Guid packageId)
