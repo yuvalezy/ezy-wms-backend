@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Runtime.InteropServices;
+using Adapters.Common.SBO.Services;
 using Adapters.Windows.SBO.Services;
 using Core.Entities;
 using Microsoft.Data.SqlClient;
@@ -7,13 +8,14 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboCompany, string? filtersPickReady) : IDisposable {
+public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboCompany, SboDatabaseService databaseService) : IDisposable {
     private Recordset? rs;
 
     public async Task Execute() {
         try {
             if (!sboCompany.TransactionMutex.WaitOne())
                 return;
+
             try {
                 sboCompany.ConnectCompany();
                 sboCompany.Company.StartTransaction();
@@ -29,6 +31,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
         catch {
             if (sboCompany.Company.InTransaction)
                 sboCompany.Company.EndTransaction(BoWfTransOpt.wf_RollBack);
+
             throw;
         }
     }
@@ -39,11 +42,12 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
             if (!pl.GetByKey(absEntry)) {
                 throw new Exception($"Could not find Pick List ${absEntry}");
             }
+
             if (pl.Status == BoPickStatus.ps_Closed) {
                 throw new Exception($"Cannot process document if the Status is closed");
             }
 
-            UpdatePickList(pl);
+            ProcessPickList(pl);
         }
         finally {
             Marshal.ReleaseComObject(pl);
@@ -58,11 +62,8 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                 throw new Exception($"Could not find Pick List ${absEntry}");
             }
 
-            //todo figure if it's needed
-            if (!string.IsNullOrWhiteSpace(filtersPickReady)) {
-                if (pl.UserFields.Fields.Item(filtersPickReady).Value.ToString() == "Y")
-                    return;
-            }
+            if (pl.UserFields.Fields.Item("U_WMS_READY").Value.ToString() == "Y")
+                return;
 
             if (pl.Status == BoPickStatus.ps_Closed) {
                 throw new Exception("Cannot process document if the Status is closed");
@@ -77,9 +78,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
             }
 
 
-            if (!string.IsNullOrWhiteSpace(filtersPickReady)) {
-                pl.UserFields.Fields.Item(filtersPickReady).Value = "Y";
-            }
+            pl.UserFields.Fields.Item("U_WMS_READY").Value = "Y";
 
             if (pl.UpdateReleasedAllocation() != 0) {
                 throw new Exception(sboCompany.Company.GetLastErrorDescription());
@@ -91,15 +90,39 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
         }
     }
 
+    private record SourceMeasureData(int DocEntry, int LineNum, int ObjType, int NumPerMeasure, double Quantity);
 
-    private void UpdatePickList(PickLists pl) {
+    private async Task<SourceMeasureData[]> GetSourceMeasureData() {
+        const string query =
+        """
+        select T0."OrderEntry", T0."OrderLine", T0."BaseObject", COALESCE(T1."NumPerMsr", T2."NumPerMsr", T3."NumPerMsr") "NumPerMsr", COALESCE(T1."InvQty", T2."InvQty", T3."InvQty") "InvQty"
+        from PKL1 T0
+                 left outer join RDR1 T1 on T1."DocEntry" = T0."OrderEntry" and T1."ObjType" = T0."BaseObject" and T1."LineNum" = T0."OrderLine"
+                 left outer join PCH1 T2 on T2."DocEntry" = T0."OrderEntry" and T2."ObjType" = T0."BaseObject" and T2."LineNum" = T0."OrderLine"
+                 left outer join WTQ1 T3 on T3."DocEntry" = T0."OrderEntry" and T3."ObjType" = T0."BaseObject" and T3."LineNum" = T0."OrderLine"
+        where T0."AbsEntry" = @AbsEntry
+        """;
+
+        var sourceData = await databaseService.QueryAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }], reader => new SourceMeasureData(
+            (int)reader["OrderEntry"],
+            (int)reader["OrderLine"],
+            Convert.ToInt32(reader["BaseObject"]),
+            Convert.ToInt32(reader["NumPerMsr"]),
+            Convert.ToDouble(reader["InvQty"])
+        ));
+
+        return sourceData.ToArray();
+    }
+
+    private void ProcessPickList(PickLists pl) {
         var lines = data.GroupBy(v => v.PickEntry)
-            .Select(a => new {
-                PickEntry = a.Key,
-                Quantity  = a.Sum(b => b.Quantity),
-                Bins = a.GroupBy(b => b.BinEntry)
-                    .Select(c => new { BinEntry = c.Key, Quantity = c.Sum(d => d.Quantity) })
-            });
+        .Select(a => new {
+            PickEntry = a.Key,
+            Quantity = a.Sum(b => b.Quantity),
+            Bins = a.GroupBy(b => b.BinEntry)
+            .Select(c => new { BinEntry = c.Key, Quantity = c.Sum(d => d.Quantity) })
+        });
+
         for (int i = 0; i < pl.Lines.Count; i++) {
             pl.Lines.SetCurrentLine(i);
             var value = lines.FirstOrDefault(v => v.PickEntry == pl.Lines.LineNumber);
@@ -110,11 +133,12 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
             pl.Lines.PickedQuantity += value.Quantity;
 
             // Process bins
-            var bins    = pl.Lines.BinAllocations;
+            var bins = pl.Lines.BinAllocations;
             var control = new Dictionary<int, int>();
             for (int j = 0; j < bins.Count; j++) {
                 if (bins.BinAbsEntry == 0)
                     continue;
+
                 bins.SetCurrentLine(j);
                 control[bins.BinAbsEntry] = j;
             }
@@ -127,6 +151,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                 else {
                     if (bins.Count == 1 && bins.BinAbsEntry != 0)
                         bins.Add();
+
                     bins.BinAbsEntry = binEntry;
                     control.Add(binEntry, bins.Count - 1);
                 }

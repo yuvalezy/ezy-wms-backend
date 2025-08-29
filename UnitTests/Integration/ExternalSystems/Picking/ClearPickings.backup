@@ -1,0 +1,29 @@
+﻿using System.Data;
+using Core.Interfaces;
+using Core.Services;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace UnitTests.Integration.ExternalSystems.Picking;
+
+public class ClearPickings : BaseExternalTest {
+    [Test]
+    public async Task ClearPickings_ShouldSucceed() {
+        using var scope = factory.Services.CreateScope();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        string connectionString = configuration.GetConnectionString("ExternalAdapterConnection") ?? throw new InvalidOperationException("ExternalAdapterConnection not found in configuration");
+        using var sql = new SqlConnection(connectionString);
+        using var da = new SqlDataAdapter("select \"AbsEntry\" from OPKL where \"Status\" in ('R', 'P', 'Y')", sql);
+        using var dt = new DataTable();
+        da.Fill(dt);
+        foreach (var absEntry in dt.Rows.Cast<DataRow>().Select(v => (int)v[0])) {
+            await sboCompany.PostAsync("PickListsService_Close", new {
+                PickList = new {
+                    Absoluteentry = absEntry
+                }
+            }
+            );
+        }
+    }
+}

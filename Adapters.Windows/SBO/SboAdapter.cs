@@ -1,5 +1,6 @@
 ﻿using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Repositories;
+using Adapters.Common.SBO.Services;
 using Adapters.Windows.SBO.Helpers;
 using Adapters.Windows.SBO.Services;
 using Core.DTOs.GoodsReceipt;
@@ -25,11 +26,12 @@ public class SboAdapter(
     SboGoodsReceiptRepository goodsReceiptRepository,
     SboInventoryCountingRepository inventoryCountingRepository,
     SboCompany sboCompany,
-    ISettings settings,
+    SboDatabaseService databaseService,
     ILoggerFactory loggerFactory) : IExternalSystemAdapter {
-    private IExternalSystemAdapter externalSystemAdapterImplementation;
 
     // General 
+    public async Task<bool> ValidateUserDefinedFieldAsync(string table, string field) => await generalRepository.ValidateUserDefinedFieldAsync(table, field);
+
     public async Task<string?> GetCompanyNameAsync() => await generalRepository.GetCompanyNameAsync();
 
     // Vendor
@@ -119,7 +121,7 @@ public class SboAdapter(
     public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) => await pickingRepository.ValidatePickingAddPackage(absEntry, values);
 
     public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data) {
-        using var update = new PickingUpdate(absEntry, data, sboCompany, settings.Filters.PickReady);
+        using var update = new PickingUpdate(absEntry, data, sboCompany, databaseService);
         var result = new ProcessPickListResult {
             Success = true,
             DocumentNumber = absEntry,

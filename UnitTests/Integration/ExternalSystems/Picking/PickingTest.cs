@@ -2,6 +2,7 @@
 using Adapters.CrossPlatform.SBO.Helpers;
 using Core.Entities;
 using Core.Extensions;
+using Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,10 +13,10 @@ namespace UnitTests.Integration.ExternalSystems.Picking;
 public class PickingTest : BaseExternalTest {
     private readonly string[] testItems = new string[3];
     private string testCustomer = string.Empty;
-    private int salesEntry = -1;
     private int absEntry = -1;
     private SboDatabaseService databaseService;
     private ILoggerFactory loggerFactory;
+    private IExternalSystemAdapter externalSystemAdapter;
 
     [OneTimeSetUp]
     new public void OneTimeSetUp() {
@@ -26,6 +27,8 @@ public class PickingTest : BaseExternalTest {
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         databaseService = new SboDatabaseService(configuration);
         loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        externalSystemAdapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
+
     }
 
     [Test]
@@ -45,7 +48,6 @@ public class PickingTest : BaseExternalTest {
 
         var helper = new CreateSalesOrder(sboCompany, salesOrdersSeries, testCustomer, testItems);
         await helper.Execute();
-        salesEntry = helper.SalesEntry;
         absEntry = helper.AbsEntry;
     }
 
@@ -83,16 +85,16 @@ public class PickingTest : BaseExternalTest {
     private async Task ExecutePick(int index, int quantity) {
         int testBinLocation = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
 
-        var pickUpdate = new PickingUpdate(absEntry, [
-            new PickList {
+        List<PickList> data = [
+            new() {
                 ItemCode = testItems[index],
                 PickEntry = index,
                 Quantity = quantity * 12,
                 BinEntry = testBinLocation
             }
-        ], sboCompany, databaseService, loggerFactory);
+        ];
 
-        await pickUpdate.Execute();
+        await externalSystemAdapter.ProcessPickList(absEntry, data);
     }
 
     [OneTimeTearDown]
