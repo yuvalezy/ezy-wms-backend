@@ -30,6 +30,8 @@ public class PickListSboResponse {
     [JsonPropertyName("UseBaseUnits")]
     public string UseBaseUnits { get; set; } = string.Empty;
 
+    [JsonPropertyName("U_WMS_READY")]
+    public string? Ready { get; set; }
     public PickListSboLine[] PickListsLines { get; set; }
 }
 

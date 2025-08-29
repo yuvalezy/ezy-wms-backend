@@ -4,12 +4,13 @@ using Core.Extensions;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 
-public class AddItems(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, ISettings settings) {
+public class AddItems(Guid id, string testItem, string testWarehouse, WebApplicationFactory<Program> factory, IConfiguration configuration, ISettings settings) {
     private readonly int testBinLocation = settings.GetInitialCountingBinEntry(testWarehouse)!.Value;
 
     private readonly List<(int binEntry, string binCode, int quantity, UnitType unit)> binEntries = [];
@@ -27,7 +28,7 @@ public class AddItems(Guid id, string testItem, string testWarehouse, WebApplica
     }
 
     private async Task LoadBins() {
-        string connectionString = settings.ConnectionStrings.ExternalAdapterConnection;
+        string connectionString = configuration.GetConnectionString("ExternalAdapterConnection") ?? throw new InvalidOperationException("ExternalAdapterConnection not found in configuration");
         string query            = $"select top 4 \"AbsEntry\", \"BinCode\" from OBIN where \"WhsCode\" = '{testWarehouse}' and \"AbsEntry\" <> {testBinLocation} order by NEWID()";
         try {
             await using var connection = new SqlConnection(connectionString);

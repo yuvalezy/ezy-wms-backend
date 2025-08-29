@@ -1,6 +1,7 @@
 using Core.Enums;
 using Core.Extensions;
 using Core.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UnitTests.Integration.ExternalSystems.InventoryCounting.InventoryCountingDecreaseSystemBinTestHelpers;
 using UnitTests.Integration.ExternalSystems.Shared;
@@ -52,7 +53,9 @@ public class InventoryCountingDecreaseSystemBinTest : BaseExternalTest {
     [Test]
     [Order(4)]
     public async Task Test_04_AddItemToInventoryCounting_ShouldIncludeTestItem() {
-        var helper = new AddItems(countingId, testItem, TestWarehouse, factory, settings);
+        using var scope = factory.Services.CreateScope();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var helper = new AddItems(countingId, testItem, TestWarehouse, factory, configuration, settings);
         binEntries = await helper.Execute();
     }
 

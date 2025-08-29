@@ -12,11 +12,7 @@ public static class ConfigurationTestsExtensions {
         using var scope = app.Services.CreateScope();
         var adapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
         
-        if (settings.Filters.PickReady == null) {
-            throw new ValidationException($"Settings -> Filters -> PickReady is not set.");
-        }
-
-        if (!await adapter.ValidateUserDefinedFieldAsync("OPKL", settings.Filters.PickReady!)) {
+        if (!await adapter.ValidateUserDefinedFieldAsync("OPKL", "WMS_READY")) {
             throw new ValidationException($"Settings -> Filters -> PickReady is not valid.");       
         }
         return app;

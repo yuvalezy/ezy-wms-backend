@@ -1,5 +1,4 @@
 using System.Data;
-using System.Text.Json.Serialization;
 using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO.Models;
 using Adapters.CrossPlatform.SBO.Services;
@@ -16,7 +15,7 @@ public class PickingUpdate(
     SboDatabaseService databaseService,
     ILoggerFactory loggerFactory) : IDisposable {
     private readonly ILogger<PickingUpdate> logger = loggerFactory.CreateLogger<PickingUpdate>();
-    private PickListSboResponse? pickListResponse;
+    private PickListSboResponse pickListResponse = null!;
 
     public async Task Execute() {
         try {
@@ -34,39 +33,26 @@ public class PickingUpdate(
     }
 
     private async Task LoadPickList() {
-        pickListResponse = await sboCompany.GetAsync<PickListSboResponse>($"PickLists({absEntry})");
-        if (pickListResponse == null) {
+        var response = await sboCompany.GetAsync<PickListSboResponse>($"PickLists({absEntry})");
+        if (response == null) {
             logger.LogError("Could not find Pick List {AbsEntry}", absEntry);
             throw new Exception($"Could not find Pick List {absEntry}");
         }
 
-        if (pickListResponse.Status == "ps_Closed") {
+        if (response.Status == "ps_Closed") {
             logger.LogWarning("Cannot process pick list {AbsEntry} because status is closed", absEntry);
             throw new Exception("Cannot process document if the Status is closed");
         }
+
+        pickListResponse = response;
     }
-    // private async Task PreparePickList() {
-    //     if (pickListResponse.PickListsLines.All(v => v.PickedQuantity == 0)) {
-    //         foreach (var line in pickListResponse.PickListsLines) {
-    //             line.DocumentLinesBinAllocations = [];
-    //         }
-    //     }
-    //
-    //     (bool success, string? errorMessage) = await sboCompany.PostAsync("PickListsService_UpdateReleasedAllocation", new {
-    //         PickList = pickListResponse,
-    //     });
-    //
-    //     if (!success) {
-    //         logger.LogError("Failed to prepare pick list {AbsEntry}: {ErrorMessage}", absEntry, errorMessage);
-    //         throw new Exception($"Failed to prepare pick list: {errorMessage}");
-    //     }
-    // }
-    //
 
     private async Task PreparePickList() {
-        if (pickListResponse.PickListsLines.Any(v => v.PickedQuantity > 0)) {
+        if (pickListResponse.Ready == "Y") {
             return;
         }
+
+        pickListResponse.Ready = "Y";
 
         // Clear all bin allocations first
         foreach (var line in pickListResponse.PickListsLines) {
@@ -83,12 +69,12 @@ public class PickingUpdate(
         }
     }
 
-    private record SourceMeasureData(int DocEntry, int LineNum, int ObjType, int NumPerMeasure);
+    private record SourceMeasureData(int DocEntry, int LineNum, int ObjType, int NumPerMeasure, double Quantity);
 
     private async Task<SourceMeasureData[]> GetSourceMeasureData() {
         const string query =
         """
-        select T0."OrderEntry", T0."OrderLine", T0."BaseObject", COALESCE(T1."NumPerMsr", T2."NumPerMsr", T3."NumPerMsr") "NumPerMsr"
+        select T0."OrderEntry", T0."OrderLine", T0."BaseObject", COALESCE(T1."NumPerMsr", T2."NumPerMsr", T3."NumPerMsr") "NumPerMsr", COALESCE(T1."InvQty", T2."InvQty", T3."InvQty") "InvQty"
         from PKL1 T0
                  left outer join RDR1 T1 on T1."DocEntry" = T0."OrderEntry" and T1."ObjType" = T0."BaseObject" and T1."LineNum" = T0."OrderLine"
                  left outer join PCH1 T2 on T2."DocEntry" = T0."OrderEntry" and T2."ObjType" = T0."BaseObject" and T2."LineNum" = T0."OrderLine"
@@ -100,7 +86,8 @@ public class PickingUpdate(
             (int)reader["OrderEntry"],
             (int)reader["OrderLine"],
             Convert.ToInt32(reader["BaseObject"]),
-            Convert.ToInt32(reader["NumPerMsr"])
+            Convert.ToInt32(reader["NumPerMsr"]),
+            Convert.ToDouble(reader["InvQty"])
         ));
 
         return sourceData.ToArray();
@@ -117,8 +104,7 @@ public class PickingUpdate(
             .ToList()
         }).ToList();
 
-        bool isBin = pickListResponse.PickListsLines.Any(v => v.DocumentLinesBinAllocations.Count > 0);
-        var sourceData = !isBin ? await GetSourceMeasureData() : [];
+        var sourceData = await GetSourceMeasureData();
 
         foreach (var pickLine in pickListResponse.PickListsLines) {
             var line = lines.FirstOrDefault(v => v.PickEntry == pickLine.LineNumber);
@@ -129,24 +115,26 @@ public class PickingUpdate(
             double pickedQuantity = line.Quantity;
             logger.LogDebug("Processing pick line {LineNumber} with quantity {Quantity} for pick list {AbsEntry}", pickLine.LineNumber, pickedQuantity, absEntry);
 
-            int measureUnit = isBin
-            ? 1
-            : sourceData.FirstOrDefault(v => v.DocEntry == pickLine.OrderEntry && v.LineNum == pickLine.OrderRowID && v.ObjType == pickLine.BaseObjectType)?.NumPerMeasure ??
-              throw new Exception($"Num per measure not found for pick entry {pickLine.LineNumber} in pick {absEntry}");
+            var sourceLine = sourceData.FirstOrDefault(v => v.DocEntry == pickLine.OrderEntry && v.LineNum == pickLine.OrderRowID && v.ObjType == pickLine.BaseObjectType);
+            if (sourceLine == null) {
+                throw new Exception($"Source measure data not found for pick entry {pickLine.LineNumber} in pick {absEntry}");
+            }
 
-            pickLine.PreviouslyReleasedQuantity = pickLine.ReleasedQuantity;
+            // Set what we are actually picking
+            pickLine.PickedQuantity = pickedQuantity;
+            // Increase the released quantity with what we're picking
+            pickLine.ReleasedQuantity += pickedQuantity;
+            
+            // Update status although technically irrelevant
             if (pickLine.PickedQuantity == 0) {
-                pickLine.ReleasedQuantity = pickedQuantity;
-                pickLine.PickedQuantity = pickedQuantity / measureUnit;
+                pickLine.PickStatus = "ps_Released";
+            }
+            else if (pickLine.PickedQuantity == sourceLine.Quantity) {
+                pickLine.PickStatus = "ps_Picked";
             }
             else {
-                pickLine.ReleasedQuantity += pickedQuantity;
-                pickLine.PickedQuantity += pickedQuantity / measureUnit;
+                pickLine.PickStatus = "ps_PartiallyPicked";
             }
-
-            pickLine.PickStatus = pickLine.PickedQuantity == 0   ? "ps_Released" :
-            pickLine.PickedQuantity == pickLine.ReleasedQuantity ? "ps_Picked" :
-                                                                   "ps_PartiallyPicked";
 
             logger.LogDebug("Processing {BinCount} bin allocations for pick line {LineNumber}", line.Bins.Count, pickLine.LineNumber);
 
@@ -173,8 +161,7 @@ public class PickingUpdate(
                         Quantity = bin.Quantity,
                     });
 
-                    logger.LogDebug("Added new bin allocation for BinEntry {BinEntry} with quantity {Quantity}",
-                        bin.BinEntry, bin.Quantity);
+                    logger.LogDebug("Added new bin allocation for BinEntry {BinEntry} with quantity {Quantity}", bin.BinEntry, bin.Quantity);
                 }
             }
         }

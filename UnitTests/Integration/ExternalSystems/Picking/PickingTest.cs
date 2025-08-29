@@ -2,7 +2,7 @@
 using Adapters.CrossPlatform.SBO.Helpers;
 using Core.Entities;
 using Core.Extensions;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using UnitTests.Integration.ExternalSystems.Shared;
@@ -23,7 +23,8 @@ public class PickingTest : BaseExternalTest {
 
         // Get services from the factory's service provider
         using var scope = factory.Services.CreateScope();
-        databaseService = new SboDatabaseService(settings);
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        databaseService = new SboDatabaseService(configuration);
         loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     }
 
