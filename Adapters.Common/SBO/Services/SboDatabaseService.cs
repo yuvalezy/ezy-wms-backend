@@ -1,12 +1,11 @@
 using System.Data;
 using Core.Interfaces;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Adapters.Common.SBO.Services;
-
-public class SboDatabaseService(ISettings settings) {
-    private string ConnectionString => settings.ConnectionStrings.ExternalAdapterConnection;
-
+public class SboDatabaseService(IConfiguration configuration) {
+    private string ConnectionString => configuration.GetConnectionString("ExternalAdapterConnection") ?? throw new Exception("External Adapter Connection string not found");
     public async Task<T?> QuerySingleAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();

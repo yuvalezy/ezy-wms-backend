@@ -1,5 +1,4 @@
 ﻿using Adapters.Common.SBO.Enums;
-using Adapters.Common.SBO.Models;
 using Adapters.Common.SBO.Repositories;
 using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO.Helpers;
@@ -58,6 +57,10 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     // General 
+    public async Task<bool> ValidateUserDefinedFieldAsync(string table, string field) {
+        return await generalRepository.ValidateUserDefinedFieldAsync(table, field);
+    }
+
     public async Task<string?> GetCompanyNameAsync() => await generalRepository.GetCompanyNameAsync();
 
     // Vendor

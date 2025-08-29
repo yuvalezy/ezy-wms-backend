@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
 
 namespace Service.Middlewares;
 public static class MiddlewareExtensions {
@@ -8,9 +7,8 @@ public static class MiddlewareExtensions {
         app.UseSwagger();
         app.UseSwaggerUI();
         app.UseMiddleware<RequestLoggingMiddleware>();
-        ConfigureCommonMiddlewares(app);
-
         
+        ConfigureCommonMiddlewares(app);
         return app;
     }
 
@@ -27,14 +25,6 @@ public static class MiddlewareExtensions {
         app.UseMiddleware<TokenSessionMiddleware>();
         app.UseMiddleware<LicenseValidationMiddleware>();
 
-        #region DEBUG
-
-        app.Use(async (context, next) => {
-            await Task.Delay(1000); // 2 second delay
-            await next();
-        });
-
-        #endregion
 
         
 

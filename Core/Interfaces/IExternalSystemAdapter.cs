@@ -11,11 +11,13 @@ using Core.Models;
 namespace Core.Interfaces;
 
 public interface IExternalSystemAdapter {
+    // General
+    Task<bool> ValidateUserDefinedFieldAsync(string table, string field);
+    Task<string?> GetCompanyNameAsync();
     //Users
     Task<ExternalValue<string>?> GetUserInfoAsync(string id);
     Task<IEnumerable<ExternalValue<string>>> GetUsersAsync();
 
-    Task<string?> GetCompanyNameAsync();
 
     // Warehouse
     Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter = null);

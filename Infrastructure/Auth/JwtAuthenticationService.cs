@@ -3,19 +3,22 @@ using System.Security.Claims;
 using System.Text;
 using Core.Entities;
 using Core.Interfaces;
-using Microsoft.Extensions.Configuration;
+using Core.Models.Settings;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Auth;
 
-public class JwtAuthenticationService(IConfiguration configuration) : IJwtAuthenticationService {
-    private readonly string key      = configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
-    private readonly string issuer   = configuration["Jwt:Issuer"] ?? "LWService";
-    private readonly string audience = configuration["Jwt:Audience"] ?? "LWService";
+public class JwtAuthenticationService(IOptions<JwtSettings> jwtOptions) : IJwtAuthenticationService {
+    private readonly JwtSettings _jwtSettings = jwtOptions.Value ?? throw new InvalidOperationException("JWT settings are not configured");
+    
+    private readonly string _key = jwtOptions.Value?.Key ?? throw new InvalidOperationException("JWT Key is not configured");
+    private readonly string _issuer = jwtOptions.Value?.Issuer ?? "LWService";
+    private readonly string _audience = jwtOptions.Value?.Audience ?? "LWService";
 
     public string GenerateToken(User user, DateTime expiresAt) {
         var    tokenHandler = new JwtSecurityTokenHandler();
-        byte[] key          = Encoding.ASCII.GetBytes(this.key);
+        byte[] key          = Encoding.ASCII.GetBytes(_key);
 
         var claims = new List<Claim> {
             new("UserId", user.Id.ToString()),
@@ -32,8 +35,8 @@ public class JwtAuthenticationService(IConfiguration configuration) : IJwtAuthen
         var tokenDescriptor = new SecurityTokenDescriptor {
             Subject            = new ClaimsIdentity(claims),
             Expires            = expiresAt,
-            Issuer             = issuer,
-            Audience           = audience,
+            Issuer             = _issuer,
+            Audience           = _audience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -43,15 +46,15 @@ public class JwtAuthenticationService(IConfiguration configuration) : IJwtAuthen
 
     public ClaimsPrincipal? ValidateToken(string token) {
         var    tokenHandler = new JwtSecurityTokenHandler();
-        byte[] key          = Encoding.ASCII.GetBytes(this.key);
+        byte[] key          = Encoding.ASCII.GetBytes(_key);
 
         var validationParameters = new TokenValidationParameters {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey         = new SymmetricSecurityKey(key),
             ValidateIssuer           = true,
-            ValidIssuer              = issuer,
+            ValidIssuer              = _issuer,
             ValidateAudience         = true,
-            ValidAudience            = audience,
+            ValidAudience            = _audience,
             ValidateLifetime         = true,
             ClockSkew                = TimeSpan.Zero
         };

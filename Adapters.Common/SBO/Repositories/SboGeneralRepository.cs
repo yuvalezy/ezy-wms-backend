@@ -14,6 +14,15 @@ namespace Adapters.Common.SBO.Repositories;
 public class SboGeneralRepository(SboDatabaseService dbService, ISettings settings) {
     private readonly Filters filters = settings.Filters;
 
+    public async Task<bool> ValidateUserDefinedFieldAsync(string table, string field) {
+        const string query = """select 1 from CUFD where "TableID" = @TableID and "AliasID" = @AliasID""";
+        var parameters = new[] {
+            new SqlParameter("@TableID", SqlDbType.NVarChar, 50) { Value = table },
+            new SqlParameter("@AliasID", SqlDbType.NVarChar, 50) { Value = field }
+        };
+        return await dbService.QuerySingleAsync(query, parameters, _ => true);
+    }
+
     public async Task<string?> GetCompanyNameAsync() {
         const string query = "SELECT COALESCE(\"PrintHeadr\", \"CompnyName\") FROM OADM";
 
