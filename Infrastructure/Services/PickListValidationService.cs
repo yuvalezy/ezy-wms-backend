@@ -26,7 +26,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         int result = db.PickLists
         .Where(p => p.ItemCode == itemCode &&
                     (p.BinEntry == null && binEntry == null || p.BinEntry == binEntry) &&
-                    (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                    (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
         .Select(p => p.Quantity)
         .Concat(
             db.TransferLines
@@ -44,7 +44,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         IEnumerable<PickingValidationResult> validationResults) {
         var dbPickedQuantity = await db.PickLists
         .Where(v => v.AbsEntry == absEntry && v.ItemCode == itemCode &&
-                    (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing))
+                    ((v.Status == ObjectStatus.Open || v.Status == ObjectStatus.Processing) && v.SyncStatus != SyncStatus.ExternalCancel))
         .GroupBy(v => v.PickEntry)
         .Select(v => new { PickEntry = v.Key, Quantity = v.Sum(vv => vv.Quantity) })
         .ToArrayAsync();

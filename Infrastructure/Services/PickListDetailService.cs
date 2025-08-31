@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
@@ -104,12 +105,12 @@ public class PickListDetailService(
         }
 
         var bins = (await adapter.GetPickingDetailItemsBins(binParams)).ToArray();
-
+        
         // Process any closed pick lists that have package commitments
         await ProcessClosedPickListsWithPackages();
 
         var result = db.PickLists
-            .Where(p => p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
+            .Where(p => (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
             .Select(p => new { p.ItemCode, p.BinEntry, p.Quantity })
             .Concat(
                 db.TransferLines

@@ -20,7 +20,7 @@ public class PickListProcessService(
         try {
             // Load local pick list data
             var pickLists = await db.PickLists
-                .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
                 .ToListAsync();
 
             if (!pickLists.Any()) {

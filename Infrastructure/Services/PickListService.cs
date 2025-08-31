@@ -102,7 +102,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         };
 
         var dbPick = await db.PickLists
-        .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+        .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
         .ToArrayAsync();
 
         int dbPickQty = dbPick.Sum(p => p.Quantity);

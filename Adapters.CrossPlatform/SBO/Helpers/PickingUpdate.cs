@@ -124,6 +124,9 @@ public class PickingUpdate(
             pickLine.PickedQuantity = pickedQuantity;
             // Increase the released quantity with what we're picking
             pickLine.ReleasedQuantity += pickedQuantity;
+            if (pickLine.ReleasedQuantity > sourceLine.Quantity) {
+                pickLine.ReleasedQuantity = sourceLine.Quantity;
+            }
             
             // Update status although technically irrelevant
             if (pickLine.PickedQuantity == 0) {
