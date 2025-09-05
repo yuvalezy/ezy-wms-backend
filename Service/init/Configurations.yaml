@@ -1,0 +1,183 @@
+# Core System Configurations Template
+# Default initialization settings for new installations
+# Copy this file to ../config/Configurations.yaml and customize for your environment
+# This is a MANDATORY configuration file for system operation
+
+# Business Operation Options
+# Controls core WMS functionality and workflow behavior
+Options:
+  # General Settings
+  # Whether to enable base unit conversion functionality (bool, default: true)
+  EnableUseBaseUn: true
+  
+  # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
+  # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)
+  ScannerMode: ItemBarcode
+  
+  # Whether to display vendor information in UI screens (bool, default: true)
+  DisplayVendor: true
+  
+  # Whether to append warehouse code as suffix to bin codes (bool, default: false)  
+  WhsCodeBinSuffix: false
+
+  # Goods Receipt Configuration
+  # Whether goods receipt documents are created as drafts (bool, default: false)
+  # true = Draft mode (requires approval), false = Direct posting
+  GoodsReceiptDraft: false
+  
+  # Whether supervisor approval is required for goods receipt modifications (bool, default: false)
+  GoodsReceiptModificationsRequiredSupervisor: false
+  
+  # Whether supervisor approval is required to create goods receipts (bool, default: false)
+  GoodsReceiptCreateSupervisorRequired: false
+  
+  # Type of goods receipt document to create (enum, default: Both)
+  # Values: Transactional (inventory transaction), Confirmation (document confirmation), Both (both types)
+  GoodsReceiptType: Both
+  
+  # Whether to enable target document selection in goods receipt (bool, default: false)
+  GoodsReceiptTargetDocuments: false
+  
+  # Whether goods receipt supports package creation (bool, default: true)
+  GoodsReceiptPackages: true
+  
+  # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
+  GoodsReceiptConfirmationAdjustStock: false
+
+  # Transfer Configuration  
+  # Whether to enable target item selection in transfers (bool, default: false)
+  TransferTargetItems: false
+  
+  # Whether transfer operations require confirmation step (bool, default: false)
+  EnableTransferConfirm: false
+
+  # Package & Unit Configuration
+  # Whether package functionality is enabled system-wide (bool, default: false)
+  # Set to true if you plan to use package features
+  EnablePackages: false
+  
+  # Default unit type for quantity calculations (enum, default: Pack)
+  # Values: Unit(0) (individual units), Dozen(1) (12 units), Pack(2) (package/case)
+  DefaultUnitType: Pack
+  
+  # Whether users can select different unit types during operations (bool, default: false)
+  EnableUnitSelection: false
+
+  # Session Management
+  # Idle timeout in seconds before automatic logout (nullable int, default: null)
+  # null or 0 = no timeout, positive integer = timeout in seconds
+  IdleLogoutTimeout: 0
+
+  # Pick List Configuration
+  # Whether picking operations require verification/check steps (bool, default: false)
+  EnablePickingCheck: false
+
+# Data Filtering Configuration
+# SQL-based filters for restricting data visibility and access
+Filters:
+  # Vendor filtering SQL clause (nullable string)
+  # Applied to vendor queries to restrict visible vendors
+  # Example: "\"QryGroup1\" = 'Y'" (shows only vendors in query group 1)
+  # Leave null for no vendor filtering
+  Vendors: null
+  
+  # Pick and pack customer filtering configuration (nullable object)
+  # Leave null if not using customer filtering for pick/pack operations
+  PickPackOnly: null
+  # Example configuration (uncomment and customize if needed):
+  # PickPackOnly:
+  #   Query: "OCRD.\"QryGroup4\" = 'Y'"
+  #   GroupBy: "OCRD.\"QryGroup4\""
+
+# Warehouse-Specific Configuration
+# Bin entry mappings and warehouse-specific operational settings
+# Add warehouse configurations as needed for your SAP B1 setup
+Warehouses:
+  # Example warehouse configuration (customize warehouse code and bin entries)
+  # Replace "01" with your actual warehouse code from SAP B1
+  "01":
+    # Bin entry ID for initial counting operations (nullable int)
+    # Used as default location for stock counting initialization
+    InitialCountingBinEntry: null
+    
+    # Bin entry ID for cancelled picking operations (required int)
+    # Location where items are returned when picks are cancelled
+    # IMPORTANT: This must be configured for each active warehouse
+    CancelPickingBinEntry: 1
+    
+    # Bin entry ID for staging area (nullable int)
+    # Temporary holding location for picked items before shipping
+    StagingBinEntry: null
+
+# External System Integration
+# Specifies which adapter to use for SAP Business One integration (enum, required)
+# Values: SboWindows (COM interop), SboServiceLayer (REST API via Service Layer)
+# Recommendation: Use SboServiceLayer for new installations (more modern, better performance)
+ExternalAdapter: SboServiceLayer
+
+# SAP Business One Connection Settings
+# Configuration for connecting to SAP B1 database and services
+# IMPORTANT: Update all values to match your SAP B1 environment
+SboSettings:
+  # SAP B1 server hostname or IP address (required string)
+  # Replace with your actual SAP B1 server
+  Server: "YOUR_SAP_SERVER"
+  
+  # SAP Service Layer URL for REST API access (nullable string)
+  # Required when ExternalAdapter is SboServiceLayer
+  # Format: https://server:port (usually port 50000)
+  # Update with your Service Layer URL
+  ServiceLayerUrl: "https://YOUR_SAP_SERVER:50000"
+  
+  # SAP B1 database server type (required int)
+  # SQL Server values: 4(MSSQL2005), 6(MSSQL2008), 7(MSSQL2012), 
+  #                   8(MSSQL2014), 10(MSSQL2016), 11(MSSQL2017), 15(MSSQL2019)
+  # HANA value: 9(HANADB)
+  # Choose the version matching your SQL Server or use 9 for HANA
+  ServerType: 15
+  
+  # Whether to use Windows Authentication for database connection (bool, default: false)
+  TrustedConnection: false
+  
+  # Database server username for authentication (nullable string)
+  # Used when TrustedConnection is false, leave null if using Windows auth
+  ServerUser: null
+  
+  # Database server password for authentication (nullable string)
+  # Used when TrustedConnection is false, leave null if using Windows auth
+  ServerPassword: null
+  
+  # SAP B1 database name (required string)
+  # Replace with your actual SAP B1 database name
+  Database: "YOUR_DATABASE"
+  
+  # SAP B1 application username (nullable string)
+  # User account for SAP B1 application login
+  User: "manager"
+  
+  # SAP B1 application password (nullable string)
+  # Password for SAP B1 application login
+  # IMPORTANT: Change from default password
+  Password: "YOUR_SAP_PASSWORD"
+
+# Installation Checklist:
+# 1. Copy this file to ../config/Configurations.yaml
+# 2. Update SboSettings with your actual SAP B1 server details
+# 3. Configure warehouse codes and bin entries to match your SAP B1 setup
+# 4. Set appropriate business options for your operational requirements
+# 5. Configure filters if you need to restrict data visibility
+# 6. Test the connection to ensure all settings are correct
+# 7. Review security settings and change default passwords
+
+# Security Notes:
+# - Change all default passwords before production use
+# - Use strong passwords for SAP B1 connections
+# - Consider using environment variables for sensitive data
+# - Test all SQL filter queries for security vulnerabilities
+# - Ensure proper network security for Service Layer connections
+
+# Performance Notes:
+# - SboServiceLayer generally offers better performance than SboWindows
+# - Configure appropriate timeouts for your network environment
+# - Monitor bin entry access patterns and optimize as needed
+# - Consider caching strategies for frequently accessed warehouse data

@@ -20,6 +20,7 @@ if (args.Length > 0 && args[0] == "--test-sbo") {
 builder.Host.UseWindowsService();
 
 // Load YAML configuration files before binding
+builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: false, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/PickingDetails.yaml", optional: true, reloadOnChange: true);

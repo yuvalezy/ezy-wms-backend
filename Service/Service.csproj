@@ -91,5 +91,9 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="customers\processed\" />
+    </ItemGroup>
+
 
 </Project>

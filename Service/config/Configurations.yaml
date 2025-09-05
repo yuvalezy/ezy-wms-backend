@@ -1,0 +1,159 @@
+# Core System Configurations
+# Essential business operation settings, external system integration, and warehouse configurations
+# This is a mandatory configuration file for system operation
+
+# Business Operation Options
+# Controls core WMS functionality and workflow behavior
+Options:
+  # General Settings
+  # Whether to enable base unit conversion functionality (bool, default: true)
+  EnableUseBaseUn: true
+  
+  # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
+  # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)
+  ScannerMode: ItemBarcode
+  
+  # Whether to display vendor information in UI screens (bool, default: true)
+  DisplayVendor: true
+  
+  # Whether to append warehouse code as suffix to bin codes (bool, default: false)  
+  WhsCodeBinSuffix: false
+
+  # Goods Receipt Configuration
+  # Whether goods receipt documents are created as drafts (bool, default: false)
+  # true = Draft mode (requires approval), false = Direct posting
+  GoodsReceiptDraft: false
+  
+  # Whether supervisor approval is required for goods receipt modifications (bool, default: false)
+  GoodsReceiptModificationsRequiredSupervisor: true
+  
+  # Whether supervisor approval is required to create goods receipts (bool, default: false)
+  GoodsReceiptCreateSupervisorRequired: true
+  
+  # Type of goods receipt document to create (enum, default: Both)
+  # Values: Transactional (inventory transaction), Confirmation (document confirmation), Both (both types)
+  GoodsReceiptType: Both
+  
+  # Whether to enable target document selection in goods receipt (bool, default: false)
+  GoodsReceiptTargetDocuments: false
+  
+  # Whether goods receipt supports package creation (bool, default: true)
+  GoodsReceiptPackages: true
+  
+  # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
+  GoodsReceiptConfirmationAdjustStock: true
+
+  # Transfer Configuration  
+  # Whether to enable target item selection in transfers (bool, default: false)
+  TransferTargetItems: false
+  
+  # Whether transfer operations require confirmation step (bool, default: false)
+  EnableTransferConfirm: true
+
+  # Package & Unit Configuration
+  # Whether package functionality is enabled system-wide (bool, default: false)
+  EnablePackages: true
+  
+  # Default unit type for quantity calculations (enum, default: Pack)
+  # Values: Unit(0) (individual units), Dozen(1) (12 units), Pack(2) (package/case)
+  DefaultUnitType: Pack
+  
+  # Whether users can select different unit types during operations (bool, default: false)
+  EnableUnitSelection: true
+
+  # Session Management
+  # Idle timeout in seconds before automatic logout (nullable int, default: null)
+  # null or 0 = no timeout, positive integer = timeout in seconds
+  IdleLogoutTimeout: 0
+
+  # Pick List Configuration
+  # Whether picking operations require verification/check steps (bool, default: false)
+  EnablePickingCheck: true
+
+# Data Filtering Configuration
+# SQL-based filters for restricting data visibility and access
+Filters:
+  # Vendor filtering SQL clause (nullable string)
+  # Applied to vendor queries to restrict visible vendors
+  # Example: "\"QryGroup1\" = 'Y'" (shows only vendors in query group 1)
+  Vendors: "\"QryGroup1\" = 'Y'"
+  
+  # Pick and pack customer filtering configuration (nullable object)
+  PickPackOnly:
+    # SQL query clause for filtering customers (required string)
+    Query: "OCRD.\"QryGroup4\" = 'Y'"
+    
+    # SQL GROUP BY expression for query results (required string)
+    GroupBy: "OCRD.\"QryGroup4\""
+
+# Warehouse-Specific Configuration
+# Bin entry mappings and warehouse-specific operational settings
+Warehouses:
+  # Warehouse code as key, settings as value (Dictionary<string, WarehouseSettings>)
+  SM:
+    # Bin entry ID for initial counting operations (nullable int)
+    # Used as default location for stock counting initialization
+    InitialCountingBinEntry: 3404
+    
+    # Bin entry ID for cancelled picking operations (required int)
+    # Location where items are returned when picks are cancelled
+    CancelPickingBinEntry: 3577
+    
+    # Bin entry ID for staging area (nullable int)
+    # Temporary holding location for picked items before shipping
+    StagingBinEntry: 3578
+
+# External System Integration
+# Specifies which adapter to use for SAP Business One integration (enum, required)
+# Values: SboWindows (COM interop), SboServiceLayer (REST API via Service Layer)
+ExternalAdapter: SboServiceLayer
+
+# SAP Business One Connection Settings
+# Configuration for connecting to SAP B1 database and services
+SboSettings:
+  # SAP B1 server hostname or IP address (required string)
+  Server: YUVAL-PC
+  
+  # SAP Service Layer URL for REST API access (nullable string)
+  # Required when ExternalAdapter is SboServiceLayer
+  # Format: https://server:port (usually port 50000)
+  ServiceLayerUrl: https://localhost:50000
+  
+  # SAP B1 database server type (required int)
+  # SQL Server values: 4(MSSQL2005), 6(MSSQL2008), 7(MSSQL2012), 
+  #                   8(MSSQL2014), 10(MSSQL2016), 11(MSSQL2017), 15(MSSQL2019)
+  # HANA value: 9(HANADB)
+  ServerType: 15
+  
+  # Whether to use Windows Authentication for database connection (bool, default: false)
+  TrustedConnection: false
+  
+  # Database server username for authentication (nullable string)
+  # Used when TrustedConnection is false
+  ServerUser: null
+  
+  # Database server password for authentication (nullable string)
+  # Used when TrustedConnection is false  
+  ServerPassword: null
+  
+  # SAP B1 database name (required string)
+  Database: UNIT_TEST
+  
+  # SAP B1 application username (nullable string)
+  # User account for SAP B1 application login
+  User: manager
+  
+  # SAP B1 application password (nullable string)
+  # Password for SAP B1 application login
+  Password: be1s
+
+# Configuration Notes:
+# - This file is mandatory and must be present for system operation
+# - All enum values are case-sensitive and must match exactly
+# - SQL filter clauses should be properly escaped for your database type
+# - Warehouse codes must match existing warehouse definitions in SAP B1
+# - Bin entry IDs must correspond to valid bin locations in the warehouse
+# - ServerType values depend on your SAP B1 database server version
+# - Service Layer URL is only required when using SboServiceLayer adapter
+# - Test all SQL filter queries before deploying to production
+# - Backup existing configurations before making changes
