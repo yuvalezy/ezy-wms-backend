@@ -81,7 +81,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return await dbService.QueryAsync(query, parameters, reader => MapItemCheckResponse(reader, customFields));
     }
 
-    private (string query, List<CustomField> customFields) BuildItemQuery(string fromClause) {
+    private (string query, CustomField[] customFields) BuildItemQuery(string fromClause) {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""select "ItemCode", "ItemName", "BuyUnitMsr", COALESCE("NumInBuy", 1) as "NumInBuy", "PurPackMsr", COALESCE("PurPackUn", 1) as "PurPackUn" """);
 
@@ -93,7 +93,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return (queryBuilder.ToString(), customFields);
     }
 
-    private (string query, List<CustomField> customFields) BuildItemQueryWithBarcode() {
+    private (string query, CustomField[] customFields) BuildItemQueryWithBarcode() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
                             select OBCD."ItemCode" as "ItemCode"
@@ -116,9 +116,9 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return (queryBuilder.ToString(), customFields);
     }
 
-    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
+    private CustomField[] GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
-    private ItemCheckResponse MapItemCheckResponse(IDataReader reader, List<CustomField> customFields) {
+    private ItemCheckResponse MapItemCheckResponse(IDataReader reader, CustomField[] customFields) {
         var item = new ItemCheckResponse {
             ItemCode = reader["ItemCode"] as string ?? string.Empty
         };
@@ -207,7 +207,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         return response;
     }
 
-    private (string query, List<CustomField> customFields) BuildItemsWarehouseStockQuery(int itemCount) {
+    private (string query, CustomField[] customFields) BuildItemsWarehouseStockQuery(int itemCount) {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
                             select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",

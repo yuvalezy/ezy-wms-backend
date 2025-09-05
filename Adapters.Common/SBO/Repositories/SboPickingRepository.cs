@@ -12,8 +12,6 @@ using Microsoft.Data.SqlClient;
 namespace Adapters.Common.SBO.Repositories;
 
 public class SboPickingRepository(SboDatabaseService dbService, ISettings settings) {
-    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
-
     public async Task<IEnumerable<PickingDocumentResponse>> GetPickLists(PickListsRequest request, string warehouse) {
         var pickPackOnly = settings.Filters.PickPackOnly;
         var sb = new StringBuilder(
@@ -119,7 +117,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 T0."PickEntry"
             """);
 
-        CustomFieldsHelper.AppendCustomFieldsToQuery(sb, settings.PickingDetails);
+        if (settings.CustomFields?["PickingDetails"] != null) {
+            CustomFieldsHelper.AppendCustomFieldsToQuery(sb, settings.CustomFields["PickingDetails"]);
+        }
 
         sb.Append(
             """
@@ -149,7 +149,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                       T0."PickEntry"
                   """);
         
-        CustomFieldsHelper.AppendCustomFieldsToGroupBy(sb, settings.PickingDetails);
+        if (settings.CustomFields?["PickingDetails"] != null) {
+            CustomFieldsHelper.AppendCustomFieldsToGroupBy(sb, settings.CustomFields["PickingDetails"]);
+        }
 
 
         sb.Append(" ORDER BY T0.\"BaseObject\", T0.\"OrderEntry\"");
@@ -169,7 +171,10 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 TotalOpenItems = (int)reader.GetDecimal(7),
                 PickEntry = reader.GetInt32(8),
             };
-            CustomFieldsHelper.ReadCustomFields(reader, settings.PickingDetails, detail);
+
+            if (settings.CustomFields?["PickingDetails"] != null) {
+                CustomFieldsHelper.ReadCustomFields(reader, settings.CustomFields["PickingDetails"], detail);
+            }
 
             return detail;
         });
@@ -193,7 +198,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
-    private (string query, List<CustomField> customFields) BuildPickingDetailItemsQuery() {
+    private (string query, CustomField[] customFields) BuildPickingDetailItemsQuery() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
                             SELECT 
@@ -208,7 +213,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                                 OITM."PurPackMsr" as "PurPackMsr"
                             """);
 
-        var customFields = GetCustomFields();
+        var customFields = CustomFieldsHelper.GetCustomFields(settings, "Items");
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append("""

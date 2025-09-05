@@ -1,0 +1,104 @@
+# Custom Fields Configuration
+# Defines custom fields that can be displayed and used across different modules
+# Maps to Dictionary<string, CustomField[]> in Settings.CustomFields
+
+CustomFields:
+  # Items custom fields - Fields available for item-related operations
+  Items:
+    # Each custom field defines data that can be retrieved and displayed
+    
+    - # Unique identifier for the field (required string)
+      Key: FrgnName
+      
+      # SQL query to retrieve the field data (string, marked with [JsonIgnore])
+      Query: OITM.FrgnName
+      
+      # Human-readable description shown in UI (required string)
+      Description: Second Name
+      
+      # Field data type (required enum)
+      # Values: Text(0), Number(1), Date(2)
+      Type: Text
+      
+      # SQL expression for grouping query results (nullable string, marked with [JsonIgnore])
+      # GroupBy: null
+
+    - Key: ItmsGrpNam
+      Query: (SELECT [ItmsGrpNam] FROM OITB WHERE ItmsGrpCod = OITM.ItmsGrpCod)
+      Description: Item Group
+      Type: Text
+      GroupBy: OITM.ItmsGrpCod
+
+    - Key: FirmName
+      Query: (SELECT [FirmName] FROM OMRC WHERE FirmCode = OITM.FirmCode)
+      Description: Firm Name
+      Type: Text
+      GroupBy: OITM.FirmCode
+
+    - Key: DocEntry
+      Query: OITM.DocEntry
+      Description: Item Entry
+      Type: Number
+
+    - Key: UpdateDate
+      Query: OITM.UpdateDate
+      Description: Update Date
+      Type: Date
+
+    - Key: Volume
+      Query: OITM.BVolume
+      Description: Volumen (m³)
+      Type: Number
+
+    - Key: Weight
+      Query: OITM.BVolume
+      Description: Peso (kg)
+      Type: Number
+      
+  PickingDetails:
+    - Key: Marca                                          # Unique identifier (required string)
+      Description: Marca                                  # Display name in UI (required string)
+      Type: Text                                          # Data type: Text, Number, or Date (required enum)
+      Query: COALESCE(ORDR.U_MARCA, OINV.U_MARCA, OWTQ.U_MARCA)  # SQL query to retrieve data (string, ignored in JSON)
+      GroupBy: ORDR.U_MARCA, OINV.U_MARCA, OWTQ.U_MARCA  # SQL grouping expression (nullable string, ignored in JSON)
+  # Example of additional custom field collections (commented out)
+  # You can add more collections for different modules:
+  
+  # Warehouses:
+  #   - Key: WarehouseCode
+  #     Query: OWHS.WhsCode
+  #     Description: Warehouse Code
+  #     Type: Text
+  #   
+  #   - Key: WarehouseName
+  #     Query: OWHS.WhsName
+  #     Description: Warehouse Name
+  #     Type: Text
+
+  # Vendors:
+  #   - Key: VendorCode
+  #     Query: OCRD.CardCode
+  #     Description: Vendor Code
+  #     Type: Text
+  #     
+  #   - Key: VendorName
+  #     Query: OCRD.CardName
+  #     Description: Vendor Name
+  #     Type: Text
+  #
+  #   - Key: CreditLimit
+  #     Query: OCRD.CreditLine
+  #     Description: Credit Limit
+  #     Type: Number
+
+# Field Structure Documentation:
+# - Key: Unique identifier across all custom fields in the collection (required string)
+# - Query: SQL query for data retrieval (string, ignored in JSON serialization)
+# - Description: Display label shown in UI (required string)
+# - Type: CustomFieldType enum (Text=0, Number=1, Date=2) (required)
+# - GroupBy: SQL grouping expression (nullable string, ignored in JSON serialization)
+
+# Notes:
+# - Query and GroupBy properties are marked with [JsonIgnore] in the CustomField class
+# - The structure supports multiple collections (Items, Warehouses, Vendors, etc.)
+# - Each collection contains an array of CustomField objects

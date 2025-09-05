@@ -108,9 +108,9 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         });
     }
 
-    private Dictionary<int, string> BinCodes = new();
+    private readonly Dictionary<int, string> binCodes = new();
     public async Task<string?> GetBinCodeAsync(int binEntry) {
-        if (BinCodes.TryGetValue(binEntry, out string? binCode))
+        if (binCodes.TryGetValue(binEntry, out string? binCode))
             return binCode;
         
         const string query = """select "BinCode" from OBIN where "AbsEntry" = @BinEntry""";
@@ -121,7 +121,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
 
         binCode = await dbService.QuerySingleAsync(query, parameters, reader => reader.GetString(0));
         if (!string.IsNullOrWhiteSpace(binCode)) {
-            BinCodes[binEntry] = binCode;
+            binCodes[binEntry] = binCode;
         }
         return binCode;
     }
@@ -136,7 +136,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return await dbService.QueryAsync(query, parameters, reader => MapBinContentResponse(reader, customFields));
     }
 
-    private (string query, List<CustomField> customFields) BuildBinCheckQuery() {
+    private (string query, CustomField[] customFields) BuildBinCheckQuery() {
         var queryBuilder = new StringBuilder();
         queryBuilder.Append("""
                            select T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand", 
@@ -158,9 +158,9 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return (queryBuilder.ToString(), customFields);
     }
 
-    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
+    private CustomField[] GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
 
-    private BinContentResponse MapBinContentResponse(IDataReader reader, List<CustomField> customFields) {
+    private BinContentResponse MapBinContentResponse(IDataReader reader, CustomField[] customFields) {
         var response = new BinContentResponse {
             OnHand = Convert.ToDouble(reader["OnHand"]),
             BinCode = reader["BinCode"] as string ?? string.Empty

@@ -19,8 +19,6 @@ namespace Adapters.Common.SBO.Repositories;
 public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFactory loggerFactory, ISettings settings) {
     private readonly SourceDocumentRetrieval sourceDocumentRetrieval = new(dbService);
 
-    private List<CustomField> GetCustomFields() => CustomFieldsHelper.GetCustomFields(settings, "Items");
-
     public async Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string? barcode, string warehouse, List<ObjectKey> specificDocuments, bool useBaseUnit) {
         var response = new GoodsReceiptValidationResult {
             IsValid = true,
@@ -267,7 +265,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         return response;
     }
 
-    private ((string headerQuery, string linesQuery) query, List<CustomField> customFields) BuildProcessDocumentsDataQuery(ObjectKey[] docs) {
+    private ((string headerQuery, string linesQuery) query, CustomField[] customFields) BuildProcessDocumentsDataQuery(ObjectKey[] docs) {
         var sbDocs = new StringBuilder();
         for (int i = 0; i < docs.Length; i++) {
             if (i > 0) sbDocs.Append(" union ");
@@ -300,7 +298,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                                     COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder", T4."VisOrder")+1 as "VisOrder"
                              """);
 
-        var customFields = GetCustomFields();
+        var customFields = CustomFieldsHelper.GetCustomFields(settings, "Items");
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
 
         queryBuilder.Append($"""

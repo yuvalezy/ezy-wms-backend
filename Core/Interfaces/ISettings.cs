@@ -13,7 +13,6 @@ public interface ISettings {
     public ExternalAdapterType ExternalAdapter { get; set; }
     public PackageSettings Package { get; set; }
     public MetaDataDefinitions Item { get; set; }
-    public List<CustomField> PickingDetails { get; set; }
     public LicensingSettings Licensing { get; set; }
     public BackgroundServicesSettings BackgroundServices { get; set; }
     public ExternalCommandsSettings ExternalCommands { get; set; }
