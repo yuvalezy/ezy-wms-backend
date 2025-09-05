@@ -631,7 +631,7 @@
             Item Controller - Provides item/barcode/bin location utilities and metadata management
             </summary>
         </member>
-        <member name="M:Service.Controllers.ItemsController.#ctor(Core.Interfaces.IPublicService,Core.Interfaces.IItemService)">
+        <member name="M:Service.Controllers.ItemsController.#ctor(Core.Interfaces.IPublicService,Core.Interfaces.ISettings,Core.Interfaces.IItemService)">
             <summary>
             Item Controller - Provides item/barcode/bin location utilities and metadata management
             </summary>

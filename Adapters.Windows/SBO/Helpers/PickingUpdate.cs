@@ -20,7 +20,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                 sboCompany.ConnectCompany();
                 sboCompany.Company.StartTransaction();
                 PreparePickList();
-                Process();
+                await Process();
                 if (sboCompany.Company.InTransaction)
                     sboCompany.Company.EndTransaction(BoWfTransOpt.wf_Commit);
             }
@@ -36,7 +36,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
         }
     }
 
-    private void Process() {
+    private async Task Process() {
         var pl = (PickLists)sboCompany.Company.GetBusinessObject(BoObjectTypes.oPickLists);
         try {
             if (!pl.GetByKey(absEntry)) {
@@ -47,7 +47,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                 throw new Exception($"Cannot process document if the Status is closed");
             }
 
-            ProcessPickList(pl);
+            await ProcessPickList(pl);
         }
         finally {
             Marshal.ReleaseComObject(pl);
@@ -114,7 +114,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
         return sourceData.ToArray();
     }
 
-    private void ProcessPickList(PickLists pl) {
+    private async Task ProcessPickList(PickLists pl) {
         var lines = data.GroupBy(v => v.PickEntry)
         .Select(a => new {
             PickEntry = a.Key,
@@ -122,12 +122,19 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
             Bins = a.GroupBy(b => b.BinEntry)
             .Select(c => new { BinEntry = c.Key, Quantity = c.Sum(d => d.Quantity) })
         });
+        
+        var sourceData = await GetSourceMeasureData();
 
         for (int i = 0; i < pl.Lines.Count; i++) {
             pl.Lines.SetCurrentLine(i);
             var value = lines.FirstOrDefault(v => v.PickEntry == pl.Lines.LineNumber);
             if (value == null) {
                 continue;
+            }
+            
+            var sourceLine = sourceData.FirstOrDefault(v => v.DocEntry == pl.Lines.OrderEntry && v.LineNum == pl.Lines.OrderRowID && v.ObjType.ToString() == pl.Lines.BaseObjectType);
+            if (sourceLine == null) {
+                throw new Exception($"Source measure data not found for pick entry {pl.Lines.LineNumber} in pick {absEntry}");
             }
 
             pl.Lines.PickedQuantity += value.Quantity;

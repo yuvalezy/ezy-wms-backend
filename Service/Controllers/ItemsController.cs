@@ -21,6 +21,7 @@ namespace Service.Controllers;
 [Authorize]
 public class ItemsController(
     IPublicService publicService,
+    ISettings settings,
     IItemService itemService) : ControllerBase {
     /// <summary>
     /// Scans and validates a bin location barcode
@@ -40,6 +41,11 @@ public class ItemsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<BinLocationResponse?>> ScanBinLocation([FromQuery] string bin) {
+        if (settings.Options.WhsCodeBinSuffix) {
+            string warehouse = HttpContext.GetSession().Warehouse;
+            bin = $"{warehouse}-{bin}";
+        }
+        //G01-R01-P01-F06
         var response = await publicService.ScanBinLocationAsync(bin);
 
         return response != null ? Ok(response) : NotFound();

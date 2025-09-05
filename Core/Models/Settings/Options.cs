@@ -7,6 +7,7 @@ public record Options {
     public bool EnableUseBaseUn { get; set; } = true;
     public ScannerMode ScannerMode { get; set; } = ScannerMode.ItemBarcode;
     public bool DisplayVendor { get; set; } = true;
+    public bool WhsCodeBinSuffix { get; set; }
 
     // Goods Receipt
     public bool GoodsReceiptDraft { get; init; }
@@ -15,7 +16,7 @@ public record Options {
     public GoodsReceiptDocumentType GoodsReceiptType { get; set; } = GoodsReceiptDocumentType.Both;
     public bool GoodsReceiptTargetDocuments { get; set; }
     public bool GoodsReceiptPackages { get; set; } = true;
-    
+
     public bool GoodsReceiptConfirmationAdjustStock { get; set; }
 
     //Transfer
