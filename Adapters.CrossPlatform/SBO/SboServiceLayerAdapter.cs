@@ -28,7 +28,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     private readonly SboCompany sboCompany;
     private readonly SboDatabaseService databaseService;
     private readonly ILoggerFactory loggerFactory;
-    private readonly ItemSettings itemSettings;
+    private readonly MetaDataDefinitions metaDataDefinitions;
 
     public SboServiceLayerAdapter(SboEmployeeRepository employeeRepository,
         SboGeneralRepository generalRepository,
@@ -48,7 +48,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         this.inventoryCountingRepository = inventoryCountingRepository;
         this.sboCompany = sboCompany;
         this.databaseService = databaseService;
-        this.itemSettings = settings.Item;
+        this.metaDataDefinitions = settings.Item;
         this.loggerFactory = loggerFactory;
         if (string.IsNullOrWhiteSpace(settings.SboSettings?.ServiceLayerUrl)) {
             throw new Exception("Service Layer Url is not set");
@@ -99,12 +99,12 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
 
     public async Task<ItemMetadataResponse?> GetItemMetadataAsync(string itemCode) {
-        using var processor = new ItemMetadataProcessor(sboCompany, itemSettings, itemCode, loggerFactory);
+        using var processor = new ItemMetadataProcessor(sboCompany, metaDataDefinitions, itemCode, loggerFactory);
         return await processor.GetItemMetadata();
     }
 
     public async Task<ItemMetadataResponse> UpdateItemMetadataAsync(string itemCode, ItemMetadataRequest request) {
-        using var processor = new ItemMetadataProcessor(sboCompany, itemSettings, itemCode, loggerFactory);
+        using var processor = new ItemMetadataProcessor(sboCompany, metaDataDefinitions, itemCode, loggerFactory);
         return await processor.SetItemMetadata(request);
     }
 

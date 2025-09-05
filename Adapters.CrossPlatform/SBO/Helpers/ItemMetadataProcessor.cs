@@ -9,7 +9,7 @@ namespace Adapters.CrossPlatform.SBO.Helpers;
 
 public class ItemMetadataProcessor(
     SboCompany sboCompany,
-    ItemSettings itemSettings,
+    MetaDataDefinitions metaDataDefinitions,
     string itemCode,
     ILoggerFactory loggerFactory) : IDisposable {
     private readonly Dictionary<string, object?> cachedMetadata = new();
@@ -122,11 +122,11 @@ public class ItemMetadataProcessor(
     /// Builds the $select query parameter from configured metadata fields
     /// </summary>
     private string BuildSelectFields() {
-        if (itemSettings.MetadataDefinition.Length == 0) {
+        if (metaDataDefinitions.MetadataDefinition.Length == 0) {
             return string.Empty;
         }
 
-        var selectFields = itemSettings.MetadataDefinition
+        var selectFields = metaDataDefinitions.MetadataDefinition
         .Select(field => field.Id)
         .Where(fieldId => !string.IsNullOrEmpty(fieldId))
         .Distinct()
@@ -142,7 +142,7 @@ public class ItemMetadataProcessor(
     private Dictionary<string, object?> ExtractMetadataFromSapResponse(JsonElement sapResponse) {
         var metadata = new Dictionary<string, object?>();
 
-        foreach (var fieldDef in itemSettings.MetadataDefinition) {
+        foreach (var fieldDef in metaDataDefinitions.MetadataDefinition) {
             if (sapResponse.TryGetProperty(fieldDef.Id, out var propertyValue)) {
                 var convertedValue = ConvertSapValueToWmsType(propertyValue, fieldDef.Type);
                 metadata[fieldDef.Id] = convertedValue;
@@ -186,7 +186,7 @@ public class ItemMetadataProcessor(
         var writableFields = new Dictionary<string, object?>();
 
         foreach (var kvp in requestMetadata) {
-            var fieldDef = itemSettings.MetadataDefinition.FirstOrDefault(f =>
+            var fieldDef = metaDataDefinitions.MetadataDefinition.FirstOrDefault(f =>
             string.Equals(f.Id, kvp.Key, StringComparison.OrdinalIgnoreCase));
 
             if (fieldDef != null && !fieldDef.ReadOnly) {
@@ -229,7 +229,7 @@ public class ItemMetadataProcessor(
             return null;
         }
 
-        var fieldDef = itemSettings.MetadataDefinition.FirstOrDefault(f =>
+        var fieldDef = metaDataDefinitions.MetadataDefinition.FirstOrDefault(f =>
         string.Equals(f.Id, fieldId, StringComparison.OrdinalIgnoreCase));
 
         if (fieldDef == null) {

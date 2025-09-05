@@ -105,54 +105,58 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     }
 
     public async Task<IEnumerable<PickingDetailResponse>> GetPickingDetails(Dictionary<string, object> parameters) {
-        string query =
-        """
-        SELECT
-            T0."BaseObject" AS "Type",
-            T0."OrderEntry" AS "Entry",
-            COALESCE(T2."DocNum", T3."DocNum", T4."DocNum") AS "DocNum",
-            COALESCE(T2."DocDate", T3."DocDate", T4."DocDate") AS "DocDate",
-            COALESCE(T2."CardCode", T3."CardCode", T4."CardCode") AS "CardCode",
-            COALESCE(T2."CardName", T3."CardName", T4."CardName") AS "CardName",
-            SUM(T0."RelQtty" + T0."PickQtty") AS "TotalItems",
-            SUM(T0."RelQtty") AS "TotalOpenItems",
-            T0."PickEntry"
-        FROM PKL1 T0
-        LEFT JOIN ORDR T2 
-            ON T2."DocEntry" = T0."OrderEntry" AND T2."ObjType" = T0."BaseObject"
-        LEFT JOIN OINV T3 
-            ON T3."DocEntry" = T0."OrderEntry" AND T3."ObjType" = T0."BaseObject"
-        LEFT JOIN OWTQ T4 
-            ON T4."DocEntry" = T0."OrderEntry" AND T4."ObjType" = T0."BaseObject"
-        WHERE 
-            T0."AbsEntry" = @AbsEntry
+        var sb = new StringBuilder(
+            """
+            SELECT
+                T0."BaseObject" AS "Type",
+                T0."OrderEntry" AS "Entry",
+                COALESCE(ORDR."DocNum", OINV."DocNum", OWTQ."DocNum") AS "DocNum",
+                COALESCE(ORDR."DocDate", OINV."DocDate", OWTQ."DocDate") AS "DocDate",
+                COALESCE(ORDR."CardCode", OINV."CardCode", OWTQ."CardCode") AS "CardCode",
+                COALESCE(ORDR."CardName", OINV."CardName", OWTQ."CardName") AS "CardName",
+                SUM(T0."RelQtty" + T0."PickQtty") AS "TotalItems",
+                SUM(T0."RelQtty") AS "TotalOpenItems",
+                T0."PickEntry"
+            """);
 
-        """;
+        CustomFieldsHelper.AppendCustomFieldsToQuery(sb, settings.PickingDetails);
+
+        sb.Append(
+            """
+            FROM PKL1 T0
+            LEFT JOIN ORDR ON ORDR."DocEntry" = T0."OrderEntry" AND ORDR."ObjType" = T0."BaseObject"
+            LEFT JOIN OINV ON OINV."DocEntry" = T0."OrderEntry" AND OINV."ObjType" = T0."BaseObject"
+            LEFT JOIN OWTQ ON OWTQ."DocEntry" = T0."OrderEntry" AND OWTQ."ObjType" = T0."BaseObject"
+            WHERE T0."AbsEntry" = @AbsEntry
+            """);
 
         if (parameters.ContainsKey("@Type")) {
-            query += " AND T0.\"BaseObject\" = @Type";
+            sb.Append(" AND T0.\"BaseObject\" = @Type");
         }
 
         if (parameters.ContainsKey("@Entry")) {
-            query += " AND T0.\"OrderEntry\" = @Entry";
+            sb.Append(" AND T0.\"OrderEntry\" = @Entry");
         }
 
-        query += """
-                  GROUP BY 
-                     T0."BaseObject", 
-                     T0."OrderEntry", 
-                     T2."DocNum", T3."DocNum", T4."DocNum", 
-                     T2."DocDate", T3."DocDate", T4."DocDate", 
-                     T2."CardCode", T3."CardCode", T4."CardCode", 
-                     T2."CardName", T3."CardName", T4."CardName",
-                     T0."PickEntry"
-                 """;
+        sb.Append("""
+                   GROUP BY 
+                      T0."BaseObject", 
+                      T0."OrderEntry", 
+                      ORDR."DocNum", OINV."DocNum", OWTQ."DocNum", 
+                      ORDR."DocDate", OINV."DocDate", OWTQ."DocDate", 
+                      ORDR."CardCode", OINV."CardCode", OWTQ."CardCode", 
+                      ORDR."CardName", OINV."CardName", OWTQ."CardName",
+                      T0."PickEntry"
+                  """);
+        
+        CustomFieldsHelper.AppendCustomFieldsToGroupBy(sb, settings.PickingDetails);
 
-        query += " ORDER BY T0.\"BaseObject\", T0.\"OrderEntry\"";
+
+        sb.Append(" ORDER BY T0.\"BaseObject\", T0.\"OrderEntry\"");
 
         var sqlParams = ConvertToSqlParameters(parameters);
 
-        return await dbService.QueryAsync(query, sqlParams, reader =>
+        return await dbService.QueryAsync(sb.ToString(), sqlParams, reader =>
         {
             var detail = new PickingDetailResponse {
                 Type = reader.GetInt32(0),
@@ -165,6 +169,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 TotalOpenItems = (int)reader.GetDecimal(7),
                 PickEntry = reader.GetInt32(8),
             };
+            CustomFieldsHelper.ReadCustomFields(reader, settings.PickingDetails, detail);
 
             return detail;
         });

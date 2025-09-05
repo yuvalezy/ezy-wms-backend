@@ -650,19 +650,6 @@
             Global settings for the external commands system
             </summary>
         </member>
-        <member name="P:Core.Models.Settings.ItemSettings.MetadataDefinition">
-            <summary>
-            Configurable metadata field definitions for items loaded from external systems
-            External system (SAP) will validate field names and read-only restrictions
-            </summary>
-        </member>
-        <member name="M:Core.Models.Settings.ItemSettings.ValidateMetadataDefinitions">
-            <summary>
-            Validates the metadata definitions for basic consistency
-            Field-specific validation (valid names, read-only restrictions) is handled by external system
-            </summary>
-            <returns>List of validation error messages, empty if valid</returns>
-        </member>
         <member name="T:Core.Models.Settings.MetadataDefinition">
             <summary>
             Defines a custom metadata field that can be configured for items loaded from external systems
@@ -682,6 +669,16 @@
         <member name="P:Core.Models.Settings.MetadataDefinition.Type">
             <summary>
             Data type for validation and UI rendering
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.MetadataDefinition.Query">
+            <summary>
+            SQL query to retrieve additional data for the metadata field
+            </summary>
+        </member>
+        <member name="P:Core.Models.Settings.MetadataDefinition.GroupBy">
+            <summary>
+            SQL expression for grouping query results 
             </summary>
         </member>
         <member name="P:Core.Models.Settings.MetadataDefinition.Step">
@@ -756,6 +753,19 @@
             <summary>
             Integer number value
             </summary>
+        </member>
+        <member name="P:Core.Models.Settings.MetaDataDefinitions.MetadataDefinition">
+            <summary>
+            Configurable metadata field definitions for items loaded from external systems
+            External system (SAP) will validate field names and read-only restrictions
+            </summary>
+        </member>
+        <member name="M:Core.Models.Settings.MetaDataDefinitions.ValidateMetadataDefinitions">
+            <summary>
+            Validates the metadata definitions for basic consistency
+            Field-specific validation (valid names, read-only restrictions) is handled by external system
+            </summary>
+            <returns>List of validation error messages, empty if valid</returns>
         </member>
         <member name="P:Core.Models.Settings.Options.IdleLogoutTimeout">
             <summary>

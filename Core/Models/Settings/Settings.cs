@@ -12,7 +12,8 @@ public class Settings : ISettings {
     public SboSettings? SboSettings { get; set; }
     public ExternalAdapterType ExternalAdapter { get; set; } = new();
     public PackageSettings Package { get; set; } = new();
-    public ItemSettings Item { get; set; } = new();
+    public MetaDataDefinitions Item { get; set; } = new();
+    public List<CustomField> PickingDetails { get; set; } = [];
     public LicensingSettings Licensing { get; set; } = new();
     public BackgroundServicesSettings BackgroundServices { get; set; } = new();
     public ExternalCommandsSettings ExternalCommands { get; set; } = new();

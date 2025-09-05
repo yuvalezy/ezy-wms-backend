@@ -19,7 +19,17 @@ public class MetadataDefinition {
     /// Data type for validation and UI rendering
     /// </summary>
     public required MetadataFieldType Type { get; set; }
-    
+
+    /// <summary>
+    /// SQL query to retrieve additional data for the metadata field
+    /// </summary>
+    public string? Query { get; set; }
+
+    /// <summary>
+    /// SQL expression for grouping query results 
+    /// </summary>
+    public string? GroupBy { get; set; }
+
     /// <summary>
     /// Specifies the step increment for decimal type fields
     /// Only applicable when Type is set to Decimal
@@ -30,13 +40,13 @@ public class MetadataDefinition {
     /// Whether this field is required when updating item metadata
     /// Cannot be true for read-only fields
     /// </summary>
-    public bool Required { get; set; } = false;
+    public bool Required { get; set; }
 
     /// <summary>
     /// Whether this field is read-only (loaded from external system, cannot be modified)
     /// ItemCode and ItemName are always read-only
     /// </summary>
-    public bool ReadOnly { get; set; } = false;
+    public bool ReadOnly { get; set; }
 
     /// <summary>
     /// Optional calculation configuration for computed metadata fields
@@ -68,6 +78,7 @@ public class Calculated {
     /// </summary>
     public bool ClearDependenciesOnManualEdit { get; set; } = false;
 }
+
 /// <summary>
 /// Supported data types for metadata fields
 /// </summary>
@@ -76,17 +87,17 @@ public enum MetadataFieldType {
     /// Text/string value
     /// </summary>
     String,
-    
+
     /// <summary>
     /// Decimal number value
     /// </summary>
     Decimal,
-    
+
     /// <summary>
     /// Date value
     /// </summary>
     Date,
-    
+
     /// <summary>
     /// Integer number value
     /// </summary>

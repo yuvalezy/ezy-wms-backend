@@ -1,26 +1,98 @@
+# External Commands Configuration
+# Defines external commands that can be triggered by system events or manual user actions
+# Commands generate files (XML/JSON) that can be delivered to various destinations
+
 ExternalCommands:
   Commands:
-    - Id: PrintPackageBarcodeXML
+    # Array of external command configurations
+    # Each command defines when to trigger, what data to gather, and where to deliver output
+
+    - # Unique identifier for the command (required string)
+      Id: PrintPackageBarcodeXML
+      
+      # Human-readable name for the command (required string)
       Name: Print Package Barcode Label (XML)
+      
+      # Description of what the command does (required string)
       Description: Prints barcode label when package is created - XML format to local path
+      
+      # Object type this command applies to (required enum)
+      # Values: GoodsReceipt(0), InventoryCounting(1), Transfer(2), Picking(3), Package(4), PickingClosure(5)
       ObjectType: Package
+      
+      # When this command should be triggered (required enum)
+      # Values: CreatePackage(0), ActivatePackage(1), ClosePackage(2), Manual(3)
       TriggerType: CreatePackage
+      
+      # Whether this command is enabled (bool, default: true)
       Enabled: true
+      
+      # Whether this command supports batch execution for multiple items (bool, default: false)
+      # AllowBatchExecution: false
+      
+      # Queries to execute to gather data (array of CommandQuery)
       Queries:
-        - Name: PackageData
+        - # Name of the query for identification (required string)
+          Name: PackageData
+          
+          # SQL query to execute (required string)
+          # Supports parameter: @ObjectId (the ID of the object being processed)
           Query: SELECT p.Barcode FROM Packages p WHERE p.Id = @ObjectId
+          
+          # Expected result type (enum, default: Single)
+          # Values: Single(0) = single row, Multiple(1) = multiple rows
           ResultType: Single
+          
+          # Indicates if this query supports batch execution with multiple IDs (bool, default: false)
+          # IsBatchQuery: false
+      
+      # File format for the generated output (required enum)
+      # Values: XML(0), JSON(1)
       FileFormat: XML
+      
+      # Pattern for generating file names (required string)
+      # Supports placeholders: {Barcode}, {Timestamp:format}, {ObjectId}, query result fields
       FileNamePattern: PKG_{Barcode}_{Timestamp:yyyyMMddHHmmss}.xml
+      
+      # Destination configuration for file delivery (required)
       Destination:
+        # Type of destination (required enum)
+        # Values: LocalPath(0), NetworkPath(1), FTP(2), SFTP(3)
         Type: LocalPath
+        
+        # Path, URL, or host depending on destination type (required string)
         Path: C:\PrintQueue\Labels\Incoming
+        
+        # Optional properties for FTP/SFTP destinations:
+        # Host: ftp.example.com                    # Host for FTP/SFTP (nullable string)
+        # Port: 21                                 # Port for FTP/SFTP (nullable int)
+        # Username: ftpuser                        # Username for authentication (nullable string)
+        # Password: encrypted_password             # Password for authentication (nullable string) - should be encrypted
+        # UseNetworkImpersonation: false          # Use network impersonation for NetworkPath (bool, default: false)
+        # UsePassiveMode: true                     # Use passive mode for FTP (bool, default: true)
+        # UseSsl: false                           # Use SSL/TLS for FTP (bool, default: false)
+        # PrivateKeyPath: /path/to/key            # Private key file path for SFTP (nullable string)
+        # PrivateKeyPassphrase: key_passphrase    # Private key passphrase for SFTP (nullable string)
+        # HostFingerprint: ssh-rsa AAAAB3...      # Host fingerprint for SFTP security (nullable string)
+      
+      # Optional UI configuration for manual commands
+      # UIConfiguration:
+      #   AllowedScreens:                         # List of screens where command can be triggered (string array)
+      #     - PackageManagement
+      #     - PackageDetails
+      #   ButtonText: Execute Command             # Text to display on trigger button (string, default: "Execute Command")
+      #   RequireConfirmation: true               # Require user confirmation (bool, default: true)
+      #   ConfirmationMessage: "Execute command?" # Confirmation message, supports {count} placeholder (nullable string)
+      #   MaxBatchSize: 100                       # Max items in batch (nullable int)
+
     - Id: PrintPackageContentXML
       Name: Print Package Content Label (XML)
       Description: Prints label when package is activated - XML format to local path
       ObjectType: Package
       TriggerType: ActivatePackage
       Enabled: true
+      
+      # Example of multiple queries
       Queries:
         - Name: PackageData
           Query: SELECT p.Barcode FROM Packages p WHERE p.Id = @ObjectId
@@ -28,26 +100,55 @@ ExternalCommands:
         - Name: PackageContent
           Query: select ItemCode, Quantity from "PackageContents" where "PackageId" = @ObjectId order by 1
           ResultType: Multiple
+      
       FileFormat: XML
       FileNamePattern: PKG_{Barcode}_Content_{Timestamp:yyyyMMddHHmmss}.xml
       Destination:
         Type: LocalPath
         Path: C:\PrintQueue\Labels\Incoming
+
+  # Global settings for the external commands system
   GlobalSettings:
+    # Maximum number of commands that can execute concurrently (int, default: 5)
     MaxConcurrentExecutions: 5
+    
+    # Command execution timeout in seconds (int, default: 30)
     CommandTimeout: 30
+    
+    # Retry policy configuration
     RetryPolicy:
+      # Maximum number of retry attempts (int, default: 3)
       MaxRetries: 3
+      
+      # Delay between retry attempts in seconds (int, default: 5)
       RetryDelaySeconds: 5
+      
+      # Error types that should trigger retries (string array, default: ["NetworkError", "TimeoutError"])
       RetryOnErrors:
         - NetworkError
         - TimeoutError
+    
+    # File encoding for generated files (string, default: "UTF-8")
     FileEncoding: UTF-8
+    
+    # XML-specific formatting settings
     XmlSettings:
+      # Root element name for XML documents (string, default: "Data")
       RootElementName: Root
+      
+      # Whether to include XML declaration (bool, default: true)
       IncludeXmlDeclaration: true
+      
+      # Whether to indent XML for readability (bool, default: true)
       IndentXml: true
+    
+    # JSON-specific formatting settings
     JsonSettings:
+      # Whether to indent JSON for readability (bool, default: true)
       IndentJson: true
+      
+      # Whether to use camelCase for property names (bool, default: false)
       CamelCasePropertyNames: false
+      
+      # Date format string for JSON serialization (string, default: "yyyy-MM-ddTHH:mm:ss")
       DateFormat: yyyy-MM-ddTHH:mm:ss

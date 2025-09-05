@@ -34,7 +34,7 @@ public static class CustomFieldsHelper {
     /// <param name="reader">Data reader containing the query results</param>
     /// <param name="customFields">List of custom fields to read</param>
     /// <param name="response">Response object that inherits from ItemResponse</param>
-    public static void ReadCustomFields(IDataReader reader, List<CustomField> customFields, ItemResponse response) {
+    public static void ReadCustomFields(IDataReader reader, List<CustomField> customFields, IResponseCustomFields response) {
         ReadCustomFields(reader, customFields, response.CustomFields);
     }
 

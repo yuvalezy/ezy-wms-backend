@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Core.Models.Settings;
 
-public class ItemSettings {
+public class MetaDataDefinitions {
     /// <summary>
     /// Configurable metadata field definitions for items loaded from external systems
     /// External system (SAP) will validate field names and read-only restrictions

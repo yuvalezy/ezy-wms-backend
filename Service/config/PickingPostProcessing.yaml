@@ -1,12 +1,71 @@
+# Picking Post Processing Configuration
+# Defines post-processors that run after picking operations are completed
+# These processors can perform additional business logic like calculations, integrations, etc.
+
 PickingPostProcessingProcessors:
-  - Id: customer-packaging-calculator
+  # Array of post-processor configurations
+  # Each processor is a custom .NET class that implements picking post-processing logic
+
+  - # Unique identifier for the processor (required string)
+    # Must be unique across all post-processors
+    Id: customer-packaging-calculator
+    
+    # Assembly name containing the processor implementation (required string)
+    # The .dll file containing the post-processor class
     Assembly: Customer.Extensions.dll
+    
+    # Full type name of the processor class (required string)
+    # Must implement the required post-processor interface
     TypeName: Customer.Extensions.PackagingCalculatorPostProcessor
+    
+    # Whether this processor is enabled (bool, default: true)
+    # When false, the processor is skipped during execution
     Enabled: true
+    
+    # Custom configuration dictionary for the processor (nullable Dictionary<string, object>)
+    # This configuration is passed to the processor at runtime
+    # Keys and values are processor-specific - check processor documentation
     Configuration:
-      Enabled: true
-      Description: Calculates packaging requirements and updates SAP Order lines
-      BatchSize: 100
-      TimeoutSeconds: 30
-      RetryAttempts: 3
-      LogLevel: Information
+      # Processor-specific settings - these are examples for this particular processor
+      # The actual available settings depend on the processor implementation
+      
+      Enabled: true                                                    # bool: Whether processor logic is enabled
+      Description: Calculates packaging requirements and updates SAP Order lines  # string: Description of what this processor does
+      BatchSize: 100                                                   # int: Number of items to process in each batch
+      TimeoutSeconds: 30                                               # int: Timeout for processor execution
+      RetryAttempts: 3                                                 # int: Number of retry attempts on failure
+      LogLevel: Information                                            # string: Logging level (Trace, Debug, Information, Warning, Error, Critical)
+      
+      # Additional configuration properties that might be available:
+      # ConnectionString: "Server=...;Database=...;"                   # string: Database connection if needed
+      # ApiEndpoint: "https://api.example.com/webhook"                 # string: External API endpoint
+      # ApiKey: "your-api-key"                                         # string: Authentication key
+      # ProcessingMode: "Synchronous"                                  # string: Processing mode (Synchronous, Asynchronous)
+      # MaxConcurrency: 5                                              # int: Maximum concurrent operations
+      # CustomSettings:                                                # object: Nested custom settings
+      #   Property1: "value1"
+      #   Property2: 42
+      #   Property3: true
+
+# Example of additional processors (commented out):
+#
+# - Id: sap-integration-processor
+#   Assembly: Customer.Extensions.dll
+#   TypeName: Customer.Extensions.SapIntegrationPostProcessor
+#   Enabled: false
+#   Configuration:
+#     SapConnectionString: "Server=sap-server;SystemId=PRD;"
+#     UpdateOrderLines: true
+#     NotificationMode: "Email"
+#     Recipients:
+#       - admin@company.com
+#       - warehouse@company.com
+#
+# - Id: inventory-adjustment-processor
+#   Assembly: Warehouse.Extensions.dll
+#   TypeName: Warehouse.Extensions.InventoryAdjustmentProcessor
+#   Enabled: true
+#   Configuration:
+#     AdjustmentReason: "Picking Completion"
+#     RequireApproval: false
+#     ThresholdAmount: 1000.00

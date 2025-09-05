@@ -23,7 +23,14 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PickingController(IPickListService service, IPickListLineService lineService, IPickListProcessService processService, IPickListCancelService cancelService, IPickListPackageService packageService, IPickListCheckService checkService, IServiceProvider serviceProvider) : ControllerBase {
+public class PickingController(
+    IPickListService service,
+    IPickListLineService lineService,
+    IPickListProcessService processService,
+    IPickListCancelService cancelService,
+    IPickListPackageService packageService,
+    IPickListCheckService checkService,
+    IServiceProvider serviceProvider) : ControllerBase {
     /// <summary>
     /// Gets a list of pick lists with optional filtering
     /// </summary>
@@ -37,10 +44,10 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(typeof(IEnumerable<PickListResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IEnumerable<PickListResponse>> GetPickings( [FromQuery] PickListsRequest request) {
+    public async Task<IEnumerable<PickListResponse>> GetPickings([FromQuery] PickListsRequest request) {
         var sessionInfo = HttpContext.GetSession();
         var pickLists = await service.GetPickLists(request, sessionInfo.Warehouse, sessionInfo.EnableBinLocations);
-        
+
         // Otherwise, filter as before (optional - depends on current implementation)
         return pickLists;
     }
@@ -65,18 +72,18 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PickListResponse>> GetPicking(
-        int                                       id,
-        [FromQuery(Name = "type")]          int?  type          = null,
-        [FromQuery(Name = "entry")]         int?  entry         = null,
+        int id,
+        [FromQuery(Name = "type")] int? type = null,
+        [FromQuery(Name = "entry")] int? entry = null,
         [FromQuery(Name = "availableBins")] bool? availableBins = false,
-        [FromQuery(Name = "binEntry")]      int?  binEntry      = null) {
+        [FromQuery(Name = "binEntry")] int? binEntry = null) {
         var sessionInfo = HttpContext.GetSession();
 
         var detailRequest = new PickListDetailRequest {
-            Type          = type,
-            Entry         = entry,
+            Type = type,
+            Entry = entry,
             AvailableBins = availableBins,
-            BinEntry      = binEntry
+            BinEntry = binEntry
         };
 
         var result = await service.GetPickList(id, detailRequest, sessionInfo.Warehouse);
@@ -148,7 +155,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ProcessPickListResponse> Process([FromBody] ProcessPickListRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var response    = await processService.ProcessPickList(request.ID, sessionInfo.Guid);
+        var response = await processService.ProcessPickList(request.ID, sessionInfo.Guid);
 
         // Trigger immediate background sync if available
         var backgroundService = serviceProvider.GetService<BackgroundPickListSyncService>();
@@ -176,7 +183,7 @@ public class PickingController(IPickListService service, IPickListLineService li
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ProcessPickListCancelResponse> Cancel([FromBody] ProcessPickListRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var response    = await cancelService.CancelPickListAsync(request.ID, sessionInfo);
+        var response = await cancelService.CancelPickListAsync(request.ID, sessionInfo);
         return response;
     }
 
@@ -190,11 +197,11 @@ public class PickingController(IPickListService service, IPickListLineService li
     public async Task<ActionResult<PickListCheckSession>> StartCheck(int id) {
         var sessionInfo = HttpContext.GetSession();
         var session = await checkService.StartCheck(id, sessionInfo);
-        
+
         if (session == null) {
             return NotFound("Pick list not found");
         }
-        
+
         return Ok(session);
     }
 
@@ -243,11 +250,11 @@ public class PickingController(IPickListService service, IPickListLineService li
     public async Task<IActionResult> CompleteCheck(int id) {
         var sessionInfo = HttpContext.GetSession();
         var result = await checkService.CompleteCheck(id, sessionInfo.Guid);
-        
+
         if (!result) {
             return NotFound("No active check session found");
         }
-        
+
         return Ok();
     }
 
@@ -261,11 +268,11 @@ public class PickingController(IPickListService service, IPickListLineService li
     public async Task<IActionResult> CancelCheck(int id) {
         var sessionInfo = HttpContext.GetSession();
         var result = await checkService.CancelCheck(id, sessionInfo.Guid);
-        
+
         if (!result) {
             return NotFound("No active check session found");
         }
-        
+
         return Ok();
     }
 

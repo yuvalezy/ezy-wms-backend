@@ -152,6 +152,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                     CardName = detail.CardName,
                     TotalItems = detail.TotalItems,
                     TotalOpenItems = detail.TotalOpenItems,
+                    CustomFields = detail.CustomFields,
                     Items = []
                 };
 
