@@ -1,0 +1,85 @@
+# Package Configuration
+# Defines package labeling, barcode generation, and metadata settings
+# Maps to Settings.Package in the application
+
+Package:
+  # Label configuration for package printing
+  Label:
+    # Whether to automatically print labels when packages are created (bool, default: false)
+    AutoPrint: true
+  
+  # Barcode generation configuration for packages
+  Barcode:
+    # Prefix added to the beginning of all package barcodes (string, default: "")
+    # Used to identify barcodes as package barcodes vs other types
+    Prefix: "PKG"
+    
+    # Total length of the generated barcode including prefix and suffix (int, required)
+    # The numeric portion will be zero-padded to reach this length
+    # Example: Length=14, Prefix="PKG", StartNumber=1 → "PKG00000000001"
+    Length: 14
+    
+    # Suffix added to the end of all package barcodes (string, default: "")
+    # Can be used for checksum digits or additional identification
+    Suffix: ""
+    
+    # Starting number for barcode sequence generation (int, default: 1)
+    # Each new package increments from this number
+    StartNumber: 1
+  
+  # Metadata field definitions for packages
+  # Array of metadata fields that can be configured for package data entry and validation
+  MetadataDefinition:
+    - # Data type for validation and UI rendering (required enum)
+      # Values: String, Decimal, Date, Integer
+      Type: Decimal
+      
+      # Unique identifier for the metadata field (required string)
+      # Must be unique within the package metadata definitions
+      Id: Volume
+      
+      # Human-readable description/label for the field (required string)
+      # Displayed in UI forms and reports
+      Description: "Volume (m³)"
+    
+    - Type: String
+      Id: Note
+      Description: "Special Notes"
+    
+    - Type: Date
+      Id: ExpiryDate
+      Description: "Expiry Date"
+
+# MetadataDefinition Structure Documentation:
+# Each metadata field definition supports the following properties:
+# - Type: Data type enum (String, Decimal, Date, Integer) (required)
+# - Id: Unique identifier for the field (required string)
+# - Description: Human-readable label for UI display (required string)
+# - Step: Step increment for decimal fields (nullable int, only for Decimal type)
+# - Required: Whether field is required for data entry (bool, default: false)
+# - ReadOnly: Whether field is read-only (bool, default: false)
+# - Query: SQL query for additional data retrieval (nullable string)
+# - GroupBy: SQL expression for grouping query results (nullable string)
+# - Calculated: Calculation configuration for computed fields (nullable object)
+
+# Package Label Configuration:
+# - AutoPrint: Automatically print labels when packages are created
+#   Requires printer configuration in the system
+
+# Package Barcode Configuration:
+# - Generated barcodes follow the pattern: [Prefix][PaddedNumber][Suffix]
+# - PaddedNumber is zero-padded to fill the remaining length after prefix/suffix
+# - Barcode uniqueness is enforced by the system
+# - StartNumber allows continuing from existing sequences during system migration
+
+# Example Generated Barcodes:
+# Length=14, Prefix="PKG", Suffix="", StartNumber=1:
+# - First package: "PKG00000000001"
+# - Second package: "PKG00000000002"
+# - Hundredth package: "PKG00000000100"
+
+# Notes:
+# - Package metadata is validated against the external system (SAP B1)
+# - Barcode configuration should be set before creating first package
+# - Label printing requires proper printer setup and templates
+# - Metadata fields can be extended based on business requirements

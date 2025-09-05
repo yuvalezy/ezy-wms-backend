@@ -25,6 +25,7 @@ builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true
 builder.Configuration.AddYamlFile("config/PickingDetails.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/CustomFields.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/Item.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/Package.yaml", optional: true, reloadOnChange: true);
 
 var settings = new Settings();
 builder.Configuration.Bind(settings);
