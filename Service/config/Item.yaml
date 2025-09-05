@@ -1,0 +1,131 @@
+# Item Metadata Configuration
+# Defines metadata fields for items that can be configured and validated
+# Maps to MetaDataDefinitions in Settings.Item
+
+Item:
+  MetadataDefinition:
+    # Array of metadata field definitions for items
+    # Each definition specifies how item data fields should be handled and validated
+    
+    - # Unique identifier for the metadata field (required string)
+      # Must match one of the supported item fields exactly
+      Id: ItemCode
+      
+      # Human-readable description/label for the field (required string)
+      Description: Item Code
+      
+      # Data type for validation and UI rendering (required enum)
+      # Values: String, Decimal, Date, Integer
+      Type: String
+      
+      # Whether this field is read-only (bool, default: false)
+      # ItemCode and ItemName are always read-only
+      ReadOnly: true
+      
+      # Whether this field is required when updating item metadata (bool, default: false)
+      # Cannot be true for read-only fields
+      Required: false
+      
+      # Optional properties (not used for this field):
+      # Step: null                    # Specifies step increment for decimal fields (nullable int)
+      # Query: null                   # SQL query to retrieve additional data (nullable string)
+      # GroupBy: null                 # SQL expression for grouping query results (nullable string)
+      # Calculated: null              # Optional calculation configuration (nullable object)
+
+    - Id: ItemName
+      Description: Item Name
+      Type: String
+      ReadOnly: true
+      Required: false
+
+    - Id: PurchaseUnitLength
+      Description: Purchase Unit Length
+      Type: Decimal
+      Step: 4                         # Step increment for decimal type (nullable int)
+      ReadOnly: false
+      Required: false
+
+    - Id: PurchaseUnitWidth
+      Description: Purchase Unit Width
+      Type: Decimal
+      Step: 4
+      ReadOnly: false
+      Required: false
+
+    - Id: PurchaseUnitHeight
+      Description: Purchase Unit Height
+      Type: Decimal
+      Step: 4
+      ReadOnly: false
+      Required: false
+
+    - Id: PurchaseUnitVolume
+      Description: Purchase Unit Volume (m³)
+      Type: Decimal
+      Step: 4
+      ReadOnly: false
+      Required: false
+      # Optional calculation configuration for computed metadata fields
+      Calculated:
+        # The formula expression used to calculate the field value (required string)
+        Formula: "{PurchaseUnitLength} * {PurchaseUnitWidth} * {PurchaseUnitHeight}"
+        
+        # Array of field IDs that this calculated field depends on (string array)
+        Dependencies:
+          - PurchaseUnitLength
+          - PurchaseUnitWidth
+          - PurchaseUnitHeight
+        
+        # Number of decimal places to round the calculated result to (int, default: 0)
+        Precision: 4
+        
+        # When true, dependency fields are cleared when the calculated field is manually edited (bool, default: false)
+        ClearDependenciesOnManualEdit: true
+
+    - Id: PurchaseUnitWeight
+      Description: Peso KG
+      Type: Decimal
+      ReadOnly: false
+      Required: true
+
+    - Id: U_B1SStdTP
+      Description: Template Name
+      Type: String
+      ReadOnly: false
+      Required: true
+
+    - Id: U_LW_UPDATE_TIMESTAMP
+      Description: Last Update Time
+      Type: Date
+      ReadOnly: false
+      Required: false
+
+    - Id: U_LW_UPDATE_USER
+      Description: Last Update ID
+      Type: Integer
+      ReadOnly: false
+      Required: false
+
+# MetadataDefinition Structure Documentation:
+# - Id: Unique identifier matching supported item fields (required string)
+# - Description: Human-readable label for UI display (required string)
+# - Type: Data type enum (String, Decimal, Date, Integer) (required)
+# - Step: Step increment for decimal fields (nullable int, only for Decimal type)
+# - Required: Whether field is required for updates (bool, default: false, cannot be true if ReadOnly is true)
+# - ReadOnly: Whether field is read-only (bool, default: false)
+# - Query: SQL query for additional data retrieval (nullable string)
+# - GroupBy: SQL expression for grouping query results (nullable string)
+# - Calculated: Calculation configuration for computed fields (nullable object)
+
+# Calculated Field Configuration:
+# - Formula: Calculation expression using {FieldName} syntax (required string)
+# - Dependencies: Array of field IDs this calculation depends on (string array)
+# - Precision: Decimal places for rounding numeric results (int, default: 0)
+# - ClearDependenciesOnManualEdit: Clear dependencies on manual edit (bool, default: false)
+
+# Notes:
+# - External system (SAP) validates field names and read-only restrictions
+# - ItemCode and ItemName are always read-only regardless of configuration
+# - Required fields cannot be read-only (validation error)
+# - Step property only applies to Decimal type fields
+# - Calculated fields support complex formulas with multiple dependencies
