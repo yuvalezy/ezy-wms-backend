@@ -1404,6 +1404,12 @@
             <response code="403">If the user lacks super user permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="M:Service.Extensions.SettingsLoggingExtensions.LogYamlMigrationCandidates(Core.Interfaces.ISettings)">
+            <summary>
+            Logs configurations that will be moved to YAML files during migration
+            </summary>
+            <param name="settings">The settings object to log</param>
+        </member>
         <member name="T:Service.Swagger.AuthorizeOperationFilter">
             <summary>
             Swagger operation filter to document authorization requirements

@@ -22,6 +22,9 @@ builder.Host.UseWindowsService();
 var settings = new Settings();
 builder.Configuration.Bind(settings);
 
+// Log configurations that will be moved to YAML files
+settings.LogYamlMigrationCandidates();
+
 // Configure services
 var services = builder.Services;
 services.AddSingleton<ISettings>(settings);
