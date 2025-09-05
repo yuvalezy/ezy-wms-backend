@@ -5,24 +5,31 @@ This plan outlines the migration strategy to move complex settings from `appsett
 
 ## Current State Analysis
 
-### Settings in appsettings.json (293 lines)
+### Settings in appsettings.json (368 lines - Updated)
 - **Core Settings** (remain in JSON):
   - ConnectionStrings
   - Logging
   - Kestrel configuration
   - JWT authentication
-  - Session management
-  - Licensing
+  - CORS configuration
+  - AllowedHosts
   - SBO connection settings
+  - ExternalAdapter selection
+
+- **Infrastructure Settings** (remain in JSON):
+  - Session management (Redis/Cookie configuration)
+  - Licensing configuration
 
 - **Complex Business Settings** (migrate to YAML):
-  - Custom Fields definitions
-  - External Commands (74 lines)
-  - Package metadata definitions
-  - Item metadata definitions
-  - Warehouse-specific settings
-  - Business rule filters
-  - Background service configurations
+  - Custom Fields definitions (45 lines)
+  - External Commands (74 lines - fully implemented)
+  - Package metadata definitions (17 lines)
+  - Item metadata definitions (87 lines - enhanced with calculated fields)
+  - Warehouse-specific settings (7 lines)
+  - Business rule filters (6 lines)  
+  - Background service configurations (13 lines)
+  - Picking post-processing configurations (18 lines - NEW)
+  - Business Options (16 lines)
 
 ## Benefits of YAML Migration
 
@@ -36,14 +43,15 @@ This plan outlines the migration strategy to move complex settings from `appsett
 
 ```
 /Service
-  /appsettings.json (reduced to ~100 lines)
+  /appsettings.json (reduced to ~150 lines)
   /Config
-    /metadata.yml          # Item and Package metadata definitions
-    /external-commands.yml # External command configurations
-    /warehouses.yml        # Warehouse-specific settings
-    /custom-fields.yml     # Custom field definitions
-    /business-rules.yml    # Filters and business options
-    /background-jobs.yml   # Background service configurations
+    /metadata.yml            # Item and Package metadata definitions
+    /external-commands.yml   # External command configurations  
+    /warehouses.yml          # Warehouse-specific settings
+    /custom-fields.yml       # Custom field definitions
+    /business-rules.yml      # Filters and business options
+    /background-jobs.yml     # Background service configurations
+    /post-processing.yml     # Picking post-processing configurations
 ```
 
 ## Migration Phases
@@ -58,24 +66,33 @@ This plan outlines the migration strategy to move complex settings from `appsett
 - Move ExternalCommands section to `external-commands.yml`
 - Add comprehensive inline documentation
 - Include examples and best practices
-- Current size: 74 lines → Estimated YAML with docs: 150 lines
+- Current size: 74 lines (fully implemented) → Estimated YAML with docs: 150 lines
+- **Note**: ExternalCommands are now fully implemented with GlobalSettings and multiple command definitions
 
 ### Phase 3: Metadata Definitions Migration
-- Move Package.MetadataDefinition to `metadata.yml`
-- Move Item.MetadataDefinition to `metadata.yml`
+- Move Package.MetadataDefinition to `metadata.yml` (17 lines)
+- Move Item.MetadataDefinition to `metadata.yml` (87 lines - enhanced with calculated fields)
 - Document each metadata field type and usage
-- Add validation rules documentation
+- Add validation rules documentation  
+- **Note**: Item metadata now includes advanced calculated field support with formulas and dependencies
 
 ### Phase 4: Business Configuration Migration
-- Move CustomFields to `custom-fields.yml`
-- Move Warehouses settings to `warehouses.yml`
-- Move Filters to `business-rules.yml`
-- Move Options to `business-rules.yml`
+- Move CustomFields to `custom-fields.yml` (45 lines)
+- Move Warehouses settings to `warehouses.yml` (7 lines)
+- Move Filters to `business-rules.yml` (6 lines)
+- Move Options to `business-rules.yml` (16 lines)
 
 ### Phase 5: Background Services Migration
-- Move BackgroundServices to `background-jobs.yml`
+- Move BackgroundServices to `background-jobs.yml` (13 lines - fully implemented)
 - Document job scheduling and retry policies
 - Include performance tuning guidelines
+- **Note**: Background services now include PickListSync and CloudSync configurations
+
+### Phase 6: Post-Processing Migration (NEW)
+- Move PickingPostProcessing to `post-processing.yml` (18 lines)
+- Document extensibility patterns for custom processors
+- Include assembly loading and configuration guidelines
+- Add examples for creating custom post-processors
 
 ## Implementation Details
 
@@ -190,24 +207,27 @@ builder.Configuration
     .AddYamlFile("Config/warehouses.yml", optional: true, reloadOnChange: true)
     .AddYamlFile("Config/custom-fields.yml", optional: true, reloadOnChange: true)
     .AddYamlFile("Config/business-rules.yml", optional: true, reloadOnChange: true)
-    .AddYamlFile("Config/background-jobs.yml", optional: true, reloadOnChange: true);
+    .AddYamlFile("Config/background-jobs.yml", optional: true, reloadOnChange: true)
+    .AddYamlFile("Config/post-processing.yml", optional: true, reloadOnChange: true);
 ```
 
 ## Benefits Analysis
 
 ### Before (appsettings.json)
-- 293 lines of JSON
+- 368 lines of JSON (grown significantly)
 - No inline documentation
 - All settings mixed together
-- Difficult to understand complex configurations
+- Difficult to understand complex configurations (especially calculated fields)
 - Large file for version control
+- Complex nested structures hard to maintain
 
 ### After
-- appsettings.json: ~100 lines (core infrastructure only)
-- 6 YAML files with comprehensive documentation
+- appsettings.json: ~150 lines (core infrastructure only)
+- 7 YAML files with comprehensive documentation
 - Each file focused on specific domain
 - Inline comments explain each setting
 - Smaller, focused files for better version control
+- Better organization of complex features like calculated metadata fields
 
 ## Risk Mitigation
 
@@ -219,22 +239,39 @@ builder.Configuration
 
 ## Success Metrics
 
-- Reduce appsettings.json size by 70%
+- Reduce appsettings.json size by 60% (from 368 to ~150 lines)
 - Add documentation for 100% of business settings
 - Reduce configuration-related support tickets by 50%
 - Improve developer onboarding time for configuration
+- Better maintainability for complex calculated field configurations
 
 ## Timeline
 
 - Week 1-2: Infrastructure setup and YAML provider
-- Week 3-4: External commands migration
-- Week 5-6: Metadata and custom fields migration
-- Week 7-8: Business rules and background services
-- Week 9-10: Testing, documentation, and rollout
+- Week 3-4: External commands migration (fully implemented in JSON)
+- Week 5-6: Metadata and custom fields migration (includes calculated fields)
+- Week 7-8: Business rules and background services migration
+- Week 9-10: Post-processing configuration migration (NEW)
+- Week 11-12: Testing, documentation, and rollout
 
 ## Next Steps
 
-1. Review and approve this plan
+1. Review and approve this updated plan
 2. Set up YAML configuration infrastructure
 3. Create migration tool for existing settings
-4. Begin phased migration starting with external commands
+4. Begin phased migration starting with external commands (note: already fully implemented)
+5. Prioritize metadata migration due to increased complexity with calculated fields
+
+## Recent Changes Summary
+
+The plan has been updated to reflect the current state of `appsettings.json` which has grown from 293 to 368 lines. Key additions include:
+
+- **CORS configuration**: Added for cross-origin request handling
+- **Redis session management**: Full Redis integration with cookie settings
+- **Licensing system**: Complete cloud-based licensing configuration
+- **Enhanced background services**: PickListSync and CloudSync implementations
+- **Advanced metadata definitions**: Item metadata with calculated field support and formulas
+- **Picking post-processing**: Extensible plugin system for custom processors
+- **Fully implemented ExternalCommands**: Complete command system with global settings
+
+The migration is now even more critical due to the increased complexity and size of the configuration file.
