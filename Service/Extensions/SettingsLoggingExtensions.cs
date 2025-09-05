@@ -20,7 +20,7 @@ public static class SettingsLoggingExtensions {
             $"  ⚙️  Options: WhsCodeBinSuffix={settings.Options.WhsCodeBinSuffix}, EnablePackages={settings.Options.EnablePackages}, EnablePickingCheck={settings.Options.EnablePickingCheck}");
 
         Console.WriteLine($"  🔄 BackgroundServices: PickListSync={settings.BackgroundServices.PickListSync.Enabled}, CloudSync={settings.BackgroundServices.CloudSync.Enabled}");
-        Console.WriteLine($"  🔧 PickingPostProcessing: {settings.PickingPostProcessing.Processors.Count} processors");
+        Console.WriteLine($"  🔧 PickingPostProcessing: {settings.PickingPostProcessingProcessors.Count} processors");
         Console.WriteLine();
     }
 }

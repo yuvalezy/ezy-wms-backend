@@ -31,7 +31,7 @@ public class PickingPostProcessorFactory : IPickingPostProcessorFactory {
     }
 
     private Dictionary<string, object>? GetProcessorConfiguration(string processorId) {
-        var processorSettings = settings.PickingPostProcessing.Processors
+        var processorSettings = settings.PickingPostProcessingProcessors
             .FirstOrDefault(p => p.Id == processorId);
         return processorSettings?.Configuration;
     }
@@ -39,7 +39,7 @@ public class PickingPostProcessorFactory : IPickingPostProcessorFactory {
     private List<IPickingPostProcessor> LoadProcessors() {
         var loadedProcessors = new List<IPickingPostProcessor>();
 
-        foreach (var processorConfig in settings.PickingPostProcessing.Processors) {
+        foreach (var processorConfig in settings.PickingPostProcessingProcessors) {
             try {
                 if (!processorConfig.Enabled) {
                     logger.LogDebug("Skipping disabled post-processor: {ProcessorId}", processorConfig.Id);

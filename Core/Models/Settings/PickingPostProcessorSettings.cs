@@ -7,7 +7,3 @@ public class PickingPostProcessorSettings {
     public bool Enabled { get; set; } = true;
     public Dictionary<string, object>? Configuration { get; set; }
 }
-
-public class PickingPostProcessingSettings {
-    public List<PickingPostProcessorSettings> Processors { get; set; } = [];
-}

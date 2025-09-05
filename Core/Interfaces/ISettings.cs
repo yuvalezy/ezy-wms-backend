@@ -16,5 +16,5 @@ public interface ISettings {
     public LicensingSettings Licensing { get; set; }
     public BackgroundServicesSettings BackgroundServices { get; set; }
     public ExternalCommandsSettings ExternalCommands { get; set; }
-    public PickingPostProcessingSettings PickingPostProcessing { get; set; }
+    public List<PickingPostProcessorSettings> PickingPostProcessingProcessors { get; set; }
 }

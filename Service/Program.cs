@@ -19,6 +19,9 @@ if (args.Length > 0 && args[0] == "--test-sbo") {
 // Configure for Windows Service
 builder.Host.UseWindowsService();
 
+// Load YAML configuration files before binding
+builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
+
 var settings = new Settings();
 builder.Configuration.Bind(settings);
 

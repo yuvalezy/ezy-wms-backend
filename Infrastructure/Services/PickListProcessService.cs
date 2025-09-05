@@ -10,18 +10,18 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PickListProcessService(
-    SystemDbContext                 db,
-    IExternalSystemAdapter          adapter,
-    IPickingPostProcessorFactory    postProcessorFactory,
-    IServiceProvider                serviceProvider,
+    SystemDbContext db,
+    IExternalSystemAdapter adapter,
+    IPickingPostProcessorFactory postProcessorFactory,
+    IServiceProvider serviceProvider,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
         try {
             // Load local pick list data
             var pickLists = await db.PickLists
-                .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
-                .ToListAsync();
+            .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
+            .ToListAsync();
 
             if (!pickLists.Any()) {
                 throw new InvalidOperationException($"No open pick list items found for AbsEntry {absEntry}");
@@ -29,9 +29,9 @@ public class PickListProcessService(
 
             // Update status to Processing and SyncStatus to Processing
             foreach (var pickList in pickLists) {
-                pickList.Status          = ObjectStatus.Processing;
-                pickList.SyncStatus      = SyncStatus.Processing;
-                pickList.UpdatedAt       = DateTime.UtcNow;
+                pickList.Status = ObjectStatus.Processing;
+                pickList.SyncStatus = SyncStatus.Processing;
+                pickList.UpdatedAt = DateTime.UtcNow;
                 pickList.UpdatedByUserId = userId;
             }
 
@@ -42,8 +42,8 @@ public class PickListProcessService(
             await transaction.RollbackAsync();
             logger.LogError(ex, "Failed to mark pick lists as processing for AbsEntry {AbsEntry}", absEntry);
             return new ProcessPickListResponse {
-                Status       = ResponseStatus.Error,
-                Message      = "Failed to process pick list",
+                Status = ResponseStatus.Error,
+                Message = "Failed to process pick list",
                 ErrorMessage = ex.Message
             };
         }
@@ -51,8 +51,8 @@ public class PickListProcessService(
         try {
             // Prepare data for SAP B1
             var pickingData = await db.PickLists
-                .Where(p => p.AbsEntry == absEntry && p.Status == ObjectStatus.Processing && p.SyncStatus == SyncStatus.Processing)
-                .ToListAsync();
+            .Where(p => p.AbsEntry == absEntry && p.Status == ObjectStatus.Processing && p.SyncStatus == SyncStatus.Processing)
+            .ToListAsync();
 
             // Call external system to process the pick list
             var result = await adapter.ProcessPickList(absEntry, pickingData);
@@ -65,7 +65,7 @@ public class PickListProcessService(
                 await ExecutePostProcessors(absEntry, pickingData);
 
                 return new ProcessPickListResponse {
-                    Status         = ResponseStatus.Ok,
+                    Status = ResponseStatus.Ok,
                     DocumentNumber = result.DocumentNumber
                 };
             }
@@ -73,8 +73,8 @@ public class PickListProcessService(
             if (result.ErrorMessage == "Cannot process document if the Status is closed") {
                 await UpdatePickListsSyncStatus(absEntry, SyncStatus.ExternalCancel, result.ErrorMessage, userId);
                 return new ProcessPickListResponse {
-                    Status       = ResponseStatus.Error,
-                    Message      = "Failed to process pick list",
+                    Status = ResponseStatus.Error,
+                    Message = "Failed to process pick list",
                     ErrorMessage = result.ErrorMessage
                 };
             }
@@ -83,8 +83,8 @@ public class PickListProcessService(
             await UpdatePickListsSyncStatus(absEntry, SyncStatus.Failed, result.ErrorMessage, userId);
 
             return new ProcessPickListResponse {
-                Status       = ResponseStatus.Error,
-                Message      = "Failed to process pick list",
+                Status = ResponseStatus.Error,
+                Message = "Failed to process pick list",
                 ErrorMessage = result.ErrorMessage
             };
         }
@@ -95,8 +95,8 @@ public class PickListProcessService(
             await UpdatePickListsSyncStatus(absEntry, SyncStatus.Failed, ex.Message, userId);
 
             return new ProcessPickListResponse {
-                Status       = ResponseStatus.Error,
-                Message      = "Failed to process pick list",
+                Status = ResponseStatus.Error,
+                Message = "Failed to process pick list",
                 ErrorMessage = ex.Message
             };
         }
@@ -106,12 +106,12 @@ public class PickListProcessService(
         try {
             // Get distinct pick entries with pending or failed sync status
             var pendingPickEntries = await db.PickLists
-                .Where(p => (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
-                            (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
-                            && p.BinEntry != null)
-                .Select(p => p.AbsEntry)
-                .Distinct()
-                .ToArrayAsync();
+            .Where(p => (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing)
+                        && p.BinEntry != null)
+            .Select(p => p.AbsEntry)
+            .Distinct()
+            .ToArrayAsync();
 
             if (pendingPickEntries.Length == 0) {
                 logger.LogDebug("No pending pick lists to sync");
@@ -126,9 +126,9 @@ public class PickListProcessService(
 
                 // Check if pick lists are still pending/failed before processing
                 var hasPendingItems = await db.PickLists
-                    .AnyAsync(p => p.AbsEntry == absEntry &&
-                                   (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
-                                   (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
+                .AnyAsync(p => p.AbsEntry == absEntry &&
+                               (p.SyncStatus == SyncStatus.Pending || p.SyncStatus == SyncStatus.Failed) &&
+                               (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
 
                 if (!hasPendingItems) {
                     logger.LogDebug("No pending pick lists found for AbsEntry {AbsEntry}", absEntry);
@@ -156,20 +156,20 @@ public class PickListProcessService(
         var transaction = await db.Database.BeginTransactionAsync();
         try {
             var pickLists = await db.PickLists
-                .Where(p => p.AbsEntry == absEntry && p.SyncStatus == SyncStatus.Processing)
-                .ToListAsync();
+            .Where(p => p.AbsEntry == absEntry && p.SyncStatus == SyncStatus.Processing)
+            .ToListAsync();
 
             foreach (var pickList in pickLists) {
                 pickList.SyncStatus = syncStatus;
-                pickList.UpdatedAt  = DateTime.UtcNow;
+                pickList.UpdatedAt = DateTime.UtcNow;
 
                 if (syncStatus == SyncStatus.Synced) {
-                    pickList.Status    = ObjectStatus.Closed;
-                    pickList.SyncedAt  = DateTime.UtcNow;
+                    pickList.Status = ObjectStatus.Closed;
+                    pickList.SyncedAt = DateTime.UtcNow;
                     pickList.SyncError = null;
                 }
                 else if (syncStatus == SyncStatus.Failed) {
-                    pickList.Status    = ObjectStatus.Open; // Revert to Open on failure
+                    pickList.Status = ObjectStatus.Open; // Revert to Open on failure
                     pickList.SyncError = errorMessage;
                 }
 
@@ -191,7 +191,7 @@ public class PickListProcessService(
     private async Task ExecutePostProcessors(int absEntry, List<Core.Entities.PickList> processedData) {
         try {
             var enabledProcessors = postProcessorFactory.GetEnabledProcessors();
-            
+
             if (!enabledProcessors.Any()) {
                 logger.LogDebug("No enabled post-processors found for pick list {AbsEntry}", absEntry);
                 return;
@@ -225,10 +225,10 @@ public class PickListProcessService(
     }
 
     private Dictionary<string, object>? GetProcessorConfiguration(string processorId) {
-        var processorSettings = serviceProvider.GetRequiredService<Core.Interfaces.ISettings>()
-            .PickingPostProcessing.Processors
-            .FirstOrDefault(p => p.Id == processorId);
+        var processorSettings = serviceProvider.GetRequiredService<ISettings>()
+        .PickingPostProcessingProcessors
+        .FirstOrDefault(p => p.Id == processorId);
+
         return processorSettings?.Configuration;
     }
-
 }

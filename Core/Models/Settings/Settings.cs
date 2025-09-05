@@ -16,5 +16,5 @@ public class Settings : ISettings {
     public LicensingSettings Licensing { get; set; } = new();
     public BackgroundServicesSettings BackgroundServices { get; set; } = new();
     public ExternalCommandsSettings ExternalCommands { get; set; } = new();
-    public PickingPostProcessingSettings PickingPostProcessing { get; set; } = new();
+    public List<PickingPostProcessorSettings> PickingPostProcessingProcessors { get; set; } = [];
 }

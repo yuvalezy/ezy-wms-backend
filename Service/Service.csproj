@@ -54,6 +54,7 @@
 
         <!-- Other packages -->
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.9.11" />
         <PackageReference Include="System.Drawing.Common" Version="9.0.8" />
         <PackageReference Include="System.Management" Version="9.0.8" />
@@ -81,6 +82,10 @@
     <ItemGroup>
       <Content Update="appsettings.example.json">
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+      <Content Update="config\**\*">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </Content>
