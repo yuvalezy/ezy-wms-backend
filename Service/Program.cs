@@ -21,6 +21,7 @@ builder.Host.UseWindowsService();
 
 // Load YAML configuration files before binding
 builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true, reloadOnChange: true);
 
 var settings = new Settings();
 builder.Configuration.Bind(settings);

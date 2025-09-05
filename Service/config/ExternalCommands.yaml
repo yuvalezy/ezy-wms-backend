@@ -1,0 +1,53 @@
+ExternalCommands:
+  Commands:
+    - Id: PrintPackageBarcodeXML
+      Name: Print Package Barcode Label (XML)
+      Description: Prints barcode label when package is created - XML format to local path
+      ObjectType: Package
+      TriggerType: CreatePackage
+      Enabled: true
+      Queries:
+        - Name: PackageData
+          Query: SELECT p.Barcode FROM Packages p WHERE p.Id = @ObjectId
+          ResultType: Single
+      FileFormat: XML
+      FileNamePattern: PKG_{Barcode}_{Timestamp:yyyyMMddHHmmss}.xml
+      Destination:
+        Type: LocalPath
+        Path: C:\PrintQueue\Labels\Incoming
+    - Id: PrintPackageContentXML
+      Name: Print Package Content Label (XML)
+      Description: Prints label when package is activated - XML format to local path
+      ObjectType: Package
+      TriggerType: ActivatePackage
+      Enabled: true
+      Queries:
+        - Name: PackageData
+          Query: SELECT p.Barcode FROM Packages p WHERE p.Id = @ObjectId
+          ResultType: Single
+        - Name: PackageContent
+          Query: select ItemCode, Quantity from "PackageContents" where "PackageId" = @ObjectId order by 1
+          ResultType: Multiple
+      FileFormat: XML
+      FileNamePattern: PKG_{Barcode}_Content_{Timestamp:yyyyMMddHHmmss}.xml
+      Destination:
+        Type: LocalPath
+        Path: C:\PrintQueue\Labels\Incoming
+  GlobalSettings:
+    MaxConcurrentExecutions: 5
+    CommandTimeout: 30
+    RetryPolicy:
+      MaxRetries: 3
+      RetryDelaySeconds: 5
+      RetryOnErrors:
+        - NetworkError
+        - TimeoutError
+    FileEncoding: UTF-8
+    XmlSettings:
+      RootElementName: Root
+      IncludeXmlDeclaration: true
+      IndentXml: true
+    JsonSettings:
+      IndentJson: true
+      CamelCasePropertyNames: false
+      DateFormat: yyyy-MM-ddTHH:mm:ss
