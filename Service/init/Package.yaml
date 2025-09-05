@@ -1,0 +1,82 @@
+# Package Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/Package.yaml and customize as needed
+
+Package:
+  # Label configuration for package printing
+  Label:
+    # Whether to automatically print labels when packages are created (bool, default: false)
+    # Set to false initially - enable once printer setup is complete
+    AutoPrint: false
+  
+  # Barcode generation configuration for packages
+  Barcode:
+    # Prefix added to the beginning of all package barcodes (string, default: "")
+    # Standard "PKG" prefix recommended for package identification
+    Prefix: "PKG"
+    
+    # Total length of the generated barcode including prefix and suffix (int, required)
+    # 14 characters provides good balance between readability and uniqueness
+    Length: 14
+    
+    # Suffix added to the end of all package barcodes (string, default: "")
+    # Leave empty unless specific checksum or validation digits are required
+    Suffix: ""
+    
+    # Starting number for barcode sequence generation (int, default: 1)
+    # Use 1 for new installations, or continue from existing system if migrating
+    StartNumber: 1
+  
+  # Package metadata fields - minimal default configuration
+  MetadataDefinition:
+    - # Basic volume tracking for package capacity
+      Type: Decimal
+      Id: Volume
+      Description: "Volume (m³)"
+    
+    - # General notes field for special handling instructions
+      Type: String
+      Id: Note
+      Description: "Special Notes"
+    
+    - # Date tracking for time-sensitive packages
+      Type: Date
+      Id: ExpiryDate
+      Description: "Expiry Date"
+
+# Extended metadata fields (commented out - add as needed):
+# Additional fields that can be configured based on business requirements:
+#
+#    - Type: Decimal
+#      Id: Weight
+#      Description: "Weight (KG)"
+#      Step: 2
+#
+#    - Type: String
+#      Id: HandlingInstructions
+#      Description: "Handling Instructions"
+#
+#    - Type: Integer
+#      Id: Priority
+#      Description: "Priority Level"
+
+# Installation Instructions:
+# 1. Copy this file to ../config/Package.yaml
+# 2. Configure barcode settings (prefix, length, start number)
+# 3. Set AutoPrint to true once label printer is configured
+# 4. Customize MetadataDefinition fields for your business needs
+# 5. Test barcode generation and label printing
+# 6. Ensure package functionality is enabled in Options.EnablePackages
+
+# Configuration Notes:
+# - Generated barcode pattern: [Prefix][PaddedNumber][Suffix]
+# - Example with defaults: "PKG00000000001", "PKG00000000002", etc.
+# - AutoPrint requires proper printer configuration and templates
+# - MetadataDefinition fields validate against external system capabilities
+# - Package functionality requires Options.EnablePackages = true
+
+# Barcode Examples:
+# Length=14, Prefix="PKG", Suffix="", StartNumber=1:
+# - First package: "PKG00000000001"
+# - Hundredth package: "PKG00000000100" 
+# - Thousandth package: "PKG00000001000"

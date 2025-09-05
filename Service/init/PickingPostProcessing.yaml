@@ -1,0 +1,74 @@
+# Picking Post-Processing Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/PickingPostProcessing.yaml and customize as needed
+
+# Post-processing pipeline - empty by default for new installations
+PickingPostProcessingProcessors: []
+
+# Example post-processor configuration (commented out):
+# PickingPostProcessingProcessors:
+#   - Assembly: "CustomProcessors.dll"
+#     TypeName: "CustomProcessors.ExampleProcessor"
+#     Configuration:
+#       Setting1: "Value1"
+#       Setting2: 42
+#       Enabled: true
+
+# Common post-processor examples (commented out - add as needed):
+# PickingPostProcessingProcessors:
+#   # Email notification processor
+#   - Assembly: "NotificationProcessors.dll"
+#     TypeName: "NotificationProcessors.EmailNotificationProcessor"
+#     Configuration:
+#       SmtpServer: "smtp.company.com"
+#       FromEmail: "wms@company.com"
+#       ToEmail: "warehouse@company.com"
+#       Subject: "Picking Completed: {PickListId}"
+#       
+#   # Audit logging processor  
+#   - Assembly: "AuditProcessors.dll"
+#     TypeName: "AuditProcessors.PickingAuditLogger"
+#     Configuration:
+#       LogLevel: "Info"
+#       IncludeItems: true
+#       DatabaseConnection: "AuditConnectionString"
+#       
+#   # Custom label printing processor
+#   - Assembly: "LabelProcessors.dll" 
+#     TypeName: "LabelProcessors.CustomLabelPrinter"
+#     Configuration:
+#       PrinterName: "Zebra_Warehouse_01"
+#       LabelTemplate: "PickingComplete.zpl"
+#       CopiesPerPickList: 2
+
+# Installation Instructions:
+# 1. Copy this file to ../config/PickingPostProcessing.yaml
+# 2. Place custom processor assemblies in the application directory
+# 3. Add processor configurations as needed for your workflow
+# 4. Ensure all referenced assemblies are accessible at runtime
+# 5. Test processor execution with sample pick lists
+# 6. Monitor processor performance and error handling
+
+# Processor Development Guidelines:
+# - Processors must implement the IPickingPostProcessor interface
+# - Configuration properties are injected via the Configuration dictionary
+# - Processors should handle exceptions gracefully and log errors
+# - Consider async operations for external system integrations
+# - Test processors in isolation before adding to the pipeline
+
+# Configuration Properties:
+# - Assembly: Name of the .NET assembly containing the processor (required string)
+# - TypeName: Full type name of the processor class (required string) 
+# - Configuration: Dictionary of key-value pairs for processor settings (optional object)
+
+# Processing Pipeline:
+# - Processors execute in the order defined in this array
+# - Each processor receives the same pick list data
+# - Processor failures don't stop the pipeline unless configured otherwise
+# - All processors must complete before the picking operation is considered finished
+
+# Security Notes:
+# - Only load processors from trusted sources
+# - Validate all configuration values for security risks
+# - Consider sandboxing for third-party processors
+# - Monitor resource usage of custom processors

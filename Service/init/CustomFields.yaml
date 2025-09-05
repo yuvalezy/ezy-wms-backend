@@ -1,0 +1,35 @@
+# Custom Fields Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/CustomFields.yaml and customize as needed
+
+# Custom field collections - empty by default for new installations
+CustomFields:
+  # Items custom fields collection (empty array for new installations)
+  Items: []
+
+# Example custom field structure (commented out):
+# CustomFields:
+#   Items:
+#     - Id: ExampleField
+#       Description: "Example Custom Field"
+#       # Optional properties:
+#       # Query: "SELECT Value FROM CustomTable WHERE ItemId = @ItemId"    # SQL query (marked as JsonIgnore)
+#       # GroupBy: "CustomTable.Category"                                  # Grouping expression (marked as JsonIgnore)
+
+# Installation Instructions:
+# 1. Copy this file to ../config/CustomFields.yaml  
+# 2. Add custom field definitions to the Items array as needed
+# 3. Configure Query and GroupBy properties for dynamic fields
+# 4. Ensure database permissions for custom field queries
+# 5. Test field resolution and data retrieval
+
+# Field Properties Documentation:
+# - Id: Unique identifier for the custom field (required string)
+# - Description: Human-readable label for UI display (required string)  
+# - Query: SQL query to retrieve field data (optional string, JsonIgnore)
+# - GroupBy: SQL grouping expression (optional string, JsonIgnore)
+
+# Notes:
+# - Query and GroupBy properties are marked with JsonIgnore attributes
+# - Custom fields integrate with the main application's metadata system
+# - Empty arrays are valid and represent no custom fields configured

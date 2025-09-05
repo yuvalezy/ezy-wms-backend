@@ -1,0 +1,65 @@
+# External Commands Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/ExternalCommands.yaml and customize as needed
+
+# Global settings that apply to all external commands
+# These are the default values for new installations
+GlobalSettings:
+  # Maximum number of commands that can execute simultaneously (int, default: 5)
+  maxConcurrentExecutions: 5
+  
+  # Timeout for individual command execution in seconds (int, default: 30)
+  commandTimeout: 30
+  
+  # Retry policy configuration for failed commands
+  retryPolicy:
+    # Maximum number of retry attempts (int, default: 3)
+    maxRetries: 3
+    
+    # Delay between retry attempts in seconds (int, default: 5)
+    retryDelaySeconds: 5
+    
+    # Types of errors that should trigger retries (string array)
+    retryOnErrors:
+      - NetworkError
+      - TimeoutError
+  
+  # XML output format settings (when fileFormat is XML)
+  xmlSettings:
+    # Name of the root XML element (string, default: "Root")
+    rootElementName: Root
+    
+    # Whether to include XML declaration header (bool, default: true)
+    includeXmlDeclaration: true
+    
+    # Whether to format XML with proper indentation (bool, default: true)
+    indentXml: true
+
+# External commands array - empty by default for new installations
+# Add command definitions here as needed
+ExternalCommands: []
+
+# Example command structure (commented out):
+# ExternalCommands:
+#   - id: ExampleCommand
+#     name: "Example Command"
+#     description: "Sample command configuration"
+#     objectType: Item              # ObjectType enum: Item, Package, PickList, etc.
+#     triggerType: Create           # CommandTriggerType enum: Create, Update, Delete
+#     enabled: false
+#     queries:
+#       - name: MainQuery
+#         query: "SELECT * FROM Items WHERE Id = @ObjectId"
+#         resultType: Single
+#     fileFormat: JSON              # CommandFileFormat enum: JSON, XML, CSV
+#     fileNamePattern: "{ObjectType}_{ObjectId}_{Timestamp:yyyyMMddHHmmss}.json"
+#     destination:
+#       type: LocalPath             # DestinationType: LocalPath, FTP, SFTP
+#       path: "C:\\Output"
+
+# Installation Instructions:
+# 1. Copy this file to ../config/ExternalCommands.yaml
+# 2. Customize GlobalSettings as needed for your environment
+# 3. Add specific command definitions in the ExternalCommands array
+# 4. Ensure proper permissions for output directories
+# 5. Test command execution and adjust timeout/retry settings as needed

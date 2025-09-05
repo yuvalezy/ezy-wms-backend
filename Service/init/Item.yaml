@@ -1,0 +1,88 @@
+# Item Metadata Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/Item.yaml and customize as needed
+
+Item:
+  MetadataDefinition:
+    # Basic item identification fields - always available and read-only
+    - Id: ItemCode
+      Description: Item Code
+      Type: String
+      ReadOnly: true
+      Required: false
+    
+    - Id: ItemName
+      Description: Item Name
+      Type: String
+      ReadOnly: true
+      Required: false
+
+# Extended metadata fields (commented out - add as needed):
+# Additional fields that can be enabled based on business requirements:
+#
+#    - Id: PurchaseUnitLength
+#      Description: Purchase Unit Length
+#      Type: Decimal
+#      Step: 4
+#      ReadOnly: false
+#      Required: false
+#
+#    - Id: PurchaseUnitWidth
+#      Description: Purchase Unit Width  
+#      Type: Decimal
+#      Step: 4
+#      ReadOnly: false
+#      Required: false
+#
+#    - Id: PurchaseUnitHeight
+#      Description: Purchase Unit Height
+#      Type: Decimal
+#      Step: 4
+#      ReadOnly: false
+#      Required: false
+#
+#    - Id: PurchaseUnitVolume
+#      Description: Purchase Unit Volume (m³)
+#      Type: Decimal
+#      Step: 4
+#      ReadOnly: false
+#      Required: false
+#      # Optional calculated field configuration:
+#      Calculated:
+#        Formula: "{PurchaseUnitLength} * {PurchaseUnitWidth} * {PurchaseUnitHeight}"
+#        Dependencies:
+#          - PurchaseUnitLength
+#          - PurchaseUnitWidth
+#          - PurchaseUnitHeight
+#        Precision: 4
+#        ClearDependenciesOnManualEdit: true
+#
+#    - Id: PurchaseUnitWeight
+#      Description: Weight (KG)
+#      Type: Decimal
+#      ReadOnly: false
+#      Required: false
+
+# Installation Instructions:
+# 1. Copy this file to ../config/Item.yaml
+# 2. Uncomment and customize additional metadata fields as needed
+# 3. Configure calculated fields with formulas and dependencies
+# 4. Ensure external system (SAP B1) supports the configured field names
+# 5. Test field validation and calculation logic
+
+# Field Properties Documentation:
+# - Id: Unique field identifier matching external system fields (required string)
+# - Description: Human-readable label for UI display (required string)
+# - Type: Data type enum (String, Decimal, Date, Integer) (required)
+# - Step: Decimal increment for UI controls (nullable int, Decimal type only)
+# - ReadOnly: Whether field can be edited (bool, default: false)
+# - Required: Whether field is mandatory (bool, default: false, cannot be true if ReadOnly)
+# - Query: SQL query for additional data (nullable string)
+# - GroupBy: SQL grouping expression (nullable string)
+# - Calculated: Formula configuration for computed fields (nullable object)
+
+# Calculated Field Configuration:
+# - Formula: Mathematical expression using {FieldName} syntax (required string)
+# - Dependencies: Array of field IDs used in calculation (string array)
+# - Precision: Decimal places for numeric results (int, default: 0)
+# - ClearDependenciesOnManualEdit: Clear source fields when manually edited (bool, default: false)

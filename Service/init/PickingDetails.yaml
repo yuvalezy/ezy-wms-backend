@@ -1,0 +1,57 @@
+# Picking Details Configuration Template
+# Default initialization settings for new installations
+# Copy this file to ../config/PickingDetails.yaml and customize as needed
+
+# Picking details custom fields - empty by default for new installations
+PickingDetails: []
+
+# Example picking detail field structure (commented out):
+# PickingDetails:
+#   - Id: ExampleField
+#     Description: "Example Picking Detail Field"
+#     # Optional properties (marked as JsonIgnore):
+#     # Query: "SELECT Value FROM PickingDetailExtensions WHERE PickingDetailId = @Id"
+#     # GroupBy: "Category"
+
+# Common picking detail fields (commented out - add as needed):
+# PickingDetails:
+#   - Id: Marca
+#     Description: "Brand/Marca"
+#     # Used for brand identification in picking process
+#   
+#   - Id: LotNumber
+#     Description: "Lot Number"
+#     # Batch/lot tracking field
+#   
+#   - Id: SerialNumber
+#     Description: "Serial Number" 
+#     # Individual item serial number tracking
+#   
+#   - Id: QualityCheck
+#     Description: "Quality Check Status"
+#     # Quality control validation field
+#   
+#   - Id: PickingNotes
+#     Description: "Picking Notes"
+#     # Special instructions for picker
+
+# Installation Instructions:
+# 1. Copy this file to ../config/PickingDetails.yaml
+# 2. Add specific picking detail fields as required by your warehouse operations
+# 3. Configure Query and GroupBy properties for dynamic data retrieval
+# 4. Ensure database permissions for custom field queries
+# 5. Test field integration with picking workflow
+# 6. Coordinate with CustomFields.yaml to avoid field conflicts
+
+# Field Properties Documentation:
+# - Id: Unique identifier for the picking detail field (required string)
+# - Description: Human-readable label for picker UI (required string)
+# - Query: SQL query to retrieve field data (optional string, JsonIgnore)
+# - GroupBy: SQL grouping expression for data organization (optional string, JsonIgnore)
+
+# Integration Notes:
+# - PickingDetails uses the same CustomField[] structure as CustomFields
+# - Query and GroupBy properties are ignored during JSON serialization
+# - Fields integrate with the main picking workflow and UI
+# - Empty array is valid and represents no custom picking fields
+# - Consider picker device screen size when adding fields
