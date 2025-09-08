@@ -351,4 +351,46 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
             throw new KeyNotFoundException($"Item with code {itemCode} not found.");
         return response;
     }
+
+    public async Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items) {
+        if (items.Count == 0)
+            return;
+        
+        // Build query with dynamic IN clause
+        var queryBuilder = new StringBuilder();
+        queryBuilder.Append("""
+            select "ItemCode", "Price" 
+            from ITM1 
+            where "PriceList" = @PriceList 
+            and "ItemCode" in (
+            """);
+        
+        // Add parameter placeholders for each item
+        for (int i = 0; i < items.Count; i++) {
+            if (i > 0) {
+                queryBuilder.Append(", ");
+            }
+            queryBuilder.Append($"@ItemCode{i}");
+        }
+        
+        queryBuilder.Append(")");
+        
+        // Create parameters
+        var parameters = new List<SqlParameter> { 
+            new("@PriceList", SqlDbType.Int) { Value = priceList } 
+        };
+        
+        for (int i = 0; i < items.Count; i++) {
+            parameters.Add(new($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = items[i] });
+        }
+        
+        // Execute query and populate the dictionary
+        await dbService.QueryAsync(queryBuilder.ToString(), parameters.ToArray(),
+            reader => {
+                var itemCode = reader.GetString(0);
+                var price = reader.GetDecimal(1);
+                itemsCost[itemCode] = price;
+                return (itemCode, price);
+            });
+    }
 }

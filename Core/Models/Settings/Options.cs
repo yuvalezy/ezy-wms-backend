@@ -18,6 +18,7 @@ public record Options {
     public bool GoodsReceiptPackages { get; set; } = true;
 
     public bool GoodsReceiptConfirmationAdjustStock { get; set; }
+    public int? GoodsReceiptConfirmationAdjustStockPriceList { get; set; }
 
     //Transfer
     public bool TransferTargetItems { get; init; }

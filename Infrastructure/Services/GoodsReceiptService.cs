@@ -1,3 +1,4 @@
+using Adapters.Common.SBO.Models;
 using Core.DTOs.GoodsReceipt;
 using Core.Entities;
 using Core.Enums;
@@ -229,7 +230,12 @@ public class GoodsReceiptService(
                     .ToList();
 
                     if (negativeItems.Count > 0 || positiveItems.Count > 0) {
-                        var response = await adapter.ProcessConfirmationAdjustments(goodsReceipt.Number, session.Warehouse, session.EnableBinLocations, session.DefaultBinLocation, negativeItems, positiveItems);
+                        var @params = new ProcessConfirmationAdjustmentsParameters(goodsReceipt.Number, session.Warehouse, session.EnableBinLocations, session.DefaultBinLocation, negativeItems, positiveItems);
+                        if (settings.Options.GoodsReceiptConfirmationAdjustStockPriceList.HasValue) {
+                            @params.ItemsCost = new();
+                            await adapter.GetItemCosts(settings.Options.GoodsReceiptConfirmationAdjustStockPriceList.Value, @params.ItemsCost, negativeItems.Select(v => v.ItemCode).Union(positiveItems.Select(v => v.ItemCode)).ToList());
+                        }
+                        var response = await adapter.ProcessConfirmationAdjustments(@params);
                         if (!response.Success) {
                             throw new Exception($"Error processing confirmation adjustments: {response.ErrorMessage}");
                         }

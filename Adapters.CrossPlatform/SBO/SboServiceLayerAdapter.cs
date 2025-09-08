@@ -29,6 +29,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     private readonly SboDatabaseService databaseService;
     private readonly ILoggerFactory loggerFactory;
     private readonly MetaDataDefinitions metaDataDefinitions;
+    private readonly int? goodsReceiptConfirmationAdjustStockPriceList;
 
     public SboServiceLayerAdapter(SboEmployeeRepository employeeRepository,
         SboGeneralRepository generalRepository,
@@ -49,6 +50,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         this.sboCompany = sboCompany;
         this.databaseService = databaseService;
         this.metaDataDefinitions = settings.Item;
+        this.goodsReceiptConfirmationAdjustStockPriceList = settings.Options.GoodsReceiptConfirmationAdjustStockPriceList;
         this.loggerFactory = loggerFactory;
         if (string.IsNullOrWhiteSpace(settings.SboSettings?.ServiceLayerUrl)) {
             throw new Exception("Service Layer Url is not set");
@@ -237,16 +239,13 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) =>
     await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
 
-    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation,
-        List<(string ItemCode, decimal Quantity)> negativeItems,
-        List<(string ItemCode, decimal Quantity)> positiveItems) {
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params) {
         int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);
         int exitSeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenExit);
-        var confirmationAdjustments =
-        new ConfirmationAdjustments(number, warehouse, enableBinLocation, defaultBinLocation, negativeItems, positiveItems, entrySeries, exitSeries, sboCompany, loggerFactory);
+        var confirmationAdjustments = new ConfirmationAdjustments(@params, entrySeries, exitSeries, sboCompany, loggerFactory);
 
         return await confirmationAdjustments.Execute();
     }
-
+    public async Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items) => await itemRepository.GetItemCosts(priceList, itemsCost, items);
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
 }

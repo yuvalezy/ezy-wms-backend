@@ -14,7 +14,6 @@ using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Microsoft.Extensions.Logging;
-using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO;
 
@@ -219,14 +218,15 @@ public class SboAdapter(
         return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
 
-    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation, List<(string ItemCode, decimal Quantity)> negativeItems, List<(string ItemCode, decimal Quantity)> positiveItems) {
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params) {
         int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);
         int exitSeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenExit);
-        var confirmationAdjustments =
-        new ConfirmationAdjustments(number, warehouse, enableBinLocation, defaultBinLocation, negativeItems, positiveItems, entrySeries, exitSeries, sboCompany, loggerFactory);
+        var confirmationAdjustments = new ConfirmationAdjustments(@params, entrySeries, exitSeries, sboCompany, loggerFactory);
 
         return await confirmationAdjustments.Execute();
     }
+
+    public async Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items) => await itemRepository.GetItemCosts(priceList, itemsCost, items);
 
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);
 

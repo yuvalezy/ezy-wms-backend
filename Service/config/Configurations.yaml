@@ -42,6 +42,7 @@ Options:
   
   # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
   GoodsReceiptConfirmationAdjustStock: true
+  GoodsReceiptConfirmationAdjustStockPriceList: 1
 
   # Transfer Configuration  
   # Whether to enable target item selection in transfers (bool, default: false)

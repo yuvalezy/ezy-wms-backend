@@ -96,8 +96,6 @@ public interface IExternalSystemAdapter {
 
     Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode);
     Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs);
-
-    Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(int number, string warehouse, bool enableBinLocation, int? defaultBinLocation,
-        List<(string ItemCode, decimal Quantity)> negativeItems,
-        List<(string ItemCode, decimal Quantity)> positiveItems);
+    Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params);
+    Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items);
 }

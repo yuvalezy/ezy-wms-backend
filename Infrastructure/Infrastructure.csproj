@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Adapters.Common\Adapters.Common.csproj" />
       <ProjectReference Include="..\Core\Core.csproj" />
     </ItemGroup>
 
