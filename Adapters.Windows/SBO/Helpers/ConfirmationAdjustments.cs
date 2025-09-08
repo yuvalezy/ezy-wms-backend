@@ -88,6 +88,9 @@ public class ConfirmationAdjustments(
             goodsIssue.Lines.Quantity = Math.Abs((double)quantity);
             goodsIssue.Lines.WarehouseCode = @params.Warehouse;
             goodsIssue.Lines.UseBaseUnits = BoYesNoEnum.tYES;
+            decimal? lineTotal = GetLineTotal((itemCode, quantity));
+            if (lineTotal.HasValue)
+                goodsIssue.Lines.LineTotal = (double)lineTotal.Value;
 
             // Add bin allocation if bin locations are enabled
             if (@params is { EnableBinLocation: true, DefaultBinLocation: not null }) {
@@ -128,6 +131,9 @@ public class ConfirmationAdjustments(
             goodsReceipt.Lines.Quantity = (double)quantity;
             goodsReceipt.Lines.WarehouseCode = @params.Warehouse;
             goodsReceipt.Lines.UseBaseUnits = BoYesNoEnum.tYES;
+            decimal? lineTotal = GetLineTotal((itemCode, quantity));
+            if (lineTotal.HasValue)
+                goodsReceipt.Lines.LineTotal = (double)lineTotal.Value;
 
             // Add bin allocation if bin locations are enabled
             if (@params is { EnableBinLocation: true, DefaultBinLocation: not null }) {
@@ -162,4 +168,5 @@ public class ConfirmationAdjustments(
             goodsReceipt = null;
         }
     }
+    private decimal? GetLineTotal((string ItemCode, decimal Quantity) item) => @params.ItemsCost?.TryGetValue(item.ItemCode, out decimal price) ?? false ? price * item.Quantity : null;
 }
