@@ -107,6 +107,7 @@ public class PickingUpdate(
         var sourceData = await GetSourceMeasureData();
 
         foreach (var pickLine in pickListResponse.PickListsLines) {
+            pickLine.PickStatus = null;
             var line = lines.FirstOrDefault(v => v.PickEntry == pickLine.LineNumber);
             if (line == null) {
                 continue;
@@ -129,15 +130,15 @@ public class PickingUpdate(
             }
             
             // Update status although technically irrelevant
-            if (pickLine.PickedQuantity == 0) {
-                pickLine.PickStatus = "ps_Released";
-            }
-            else if (pickLine.PickedQuantity == sourceLine.Quantity) {
-                pickLine.PickStatus = "ps_Picked";
-            }
-            else {
-                pickLine.PickStatus = "ps_PartiallyPicked";
-            }
+            // if (pickLine.PickedQuantity == 0) {
+            //     pickLine.PickStatus = "ps_Released";
+            // }
+            // else if (pickLine.PickedQuantity == sourceLine.Quantity) {
+            //     pickLine.PickStatus = "ps_Picked";
+            // }
+            // else {
+            //     pickLine.PickStatus = "ps_PartiallyPicked";
+            // }
 
             logger.LogDebug("Processing {BinCount} bin allocations for pick line {LineNumber}", line.Bins.Count, pickLine.LineNumber);
 

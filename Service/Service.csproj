@@ -92,7 +92,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="customers\processed\" />
+      <_ContentIncludedByDefault Remove="customers\appsettings.Calzato.json" />
+      <_ContentIncludedByDefault Remove="customers\appsettings.CottonDB.json" />
+      <_ContentIncludedByDefault Remove="customers\appsettings.GoldenBaby.json" />
+      <_ContentIncludedByDefault Remove="customers\appsettings.Kennedy.json" />
+      <_ContentIncludedByDefault Remove="customers\appsettings.Modan.json" />
     </ItemGroup>
 
 

@@ -43,7 +43,7 @@ Options:
   # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
   GoodsReceiptConfirmationAdjustStock: true
   # Price list ID to use when adjusting stock during goods receipt confirmation (nullable int, default: null)
-  GoodsReceiptConfirmationAdjustStockPriceList: 1
+  #GoodsReceiptConfirmationAdjustStockPriceList: 1
 
   # Transfer Configuration  
   # Whether to enable target item selection in transfers (bool, default: false)
