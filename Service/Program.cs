@@ -1,4 +1,6 @@
-﻿using Core.Interfaces;
+﻿using System;
+using System.Runtime.InteropServices;
+using Core.Interfaces;
 using Core.Models.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -16,8 +18,13 @@ if (args.Length > 0 && args[0] == "--test-sbo") {
     return;
 }
 
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 // Configure for Windows Service
-builder.Host.UseWindowsService();
+    builder.Host.UseWindowsService();
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+    builder.Host.UseSystemd();
+}
 
 // Load YAML configuration files before binding
 builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: false, reloadOnChange: true);

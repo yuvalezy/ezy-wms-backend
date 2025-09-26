@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -20,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Service.Configuration;
@@ -170,7 +173,10 @@ public static class ServiceCollectionExtensions {
                 config.AddConsole();
                 config.AddDebug();
             }
-            config.AddEventLog(); // Add Windows Event Log for service
+            // Add Windows Event Log only on Windows
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                config.AddEventLog();
+            }
         });
 
         return services;
@@ -256,14 +262,43 @@ public static class ServiceCollectionExtensions {
             });
         }
 
-        // Configure server options
-        services.Configure<IISServerOptions>(options => {
-            options.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB in bytes
-        });
+        // Configure server options - IIS only available on Windows
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            services.AddWindowsServerConfiguration();
+        }
 
         services.Configure<KestrelServerOptions>(options => {
             options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB in bytes
         });
+
+        return services;
+    }
+
+    public static IServiceCollection AddWindowsServerConfiguration(this IServiceCollection services) {
+        // Use reflection to avoid type loading issues on non-Windows platforms
+        try {
+            var iisOptionsType = Type.GetType("Microsoft.AspNetCore.Builder.IISServerOptions, Microsoft.AspNetCore.Server.IIS");
+            if (iisOptionsType != null) {
+                var configureMethod = typeof(OptionsConfigurationServiceCollectionExtensions)
+                    .GetMethod("Configure", new[] { typeof(IServiceCollection), typeof(Action<>).MakeGenericType(iisOptionsType) });
+
+                if (configureMethod != null) {
+                    var configureGeneric = configureMethod.MakeGenericMethod(iisOptionsType);
+                    var actionType = typeof(Action<>).MakeGenericType(iisOptionsType);
+
+                    // Create action delegate
+                    var parameter = Expression.Parameter(iisOptionsType, "options");
+                    var property = Expression.Property(parameter, "MaxRequestBodySize");
+                    var assignment = Expression.Assign(property, Expression.Constant(10 * 1024 * 1024));
+                    var lambda = Expression.Lambda(actionType, assignment, parameter);
+                    var action = lambda.Compile();
+
+                    configureGeneric.Invoke(null, new object[] { services, action });
+                }
+            }
+        } catch {
+            // Silently ignore errors configuring IIS options on non-Windows platforms
+        }
 
         return services;
     }
