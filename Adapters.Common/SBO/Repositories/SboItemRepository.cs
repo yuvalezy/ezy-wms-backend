@@ -20,7 +20,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
               WHERE T0."BcdCode" = @ScanCode
               """
             : """
-              SELECT T0."ItemCode", T1."ItemName", T2."Father"
+              SELECT DISTINCT T0."ItemCode", T1."ItemName", T2."Father"
               FROM OITM T1
                        left outer JOIN OBCD T0 ON T0."ItemCode" = T1."ItemCode"
               left outer join ITT1 T2 on T2."Code" = T0."ItemCode"

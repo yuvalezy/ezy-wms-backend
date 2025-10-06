@@ -17,6 +17,7 @@ public interface IExternalSystemAdapter {
     //Users
     Task<ExternalValue<string>?> GetUserInfoAsync(string id);
     Task<IEnumerable<ExternalValue<string>>> GetUsersAsync();
+    Task<IEnumerable<ExternalSystemUserResponse>> GetExternalSystemUsersAsync();
 
 
     // Warehouse

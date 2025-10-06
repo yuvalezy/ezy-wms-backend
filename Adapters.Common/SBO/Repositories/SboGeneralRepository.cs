@@ -4,6 +4,7 @@ using Adapters.Common.SBO.Enums;
 using Adapters.Common.SBO.Services;
 using Adapters.Common.Utils;
 using Core.DTOs.Items;
+using Core.DTOs.Settings;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
@@ -186,5 +187,17 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             new SqlParameter("@Date", SqlDbType.DateTime) { Value           = DateTime.UtcNow }
         };
         return await dbService.QuerySingleAsync(query, parameters, reader => reader.GetInt32(0));
+    }
+
+    public async Task<IEnumerable<ExternalSystemUserResponse>> GetExternalSystemUsersAsync() {
+        const string query = """
+            SELECT USER_CODE AS "UserId", COALESCE(U_NAME, USER_CODE) AS "UserName"
+            FROM OUSR
+            ORDER BY 2
+            """;
+        return await dbService.QueryAsync(query, null, reader => new ExternalSystemUserResponse {
+            UserId = reader.GetString(0),
+            UserName = reader.GetString(1)
+        });
     }
 }

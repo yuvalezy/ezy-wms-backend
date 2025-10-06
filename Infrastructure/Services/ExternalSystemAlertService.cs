@@ -35,8 +35,8 @@ public class ExternalSystemAlertService(
     }
 
     public async Task<ExternalSystemAlert> CreateAlertAsync(ExternalSystemAlert alert, Guid userId) {
-        alert.CreatedByUserId = userId;
         alert.CreatedAt = DateTime.UtcNow;
+        alert.CreatedByUserId = userId;
 
         context.ExternalSystemAlerts.Add(alert);
         await context.SaveChangesAsync();
@@ -52,8 +52,8 @@ public class ExternalSystemAlertService(
         }
 
         alert.Enabled = enabled;
-        alert.UpdatedByUserId = userId;
         alert.UpdatedAt = DateTime.UtcNow;
+        alert.UpdatedByUserId = userId;
 
         await context.SaveChangesAsync();
 

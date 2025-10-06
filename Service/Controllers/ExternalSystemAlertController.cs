@@ -7,13 +7,20 @@ using Core.Entities;
 using Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Service.Middlewares;
 
 namespace Service.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ExternalSystemAlertController(IExternalSystemAlertService alertService) : ControllerBase {
+public class ExternalSystemAlertController(IExternalSystemAlertService alertService, IExternalSystemAdapter externalSystemAdapter) : ControllerBase {
+
+    [HttpGet("users")]
+    public async Task<ActionResult<IEnumerable<ExternalSystemUserResponse>>> GetExternalSystemUsers() {
+        var users = await externalSystemAdapter.GetExternalSystemUsersAsync();
+        return Ok(users);
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ExternalSystemAlertResponse>>> GetAlerts() {
@@ -33,8 +40,7 @@ public class ExternalSystemAlertController(IExternalSystemAlertService alertServ
 
     [HttpPost]
     public async Task<ActionResult<ExternalSystemAlertResponse>> CreateAlert([FromBody] ExternalSystemAlertRequest request) {
-        var userId = Guid.Parse(User.FindFirst("EmployeeID")!.Value);
-
+        var sessionInfo = HttpContext.GetSession();
         var alert = new ExternalSystemAlert {
             ObjectType = request.ObjectType,
             ExternalUserId = request.ExternalUserId,
@@ -42,7 +48,7 @@ public class ExternalSystemAlertController(IExternalSystemAlertService alertServ
         };
 
         try {
-            var created = await alertService.CreateAlertAsync(alert, userId);
+            var created = await alertService.CreateAlertAsync(alert, sessionInfo.Guid);
             var response = new ExternalSystemAlertResponse {
                 Id = created.Id,
                 ObjectType = created.ObjectType,
@@ -62,10 +68,9 @@ public class ExternalSystemAlertController(IExternalSystemAlertService alertServ
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ExternalSystemAlertResponse>> UpdateAlert(Guid id, [FromBody] ExternalSystemAlertUpdateRequest request) {
-        var userId = Guid.Parse(User.FindFirst("EmployeeID")!.Value);
-
+        var sessionInfo = HttpContext.GetSession();
         try {
-            var updated = await alertService.UpdateAlertAsync(id, request.Enabled, userId);
+            var updated = await alertService.UpdateAlertAsync(id, request.Enabled, sessionInfo.Guid);
             var response = new ExternalSystemAlertResponse {
                 Id = updated.Id,
                 ObjectType = updated.ObjectType,

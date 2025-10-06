@@ -41,6 +41,7 @@ public class SboAdapter(
     // Users
     public async Task<ExternalValue<string>?> GetUserInfoAsync(string id) => await employeeRepository.GetByIdAsync(id);
     public async Task<IEnumerable<ExternalValue<string>>> GetUsersAsync() => await employeeRepository.GetAllAsync();
+    public async Task<IEnumerable<ExternalSystemUserResponse>> GetExternalSystemUsersAsync() => await generalRepository.GetExternalSystemUsersAsync();
 
     // Warehouses
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter = null) => await generalRepository.GetWarehousesAsync(filter);
