@@ -9,7 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter, ITransferPackageService transferPackageService, ISettings settings) : ITransferService {
+public class TransferService(
+    SystemDbContext db,
+    IExternalSystemAdapter adapter,
+    ITransferPackageService transferPackageService,
+    ISettings settings,
+    IExternalSystemAlertService alertService) : ITransferService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
@@ -189,8 +194,11 @@ public class TransferService(SystemDbContext db, IExternalSystemAdapter adapter,
             // Prepare data for SAP B1 transfer creation
             var transferData = await PrepareTransferData(id);
 
+            // Get alert recipients
+            var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.Transfer);
+
             // Call external system to create the transfer in SAP B1
-            var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData);
+            var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData, alertRecipients);
 
             if (result.Success) {
                 transferEntry = result.ExternalEntry;

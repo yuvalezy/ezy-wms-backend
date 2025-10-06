@@ -24,6 +24,7 @@ public class PickListCancelService(
     IPickListPackageClosureService pickListPackageClosureService,
     IExternalSystemAdapter adapter,
     ISettings settings,
+    IExternalSystemAlertService alertService,
     ILogger<PickListCancelService> logger) : IPickListCancelService {
     public async Task<ProcessPickListCancelResponse> CancelPickListAsync(int absEntry, SessionInfo sessionInfo) {
         // Process the picking in case something has not been synced into SAP B1
@@ -44,8 +45,11 @@ public class PickListCancelService(
         // Get current picked data from SAP
         var selection = (await adapter.GetPickingSelection(absEntry)).ToArray();
 
+        // Get alert recipients
+        var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.PickListCancellation);
+
         // Cancel Pick List in SAP
-        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry, enableBinLocations);
+        response = await adapter.CancelPickList(absEntry, selection, sessionInfo.Warehouse, cancelBinEntry, enableBinLocations, alertRecipients);
         if (selection.Length == 0)
             return response.ToDto();
 

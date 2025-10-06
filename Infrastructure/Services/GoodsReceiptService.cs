@@ -16,7 +16,8 @@ public class GoodsReceiptService(
     IExternalSystemAdapter adapter,
     IPackageService packageService,
     IGoodsReceiptReportService receiptReportService,
-    ISettings settings) : IGoodsReceiptService {
+    ISettings settings,
+    IExternalSystemAlertService alertService) : IGoodsReceiptService {
     public async Task<GoodsReceiptResponse> CreateGoodsReceipt(CreateGoodsReceiptRequest request, SessionInfo session) {
         await ValidateCreateGoodsReceiptRequest(session.Warehouse, request);
         var now = DateTime.UtcNow;
@@ -235,7 +236,11 @@ public class GoodsReceiptService(
                             @params.ItemsCost = new();
                             await adapter.GetItemCosts(settings.Options.GoodsReceiptConfirmationAdjustStockPriceList.Value, @params.ItemsCost, negativeItems.Select(v => v.ItemCode).Union(positiveItems.Select(v => v.ItemCode)).ToList());
                         }
-                        var response = await adapter.ProcessConfirmationAdjustments(@params);
+
+                        // Get alert recipients for confirmation adjustments
+                        var adjAlertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.ConfirmationAdjustments);
+
+                        var response = await adapter.ProcessConfirmationAdjustments(@params, adjAlertRecipients);
                         if (!response.Success) {
                             throw new Exception($"Error processing confirmation adjustments: {response.ErrorMessage}");
                         }
@@ -264,8 +269,11 @@ public class GoodsReceiptService(
             // Prepare data for SAP B1
             var goodsReceiptData = await PrepareGoodsReceiptData(goodsReceipt);
 
+            // Get alert recipients
+            var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.GoodsReceipt);
+
             // Process in external system
-            var result = await adapter.ProcessGoodsReceipt(goodsReceipt.Number, session.Warehouse, goodsReceiptData);
+            var result = await adapter.ProcessGoodsReceipt(goodsReceipt.Number, session.Warehouse, goodsReceiptData, alertRecipients);
 
             if (result.Success) {
                 goodsReceipt.Status = ObjectStatus.Finished;

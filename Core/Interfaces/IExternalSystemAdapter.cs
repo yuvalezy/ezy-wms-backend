@@ -62,7 +62,7 @@ public interface IExternalSystemAdapter {
     Task<ItemMetadataResponse> UpdateItemMetadataAsync(string itemCode, ItemMetadataRequest request);
 
     // Transfer
-    Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data);
+    Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients);
     Task Canceltransfer(int transferEntry);
 
     // Picking methods
@@ -72,20 +72,20 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
     Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request);
     Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values);
-    Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data);
+    Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data, string[] alertRecipients);
     Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries);
     Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry);
     Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry);
-    Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations);
+    Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations, string[] alertRecipients);
 
     // Inventory Counting methods
-    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data);
+    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients);
     Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode);
 
     // Goods Receipt methods
     Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
     Task<GoodsReceiptValidationResult> ValidateGoodsReceiptAddItem(string itemCode, string? barcode, List<ObjectKey> specificDocuments, string warehouse, bool useBaseUnit);
-    Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data);
+    Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data, string[] alertRecipients);
     Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents);
 
     Task<IEnumerable<GoodsReceiptAddItemSourceDocumentResponse>> AddItemSourceDocuments(string itemCode, UnitType unit,
@@ -96,6 +96,6 @@ public interface IExternalSystemAdapter {
 
     Task<IEnumerable<GoodsReceiptAddItemTargetDocumentsResponse>> AddItemTargetDocuments(string warehouse, string itemCode);
     Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs);
-    Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params);
+    Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params, string[] alertRecipients);
     Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items);
 }

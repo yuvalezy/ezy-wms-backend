@@ -19,7 +19,8 @@ public class InventoryCountingsService(
     IPackageContentService packageContentService,
     IPackageService packageService,
     IExternalCommandService externalCommandService,
-    IPackageLocationService packageLocationService) : IInventoryCountingsService {
+    IPackageLocationService packageLocationService,
+    IExternalSystemAlertService alertService) : IInventoryCountingsService {
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
             Name = request.Name,
@@ -120,8 +121,11 @@ public class InventoryCountingsService(
             // Prepare data for SAP B1 inventory counting creation
             var countingData = await PrepareCountingData(id, counting.WhsCode, sessionInfo.EnableBinLocations);
 
+            // Get alert recipients
+            var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.InventoryCounting);
+
             // Call external system to process the counting
-            var result = await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse, countingData);
+            var result = await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse, countingData, alertRecipients);
 
             if (result.Success) {
                 // Update status to Closed

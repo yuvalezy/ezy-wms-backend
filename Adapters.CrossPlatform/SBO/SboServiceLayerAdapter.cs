@@ -111,11 +111,24 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
         using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
         try {
-            return await transferCreation.Execute();
+            var response = await transferCreation.Execute();
+
+            // Send alert if creation was successful
+            if (response.Success && response.ExternalNumber.HasValue && response.ExternalEntry.HasValue) {
+                using var alert = new Alert(sboCompany, loggerFactory);
+                await alert.SendDocumentCreationAlert(
+                    AlertableObjectType.Transfer,
+                    transferNumber,
+                    response.ExternalNumber.Value,
+                    response.ExternalEntry.Value,
+                    alertRecipients);
+            }
+
+            return response;
         }
         catch (Exception e) {
             return new ProcessTransferResponse {
@@ -124,22 +137,6 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
                 ErrorMessage = e.Message
             };
         }
-        //todo send alert to sap
-//     private void ProcessTransferSendAlert(int id, List<string> sendTo, TransferCreation creation) {
-//         try {
-//             using var alert = new Alert();
-//             alert.Subject = string.Format(ErrorMessages.WMSTransactionAlert, id);
-//             var transactionColumn = new AlertColumn(ErrorMessages.WMSTransaction);
-//             var transferColumn    = new AlertColumn(ErrorMessages.InventoryTransfer, true);
-//             alert.Columns.AddRange([transactionColumn, transferColumn]);
-//             transactionColumn.Values.Add(new AlertValue(id.ToString()));
-//             transferColumn.Values.Add(new AlertValue(creation.Number.ToString(), "67", creation.Entry.ToString()));
-//
-//             alert.Send(sendTo);
-//         }
-//         catch (Exception e) {
-//         }
-//     }
     }
 
     public async Task Canceltransfer(int transferEntry) {
@@ -159,7 +156,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) => await pickingRepository.ValidatePickingAddItem(request);
     public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) => await pickingRepository.ValidatePickingAddPackage(absEntry, values);
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data) {
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data, string[] alertRecipients) {
         using var update = new PickingUpdate(absEntry, data, sboCompany, databaseService, loggerFactory);
         var result = new ProcessPickListResult {
             Success = true,
@@ -168,6 +165,17 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
         try {
             await update.Execute();
+
+            // Send alert if update was successful
+            if (result.Success) {
+                using var alert = new Alert(sboCompany, loggerFactory);
+                await alert.SendDocumentCreationAlert(
+                    AlertableObjectType.PickList,
+                    absEntry,
+                    absEntry,
+                    absEntry,
+                    alertRecipients);
+            }
         }
         catch (Exception e) {
             result.ErrorMessage = e.Message;
@@ -182,18 +190,44 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
 
-    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations) {
+    public async Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations, string[] alertRecipients) {
         var pickingCancellation = new PickingCancellation(sboCompany, absEntry, selection, warehouse, transferBinEntry, loggerFactory, enableBinLocations);
-        return await pickingCancellation.Execute();
+        var response = await pickingCancellation.Execute();
+
+        // Send alert if cancellation was successful and transfer was created
+        if (response.Status == ResponseStatus.Ok && response.DocumentNumber.HasValue) {
+            using var alert = new Alert(sboCompany, loggerFactory);
+            await alert.SendDocumentCreationAlert(
+                AlertableObjectType.PickListCancellation,
+                absEntry,
+                response.DocumentNumber.Value,
+                response.DocumentNumber.Value,
+                alertRecipients);
+        }
+
+        return response;
     }
 
 
     //Inventory Counting
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
         try {
-            return await creation.Execute();
+            var response = await creation.Execute();
+
+            // Send alert if creation was successful
+            if (response.Success && response.ExternalNumber.HasValue && response.ExternalEntry.HasValue) {
+                using var alert = new Alert(sboCompany, loggerFactory);
+                await alert.SendDocumentCreationAlert(
+                    AlertableObjectType.InventoryCounting,
+                    countingNumber,
+                    response.ExternalNumber.Value,
+                    response.ExternalEntry.Value,
+                    alertRecipients);
+            }
+
+            return response;
         }
         catch (Exception e) {
             return new ProcessInventoryCountingResponse {
@@ -213,10 +247,23 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(itemCode, barcode, warehouse, specificDocuments, useBaseUnit);
     }
 
-    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries("20");
         var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data, loggerFactory);
-        return await creation.Execute();
+        var result = await creation.Execute();
+
+        // Send alert if creation was successful
+        if (result.Success && result.DocumentNumber.HasValue) {
+            using var alert = new Alert(sboCompany, loggerFactory);
+            await alert.SendDocumentCreationAlert(
+                AlertableObjectType.GoodsReceipt,
+                number,
+                result.DocumentNumber.Value,
+                result.DocumentNumber.Value,
+                alertRecipients);
+        }
+
+        return result;
     }
 
     public async Task ValidateGoodsReceiptDocuments(string warehouse, GoodsReceiptType type, List<DocumentParameter> documents) {
@@ -239,12 +286,30 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     public async Task<IEnumerable<GoodsReceiptValidateProcessDocumentsDataResponse>> GoodsReceiptValidateProcessDocumentsData(ObjectKey[] docs) =>
     await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
 
-    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params) {
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params, string[] alertRecipients) {
         int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);
         int exitSeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenExit);
         var confirmationAdjustments = new ConfirmationAdjustments(@params, entrySeries, exitSeries, sboCompany, loggerFactory);
 
-        return await confirmationAdjustments.Execute();
+        var response = await confirmationAdjustments.Execute();
+
+        // Send alert if adjustments were created successfully
+        if (response.Success && (response.InventoryGoodsIssueAdjustmentEntry.HasValue || response.InventoryGoodsIssueAdjustmentExit.HasValue)) {
+            using var alert = new Alert(sboCompany, loggerFactory);
+
+            // Use the entry or exit value for the alert
+            int docEntry = response.InventoryGoodsIssueAdjustmentEntry ?? response.InventoryGoodsIssueAdjustmentExit ?? 0;
+            if (docEntry > 0) {
+                await alert.SendDocumentCreationAlert(
+                    AlertableObjectType.ConfirmationAdjustments,
+                    @params.Number,
+                    docEntry,
+                    docEntry,
+                    alertRecipients);
+            }
+        }
+
+        return response;
     }
     public async Task GetItemCosts(int priceList, Dictionary<string, decimal> itemsCost, List<string> items) => await itemRepository.GetItemCosts(priceList, itemsCost, items);
     public async Task LoadGoodsReceiptItemData(Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) => await goodsReceiptRepository.LoadGoodsReceiptItemData(data);

@@ -69,7 +69,7 @@ public class SboAdapter(
     public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
         using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
         try {
@@ -119,7 +119,7 @@ public class SboAdapter(
     public async Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request) => await pickingRepository.ValidatePickingAddItem(request);
     public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) => await pickingRepository.ValidatePickingAddPackage(absEntry, values);
 
-    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data) {
+    public async Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data, string[] alertRecipients) {
         using var update = new PickingUpdate(absEntry, data, sboCompany, databaseService);
         var result = new ProcessPickListResult {
             Success = true,
@@ -143,13 +143,13 @@ public class SboAdapter(
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);
 
-    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations) {
+    public Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations, string[] alertRecipients) {
         var helper = new PickingCancellation(sboCompany, absEntry, loggerFactory);
         return Task.FromResult(helper.Execute());
     }
 
     //Inventory Counting
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data) {
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
         try {
@@ -190,7 +190,7 @@ public class SboAdapter(
         return await goodsReceiptRepository.ValidateGoodsReceiptAddItem(itemCode, barcode, warehouse, specificDocuments, useBaseUnit);
     }
 
-    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data) {
+    public async Task<ProcessGoodsReceiptResult> ProcessGoodsReceipt(int number, string warehouse, Dictionary<string, List<GoodsReceiptCreationDataResponse>> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries("20");
         using var creation = new GoodsReceiptCreation(sboCompany, number, warehouse, series, data);
         return await Task.FromResult(creation.Execute());
@@ -218,7 +218,7 @@ public class SboAdapter(
         return await goodsReceiptRepository.GoodsReceiptValidateProcessDocumentsData(docs);
     }
 
-    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params) {
+    public async Task<ConfirmationAdjustmentsResponse> ProcessConfirmationAdjustments(ProcessConfirmationAdjustmentsParameters @params, string[] alertRecipients) {
         int entrySeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenEntry);
         int exitSeries = await generalRepository.GetSeries(ObjectTypes.oInventoryGenExit);
         var confirmationAdjustments = new ConfirmationAdjustments(@params, entrySeries, exitSeries, sboCompany, loggerFactory);

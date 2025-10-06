@@ -61,6 +61,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IInventoryCountingsLineService, InventoryCountingsLineService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
+        services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
 
         // Package Management Services
         services.AddScoped<IPackageContentService, PackageContentService>();

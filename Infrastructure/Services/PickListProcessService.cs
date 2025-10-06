@@ -14,6 +14,7 @@ public class PickListProcessService(
     IExternalSystemAdapter adapter,
     IPickingPostProcessorFactory postProcessorFactory,
     IServiceProvider serviceProvider,
+    IExternalSystemAlertService alertService,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
         var transaction = await db.Database.BeginTransactionAsync();
@@ -54,8 +55,11 @@ public class PickListProcessService(
             .Where(p => p.AbsEntry == absEntry && p.Status == ObjectStatus.Processing && p.SyncStatus == SyncStatus.Processing)
             .ToListAsync();
 
+            // Get alert recipients
+            var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.PickList);
+
             // Call external system to process the pick list
-            var result = await adapter.ProcessPickList(absEntry, pickingData);
+            var result = await adapter.ProcessPickList(absEntry, pickingData, alertRecipients);
 
             if (result.Success) {
                 // Update pick lists to Closed and Synced

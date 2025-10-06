@@ -94,7 +94,7 @@ public class PickingTest : BaseExternalTest {
             }
         ];
 
-        await externalSystemAdapter.ProcessPickList(absEntry, data);
+        await externalSystemAdapter.ProcessPickList(absEntry, data, []);
     }
 
     [OneTimeTearDown]
