@@ -23,7 +23,9 @@
       "Bash(wc:*)",
       "Bash(python:*)",
       "Bash(find:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Read(//d/source/node/light_wms/src/pages/transfer/**)",
+      "Read(//d/source/node/light_wms/src/pages/**)"
     ],
     "deny": []
   }

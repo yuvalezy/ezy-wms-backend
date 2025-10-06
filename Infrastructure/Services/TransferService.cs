@@ -507,7 +507,7 @@ public class TransferService(
             foreach (var content in request.Contents) {
                 var line = new TransferLine {
                     ItemCode        = content.ItemCode,
-                    BarCode         = content.ItemCode, // Using ItemCode as barcode for now
+                    BarCode         = content.Barcode, 
                     Date            = DateTime.UtcNow,
                     Quantity        = content.Quantity,
                     Type            = SourceTarget.Source,
