@@ -75,6 +75,12 @@ Options:
   # Whether picking operations require verification/check steps (bool, default: false)
   EnablePickingCheck: false
 
+  # Quantity Configuration
+  # Whether to allow decimal quantities in all operations (bool, default: false)
+  # true = Allow decimals with 2 decimal places precision
+  # false = Integer quantities only (default for backward compatibility)
+  EnableDecimalQuantities: false
+
 # Data Filtering Configuration
 # SQL-based filters for restricting data visibility and access
 Filters:

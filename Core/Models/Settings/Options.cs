@@ -37,4 +37,7 @@ public record Options {
 
     //Pick List
     public bool EnablePickingCheck { get; init; }
+
+    //Quantities
+    public bool EnableDecimalQuantities { get; init; }
 }
