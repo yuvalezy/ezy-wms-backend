@@ -299,14 +299,25 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
             using var alert = new Alert(sboCompany, loggerFactory);
 
             // Use the entry or exit value for the alert
-            int docEntry = response.InventoryGoodsIssueAdjustmentEntry ?? response.InventoryGoodsIssueAdjustmentExit ?? 0;
-            if (docEntry > 0) {
+            if (response.InventoryGoodsIssueAdjustmentEntry > 0) {
+                int docEntry = response.InventoryGoodsIssueAdjustmentEntry.Value;
                 await alert.SendDocumentCreationAlert(
-                    AlertableObjectType.ConfirmationAdjustments,
+                    AlertableObjectType.ConfirmationAdjustmentsEntry,
                     @params.Number,
                     docEntry,
                     docEntry,
                     alertRecipients);
+            }
+
+            if (response.InventoryGoodsIssueAdjustmentExit > 0) {
+                int docEntry = response.InventoryGoodsIssueAdjustmentExit.Value;
+                await alert.SendDocumentCreationAlert(
+                    AlertableObjectType.ConfirmationAdjustmentsExit,
+                    @params.Number,
+                    docEntry,
+                    docEntry,
+                    alertRecipients);
+
             }
         }
 

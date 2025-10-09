@@ -14,7 +14,6 @@ namespace UnitTests.Integration.ExternalSystems.General;
 [Category("RequiresSapB1")]
 public class AlertTest : BaseExternalTest {
     private ILoggerFactory loggerFactory;
-    private IExternalSystemAdapter externalSystemAdapter;
     private SboDatabaseService databaseService;
 
     [OneTimeSetUp]
@@ -22,7 +21,6 @@ public class AlertTest : BaseExternalTest {
         base.OneTimeSetUp();
         using var scope = factory.Services.CreateScope();
         loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-        externalSystemAdapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         databaseService = new SboDatabaseService(configuration);
     }
@@ -74,11 +72,12 @@ public class AlertTest : BaseExternalTest {
         const string entryQuery = "select top 1 \"DocEntry\", \"DocNum\" from OIGN order by \"DocEntry\" desc";
         (int entryEntry, int entryNumber) = await databaseService.QuerySingleAsync(entryQuery, null, dr => (dr.GetInt32(0), dr.GetInt32(1)));
         
+        var alert = new Alert(sboCompany, loggerFactory){ThrowExceptionOnFailure = true};
+        await alert.SendDocumentCreationAlert(AlertableObjectType.ConfirmationAdjustmentsEntry, 111, entryNumber, entryEntry, ["manager"]);
+        
         const string exitQuery = "select top 1 \"DocEntry\", \"DocNum\" from OIGE order by \"DocEntry\" desc";
         (int exitEntry, int exitNumber) = await databaseService.QuerySingleAsync(exitQuery, null, dr => (dr.GetInt32(0), dr.GetInt32(1)));
-        
-        var alert = new Alert(sboCompany, loggerFactory){ThrowExceptionOnFailure = true};
-        await alert.SendDocumentCreationAlert(AlertableObjectType.ConfirmationAdjustments, 111, entryNumber, entryEntry, ["manager"]);
+        await alert.SendDocumentCreationAlert(AlertableObjectType.ConfirmationAdjustmentsExit, 111, exitNumber, exitEntry, ["manager"]);
     }
 
     [OneTimeTearDown]

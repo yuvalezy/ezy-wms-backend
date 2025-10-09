@@ -238,7 +238,7 @@ public class GoodsReceiptService(
                         }
 
                         // Get alert recipients for confirmation adjustments
-                        var adjAlertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.ConfirmationAdjustments);
+                        var adjAlertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.ConfirmationAdjustmentsEntry);
 
                         var response = await adapter.ProcessConfirmationAdjustments(@params, adjAlertRecipients);
                         if (!response.Success) {

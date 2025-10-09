@@ -85,10 +85,15 @@ public class Alert(SboCompany sboCompany, ILoggerFactory loggerFactory) : IDispo
                 "Lista de Picking",
                 "156"
             ),
-            AlertableObjectType.ConfirmationAdjustments => (
+            AlertableObjectType.ConfirmationAdjustmentsEntry => (
                 "Ajustes de Inventario Creados desde WMS",
                 "Ajustes de Inventario",
                 "59"
+            ),
+            AlertableObjectType.ConfirmationAdjustmentsExit => (
+                "Ajustes de Inventario Creados desde WMS",
+                "Ajustes de Inventario",
+                "60"
             ),
             AlertableObjectType.PickListCancellation => (
                 "Lista de Picking Cancelada desde WMS",
