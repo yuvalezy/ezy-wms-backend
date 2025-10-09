@@ -8,6 +8,7 @@ namespace Adapters.CrossPlatform.SBO.Helpers;
 
 public class Alert(SboCompany sboCompany, ILoggerFactory loggerFactory) : IDisposable {
     private readonly ILogger<Alert> logger = loggerFactory.CreateLogger<Alert>();
+    public bool ThrowExceptionOnFailure { get; set; } = false;
 
     public async Task SendDocumentCreationAlert(
         AlertableObjectType type,
@@ -15,7 +16,7 @@ public class Alert(SboCompany sboCompany, ILoggerFactory loggerFactory) : IDispo
         int docNumber,
         int docEntry,
         string[] recipients) {
-        if (recipients == null || recipients.Length == 0) {
+        if (recipients.Length == 0) {
             logger.LogDebug("No recipients configured for {ObjectType} alert", type);
             return;
         }
@@ -28,31 +29,37 @@ public class Alert(SboCompany sboCompany, ILoggerFactory loggerFactory) : IDispo
 
             var alertData = new {
                 Subject = subject,
-                Recipients = recipients.Select(r => new { SendInternal = "tYES", UserCode = r }).ToArray(),
-                AlertDataColumns = new object[] {
+                RecipientCollection = recipients.Select(r => new { SendInternal = "tYES", UserCode = r }).ToArray(),
+                MessageDataColumns = new object[] {
                     new {
                         ColumnName = "Transacción WMS",
-                        Values = new[] { new { Value = wmsNumber.ToString() } }
+                        MessageDataLines = new[] { new { Value = wmsNumber.ToString() } }
                     },
                     new {
                         ColumnName = documentTypeName,
                         Link = "tYES",
-                        Values = new[] { new { Value = docNumber.ToString(), Object = objectCode, ObjectKey = docEntry.ToString() } }
+                        MessageDataLines = new[] { new { Value = docNumber.ToString(), Object = objectCode, ObjectKey = docEntry.ToString() } }
                     }
                 }
             };
 
-            var (success, errorMessage) = await sboCompany.PostAsync("Alerts", alertData);
+            var (success, errorMessage) = await sboCompany.PostAsync("Messages", alertData);
 
             if (success) {
                 logger.LogInformation("Successfully sent {ObjectType} alert to {RecipientCount} users", type, recipients.Length);
+                return;
             }
-            else {
-                logger.LogWarning("Failed to send {ObjectType} alert: {ErrorMessage}", type, errorMessage);
+
+            logger.LogWarning("Failed to send {ObjectType} alert: {ErrorMessage}", type, errorMessage);
+            if (ThrowExceptionOnFailure) {
+                throw new Exception(errorMessage);
             }
         }
         catch (Exception ex) {
             logger.LogError(ex, "Exception while sending {ObjectType} alert", type);
+            if (ThrowExceptionOnFailure) {
+                throw;
+            }
         }
     }
 

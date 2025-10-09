@@ -53,7 +53,7 @@ Options:
   EnableTransferConfirm: true
   
   # Enable / Disable Stock Transfer Requests (bool, default: false)
-  EnableTransferRequest: true
+  EnableTransferRequest: false
 
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)

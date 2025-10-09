@@ -119,7 +119,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
             var response = await transferCreation.Execute();
 
             // Send alert if creation was successful
-            if (response.Success && response.ExternalNumber.HasValue && response.ExternalEntry.HasValue) {
+            if (response is { Success: true, ExternalNumber: not null, ExternalEntry: not null }) {
                 using var alert = new Alert(sboCompany, loggerFactory);
                 await alert.SendDocumentCreationAlert(
                     AlertableObjectType.Transfer,

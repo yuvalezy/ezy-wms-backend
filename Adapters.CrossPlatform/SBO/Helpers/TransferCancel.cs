@@ -10,7 +10,7 @@ public class TransferCancel(SboCompany sboCompany, int docEntry, ILoggerFactory 
 
     public async Task Execute() {
         var body = new { };
-        var response = await sboCompany.PostAsync($"StockTransfers(123)/Cancel", body);
+        var response = await sboCompany.PostAsync($"StockTransfers({docEntry})/Cancel", body);
         if (!response.success) {
             logger.LogError("Failed to cancel transfer {DocEntry}", docEntry);
         }
