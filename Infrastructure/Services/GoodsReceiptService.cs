@@ -245,8 +245,8 @@ public class GoodsReceiptService(
                             throw new Exception($"Error processing confirmation adjustments: {response.ErrorMessage}");
                         }
 
-                        goodsReceipt.InventoryGoodsIssueAdjustmentEntry = response.InventoryGoodsIssueAdjustmentEntry;
-                        goodsReceipt.InventoryGoodsIssueAdjustmentExit = response.InventoryGoodsIssueAdjustmentExit;
+                        goodsReceipt.InventoryGoodsIssueAdjustmentEntry = response.InventoryGoodsIssueAdjustmentEntry?.Entry;
+                        goodsReceipt.InventoryGoodsIssueAdjustmentExit = response.InventoryGoodsIssueAdjustmentExit?.Entry;
                     }
                 }
 

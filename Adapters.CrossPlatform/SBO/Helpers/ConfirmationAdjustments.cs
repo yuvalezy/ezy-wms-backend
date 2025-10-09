@@ -48,19 +48,26 @@ public class ConfirmationAdjustments(
                 return ConfirmationAdjustmentsResponse.Error(errorMessage ?? "Failed to process confirmation adjustments");
             }
 
+            
+            ConfirmationAdjustmentsResponseNumber? entry = null, exit = null;
             // Extract document entries from responses
-            int? entry = null, exit = null;
             int responseIndex = 0;
 
             if (@params.NegativeItems.Count > 0 && responseIndex < responses.Count) {
                 var issueResponse = responses[responseIndex];
                 if (issueResponse is { StatusCode: 201, Body: not null }) {
+                    int docEntry = 0, docNum = 0;
                     try {
                         using var doc = JsonDocument.Parse(issueResponse.Body);
                         if (doc.RootElement.TryGetProperty("DocEntry", out var docEntryElement)) {
-                            exit = docEntryElement.GetInt32();
-                            logger.LogInformation("Successfully created inventory goods issue with DocEntry {DocEntry}", exit);
+                            docEntry = docEntryElement.GetInt32();
                         }
+                        if (doc.RootElement.TryGetProperty("DocNum", out var docNumElement)) {
+                            docNum = docNumElement.GetInt32();
+                        }
+
+                        exit = new ConfirmationAdjustmentsResponseNumber(docNum, docEntry);
+                        logger.LogInformation("Successfully created inventory goods issue with DocEntry {DocEntry}", docEntry);
                     }
                     catch (Exception ex) {
                         logger.LogWarning("Failed to parse goods issue response: {Error}", ex.Message);
@@ -71,14 +78,19 @@ public class ConfirmationAdjustments(
             }
 
             if (@params.PositiveItems.Count > 0 && responseIndex < responses.Count) {
+                int docEntry = 0, docNum = 0;
                 var receiptResponse = responses[responseIndex];
                 if (receiptResponse is { StatusCode: 201, Body: not null }) {
                     try {
                         using var doc = JsonDocument.Parse(receiptResponse.Body);
                         if (doc.RootElement.TryGetProperty("DocEntry", out var docEntryElement)) {
-                            entry = docEntryElement.GetInt32();
-                            logger.LogInformation("Successfully created inventory goods receipt with DocEntry {DocEntry}", entry);
+                            docEntry = docEntryElement.GetInt32();
                         }
+                        if (doc.RootElement.TryGetProperty("DocNum", out var docNumElement)) {
+                            docNum = docNumElement.GetInt32();
+                        }
+                        entry = new ConfirmationAdjustmentsResponseNumber(docNum, docEntry);
+                        logger.LogInformation("Successfully created inventory goods receipt with DocEntry {DocEntry}", docEntry);
                     }
                     catch (Exception ex) {
                         logger.LogWarning("Failed to parse goods receipt response: {Error}", ex.Message);

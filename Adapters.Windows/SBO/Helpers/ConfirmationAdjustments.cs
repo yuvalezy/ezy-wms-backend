@@ -30,21 +30,21 @@ public class ConfirmationAdjustments(
                 sboCompany.ConnectCompany();
                 sboCompany.Company!.StartTransaction();
 
-                int? exitDocEntry = null;
-                int? entryDocEntry = null;
+                ConfirmationAdjustmentsResponseNumber? exit = null;
+                ConfirmationAdjustmentsResponseNumber? entry = null;
 
                 // Process negative items (Goods Issue)
                 if (@params.NegativeItems.Count > 0) {
                     logger.LogInformation("Creating inventory goods issue for {Count} negative items", @params.NegativeItems.Count);
-                    exitDocEntry = CreateGoodsIssue();
-                    logger.LogInformation("Successfully created inventory goods issue with DocEntry {DocEntry}", exitDocEntry);
+                    exit = CreateGoodsIssue();
+                    logger.LogInformation("Successfully created inventory goods issue with DocEntry {DocEntry}", exit);
                 }
 
                 // Process positive items (Goods Receipt)
                 if (@params.PositiveItems.Count > 0) {
                     logger.LogInformation("Creating inventory goods receipt for {Count} positive items", @params.PositiveItems.Count);
-                    entryDocEntry = CreateGoodsReceipt();
-                    logger.LogInformation("Successfully created inventory goods receipt with DocEntry {DocEntry}", entryDocEntry);
+                    entry = CreateGoodsReceipt();
+                    logger.LogInformation("Successfully created inventory goods receipt with DocEntry {DocEntry}", entry);
                 }
 
                 // Commit transaction
@@ -53,7 +53,7 @@ public class ConfirmationAdjustments(
                 }
 
                 logger.LogInformation("Successfully completed all confirmation adjustments for confirmation {Number}", @params.Number);
-                return ConfirmationAdjustmentsResponse.Ok(entryDocEntry, exitDocEntry);
+                return ConfirmationAdjustmentsResponse.Ok(entry, exit);
             }
             finally {
                 sboCompany.TransactionMutex.ReleaseMutex();
@@ -71,8 +71,9 @@ public class ConfirmationAdjustments(
         }
     }
 
-    private int CreateGoodsIssue() {
+    private ConfirmationAdjustmentsResponseNumber CreateGoodsIssue() {
         goodsIssue = (Documents)sboCompany.Company!.GetBusinessObject(BoObjectTypes.oInventoryGenExit);
+        Marshal.ReleaseComObject(goodsIssue);
 
         goodsIssue.Series = exitSeries;
         goodsIssue.DocDate = DateTime.Now;
@@ -111,11 +112,23 @@ public class ConfirmationAdjustments(
             throw new Exception($"Failed to create goods issue: {errorDescription}");
         }
 
-        return int.Parse(sboCompany.Company.GetNewObjectKey());
+
+        // DocEntry (internal key)
+        int docEntry = int.Parse(sboCompany.Company.GetNewObjectKey());
+
+        // Reload to get DocNum (visible number)
+        var gi = (Documents)sboCompany.Company.GetBusinessObject(BoObjectTypes.oInventoryGenExit);
+        if (!gi.GetByKey(docEntry))
+            throw new Exception($"Created Goods Issue not found. DocEntry={docEntry}");
+
+        int docNum = gi.DocNum;
+
+        return new ConfirmationAdjustmentsResponseNumber(docNum, docEntry);
     }
 
-    private int CreateGoodsReceipt() {
+    private ConfirmationAdjustmentsResponseNumber CreateGoodsReceipt() {
         goodsReceipt = (Documents)sboCompany.Company!.GetBusinessObject(BoObjectTypes.oInventoryGenEntry);
+        Marshal.ReleaseComObject(goodsReceipt);
 
         goodsReceipt.Series = entrySeries;
         goodsReceipt.DocDate = DateTime.Now;
@@ -154,7 +167,17 @@ public class ConfirmationAdjustments(
             throw new Exception($"Failed to create goods receipt: {errorDescription}");
         }
 
-        return int.Parse(sboCompany.Company.GetNewObjectKey());
+        // Get DocEntry
+        int docEntry = int.Parse(sboCompany.Company.GetNewObjectKey());
+
+        // Reload document to get DocNum
+        var gr = (Documents)sboCompany.Company.GetBusinessObject(BoObjectTypes.oInventoryGenEntry);
+        if (!gr.GetByKey(docEntry))
+            throw new Exception($"Created Goods Receipt not found. DocEntry={docEntry}");
+
+        int docNum = gr.DocNum;
+
+        return new ConfirmationAdjustmentsResponseNumber(docNum, docEntry);
     }
 
     public void Dispose() {
@@ -168,5 +191,6 @@ public class ConfirmationAdjustments(
             goodsReceipt = null;
         }
     }
+
     private decimal? GetLineTotal((string ItemCode, decimal Quantity) item) => @params.ItemsCost?.TryGetValue(item.ItemCode, out decimal price) ?? false ? price * item.Quantity : null;
 }

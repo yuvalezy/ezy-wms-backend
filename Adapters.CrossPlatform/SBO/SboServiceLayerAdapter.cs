@@ -295,27 +295,25 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         var response = await confirmationAdjustments.Execute();
 
         // Send alert if adjustments were created successfully
-        if (response.Success && (response.InventoryGoodsIssueAdjustmentEntry.HasValue || response.InventoryGoodsIssueAdjustmentExit.HasValue)) {
+        if (response.Success && (response.InventoryGoodsIssueAdjustmentEntry != null || response.InventoryGoodsIssueAdjustmentExit != null)) {
             using var alert = new Alert(sboCompany, loggerFactory);
 
             // Use the entry or exit value for the alert
-            if (response.InventoryGoodsIssueAdjustmentEntry > 0) {
-                int docEntry = response.InventoryGoodsIssueAdjustmentEntry.Value;
+            if (response.InventoryGoodsIssueAdjustmentEntry != null) {
                 await alert.SendDocumentCreationAlert(
                     AlertableObjectType.ConfirmationAdjustmentsEntry,
                     @params.Number,
-                    docEntry,
-                    docEntry,
+                    response.InventoryGoodsIssueAdjustmentEntry.Number,
+                    response.InventoryGoodsIssueAdjustmentEntry.Entry,
                     alertRecipients);
             }
 
-            if (response.InventoryGoodsIssueAdjustmentExit > 0) {
-                int docEntry = response.InventoryGoodsIssueAdjustmentExit.Value;
+            if (response.InventoryGoodsIssueAdjustmentExit != null) {
                 await alert.SendDocumentCreationAlert(
                     AlertableObjectType.ConfirmationAdjustmentsExit,
                     @params.Number,
-                    docEntry,
-                    docEntry,
+                    response.InventoryGoodsIssueAdjustmentExit.Number,
+                    response.InventoryGoodsIssueAdjustmentExit.Entry,
                     alertRecipients);
 
             }
