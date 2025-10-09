@@ -14,7 +14,7 @@ public class PickListCheckSession {
 
 public class PickListCheckItem {
     public string ItemCode { get; set; } = string.Empty;
-    public int CheckedQuantity { get; set; }
+    public decimal CheckedQuantity { get; set; }
     public UnitType Unit { get; set; }
     public int? BinEntry { get; set; }
     public DateTime CheckedAt { get; set; }

@@ -5,8 +5,8 @@ namespace Core.DTOs.Transfer;
 public class TransferContentResponse {
     public string                      ItemCode         { get; set; } = string.Empty;
     public string                      ItemName         { get; set; } = string.Empty;
-    public int                         Quantity     { get; set; }
-    public int                         OpenQuantity { get; set; }
+    public decimal                     Quantity     { get; set; }
+    public decimal                     OpenQuantity { get; set; }
     public int?                        BinQuantity  { get; set; }
     public int?                        Progress     { get; set; }
     public List<TransferContentBin>?   Bins         { get; set; }
@@ -21,5 +21,5 @@ public class TransferContentResponse {
 public class TransferContentBin {
     public int Entry { get; set; }
     public string Code { get; set; } = string.Empty;
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

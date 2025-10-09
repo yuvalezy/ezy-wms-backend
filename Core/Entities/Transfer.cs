@@ -50,7 +50,7 @@ public sealed class TransferLine : BaseEntity {
     public LineStatus LineStatus { get; set; } = LineStatus.Open;
 
     [Required]
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 
     public int? StatusReason { get; set; }
 

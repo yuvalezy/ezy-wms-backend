@@ -41,8 +41,8 @@ public class PickListLineService(
             }
 
 
-            int itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
-            int openQuantity = validationResult.OpenQuantity;
+            decimal itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
+            decimal openQuantity = validationResult.OpenQuantity;
             (itemStock, openQuantity) = await validationService.CalculateBinOnHandQuantity(request.ItemCode, request.BinEntry, itemStock, openQuantity);
 
             var (quantityValid, quantityError, selectedValidation) = await validationService.ValidateQuantityAgainstPickList(

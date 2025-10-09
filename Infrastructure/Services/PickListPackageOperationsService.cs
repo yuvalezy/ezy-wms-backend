@@ -127,7 +127,7 @@ public class PickListPackageOperationsService(SystemDbContext db, IPackageConten
 
     }
 
-    public async Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, int quantity, int? binEntry, int id, int type, int entry, Guid pickListId) {
+    public async Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, decimal quantity, int? binEntry, int id, int type, int entry, Guid pickListId) {
         var package = await db.Packages.Include(v => v.Contents).FirstOrDefaultAsync(v => v.Id == packageId);
         if (package == null) {
             throw new KeyNotFoundException($"Package {packageId} not found");

@@ -72,7 +72,7 @@ public class PickListPackageService(
                     Type = request.Type,
                     Entry = request.Entry,
                     ItemCode = content.ItemCode,
-                    Quantity = (int)content.Quantity,
+                    Quantity = content.Quantity,
                     BinEntry = request.BinEntry ?? package.BinEntry,
                     Unit = UnitType.Unit,
                 };
@@ -81,12 +81,12 @@ public class PickListPackageService(
                 if (!isValid || validationResult == null) {
                     throw new Exception($"Validation failed for item code: {content.ItemCode} in package {request.PackageId}: {errorMessage}");
                 }
-                int itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
-                int openQuantity = validationResult.OpenQuantity;
+                decimal itemStock = sessionInfo.EnableBinLocations ? validationResult.BinOnHand : validationResult.OnHand;
+                decimal openQuantity = validationResult.OpenQuantity;
                 (itemStock, openQuantity) = await validationService.CalculateBinOnHandQuantity(content.ItemCode, request.BinEntry, itemStock, openQuantity);
 
                 var (quantityValid, quantityError, selectedValidation) = await validationService.ValidateQuantityAgainstPickList(
-                    request.ID, content.ItemCode, (int)content.Quantity, [validationResult]);
+                    request.ID, content.ItemCode, content.Quantity, [validationResult]);
                 
                 if (!quantityValid || selectedValidation == null) {
                     throw new Exception($"Quantity validation failed for item code: {content.ItemCode} in package {request.PackageId}: {quantityError}");
@@ -109,7 +109,7 @@ public class PickListPackageService(
                     AbsEntry = request.ID,
                     PickEntry = pickEntryToUse,
                     ItemCode = content.ItemCode,
-                    Quantity = (int)content.Quantity,
+                    Quantity = content.Quantity,
                     BinEntry = request.BinEntry ?? package.BinEntry,
                     Unit = UnitType.Unit,
                     Status = ObjectStatus.Open,
@@ -144,14 +144,14 @@ public class PickListPackageService(
                 // Add content to New Picking Package if applies
                 if (request.PickingPackageId != null) {
                     await packageOperations.AddOrUpdatePackageContent(
-                        sessionInfo, 
-                        request.PickingPackageId.Value, 
-                        content.ItemCode, 
-                        (int)content.Quantity, 
+                        sessionInfo,
+                        request.PickingPackageId.Value,
+                        content.ItemCode,
+                        content.Quantity,
                         request.BinEntry ?? package.BinEntry,
                         request.ID,
                         request.Type,
-                        request.Entry, 
+                        request.Entry,
                         pickList.Id);
                 }
 

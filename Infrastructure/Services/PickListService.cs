@@ -50,7 +50,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         foreach (var r in response) {
             var values = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
-            int pickedQuantity = values.Where(p => p.Status != ObjectStatus.Closed).Sum(p => p.Quantity);
+            decimal pickedQuantity = values.Where(p => p.Status != ObjectStatus.Closed).Sum(p => p.Quantity);
             r.OpenQuantity -= pickedQuantity;
             r.UpdateQuantity += pickedQuantity;
             if (values.Any(v => v.SyncStatus is SyncStatus.Pending or SyncStatus.Failed && v.Status != ObjectStatus.Closed))
@@ -105,7 +105,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
         .ToArrayAsync();
 
-        int dbPickQty = dbPick.Sum(p => p.Quantity);
+        int dbPickQty = (int)dbPick.Sum(p => p.Quantity);
         response.OpenQuantity -= dbPickQty;
         response.UpdateQuantity += dbPickQty;
 
@@ -138,7 +138,7 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         var details = await adapter.GetPickingDetails(detailParams);
 
         foreach (var detail in details) {
-            detail.TotalOpenItems -= dbPick.Where(p => p.AbsEntry == response.Entry && p.PickEntry == detail.PickEntry).Sum(p => p.Quantity);
+            detail.TotalOpenItems -= (int)dbPick.Where(p => p.AbsEntry == response.Entry && p.PickEntry == detail.PickEntry).Sum(p => p.Quantity);
 
             PickListDetailResponse detailResponse;
             var exists = response.Detail.FirstOrDefault(d => d.Type == detail.Type && d.Entry == detail.Entry);

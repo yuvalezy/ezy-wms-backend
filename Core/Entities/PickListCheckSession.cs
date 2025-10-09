@@ -42,7 +42,7 @@ public class PickListCheckItem : BaseEntity {
     public string ItemCode { get; set; } = string.Empty;
 
     [Required]
-    public int CheckedQuantity { get; set; }
+    public decimal CheckedQuantity { get; set; }
 
     [Required]
     public UnitType Unit { get; set; }

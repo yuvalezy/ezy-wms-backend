@@ -6,5 +6,5 @@ public class GoodsReceiptAddItemTargetDocumentsResponse {
     public int      Entry    { get; set; }
     public int      LineNum  { get; set; }
     public DateTime Date     { get; set; }
-    public int      Quantity { get; set; }
+    public decimal  Quantity { get; set; }
 }

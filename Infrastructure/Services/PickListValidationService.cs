@@ -22,8 +22,8 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         return (true, null, validationResults[0]);
     }
 
-    public async Task<(int ItemStock, int OpenQuantity)> CalculateBinOnHandQuantity(string itemCode, int? binEntry, int itemStock, int openQuantity) {
-        int result = db.PickLists
+    public async Task<(decimal ItemStock, decimal OpenQuantity)> CalculateBinOnHandQuantity(string itemCode, int? binEntry, decimal itemStock, decimal openQuantity) {
+        decimal result = db.PickLists
         .Where(p => p.ItemCode == itemCode &&
                     (p.BinEntry == null && binEntry == null || p.BinEntry == binEntry) &&
                     (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
@@ -40,7 +40,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         return (itemStock - result, openQuantity - result);;
     }
 
-    public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(int absEntry, string itemCode, int quantity,
+    public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(int absEntry, string itemCode, decimal quantity,
         IEnumerable<PickingValidationResult> validationResults) {
         var dbPickedQuantity = await db.PickLists
         .Where(v => v.AbsEntry == absEntry && v.ItemCode == itemCode &&
@@ -64,7 +64,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         return (true, null, check.ValidationResult);
     }
 
-    public async Task<Dictionary<string, int>> CalculateOpenQuantitiesForPickList(int absEntry, IEnumerable<PickingDetailItemResponse> pickingDetails) {
+    public async Task<Dictionary<string, decimal>> CalculateOpenQuantitiesForPickList(int absEntry, IEnumerable<PickingDetailItemResponse> pickingDetails) {
         var dbPicked = await db.PickLists
         .Where(p => p.AbsEntry == absEntry &&
                     (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
@@ -72,7 +72,7 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
         .Select(g => new { ItemCode = g.Key, PickedQty = g.Sum(p => p.Quantity) })
         .ToDictionaryAsync(x => x.ItemCode, x => x.PickedQty);
 
-        var itemOpenQuantities = new Dictionary<string, int>();
+        var itemOpenQuantities = new Dictionary<string, decimal>();
         foreach (var item in pickingDetails) {
             var pickedQty = dbPicked.TryGetValue(item.ItemCode, out var qty) ? qty : 0;
             var openQty = item.OpenQuantity - pickedQty;

@@ -150,9 +150,9 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
                     var removeRequest = new RemoveItemFromPackageRequest {
                         PackageId = movement.SourcePackageId,
                         ItemCode = movement.ItemCode,
-                        Quantity = (int)movement.TotalQuantity,
+                        Quantity = movement.TotalQuantity,
                         UnitType = UnitType.Unit,
-                        UnitQuantity = (int)movement.TotalQuantity,
+                        UnitQuantity = movement.TotalQuantity,
                         SourceOperationType = ObjectType.PickingClosure,
                         SourceOperationId = Guid.NewGuid(),
                         Notes = $"Pick list {absEntry}: Moved to target package {targetPackage.Package.Barcode}"
@@ -289,7 +289,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
         .ToListAsync();
 
         // Structure to accumulate all changes per package
-        var packageChanges = new Dictionary<Guid, List<(string ItemCode, int Quantity, string Notes)>>();
+        var packageChanges = new Dictionary<Guid, List<(string ItemCode, decimal Quantity, string Notes)>>();
 
         // Process movements based on follow-up documents
         foreach (var followUpDoc in closureInfo.FollowUpDocuments) {
@@ -316,7 +316,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
                     // 1. The quantity in the follow-up document for this item
                     // 2. The committed quantity for THIS SPECIFIC pick entry
                     // 3. The actual package content quantity (safety check)
-                    var quantityToReduce = Math.Min(Math.Min(docItem.Quantity, (int)committedQty), (int)packageContent.Quantity);
+                    var quantityToReduce = Math.Min(Math.Min(docItem.Quantity, committedQty), packageContent.Quantity);
 
                     if (quantityToReduce <= 0) {
                         continue;
@@ -324,7 +324,7 @@ public class PickListPackageClosureService(SystemDbContext db, IPackageContentSe
 
                     // Accumulate changes for this package
                     if (!packageChanges.TryGetValue(package.Id, out var changes)) {
-                        changes = new List<(string ItemCode, int Quantity, string Notes)>();
+                        changes = new List<(string ItemCode, decimal Quantity, string Notes)>();
                         packageChanges[package.Id] = changes;
                     }
 

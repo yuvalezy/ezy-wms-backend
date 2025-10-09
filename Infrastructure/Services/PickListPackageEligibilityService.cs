@@ -16,8 +16,8 @@ public class PickListPackageEligibilityService(ILogger<PickListPackageEligibilit
     /// <param name="itemOpenQuantities">Dictionary of item codes to their open quantities</param>
     /// <returns>True if all items in the package can be fully picked</returns>
     public bool CanPackageBeFullyPicked(
-        List<PackageContent> packageContents, 
-        Dictionary<string, int> itemOpenQuantities) {
+        List<PackageContent> packageContents,
+        Dictionary<string, decimal> itemOpenQuantities) {
         
         foreach (var content in packageContents) {
             // Must have no committed quantity
@@ -47,7 +47,7 @@ public class PickListPackageEligibilityService(ILogger<PickListPackageEligibilit
     /// <returns>Dictionary of item codes to their missing quantities (0 if sufficient)</returns>
     public Dictionary<string, decimal> GetMissingQuantities(
         List<PackageContent> packageContents,
-        Dictionary<string, int> itemOpenQuantities) {
+        Dictionary<string, decimal> itemOpenQuantities) {
         
         var missingQuantities = new Dictionary<string, decimal>();
         
@@ -71,7 +71,7 @@ public class PickListPackageEligibilityService(ILogger<PickListPackageEligibilit
     /// <returns>True if package is valid for picking</returns>
     public bool ValidatePackageForPicking(
         List<PackageContent> packageContents,
-        Dictionary<string, int> itemOpenQuantities,
+        Dictionary<string, decimal> itemOpenQuantities,
         out string? errorMessage) {
         
         errorMessage = null;

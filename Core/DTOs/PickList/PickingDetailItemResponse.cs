@@ -3,7 +3,7 @@ using Core.DTOs.Items;
 namespace Core.DTOs.PickList;
 
 public class PickingDetailItemResponse : ItemResponse {
-    public int Quantity     { get; set; }
-    public int Picked       { get; set; }
-    public int OpenQuantity { get; set; }
+    public decimal Quantity     { get; set; }
+    public decimal Picked       { get; set; }
+    public decimal OpenQuantity { get; set; }
 }

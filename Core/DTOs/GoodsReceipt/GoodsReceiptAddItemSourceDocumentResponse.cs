@@ -5,5 +5,5 @@ public class GoodsReceiptAddItemSourceDocumentResponse {
     public int Entry  { get; set; }
     public int Number { get; set; }
     public int LineNum  { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

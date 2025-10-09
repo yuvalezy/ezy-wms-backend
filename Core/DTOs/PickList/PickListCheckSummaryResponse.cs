@@ -15,9 +15,9 @@ public class PickListCheckSummaryResponse {
 public class PickListCheckItemDetail {
     public required string   ItemCode        { get; set; } = string.Empty;
     public required string   ItemName        { get; set; } = string.Empty;
-    public          int      PickedQuantity  { get; set; }
-    public          int      CheckedQuantity { get; set; }
-    public          int      Difference      { get; set; }
+    public          decimal  PickedQuantity  { get; set; }
+    public          decimal  CheckedQuantity { get; set; }
+    public          decimal  Difference      { get; set; }
     public required string   UnitMeasure     { get; set; } = string.Empty;
     public required int      QuantityInUnit  { get; set; } = 1;
     public required string   PackMeasure     { get; set; } = string.Empty;

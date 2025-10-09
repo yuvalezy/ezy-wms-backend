@@ -30,7 +30,7 @@ public class TransferLineService(
                 throw new KeyNotFoundException($"Transfer with ID {request.ID} not found.");
             }
 
-            int quantity = request.Quantity;
+            decimal quantity = request.Quantity;
             if (request.Unit != UnitType.Unit) {
                 var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
                 var item  = items.FirstOrDefault();
@@ -186,7 +186,7 @@ public class TransferLineService(
             }
 
             // Calculate the new quantity based on unit type
-            int newQuantity = request.Quantity;
+            decimal newQuantity = request.Quantity;
             if (line.UnitType != UnitType.Unit) {
                 var items = await adapter.ItemCheckAsync(line.ItemCode, null);
                 var item  = items.FirstOrDefault();
@@ -203,7 +203,7 @@ public class TransferLineService(
                 var validationResult = await adapter.GetItemValidationInfo(line.ItemCode, line.BarCode, info.Warehouse, line.BinEntry, info.EnableBinLocations);
 
                 // Calculate existing quantities for this item/bin excluding current line
-                int existingSourceQuantity = await db.TransferLines
+                decimal existingSourceQuantity = await db.TransferLines
                     .Where(tl => tl.TransferId == request.Id &&
                                  tl.ItemCode == line.ItemCode &&
                                  tl.BinEntry == line.BinEntry.Value &&
@@ -229,17 +229,17 @@ public class TransferLineService(
                     .ToListAsync();
 
                 // Calculate total source quantity for this item
-                int totalSourceQuantity = allItemLines
+                decimal totalSourceQuantity = allItemLines
                     .Where(l => l.Type == SourceTarget.Source)
                     .Sum(l => l.Quantity);
 
                 // Calculate total target quantity excluding current line being updated
-                int otherTargetQuantity = allItemLines
+                decimal otherTargetQuantity = allItemLines
                     .Where(l => l.Type == SourceTarget.Target && l.Id != line.Id)
                     .Sum(l => l.Quantity);
 
                 // Check if new target quantity would exceed available source quantity
-                int totalTargetWithNewQuantity = otherTargetQuantity + newQuantity;
+                decimal totalTargetWithNewQuantity = otherTargetQuantity + newQuantity;
                 if (totalTargetWithNewQuantity > totalSourceQuantity) {
                     response.ReturnValue = UpdateLineReturnValue.QuantityMoreThenAvailable;
                     // response.ErrorMessage = $"Target quantity ({totalTargetWithNewQuantity}) exceeds available source quantity ({totalSourceQuantity}) for item {line.ItemCode}";

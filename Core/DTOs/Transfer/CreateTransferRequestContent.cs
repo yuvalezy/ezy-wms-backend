@@ -12,7 +12,7 @@ public class CreateTransferRequestRequest {
 public class CreateTransferRequestRequestContent {
     public required string ItemCode { get; set; }
     public string? Barcode { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public UnitType Unit { get; set; }
 }
 

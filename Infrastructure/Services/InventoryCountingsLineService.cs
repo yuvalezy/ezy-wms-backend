@@ -49,7 +49,7 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
         }
 
         // Calculate total quantity including unit conversion
-        int totalQuantity = request.Quantity;
+        decimal totalQuantity = request.Quantity;
         if (request.Unit != UnitType.Unit) {
             totalQuantity *= validationResult.NumInBuy;
             if (request.Unit == UnitType.Pack) {
@@ -183,7 +183,7 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
 
             // Update quantity if provided
             if (request.Quantity.HasValue) {
-                int newQuantity = request.Quantity.Value;
+                decimal newQuantity = request.Quantity.Value;
                 var items       = await adapter.ItemCheckAsync(line.ItemCode, null);
                 var item        = items.FirstOrDefault();
                 if (line.Unit != UnitType.Unit && item != null) {
@@ -356,7 +356,7 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
         return countingPackage;
     }
 
-    private async Task UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, int quantity, UnitType unit, SessionInfo sessionInfo) {
+    private async Task UpdateCountingPackageContent(Guid countingId, Guid packageId, string itemCode, decimal quantity, UnitType unit, SessionInfo sessionInfo) {
         // First check the local context for unsaved entities
         var countingPackage = db.InventoryCountingPackages.Local
             .FirstOrDefault(cp => cp.InventoryCountingId == countingId && cp.PackageId == packageId);

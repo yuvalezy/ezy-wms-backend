@@ -9,5 +9,5 @@ public interface IPickListPackageOperationsService {
     Task<(Package?, PickListPackageResponse?)> ValidatePackageForFullPicking(PickListAddPackageRequest request);
     Task CreatePackageCommitment(SessionInfo sessionInfo, PickList pickList, PickListAddItemRequest request);
     Task<bool> CreatePickListPackageIfNotExists(SessionInfo sessionInfo, PickList pickList, PickListAddItemRequest request, Package package);
-    Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, int quantity, int? binEntry, int id, int type, int entry, Guid pickListId);
+    Task AddOrUpdatePackageContent(SessionInfo sessionInfo, Guid packageId, string itemCode, decimal quantity, int? binEntry, int id, int type, int entry, Guid pickListId);
 }

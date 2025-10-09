@@ -12,9 +12,9 @@ public class PickListResponse {
     public string? Remarks { get; set; }
     public ObjectStatus Status { get; set; }
     public SyncStatus SyncStatus { get; set; }
-    public int Quantity { get; set; }
-    public int OpenQuantity { get; set; }
-    public int UpdateQuantity { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal OpenQuantity { get; set; }
+    public decimal UpdateQuantity { get; set; }
     public List<PickListDetailResponse>? Detail { get; set; }
     public bool PickPackOnly { get; set; }
     public bool CheckStarted { get; set; }
@@ -37,9 +37,9 @@ public class PickListDetailResponse {
 public class PickListDetailItemResponse {
     public string ItemCode { get; set; } = string.Empty;
     public string ItemName { get; set; } = string.Empty;
-    public int Quantity { get; set; }
-    public int Picked { get; set; }
-    public int OpenQuantity { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal Picked { get; set; }
+    public decimal OpenQuantity { get; set; }
     public int NumInBuy { get; set; }
     public string BuyUnitMsr { get; set; } = string.Empty;
     public int PurPackUn { get; set; }
@@ -54,7 +54,7 @@ public class PickListDetailItemResponse {
 public class BinLocationQuantityResponse {
     public int Entry { get; set; }
     public string Code { get; set; } = string.Empty;
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public BinLocationPackageQuantityResponse[]? Packages { get; set; }
 }
 

@@ -82,7 +82,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
 
             foreach (var pair in request.QuantityChanges) {
                 var lineId   = pair.Key;
-                int quantity = (int)pair.Value;
+                decimal quantity = pair.Value;
                 var updateRequest = new UpdateGoodsReceiptLineQuantityRequest {
                     Id       = request.Id,
                     LineId   = lineId,
@@ -158,12 +158,12 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
                                 v.SourceEntry == doc.DocumentEntry &&
                                 v.SourceLine == docLine.LineNumber)
                     .FirstOrDefaultAsync())?.GoodsReceiptLineId ?? Guid.Empty;
-                int sourceQuantity = (int)await sourcesQuery
+                decimal sourceQuantity = await sourcesQuery
                     .Where(v => v.SourceType == doc.ObjectType &&
                                 v.SourceEntry == doc.DocumentEntry &&
                                 v.SourceLine == docLine.LineNumber)
                     .SumAsync(v => v.Quantity);
-                var lineValue = docLine.ToValidateProcessLineDto(sourceQuantity, baseLine);
+                var lineValue = docLine.ToValidateProcessLineDto((int)sourceQuantity, baseLine);
                 value.Lines!.Add(lineValue);
             }
 

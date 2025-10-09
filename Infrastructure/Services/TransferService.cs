@@ -103,15 +103,15 @@ public class TransferService(
         var response = TransferResponse.FromTransfer(transfer);
 
         if (progress && transfer.Lines.Any()) {
-            int sourceQuantity = transfer.Lines
+            decimal sourceQuantity = transfer.Lines
                 .Where(l => l.Type == SourceTarget.Source && l.LineStatus != LineStatus.Closed)
                 .Sum(l => l.Quantity);
 
-            int targetQuantity = transfer.Lines
+            decimal targetQuantity = transfer.Lines
                 .Where(l => l.Type == SourceTarget.Target && l.LineStatus != LineStatus.Closed)
                 .Sum(l => l.Quantity);
 
-            response.Progress = sourceQuantity > 0 ? (targetQuantity * 100) / sourceQuantity : 0;
+            response.Progress = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
         }
 
         return response;
@@ -357,11 +357,11 @@ public class TransferService(
                 var sourceQuantity = allItemLines.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity);
                 var targetQuantity = allItemLines.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity);
 
-                content.Progress     = sourceQuantity > 0 ? (targetQuantity * 100) / sourceQuantity : 0;
+                content.Progress     = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
                 content.OpenQuantity = sourceQuantity - targetQuantity;
 
                 if (request.TargetBinQuantity && request.BinEntry.HasValue) {
-                    content.BinQuantity = group.Lines
+                    content.BinQuantity = (int?)group.Lines
                         .Where(l => l.BinEntry == request.BinEntry.Value)
                         .Sum(l => l.Quantity);
                 }

@@ -65,7 +65,7 @@ public class GoodsReceiptLineItemProcessService(
         GoodsReceipt goodsReceipt,
         ItemCheckResponse item,
         List<ObjectKey> specificDocuments,
-        int quantity = 1,
+        decimal quantity = 1,
         Guid? updateLineId = null) {
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
 
@@ -77,7 +77,7 @@ public class GoodsReceiptLineItemProcessService(
         .ToListAsync();
 
         foreach (var sourceDocument in sourceDocuments) {
-            int selectedQuantity = (int)goodsReceiptSources
+            decimal selectedQuantity = goodsReceiptSources
             .Where(g => g.SourceType == sourceDocument.Type &&
                         g.SourceEntry == sourceDocument.Entry &&
                         g.SourceLine == sourceDocument.LineNum
@@ -93,7 +93,7 @@ public class GoodsReceiptLineItemProcessService(
         quantity = quantity * (unit != UnitType.Unit ? item.NumInBuy : 1) * (unit == UnitType.Pack ? item.PurPackUn : 1);
 
         // Allocate quantities using FIFO
-        int unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
+        decimal unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
 
         // Handle over-receipt scenario
         await HandleOverReceiptScenario(linesIds, sourceDocuments, unallocatedSourceQuantity, itemCode);
@@ -108,10 +108,10 @@ public class GoodsReceiptLineItemProcessService(
         return new ProcessSourceDocumentsAllocationResponse(null, sourceDocuments, quantity);
     }
 
-    private static Task<int> AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity) {
+    private static Task<decimal> AllocateSourceDocuments(List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, decimal quantity) {
         for (int i = 0; i < sourceDocuments.Count; i++) {
             var sourceDocument = sourceDocuments[i];
-            int iQty = sourceDocument.Quantity;
+            decimal iQty = sourceDocument.Quantity;
 
             if (iQty <= quantity) {
                 quantity -= iQty;
@@ -134,7 +134,7 @@ public class GoodsReceiptLineItemProcessService(
         return Task.FromResult(quantity);
     }
 
-    private async Task HandleOverReceiptScenario(List<Guid> linesIds, List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, int quantity, string itemCode) {
+    private async Task HandleOverReceiptScenario(List<Guid> linesIds, List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments, decimal quantity, string itemCode) {
         if (quantity <= 0) {
             return;
         }
@@ -172,7 +172,7 @@ public class GoodsReceiptLineItemProcessService(
         GoodsReceiptAddItemRequest request,
         GoodsReceipt goodsReceipt,
         List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments,
-        int quantity,
+        decimal quantity,
         Guid userId) {
         var line = new GoodsReceiptLine {
             GoodsReceiptId = goodsReceipt.Id,
@@ -217,11 +217,11 @@ public class GoodsReceiptLineItemProcessService(
         .IsModified = true;
     }
 
-    public async Task<(int Fulfillment, int Showroom)> ProcessTargetDocumentAllocation(
+    public async Task<(decimal Fulfillment, decimal Showroom)> ProcessTargetDocumentAllocation(
         GoodsReceiptAddItemRequest request,
         string warehouse,
         GoodsReceiptLine line,
-        int quantity,
+        decimal quantity,
         Guid userId) {
         if (!options.GoodsReceiptTargetDocuments) {
             return (0, 0);
@@ -248,19 +248,19 @@ public class GoodsReceiptLineItemProcessService(
                 waiting.LineNum,
                 waiting.Date,
                 RequiredQuantity = waiting.Quantity,
-                AllocatedQuantity = targets.Sum(t => (int)t.Quantity),
-                RemainingQuantity = waiting.Quantity - targets.Sum(t => (int)t.Quantity)
+                AllocatedQuantity = targets.Sum(t => t.Quantity),
+                RemainingQuantity = waiting.Quantity - targets.Sum(t => t.Quantity)
             })
         .Where(doc => doc.RemainingQuantity > 0)
         .OrderBy(doc => doc.Priority)
         .ThenBy(doc => doc.Date)
         .ToList();
 
-        int fulfillment = 0, showroom = 0;
+        decimal fulfillment = 0, showroom = 0;
 
         foreach (var needingItem in documentsNeedingItems) {
-            int scanQuantity = needingItem.RemainingQuantity;
-            int insertQuantity = quantity > scanQuantity ? scanQuantity : quantity;
+            decimal scanQuantity = needingItem.RemainingQuantity;
+            decimal insertQuantity = quantity > scanQuantity ? scanQuantity : quantity;
             quantity -= insertQuantity;
 
             await db.GoodsReceiptTargets.AddAsync(new GoodsReceiptTarget {
@@ -295,10 +295,10 @@ public class GoodsReceiptLineItemProcessService(
     public GoodsReceiptAddItemResponse BuildAddItemResponse(
         GoodsReceiptLine line,
         ItemCheckResponse item,
-        int fulfillment,
-        int showroom,
-        int quantity) {
-        int warehouseQuantity = quantity - fulfillment - showroom;
+        decimal fulfillment,
+        decimal showroom,
+        decimal quantity) {
+        decimal warehouseQuantity = quantity - fulfillment - showroom;
 
         var response = new GoodsReceiptAddItemResponse {
             LineId = line.Id,

@@ -12,7 +12,7 @@ public class GoodsReceiptValidateProcessDocumentsDataResponse {
 }
 
 public class GoodsReceiptValidateProcessDocumentsDataLineResponse : ItemResponse {
-    public          int    LineNumber          { get; set; }
-    public          int    DocumentQuantity     { get; set; }
+    public          int     LineNumber          { get; set; }
+    public          decimal DocumentQuantity     { get; set; }
     public          int    VisualLineNumber { get; set; }
 }

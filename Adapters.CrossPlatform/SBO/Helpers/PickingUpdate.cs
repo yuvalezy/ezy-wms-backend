@@ -113,7 +113,7 @@ public class PickingUpdate(
                 continue;
             }
 
-            double pickedQuantity = line.Quantity;
+            double pickedQuantity = (double)line.Quantity;
             logger.LogDebug("Processing pick line {LineNumber} with quantity {Quantity} for pick list {AbsEntry}", pickLine.LineNumber, pickedQuantity, absEntry);
 
             var sourceLine = sourceData.FirstOrDefault(v => v.DocEntry == pickLine.OrderEntry && v.LineNum == pickLine.OrderRowID && v.ObjType == pickLine.BaseObjectType);
@@ -150,7 +150,7 @@ public class PickingUpdate(
                 bool found = false;
                 foreach (var allocation in pickLine.DocumentLinesBinAllocations) {
                     if (allocation.BinAbsEntry == bin.BinEntry) {
-                        allocation.Quantity += bin.Quantity;
+                        allocation.Quantity += (double)bin.Quantity;
                         found = true;
                         logger.LogDebug("Updated existing bin allocation for BinEntry {BinEntry} with quantity {Quantity}", bin.BinEntry, bin.Quantity);
 
@@ -162,7 +162,7 @@ public class PickingUpdate(
                     pickLine.DocumentLinesBinAllocations.Add(new PickListLineSboBinAllocation {
                         BaseLineNumber = pickLine.LineNumber,
                         BinAbsEntry = bin.BinEntry!.Value,
-                        Quantity = bin.Quantity,
+                        Quantity = (double)bin.Quantity,
                     });
 
                     logger.LogDebug("Added new bin allocation for BinEntry {BinEntry} with quantity {Quantity}", bin.BinEntry, bin.Quantity);

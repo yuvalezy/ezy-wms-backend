@@ -6,7 +6,7 @@ public class GoodsReceiptAddItemResponse {
     public bool    Fulfillment    { get; set; }
     public bool    Showroom       { get; set; }
     public bool    Warehouse      { get; set; }
-    public int     Quantity       { get; set; }
+    public decimal Quantity       { get; set; }
     public int     NumInBuy       { get; set; }
     public string? BuyUnitMsr     { get; set; }
     public int     PurPackUn      { get; set; }

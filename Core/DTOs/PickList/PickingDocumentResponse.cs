@@ -10,8 +10,8 @@ public class PickingDocumentResponse {
     public string? Transfers { get; set; }
     public string? Remarks { get; set; }
     public ObjectStatus Status { get; set; }
-    public int Quantity { get; set; }
-    public int OpenQuantity { get; set; }
-    public int UpdateQuantity { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal OpenQuantity { get; set; }
+    public decimal UpdateQuantity { get; set; }
     public bool PickPackOnly { get; set; }
 }

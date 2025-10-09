@@ -6,7 +6,7 @@ public class BinLocationResponse {
 }
 
 public class BinLocationResponseQuantity : BinLocationResponse {
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }
 
 public class ItemBinLocationResponseQuantity : BinLocationResponseQuantity {

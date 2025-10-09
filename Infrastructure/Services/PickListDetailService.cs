@@ -21,7 +21,7 @@ public class PickListDetailService(
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
         foreach (var detail in response.Detail!) {
-            int dbPickQty = dbPick.Where(p => p.AbsEntry == absEntry && p.PickEntry == detail.Entry).Sum(p => p.Quantity);
+            int dbPickQty = (int)dbPick.Where(p => p.AbsEntry == absEntry && p.PickEntry == detail.Entry).Sum(p => p.Quantity);
             detail.TotalOpenItems -= dbPickQty;
         }
 
@@ -73,7 +73,7 @@ public class PickListDetailService(
                 itemResponse.OpenQuantity += item.OpenQuantity;
             }
 
-            int dbPickQty = dbPick.Where(p => p.AbsEntry == absEntry && p.ItemCode == item.ItemCode).Sum(p => p.Quantity);
+            int dbPickQty = (int)dbPick.Where(p => p.AbsEntry == absEntry && p.ItemCode == item.ItemCode).Sum(p => p.Quantity);
             itemResponse.Picked       += dbPickQty;
             itemResponse.OpenQuantity -= dbPickQty;
         }
@@ -181,7 +181,7 @@ public class PickListDetailService(
         // Calculate available quantities and filter if bin entry specified
         responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
         foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
-            item.Available = item.BinQuantities.Sum(b => b.Quantity);
+            item.Available = (int)item.BinQuantities.Sum(b => b.Quantity);
             item.Packages  = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).Where(b => b.Quantity > 0).ToArray();
         }
 

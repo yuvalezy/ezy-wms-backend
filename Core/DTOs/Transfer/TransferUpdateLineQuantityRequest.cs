@@ -10,8 +10,8 @@ public class TransferUpdateLineQuantityRequest {
     public Guid LineId { get; set; }
     
     [Required]
-    [Range(1, int.MaxValue, ErrorMessage = "Quantity in Unit cannot be less than 1")]
-    public int Quantity { get; set; }
+    [Range(0.01, double.MaxValue, ErrorMessage = "Quantity in Unit must be greater than 0")]
+    public decimal Quantity { get; set; }
     
     public string? UserName { get; set; }
 }

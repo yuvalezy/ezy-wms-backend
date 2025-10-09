@@ -9,7 +9,7 @@ public class TransferAddItemRequest : IValidatableObject {
     public string?       BarCode  { get; set; }
     public int?         BinEntry { get; set; }
     public UnitType?    Unit     { get; set; }
-    public int          Quantity { get; set; }
+    public decimal      Quantity { get; set; }
     public SourceTarget Type     { get; set; }
     
     // Package-related properties

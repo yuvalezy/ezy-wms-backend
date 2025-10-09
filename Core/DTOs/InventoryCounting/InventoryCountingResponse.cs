@@ -48,7 +48,7 @@ public class InventoryCountingLineResponse {
     public DateTime Date { get; set; }
     public string ItemCode { get; set; } = string.Empty;
     public LineStatus LineStatus { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public int? StatusReason { get; set; }
     public Guid? CancellationReasonId { get; set; }
     public UnitType Unit { get; set; }

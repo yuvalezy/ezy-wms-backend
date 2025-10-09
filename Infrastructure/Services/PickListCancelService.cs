@@ -207,14 +207,14 @@ public class PickListCancelService(
         var items = selection
         .Where(s => !processedItems.Contains(s.ItemCode)) // Skip items already handled by packages
         .GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars, v.NumInBuy, v.PackUn })
-        .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, (int)v.Sum(w => w.Quantity)));
+        .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, v.Sum(w => w.Quantity)));
 
         foreach (var item in items) {
             await ProcessRegularItem(item, transferId, cancelBinEntry, sessionInfo);
         }
     }
 
-    private record RegularItemCancellationRequest(string ItemCode, string BarCode, int NumInBuy, int PackUn, int Quantity);
+    private record RegularItemCancellationRequest(string ItemCode, string BarCode, int NumInBuy, int PackUn, decimal Quantity);
 
     private async Task ProcessRegularItem(RegularItemCancellationRequest item, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
         var addRequest = new TransferAddItemRequest {
@@ -241,19 +241,19 @@ public class PickListCancelService(
         addRequest.BinEntry = cancelBinEntry;
 
         if (packs > 0) {
-            addRequest.Quantity = packs;
+            addRequest.Quantity = (int)packs;
             addRequest.Unit = UnitType.Pack;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }
 
         if (dozens > 0) {
-            addRequest.Quantity = dozens;
+            addRequest.Quantity = (int)dozens;
             addRequest.Unit = UnitType.Dozen;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }
 
         if (units > 0) {
-            addRequest.Quantity = units;
+            addRequest.Quantity = (int)units;
             addRequest.Unit = UnitType.Unit;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }

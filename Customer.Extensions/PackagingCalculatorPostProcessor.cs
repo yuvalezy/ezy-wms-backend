@@ -244,7 +244,7 @@ public class PickingDataWithBarcode {
     public int PickEntry { get; set; }
     public long RowNumber { get; set; }
     public required string ItemCode { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public string? Barcode { get; set; }
 }
 

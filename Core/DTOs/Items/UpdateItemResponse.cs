@@ -9,5 +9,5 @@ public class UpdateItemResponse(UpdateLineReturnValue? returnValue = null) {
     public bool                  Fulfillment    { get; set; }
     public bool                  Showroom       { get; set; }
     public bool                  Warehouse      { get; set; }
-    public int                   Quantity       { get; set; }
+    public decimal               Quantity       { get; set; }
 }

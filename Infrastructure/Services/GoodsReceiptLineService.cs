@@ -108,7 +108,7 @@ public class GoodsReceiptLineService(
             }
 
             var sourceDocuments = sourceAllocationResult.SourceDocuments!;
-            int calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
+            decimal calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
             // Step 3: Create goods receipt line
             var line = await lineItemProcessService.CreateGoodsReceiptLine(request, goodsReceipt, sourceDocuments, calculatedQuantity, userId);
@@ -196,7 +196,7 @@ public class GoodsReceiptLineService(
 
             // Step 2: Process source documents allocation
             var sourceAllocationResult =
-            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, (int)request.Quantity, lineId);
+            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, request.Quantity, lineId);
 
             if (sourceAllocationResult.ErrorResponse != null) {
                 logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);
@@ -206,7 +206,7 @@ public class GoodsReceiptLineService(
             }
 
             var sourceDocuments = sourceAllocationResult.SourceDocuments!;
-            int calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
+            decimal calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
             // Step 3: Update line
             decimal diff = calculatedQuantity - line.Quantity;

@@ -77,7 +77,7 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
         }
 
         // Calculate total quantity including unit conversion
-        int totalQuantity = request.Quantity;
+        decimal totalQuantity = request.Quantity;
         if (request.Unit != UnitType.Unit)
         {
             totalQuantity *= validationResult.NumInBuy * (request.Unit == UnitType.Pack ? validationResult.PurPackUn : 1);
@@ -96,8 +96,8 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
         })
         .ToListAsync();
 
-        int sourceQuantity = 0;
-        int targetQuantity = 0;
+        decimal sourceQuantity = 0;
+        decimal targetQuantity = 0;
 
         foreach (var eq in existingQuantities)
         {
@@ -129,7 +129,7 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
         })
         .ToListAsync();
 
-        int binSourceQuantity = binSpecificQuantities
+        decimal binSourceQuantity = binSpecificQuantities
         .Where(x => x.Type == SourceTarget.Source)
         .Select(x => x.TotalQuantity)
         .FirstOrDefault();

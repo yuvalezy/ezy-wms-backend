@@ -47,7 +47,7 @@ public class FollowUpDocumentItem {
     /// <summary>
     /// The quantity that was actually delivered/processed
     /// </summary>
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 
     /// <summary>
     /// The bin location from which the item was picked

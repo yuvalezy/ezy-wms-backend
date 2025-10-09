@@ -15,5 +15,5 @@ public class PickListCheckPackageResponse : ResponseBase {
 public class CheckedPackageItem {
     public string ItemCode { get; set; } = string.Empty;
     public string ItemName { get; set; } = string.Empty;
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

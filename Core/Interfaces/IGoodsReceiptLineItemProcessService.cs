@@ -16,33 +16,33 @@ public interface IGoodsReceiptLineItemProcessService {
         GoodsReceipt      goodsReceipt,
         ItemCheckResponse item,
         List<ObjectKey>   specificDocuments,
-        int               quantity     = 1,
+        decimal           quantity     = 1,
         Guid?             updateLineId = null);
 
     Task<GoodsReceiptLine> CreateGoodsReceiptLine(
         GoodsReceiptAddItemRequest                      request,
         GoodsReceipt                                    goodsReceipt,
         List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments,
-        int                                             quantity,
+        decimal                                         quantity,
         Guid                                            userId);
 
     void UpdateGoodsReceiptStatus(GoodsReceipt goodsReceipt);
 
-    Task<(int Fulfillment, int Showroom)> ProcessTargetDocumentAllocation(
+    Task<(decimal Fulfillment, decimal Showroom)> ProcessTargetDocumentAllocation(
         GoodsReceiptAddItemRequest request,
         string                     warehouse,
         GoodsReceiptLine           line,
-        int                        quantity,
+        decimal                    quantity,
         Guid                       userId);
 
     GoodsReceiptAddItemResponse BuildAddItemResponse(
         GoodsReceiptLine  line,
         ItemCheckResponse item,
-        int               fulfillment,
-        int               showroom,
-        int               quantity);
+        decimal           fulfillment,
+        decimal           showroom,
+        decimal           quantity);
 }
 
 public record ValidateGoodsReceiptAndItemResponse(GoodsReceiptAddItemResponse? ErrorResponse, GoodsReceipt? GoodsReceipt, ItemCheckResponse? Item, List<ObjectKey>? SpecificDocuments);
 
-public record ProcessSourceDocumentsAllocationResponse(GoodsReceiptAddItemResponse? ErrorResponse, List<GoodsReceiptAddItemSourceDocumentResponse>? SourceDocuments, int CalculatedQuantity);
+public record ProcessSourceDocumentsAllocationResponse(GoodsReceiptAddItemResponse? ErrorResponse, List<GoodsReceiptAddItemSourceDocumentResponse>? SourceDocuments, decimal CalculatedQuantity);

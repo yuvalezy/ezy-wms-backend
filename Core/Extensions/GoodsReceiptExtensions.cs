@@ -13,7 +13,7 @@ public static class GoodsReceiptExtensions {
             Unit              = line.Unit
         };
     }
-    public static GoodsReceiptValidateProcessLineResponse ToValidateProcessLineDto(this GoodsReceiptValidateProcessDocumentsDataLineResponse docLine, int sourceQuantity, Guid baseLine) {
+    public static GoodsReceiptValidateProcessLineResponse ToValidateProcessLineDto(this GoodsReceiptValidateProcessDocumentsDataLineResponse docLine, decimal sourceQuantity, Guid baseLine) {
         var lineValue = new GoodsReceiptValidateProcessLineResponse {
             VisualLineNumber = docLine.VisualLineNumber,
             LineNumber       = docLine.LineNumber,

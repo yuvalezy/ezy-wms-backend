@@ -8,7 +8,7 @@ public class TransferLineResponse {
     public required string ItemCode { get; set; }
 
     public Guid         Id                     { get; set; }
-    public int          Quantity               { get; set; }
+    public decimal      Quantity               { get; set; }
     public LineStatus   LineStatus             { get; set; }
     public SourceTarget Type                   { get; set; }
     public UnitType     UnitType               { get; set; }

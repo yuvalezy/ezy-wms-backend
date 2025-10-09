@@ -176,8 +176,8 @@ public class InventoryCountingsService(
         int? initialCountingBinEntry = enableBinLocation ? settings.GetInitialCountingBinEntry(warehouse) : null;
 
         foreach (var itemGroup in lines) {
-            int totalCountedQuantity = 0;
-            int systemQuantity = 0;
+            decimal totalCountedQuantity = 0;
+            decimal systemQuantity = 0;
             var countedBins = new List<InventoryCountingCreationBinResponse>();
 
             // Group by bins
@@ -187,14 +187,14 @@ public class InventoryCountingsService(
             .ToList();
 
             foreach (var binGroup in binGroups) {
-                int binCountedQuantity = binGroup.Sum(l => l.Quantity);
-                int binSystemQuantity = 0;
+                decimal binCountedQuantity = binGroup.Sum(l => l.Quantity);
+                decimal binSystemQuantity = 0;
 
                 try {
                     // Get system quantity for this bin
                     var binContents = await adapter.BinCheckAsync(binGroup.Key);
                     var binContent = binContents.FirstOrDefault(bc => bc.ItemCode == itemGroup.ItemCode);
-                    binSystemQuantity = binContent != null ? (int)binContent.OnHand : 0;
+                    binSystemQuantity = binContent != null ? (decimal)binContent.OnHand : 0;
                 }
                 catch {
                     // If external adapter fails, continue with zero system quantity
@@ -213,13 +213,13 @@ public class InventoryCountingsService(
             // Handle lines without bins
             var noBinLines = itemGroup.Lines.Where(l => !l.BinEntry.HasValue).ToList();
             if (noBinLines.Any()) {
-                int noBinCountedQuantity = noBinLines.Sum(l => l.Quantity);
+                decimal noBinCountedQuantity = noBinLines.Sum(l => l.Quantity);
                 totalCountedQuantity += noBinCountedQuantity;
 
                 try {
                     // Get warehouse stock for items without bins
                     var stocks = await adapter.ItemBinStockAsync(itemGroup.ItemCode, warehouse);
-                    int warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
+                    decimal warehouseSystemQuantity = stocks.Sum(s => s.Quantity);
                     // Subtract quantities already counted in bins
                     systemQuantity += Math.Max(0, warehouseSystemQuantity - systemQuantity);
                 }
@@ -235,7 +235,7 @@ public class InventoryCountingsService(
 
                 if (!hasSystemBinEntry) {
                     // Get the current stock in the system bin for this item
-                    int systemBinStock = 0;
+                    decimal systemBinStock = 0;
                     try {
                         var systemBinStocks = await adapter.ItemBinStockAsync(itemGroup.ItemCode, warehouse);
                         var systemBinStockResponse = systemBinStocks.FirstOrDefault(s => s.BinEntry == initialCountingBinEntry.Value);
@@ -246,7 +246,7 @@ public class InventoryCountingsService(
                     }
 
                     // Calculate the remaining quantity in system bin after accounting for items counted into other bins
-                    int systemBinCountedQuantity = Math.Max(0, systemBinStock - totalCountedQuantity);
+                    decimal systemBinCountedQuantity = Math.Max(0, systemBinStock - totalCountedQuantity);
 
                     // Add system bin entry to the counted bins
                     countedBins.Add(new InventoryCountingCreationBinResponse {
@@ -261,7 +261,7 @@ public class InventoryCountingsService(
                 }
             }
 
-            int variance = totalCountedQuantity - systemQuantity;
+            decimal variance = totalCountedQuantity - systemQuantity;
 
             var data = new InventoryCountingCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,
@@ -297,10 +297,10 @@ public class InventoryCountingsService(
 
         foreach (var group in groupedLines) {
             var firstLine = group.First();
-            int totalCountedQuantity = group.Sum(l => l.Quantity);
+            decimal totalCountedQuantity = group.Sum(l => l.Quantity);
 
             // Get system quantity from SAP B1 using external adapter
-            int systemQuantity = 0;
+            decimal systemQuantity = 0;
             string binCode = "";
 
             ItemCheckResponse? item;
@@ -318,7 +318,7 @@ public class InventoryCountingsService(
                     var binContent = binContents.FirstOrDefault(bc => bc.ItemCode == group.Key.ItemCode);
                     systemQuantity = 0;
                     if (binContent != null) {
-                        systemQuantity = (int)binContent.OnHand;
+                        systemQuantity = (decimal)binContent.OnHand;
                     }
 
                     binCode = group.Key.BinEntry.Value.ToString(); // TODO: We could enhance this to get actual bin code
@@ -334,7 +334,7 @@ public class InventoryCountingsService(
                 throw new Exception($"Failed to get item information for {group.Key.ItemCode} and bin {group.Key.BinEntry}.");
             }
 
-            int variance = totalCountedQuantity - systemQuantity;
+            decimal variance = totalCountedQuantity - systemQuantity;
 
             result.Add(new InventoryCountingContentResponse {
                 ItemCode = group.Key.ItemCode,
@@ -383,8 +383,8 @@ public class InventoryCountingsService(
         .ToList();
 
         foreach (var group in groupedLines) {
-            int totalCountedQuantity = group.Sum(l => l.Quantity);
-            int systemQuantity = 0;
+            decimal totalCountedQuantity = group.Sum(l => l.Quantity);
+            decimal systemQuantity = 0;
             string itemName = "";
             string binCode = "";
             ItemCheckResponse? item = null;
@@ -399,7 +399,7 @@ public class InventoryCountingsService(
                 if (group.Key.BinEntry.HasValue) {
                     var binContents = await adapter.BinCheckAsync(group.Key.BinEntry.Value);
                     var binContent = binContents.FirstOrDefault(bc => bc.ItemCode == group.Key.ItemCode);
-                    systemQuantity = binContent != null ? (int)binContent.OnHand : 0;
+                    systemQuantity = binContent != null ? (decimal)binContent.OnHand : 0;
 
                     // Get the actual bin code
                     binCode = await adapter.GetBinCodeAsync(group.Key.BinEntry.Value) ?? group.Key.BinEntry.Value.ToString();
@@ -416,7 +416,7 @@ public class InventoryCountingsService(
                 throw new Exception($"Failed to get item information for {group.Key.ItemCode} and bin {group.Key.BinEntry}.");
             }
 
-            int variance = totalCountedQuantity - systemQuantity;
+            decimal variance = totalCountedQuantity - systemQuantity;
             if (variance != 0) {
                 varianceLines++;
             }

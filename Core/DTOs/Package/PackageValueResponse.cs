@@ -5,6 +5,6 @@ public class PackageValueResponse(Guid id, string barcode) {
     public string Barcode { get; init; } = barcode;
 }
 
-public class PackageStockValue(Guid id, string barcode, int quantity) : PackageValueResponse(id, barcode) {
-    public int Quantity { get; init; } = quantity;
+public class PackageStockValue(Guid id, string barcode, decimal quantity) : PackageValueResponse(id, barcode) {
+    public decimal Quantity { get; init; } = quantity;
 }

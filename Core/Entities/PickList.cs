@@ -19,7 +19,7 @@ public class PickList : BaseEntity {
     public int PickEntry { get; set; }
 
     [Required]
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 
     [Required]
     public UnitType Unit { get; set; }
