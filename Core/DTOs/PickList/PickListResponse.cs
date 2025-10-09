@@ -6,9 +6,9 @@ namespace Core.DTOs.PickList;
 public class PickListResponse {
     public int Entry { get; set; }
     public DateTime Date { get; set; }
-    public int SalesOrders { get; set; }
-    public int Invoices { get; set; }
-    public int Transfers { get; set; }
+    public string? SalesOrders { get; set; }
+    public string? Invoices { get; set; }
+    public string? Transfers { get; set; }
     public string? Remarks { get; set; }
     public ObjectStatus Status { get; set; }
     public SyncStatus SyncStatus { get; set; }

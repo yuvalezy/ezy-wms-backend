@@ -21,16 +21,16 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 PICKS."PickDate",
                 COALESCE(Cast(PICKS."Remarks" as varchar(8000)), '') AS "Remarks",
                 PICKS."Status" "Status",
-                   Sum(Case When PKL1."BaseObject" = 17 Then 1 Else 0 End)                             AS "SalesOrders",
-                   Sum(Case When PKL1."BaseObject" = 13 Then 1 Else 0 End)                             AS "Invoices",
-                   Sum(Case When PKL1."BaseObject" = 1250000001 Then 1 Else 0 End)                     AS "Transfers",
+                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 17 THEN T2."Ref1" END, ',')          AS "SalesOrders",
+                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 13 THEN T2."Ref1" END, ',')          AS "Invoices",
+                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 1250000001 THEN T2."Ref1" END, ',')  AS "Transfers",
                 COALESCE(SUM(PKL1."RelQtty" + PKL1."PickQtty"), 0) AS "Quantity",
                 COALESCE(SUM(PKL1."RelQtty"), 0) AS "OpenQuantity",
                 COALESCE(SUM(CASE WHEN PKL1."PickStatus" = 'Y' THEN PKL1."PickQtty" ELSE 0 END), 0) AS "UpdateQuantity"
             """);
 
         if (pickPackOnly is not null) {
-            sb.Append($", Case When {pickPackOnly.Query} Then 1 Else 0 End \"PickPackOnly\" ");
+            sb.Append($", Max(Case When {pickPackOnly.Query} Then 1 Else 0 End) \"PickPackOnly\" ");
         }
 
         sb.Append("""
@@ -72,9 +72,6 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         }
 
         sb.AppendLine(""" GROUP BY PICKS."AbsEntry", PICKS."PickDate", Cast(PICKS."Remarks" as varchar(8000)), PICKS."Status" """);
-        if (pickPackOnly is not null) {
-            sb.Append($", {pickPackOnly.GroupBy} ");
-        }
 
         sb.AppendLine(""" ORDER BY PICKS."AbsEntry" DESC""");
 
@@ -87,9 +84,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 Date = reader.GetDateTime(1),
                 Remarks = reader.IsDBNull(2) ? null : reader.GetString(2),
                 Status = ConvertStatus(reader.IsDBNull(3) ? null : reader.GetString(3)),
-                SalesOrders = reader.GetInt32(4),
-                Invoices = reader.GetInt32(5),
-                Transfers = reader.GetInt32(6),
+                SalesOrders = reader.IsDBNull(4) ? null : StringAggregateDistinct(reader.GetString(4)),
+                Invoices = reader.IsDBNull(5) ? null : StringAggregateDistinct(reader.GetString(5)),
+                Transfers = reader.IsDBNull(6) ? null : StringAggregateDistinct(reader.GetString(6)),
                 Quantity = (int)reader.GetDecimal(7),
                 OpenQuantity = (int)reader.GetDecimal(8),
                 UpdateQuantity = (int)reader.GetDecimal(9),
@@ -101,6 +98,8 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
 
         return response;
     }
+
+    private string StringAggregateDistinct(string value) => value.Length == 0 ? value : value.Split(',').Distinct().Aggregate((a, b) => a + ", " + b);
 
     public async Task<IEnumerable<PickingDetailResponse>> GetPickingDetails(Dictionary<string, object> parameters) {
         var sb = new StringBuilder(
