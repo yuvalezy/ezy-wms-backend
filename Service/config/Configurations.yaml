@@ -7,7 +7,12 @@
 Options:
   # General Settings
   # Whether to enable base unit conversion functionality (bool, default: true)
-  EnableUseBaseUn: true
+  EnableUseBaseUn: false
+  
+  # Unit labels for base unit conversion (nullable string)
+  #UnitLabel: ""
+  #DozensLabel: "Unidad"
+  #BoxLabel: ""
   
   # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
   # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)

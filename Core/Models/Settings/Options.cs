@@ -5,6 +5,9 @@ namespace Core.Models.Settings;
 public record Options {
     //General
     public bool EnableUseBaseUn { get; set; } = true;
+    public string? UnitLabel { get; set; }
+    public string? DozensLabel { get; set; }
+    public string? BoxLabel { get; set; }
     public ScannerMode ScannerMode { get; set; } = ScannerMode.ItemBarcode;
     public bool DisplayVendor { get; set; } = true;
     public bool WhsCodeBinSuffix { get; set; }
