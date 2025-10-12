@@ -142,7 +142,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         queryBuilder.Append("""
                            select T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand", 
                            COALESCE(OITM."NumInBuy", 1) as "NumInBuy", OITM."BuyUnitMsr" as "BuyUnitMsr",
-                           COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode"
+                           COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
+                           OITM."PurFactor1", OITM."PurFactor2", OITM."PurFactor3", OITM."PurFactor4"
                            """);
 
         var customFields = GetCustomFields();

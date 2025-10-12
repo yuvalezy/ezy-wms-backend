@@ -105,6 +105,10 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
                                  , COALESCE(OITM."NumInBuy", 1) as "NumInBuy"
                                  , OITM."PurPackMsr" as "PurPackMsr"
                                  , COALESCE(OITM."PurPackUn", 1) as "PurPackUn"
+                                 , OITM."PurFactor1"
+                                 , OITM."PurFactor2"
+                                 , OITM."PurFactor3"
+                                 , OITM."PurFactor4"
                             """);
 
         var customFields = GetCustomFields();
@@ -161,7 +165,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         };
 
         return await dbService.QueryAsync(query, parameters, reader => new ItemStockResponse {
-            Quantity = Convert.ToInt32(reader[0]),
+            Quantity = Convert.ToDecimal(reader[0]),
         });
     }
 
@@ -183,7 +187,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
         return await dbService.QueryAsync(query, parameters, reader => new ItemBinStockResponse {
             BinCode = reader.GetString(0),
-            Quantity = Convert.ToInt32(reader[1]),
+            Quantity = Convert.ToDecimal(reader[1]),
             BinEntry = reader.GetInt32(2),
         });
     }

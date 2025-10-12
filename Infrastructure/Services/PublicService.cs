@@ -112,7 +112,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             var itemPackages = packages.Where(v => v.ItemCode == value.ItemCode).ToArray();
             if (itemPackages.Length > 0)
                 value.Packages = itemPackages
-                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, (int)v.Quantity))
+                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, v.Quantity))
                 .ToArray();
         }
 
@@ -152,7 +152,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             var binPackages = packages.Where(v => v.BinEntry!.Value == value.BinEntry).ToArray();
             if (binPackages.Length > 0)
                 value.Packages = binPackages
-                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, (int)v.Quantity))
+                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, v.Quantity))
                 .ToArray();
         }
 

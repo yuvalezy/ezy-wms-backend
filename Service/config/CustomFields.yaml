@@ -54,6 +54,11 @@ CustomFields:
       Query: OITM.BVolume
       Description: Peso (kg)
       Type: Number
+
+    - Key: Factor
+      Query: OITM.PurFactor1
+      Description: Factor
+      Type: Number
       
   PickingDetails:
     - Key: Marca                                          # Unique identifier (required string)

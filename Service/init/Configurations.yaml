@@ -9,7 +9,24 @@ Options:
   # General Settings
   # Whether to enable base unit conversion functionality (bool, default: true)
   EnableUseBaseUn: true
-  
+
+  # Unit labels for base unit conversion (nullable string)
+  #UnitLabel: ""
+  #UnitAbbr: ""
+  #DozensLabel: "Unidad"
+  #DozensAbbr: "U"
+  #BoxLabel: ""
+  #BoxAbbr: ""
+
+  # Maximum unit level to display or convert to in stock formatting and item quantity breakdown.
+  # Defines how deep the unit conversion goes when showing quantities.
+  # Values:
+  #   Unit  - show full breakdown down to individual units
+  #   Dozen - stop at "dozen" level (show remainder in base units, e.g. meters)
+  #   Pack  - stop at "pack" level (show remainder in dozens or base units)
+  # Example: with MaxUnitLevel: Dozen and 21.6 meters (pack=14.4, unit=1.44) → "1 Pack, 7.2 Meters"
+  #MaxUnitLevel: Pack
+
   # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
   # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)
   ScannerMode: ItemBarcode
@@ -43,6 +60,10 @@ Options:
   
   # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
   GoodsReceiptConfirmationAdjustStock: false
+
+  # Price list ID to use when adjusting stock during goods receipt confirmation (nullable int, default: null)
+  # Only used when GoodsReceiptConfirmationAdjustStock is true
+  #GoodsReceiptConfirmationAdjustStockPriceList: 1
 
   # Transfer Configuration  
   # Whether to enable target item selection in transfers (bool, default: false)

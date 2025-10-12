@@ -11,9 +11,21 @@ Options:
   
   # Unit labels for base unit conversion (nullable string)
   #UnitLabel: ""
-  #DozensLabel: ""
+  #UnitAbbr: ""
+  #DozensLabel: "Unidad"
+  #DozensAbbr: "U"
   #BoxLabel: ""
-  
+  #BoxAbbr: ""
+
+  # Maximum unit level to display or convert to in stock formatting and item quantity breakdown.
+  # Defines how deep the unit conversion goes when showing quantities.
+  # Values:
+  #   Unit  - show full breakdown down to individual units
+  #   Dozen - stop at "dozen" level (show remainder in base units, e.g. meters)
+  #   Pack  - stop at "pack" level (show remainder in dozens or base units)
+  # Example: with MaxUnitLevel: Dozen and 21.6 meters (pack=14.4, unit=1.44) → "1 Pack, 7.2 Meters"
+  #MaxUnitLevel: Pack
+
   # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
   # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)
   ScannerMode: ItemBarcode
