@@ -253,7 +253,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             var value = control[(reader.GetInt32("ObjType"), reader.GetInt32("DocEntry"))];
             var item = new GoodsReceiptValidateProcessDocumentsDataLineResponse {
                 LineNumber = reader.GetInt32("LineNum"),
-                DocumentQuantity = (int)reader.GetDecimal("OpenInvQty"),
+                DocumentQuantity = reader.GetDecimal("OpenInvQty"),
                 VisualLineNumber = reader.GetInt32("VisOrder")
             };
 
@@ -295,7 +295,11 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                                     COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
                                     OITM."PurPackMsr" as "PurPackMsr",
                                     COALESCE(T1."OpenInvQty", Case When T5."isIns" = 'Y' Then T2."OpenInvQty" Else T2."InvQty" End, T3."InvQty", T4."OpenInvQty", 0) as "OpenInvQty",
-                                    COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder", T4."VisOrder")+1 as "VisOrder"
+                                    COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder", T4."VisOrder")+1 as "VisOrder",
+                                    OITM."PurFactor1",
+                                    OITM."PurFactor2",
+                                    OITM."PurFactor3",
+                                    OITM."PurFactor4"
                              """);
 
         var customFields = CustomFieldsHelper.GetCustomFields(settings, "Items");

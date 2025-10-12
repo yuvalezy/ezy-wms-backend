@@ -6,6 +6,7 @@ public class TransferAddItemResponse {
     public Guid?   LineId         { get; set; }
     public bool    ClosedTransfer { get; set; }
     public string? ErrorMessage   { get; set; }
+    public decimal? Quantity { get; set; }
 
     // Package-related properties
     public bool                     IsPackageScan     { get; set; }

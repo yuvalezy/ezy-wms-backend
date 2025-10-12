@@ -31,14 +31,18 @@ public class TransferLineService(
             }
 
             decimal quantity = request.Quantity;
+            var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
+            var item  = items.FirstOrDefault();
             if (request.Unit != UnitType.Unit) {
-                var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
-                var item  = items.FirstOrDefault();
                 if (item == null) {
                     throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, request.BarCode });
                 }
 
                 quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+            }
+
+            if (item != null) {
+                quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
             }
 
             var line = new TransferLine {
@@ -64,7 +68,7 @@ public class TransferLineService(
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return new TransferAddItemResponse { LineId = line.Id };
+            return new TransferAddItemResponse { LineId = line.Id, Quantity = quantity};
         }
         catch {
             await transaction.RollbackAsync();
