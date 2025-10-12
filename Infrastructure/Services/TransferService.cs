@@ -18,14 +18,15 @@ public class TransferService(
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
-            Name            = request.Name,
+            Name = request.Name,
             CreatedByUserId = sessionInfo.Guid,
-            Comments        = request.Comments,
-            Date            = now,
-            Status          = ObjectStatus.Open,
-            WhsCode         = sessionInfo.Warehouse,
-            Lines           = []
+            Comments = request.Comments,
+            Date = now,
+            Status = ObjectStatus.Open,
+            WhsCode = sessionInfo.Warehouse,
+            Lines = []
         };
+
         await db.Transfers.AddAsync(transfer);
         await db.SaveChangesAsync();
         return TransferResponse.FromTransfer(transfer);
@@ -50,9 +51,9 @@ public class TransferService(
 
     public async Task<IEnumerable<TransferResponse>> GetTransfers(TransfersRequest request, string warehouse) {
         var query = db.Transfers
-            .Include(t => t.CreatedByUser)
-            .Where(t => t.WhsCode == warehouse)
-            .AsQueryable();
+        .Include(t => t.CreatedByUser)
+        .Where(t => t.WhsCode == warehouse)
+        .AsQueryable();
 
         // Apply filters
         if (request.Date.HasValue) {
@@ -82,14 +83,16 @@ public class TransferService(
         switch (request.OrderBy) {
             case TransferOrderBy.Date:
                 query = request.Desc
-                    ? query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id)
-                    : query.OrderBy(t => t.Date).ThenBy(t => t.Id);
+                ? query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id)
+                : query.OrderBy(t => t.Date).ThenBy(t => t.Id);
+
                 break;
             case TransferOrderBy.ID:
             default:
                 query = request.Desc
-                    ? query.OrderByDescending(t => t.Id)
-                    : query.OrderBy(t => t.Id);
+                ? query.OrderByDescending(t => t.Id)
+                : query.OrderBy(t => t.Id);
+
                 break;
         }
 
@@ -104,12 +107,12 @@ public class TransferService(
 
         if (progress && transfer.Lines.Any()) {
             decimal sourceQuantity = transfer.Lines
-                .Where(l => l.Type == SourceTarget.Source && l.LineStatus != LineStatus.Closed)
-                .Sum(l => l.Quantity);
+            .Where(l => l.Type == SourceTarget.Source && l.LineStatus != LineStatus.Closed)
+            .Sum(l => l.Quantity);
 
             decimal targetQuantity = transfer.Lines
-                .Where(l => l.Type == SourceTarget.Target && l.LineStatus != LineStatus.Closed)
-                .Sum(l => l.Quantity);
+            .Where(l => l.Type == SourceTarget.Target && l.LineStatus != LineStatus.Closed)
+            .Sum(l => l.Quantity);
 
             response.Progress = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
         }
@@ -121,13 +124,13 @@ public class TransferService(
         var transfer = await GetTransfer(id, true);
 
         bool hasIncompleteItems = await db.TransferLines
-            .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
-            .GroupBy(l => l.ItemCode)
-            .AnyAsync(g => g.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity) !=
-                           g.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity));
+        .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
+        .GroupBy(l => l.ItemCode)
+        .AnyAsync(g => g.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity) !=
+                       g.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity));
 
         bool hasItems = await db.TransferLines
-            .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
+        .AnyAsync(l => l.TransferId == id && l.LineStatus != LineStatus.Closed);
 
         transfer.IsComplete = !hasIncompleteItems && hasItems;
 
@@ -145,18 +148,18 @@ public class TransferService(
         }
 
         // Update transfer status
-        transfer.Status          = ObjectStatus.Cancelled;
-        transfer.UpdatedAt       = DateTime.UtcNow;
+        transfer.Status = ObjectStatus.Cancelled;
+        transfer.UpdatedAt = DateTime.UtcNow;
         transfer.UpdatedByUserId = sessionInfo.Guid;
 
         // Update all open lines to cancelled
         var openLines = await db.TransferLines
-            .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
-            .ToListAsync();
+        .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
+        .ToListAsync();
 
         foreach (var line in openLines) {
-            line.LineStatus      = LineStatus.Closed;
-            line.UpdatedAt       = DateTime.UtcNow;
+            line.LineStatus = LineStatus.Closed;
+            line.UpdatedAt = DateTime.UtcNow;
             line.UpdatedByUserId = sessionInfo.Guid;
         }
 
@@ -174,8 +177,8 @@ public class TransferService(
         int? transferEntry = null;
         try {
             var transfer = await db.Transfers
-                .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
-                .FirstOrDefaultAsync(t => t.Id == id);
+            .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+            .FirstOrDefaultAsync(t => t.Id == id);
 
             if (transfer == null) {
                 throw new KeyNotFoundException($"Transfer with ID {id} not found.");
@@ -186,8 +189,8 @@ public class TransferService(
             }
 
             // Update transfer status to Processing
-            transfer.Status          = ObjectStatus.Processing;
-            transfer.UpdatedAt       = DateTime.UtcNow;
+            transfer.Status = ObjectStatus.Processing;
+            transfer.UpdatedAt = DateTime.UtcNow;
             transfer.UpdatedByUserId = sessionInfo.Guid;
             await db.SaveChangesAsync();
 
@@ -205,24 +208,24 @@ public class TransferService(
                 // Move packages if package feature is enabled
                 if (settings.Options.EnablePackages) {
                     await transferPackageService.MovePackagesOnTransferProcessAsync(id, sessionInfo);
-                    
+
                     // Clear package commitments since transfer is now complete
                     await transferPackageService.ClearTransferCommitmentsAsync(id, sessionInfo);
                 }
 
                 // Update transfer status to Finished
-                transfer.Status          = ObjectStatus.Finished;
-                transfer.UpdatedAt       = DateTime.UtcNow;
+                transfer.Status = ObjectStatus.Finished;
+                transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
 
                 // Update all open lines to Finished
                 var openLines = await db.TransferLines
-                    .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
-                    .ToListAsync();
+                .Where(tl => tl.TransferId == id && tl.LineStatus != LineStatus.Closed)
+                .ToListAsync();
 
                 foreach (var line in openLines) {
-                    line.LineStatus      = LineStatus.Finished;
-                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.LineStatus = LineStatus.Finished;
+                    line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
 
@@ -239,6 +242,7 @@ public class TransferService(
             if (transferEntry.HasValue) {
                 await adapter.Canceltransfer(transferEntry.Value);
             }
+
             await transaction.RollbackAsync();
             throw;
         }
@@ -246,36 +250,36 @@ public class TransferService(
 
     public async Task<Dictionary<string, TransferCreationDataResponse>> PrepareTransferData(Guid transferId) {
         var lines = await db.TransferLines
-            .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
-            .GroupBy(tl => tl.ItemCode)
-            .Select(g => new {
-                ItemCode = g.Key,
-                Lines    = g.ToList()
-            })
-            .ToListAsync();
+        .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
+        .GroupBy(tl => tl.ItemCode)
+        .Select(g => new {
+            ItemCode = g.Key,
+            Lines = g.ToList()
+        })
+        .ToListAsync();
 
         var transferData = new Dictionary<string, TransferCreationDataResponse>();
 
         foreach (var itemGroup in lines) {
             // Group source bins
             var sourceBins = itemGroup.Lines
-                .Where(l => l is { Type: SourceTarget.Source, BinEntry: not null })
-                .GroupBy(l => l.BinEntry.Value)
-                .Select(g => new TransferCreationBinResponse {
-                    BinEntry = g.Key,
-                    Quantity = g.Sum(l => l.Quantity)
-                })
-                .ToList();
+            .Where(l => l is { Type: SourceTarget.Source, BinEntry: not null })
+            .GroupBy(l => l.BinEntry.Value)
+            .Select(g => new TransferCreationBinResponse {
+                BinEntry = g.Key,
+                Quantity = g.Sum(l => l.Quantity)
+            })
+            .ToList();
 
             // Group target bins
             var targetBins = itemGroup.Lines
-                .Where(l => l is { Type: SourceTarget.Target, BinEntry: not null })
-                .GroupBy(l => l.BinEntry.Value)
-                .Select(g => new TransferCreationBinResponse {
-                    BinEntry = g.Key,
-                    Quantity = g.Sum(l => l.Quantity)
-                })
-                .ToList();
+            .Where(l => l is { Type: SourceTarget.Target, BinEntry: not null })
+            .GroupBy(l => l.BinEntry.Value)
+            .Select(g => new TransferCreationBinResponse {
+                BinEntry = g.Key,
+                Quantity = g.Sum(l => l.Quantity)
+            })
+            .ToList();
 
             // Calculate the transfer quantity - should be the source quantity (what we're transferring)
             decimal sourceQuantity = sourceBins.Sum(s => s.Quantity);
@@ -286,8 +290,8 @@ public class TransferService(
             decimal transferQuantity = Math.Max(sourceQuantity, targetQuantity);
 
             var data = new TransferCreationDataResponse {
-                ItemCode   = itemGroup.ItemCode,
-                Quantity   = transferQuantity,
+                ItemCode = itemGroup.ItemCode,
+                Quantity = transferQuantity,
                 SourceBins = sourceBins,
                 TargetBins = targetBins
             };
@@ -300,8 +304,8 @@ public class TransferService(
 
     public async Task<IEnumerable<TransferContentResponse>> GetTransferContent(TransferContentRequest request) {
         var transferLines = db.TransferLines
-            .Include(tl => tl.Transfer)
-            .Where(tl => tl.TransferId == request.ID && tl.LineStatus != LineStatus.Closed);
+        .Include(tl => tl.Transfer)
+        .Where(tl => tl.TransferId == request.ID && tl.LineStatus != LineStatus.Closed);
 
         // Apply filters based on request
         if (request.BinEntry.HasValue && request.BinEntry > 0) {
@@ -318,12 +322,12 @@ public class TransferService(
 
         // Group by ItemCode and aggregate data
         var groupedLines = lines
-            .GroupBy(tl => tl.ItemCode)
-            .Select(g => new {
-                ItemCode = g.Key,
-                Lines    = g.ToList()
-            })
-            .ToList();
+        .GroupBy(tl => tl.ItemCode)
+        .Select(g => new {
+            ItemCode = g.Key,
+            Lines = g.ToList()
+        })
+        .ToList();
 
         var result = new List<TransferContentResponse>();
 
@@ -332,38 +336,42 @@ public class TransferService(
 
             // Get item information from external adapter
             var itemInfo = await adapter.ItemCheckAsync(group.ItemCode, null);
-            var item     = itemInfo.FirstOrDefault();
+            var item = itemInfo.FirstOrDefault();
 
             var content = new TransferContentResponse {
-                ItemCode     = group.ItemCode,
-                ItemName     = item?.ItemName ?? "",
-                Quantity     = group.Lines.Sum(l => l.Quantity),
-                NumInBuy     = item?.NumInBuy ?? 1,
-                BuyUnitMsr   = item?.BuyUnitMsr ?? "",
-                PurPackUn    = item?.PurPackUn ?? 1,
-                PurPackMsr   = item?.PurPackMsr ?? "",
+                ItemCode = group.ItemCode,
+                ItemName = item?.ItemName ?? "",
+                Quantity = group.Lines.Sum(l => l.Quantity),
+                NumInBuy = item?.NumInBuy ?? 1,
+                BuyUnitMsr = item?.BuyUnitMsr ?? "",
+                PurPackUn = item?.PurPackUn ?? 1,
+                PurPackMsr = item?.PurPackMsr ?? "",
+                Factor1 = item?.Factor1 ?? 1,
+                Factor2 = item?.Factor2 ?? 2,
+                Factor3 = item?.Factor3 ?? 3,
+                Factor4 = item?.Factor4 ?? 4,
                 CustomFields = item?.CustomFields,
-                Unit         = firstLine.UnitType
+                Unit = firstLine.UnitType
             };
 
             if (request.Type == SourceTarget.Target) {
                 // Calculate progress and open quantity for target
                 var allItemLines = await db.TransferLines
-                    .Where(tl => tl.TransferId == request.ID &&
-                                 tl.ItemCode == group.ItemCode &&
-                                 tl.LineStatus != LineStatus.Closed)
-                    .ToListAsync();
+                .Where(tl => tl.TransferId == request.ID &&
+                             tl.ItemCode == group.ItemCode &&
+                             tl.LineStatus != LineStatus.Closed)
+                .ToListAsync();
 
                 var sourceQuantity = allItemLines.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity);
                 var targetQuantity = allItemLines.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity);
 
-                content.Progress     = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
+                content.Progress = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
                 content.OpenQuantity = sourceQuantity - targetQuantity;
 
                 if (request.TargetBinQuantity && request.BinEntry.HasValue) {
                     content.BinQuantity = (int?)group.Lines
-                        .Where(l => l.BinEntry == request.BinEntry.Value)
-                        .Sum(l => l.Quantity);
+                    .Where(l => l.BinEntry == request.BinEntry.Value)
+                    .Sum(l => l.Quantity);
                 }
             }
 
@@ -380,34 +388,35 @@ public class TransferService(
 
     private async Task AddBinInformation(List<TransferContentResponse> contents, Guid transferId) {
         var binData = await db.TransferLines
-            .Where(tl => tl.TransferId == transferId &&
-                         tl.Type == SourceTarget.Target &&
-                         tl.LineStatus != LineStatus.Closed &&
-                         tl.BinEntry.HasValue)
-            .GroupBy(tl => new { tl.ItemCode, tl.BinEntry })
-            .Select(g => new {
-                ItemCode = g.Key.ItemCode,
-                BinEntry = g.Key.BinEntry!.Value,
-                Quantity = g.Sum(l => l.Quantity)
-            })
-            .ToListAsync();
+        .Where(tl => tl.TransferId == transferId &&
+                     tl.Type == SourceTarget.Target &&
+                     tl.LineStatus != LineStatus.Closed &&
+                     tl.BinEntry.HasValue)
+        .GroupBy(tl => new { tl.ItemCode, tl.BinEntry })
+        .Select(g => new {
+            ItemCode = g.Key.ItemCode,
+            BinEntry = g.Key.BinEntry!.Value,
+            Quantity = g.Sum(l => l.Quantity)
+        })
+        .ToListAsync();
 
         // Get bin codes from external adapter
         var binEntries = binData.Select(b => b.BinEntry).Distinct().ToList();
-        var binInfoTasks = binEntries.Select(async binEntry => {
+        var binInfoTasks = binEntries.Select(async binEntry =>
+        {
             var binContents = await adapter.BinCheckAsync(binEntry);
             return new { BinEntry = binEntry, BinCode = binContents.FirstOrDefault()?.ItemCode ?? binEntry.ToString() };
         });
 
-        var binInfos      = await Task.WhenAll(binInfoTasks);
+        var binInfos = await Task.WhenAll(binInfoTasks);
         var binCodeLookup = binInfos.ToDictionary(b => b.BinEntry, b => b.BinCode);
 
         foreach (var content in contents) {
             var itemBins = binData.Where(b => b.ItemCode == content.ItemCode).ToList();
             if (itemBins.Any()) {
                 content.Bins = itemBins.Select(b => new TransferContentBin {
-                    Entry    = b.BinEntry,
-                    Code     = binCodeLookup.GetValueOrDefault(b.BinEntry, b.BinEntry.ToString()),
+                    Entry = b.BinEntry,
+                    Code = binCodeLookup.GetValueOrDefault(b.BinEntry, b.BinEntry.ToString()),
                     Quantity = b.Quantity
                 }).ToList();
             }
@@ -416,25 +425,25 @@ public class TransferService(
 
     public async Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest request) {
         var query = db.TransferLines
-            .Include(tl => tl.CreatedByUser)
-            .Where(tl => tl.TransferId == request.ID &&
-                         tl.ItemCode == request.ItemCode &&
-                         tl.Type == SourceTarget.Target &&
-                         tl.LineStatus != LineStatus.Closed);
+        .Include(tl => tl.CreatedByUser)
+        .Where(tl => tl.TransferId == request.ID &&
+                     tl.ItemCode == request.ItemCode &&
+                     tl.Type == SourceTarget.Target &&
+                     tl.LineStatus != LineStatus.Closed);
 
         if (request.BinEntry.HasValue) {
             query = query.Where(tl => tl.BinEntry == request.BinEntry.Value);
         }
 
         var lines = await query
-            .OrderBy(tl => tl.Date)
-            .ToListAsync();
+        .OrderBy(tl => tl.Date)
+        .ToListAsync();
 
         return lines.Select(line => new TransferContentTargetDetailResponse {
-            LineId        = line.Id,
+            LineId = line.Id,
             CreatedByName = line.CreatedByUser?.FullName ?? "Unknown",
-            TimeStamp     = line.Date,
-            Quantity      = line.Quantity
+            TimeStamp = line.Date,
+            Quantity = line.Quantity
         });
     }
 
@@ -452,15 +461,15 @@ public class TransferService(
 
                     // Use existing UpdateLine validation logic
                     var updateRequest = new TransferUpdateLineRequest {
-                        Id       = request.ID,
-                        LineId   = change.Key,
+                        Id = request.ID,
+                        LineId = change.Key,
                         Quantity = change.Value
                     };
 
                     // Note: This would ideally reuse the existing UpdateLine validation
                     // For now, we'll do basic validation
-                    line.Quantity        = change.Value;
-                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.Quantity = change.Value;
+                    line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
             }
@@ -474,8 +483,8 @@ public class TransferService(
                     // Validate line belongs to transfer and is not already closed
                     if (line.TransferId != request.ID || line.LineStatus == LineStatus.Closed) continue;
 
-                    line.LineStatus      = LineStatus.Closed;
-                    line.UpdatedAt       = DateTime.UtcNow;
+                    line.LineStatus = LineStatus.Closed;
+                    line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
             }
@@ -494,27 +503,27 @@ public class TransferService(
         // For now, we'll create a basic transfer based on the content
         try {
             var transfer = new Transfer {
-                Name            = $"Transfer Request {DateTime.UtcNow:yyyyMMdd-HHmmss}",
+                Name = $"Transfer Request {DateTime.UtcNow:yyyyMMdd-HHmmss}",
                 CreatedByUserId = sessionInfo.Guid,
-                Comments        = "Created from transfer request",
-                Date            = DateTime.UtcNow.Date,
-                Status          = ObjectStatus.Open,
-                WhsCode         = sessionInfo.Warehouse,
-                Lines           = new List<TransferLine>()
+                Comments = "Created from transfer request",
+                Date = DateTime.UtcNow.Date,
+                Status = ObjectStatus.Open,
+                WhsCode = sessionInfo.Warehouse,
+                Lines = new List<TransferLine>()
             };
 
             // Add lines based on content
             foreach (var content in request.Contents) {
                 var line = new TransferLine {
-                    ItemCode        = content.ItemCode,
-                    BarCode         = content.Barcode, 
-                    Date            = DateTime.UtcNow,
-                    Quantity        = content.Quantity,
-                    Type            = SourceTarget.Source,
-                    UnitType        = content.Unit,
-                    CreatedAt       = DateTime.UtcNow,
+                    ItemCode = content.ItemCode,
+                    BarCode = content.Barcode,
+                    Date = DateTime.UtcNow,
+                    Quantity = content.Quantity,
+                    Type = SourceTarget.Source,
+                    UnitType = content.Unit,
+                    CreatedAt = DateTime.UtcNow,
                     CreatedByUserId = sessionInfo.Guid,
-                    LineStatus      = LineStatus.Open,
+                    LineStatus = LineStatus.Open,
                 };
 
                 transfer.Lines.Add(line);
@@ -524,13 +533,13 @@ public class TransferService(
             await db.SaveChangesAsync();
 
             return new CreateTransferRequestResponse {
-                Number  = transfer.Number,
+                Number = transfer.Number,
                 Success = true
             };
         }
         catch (Exception ex) {
             return new CreateTransferRequestResponse {
-                Success      = false,
+                Success = false,
                 ErrorMessage = ex.Message
             };
         }

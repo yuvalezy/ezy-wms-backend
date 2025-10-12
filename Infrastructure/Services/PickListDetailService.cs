@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Services;
 
 public class PickListDetailService(
-    SystemDbContext                   db,
-    IExternalSystemAdapter            adapter,
-    ILogger<PickListDetailService>    logger,
-    ISettings                         settings,
+    SystemDbContext db,
+    IExternalSystemAdapter adapter,
+    ILogger<PickListDetailService> logger,
+    ISettings settings,
     IPickListPackageEligibilityService eligibilityService,
-    IPickListPackageService           packageService) : IPickListDetailService {
+    IPickListPackageService packageService) : IPickListDetailService {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
@@ -45,36 +45,41 @@ public class PickListDetailService(
             { "@Entry", entry }
         };
 
-        var items    = await adapter.GetPickingDetailItems(itemParams);
+        var items = await adapter.GetPickingDetailItems(itemParams);
         var itemDict = new Dictionary<string, PickListDetailItemResponse>();
 
         foreach (var item in items) {
             PickListDetailItemResponse itemResponse;
             if (!itemDict.TryGetValue(item.ItemCode, out var value)) {
                 itemResponse = new PickListDetailItemResponse {
-                    ItemCode     = item.ItemCode,
-                    ItemName     = item.ItemName,
-                    Quantity     = item.Quantity,
-                    Picked       = item.Picked,
+                    ItemCode = item.ItemCode,
+                    ItemName = item.ItemName,
+                    Quantity = item.Quantity,
+                    Picked = item.Picked,
                     OpenQuantity = item.OpenQuantity,
-                    NumInBuy     = item.NumInBuy,
-                    BuyUnitMsr   = item.BuyUnitMsr,
-                    PurPackUn    = item.PurPackUn,
-                    PurPackMsr   = item.PurPackMsr,
+                    NumInBuy = item.NumInBuy,
+                    BuyUnitMsr = item.BuyUnitMsr,
+                    PurPackUn = item.PurPackUn,
+                    PurPackMsr = item.PurPackMsr,
+                    Factor1 = item.Factor1,
+                    Factor2 = item.Factor2,
+                    Factor3 = item.Factor3,
+                    Factor4 = item.Factor4,
                     CustomFields = item.CustomFields
                 };
+
                 itemDict[item.ItemCode] = itemResponse;
                 responseDetail.Items!.Add(itemResponse);
             }
             else {
-                itemResponse              =  value;
-                itemResponse.Quantity     += item.Quantity;
-                itemResponse.Picked       += item.Picked;
+                itemResponse = value;
+                itemResponse.Quantity += item.Quantity;
+                itemResponse.Picked += item.Picked;
                 itemResponse.OpenQuantity += item.OpenQuantity;
             }
 
             int dbPickQty = (int)dbPick.Where(p => p.AbsEntry == absEntry && p.ItemCode == item.ItemCode).Sum(p => p.Quantity);
-            itemResponse.Picked       += dbPickQty;
+            itemResponse.Picked += dbPickQty;
             itemResponse.OpenQuantity -= dbPickQty;
         }
 
@@ -83,13 +88,13 @@ public class PickListDetailService(
     }
 
     private async Task GetPickListItemDetailsAvailableBins(
-        int                                            absEntry,
+        int absEntry,
         Dictionary<string, PickListDetailItemResponse> itemDict,
-        PickListDetailResponse                         responseDetail,
-        int                                            type,
-        int                                            entry,
-        int?                                           binEntry,
-        bool?                                          availableBins) {
+        PickListDetailResponse responseDetail,
+        int type,
+        int entry,
+        int? binEntry,
+        bool? availableBins) {
         if (availableBins != true) {
             return;
         }
@@ -105,64 +110,66 @@ public class PickListDetailService(
         }
 
         var bins = (await adapter.GetPickingDetailItemsBins(binParams)).ToArray();
-        
+
         // Process any closed pick lists that have package commitments
         await ProcessClosedPickListsWithPackages();
 
         var result = db.PickLists
-            .Where(p => (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
-            .Select(p => new { p.ItemCode, p.BinEntry, p.Quantity })
-            .Concat(
-                db.TransferLines
-                    .Where(t => t.LineStatus == LineStatus.Open || t.LineStatus == LineStatus.Processing)
-                    .Select(t => new { t.ItemCode, t.BinEntry, t.Quantity })
-            )
-            .GroupBy(x => new { x.ItemCode, x.BinEntry })
-            .Select(g => new {
-                g.Key.ItemCode,
-                g.Key.BinEntry,
-                Quantity = g.Sum(x => x.Quantity)
-            });
+        .Where(p => (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
+        .Select(p => new { p.ItemCode, p.BinEntry, p.Quantity })
+        .Concat(
+            db.TransferLines
+            .Where(t => t.LineStatus == LineStatus.Open || t.LineStatus == LineStatus.Processing)
+            .Select(t => new { t.ItemCode, t.BinEntry, t.Quantity })
+        )
+        .GroupBy(x => new { x.ItemCode, x.BinEntry })
+        .Select(g => new {
+            g.Key.ItemCode,
+            g.Key.BinEntry,
+            Quantity = g.Sum(x => x.Quantity)
+        });
 
-        string[]                             items      = itemDict.Keys.ToArray();
-        int[]                                binEntries = bins.Select(v => v.Entry).Distinct().ToArray();
-        BinLocationPackageQuantityResponse[] packages   = [];
+        string[] items = itemDict.Keys.ToArray();
+        int[] binEntries = bins.Select(v => v.Entry).Distinct().ToArray();
+        BinLocationPackageQuantityResponse[] packages = [];
 
         Dictionary<Guid, List<PackageContent>>? packageContentsLookup = null;
 
         if (enablePackages) {
             var packagesStatuses = new[] { PackageStatus.Active, PackageStatus.Locked };
             packages = await db
-                .PackageContents
-                .Include(p => p.Package)
-                .Where(p => items.Contains(p.ItemCode) && p.BinEntry != null && binEntries.Contains(p.BinEntry.Value) && packagesStatuses.Contains(p.Package.Status))
-                .Select(p => new BinLocationPackageQuantityResponse(p.PackageId, p.Package.Barcode, p.BinEntry!.Value, p.ItemCode,
-                    !binEntry.HasValue ? p.Quantity : p.Quantity - p.CommittedQuantity))
-                .ToArrayAsync();
+            .PackageContents
+            .Include(p => p.Package)
+            .Where(p => items.Contains(p.ItemCode) && p.BinEntry != null && binEntries.Contains(p.BinEntry.Value) && packagesStatuses.Contains(p.Package.Status))
+            .Select(p => new BinLocationPackageQuantityResponse(p.PackageId, p.Package.Barcode, p.BinEntry!.Value, p.ItemCode,
+                !binEntry.HasValue ? p.Quantity : p.Quantity - p.CommittedQuantity))
+            .ToArrayAsync();
 
             // Get unique package IDs from the filtered packages
             var packageIds = packages.Select(p => p.Id).Distinct().ToArray();
 
             // Load ALL contents for these packages (not just the ones in our bins)
             var allPackageContents = await db.PackageContents
-                .Where(pc => packageIds.Contains(pc.PackageId))
-                .ToListAsync();
+            .Where(pc => packageIds.Contains(pc.PackageId))
+            .ToListAsync();
 
             // Group by PackageId for efficient lookup
             packageContentsLookup = allPackageContents
-                .GroupBy(pc => pc.PackageId)
-                .ToDictionary(g => g.Key, g => g.ToList());
+            .GroupBy(pc => pc.PackageId)
+            .ToDictionary(g => g.Key, g => g.ToList());
         }
 
         foreach (var bin in bins) {
             if (!itemDict.TryGetValue(bin.ItemCode, out var item))
                 continue;
+
             item.BinQuantities ??= [];
             var binResponse = new BinLocationQuantityResponse {
-                Entry    = bin.Entry,
-                Code     = bin.Code,
+                Entry = bin.Entry,
+                Code = bin.Code,
                 Quantity = bin.Quantity - result.Where(v => v.ItemCode == item.ItemCode && v.BinEntry == bin.Entry).Sum(v => v.Quantity)
             };
+
             if (binResponse.Quantity <= 0)
                 continue;
 
@@ -182,14 +189,14 @@ public class PickListDetailService(
         responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
         foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
             item.Available = (int)item.BinQuantities.Sum(b => b.Quantity);
-            item.Packages  = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).Where(b => b.Quantity > 0).ToArray();
+            item.Packages = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).Where(b => b.Quantity > 0).ToArray();
         }
 
         // Check for full packages when packages are enabled and bin entry is specified
         if (enablePackages && packageContentsLookup != null) {
             // Create lookup of ItemCode -> OpenQuantity
             var itemOpenQuantities = responseDetail.Items
-                .ToDictionary(i => i.ItemCode, i => i.OpenQuantity);
+            .ToDictionary(i => i.ItemCode, i => i.OpenQuantity);
 
             // Track processed packages to avoid duplicate checks
             var processedPackages = new HashSet<Guid>();
@@ -225,10 +232,10 @@ public class PickListDetailService(
     public async Task ProcessClosedPickListsWithPackages() {
         // Find pick lists that are Closed and Synced locally but might have packages to process
         var syncedPickLists = await db.PickLists
-            .Where(p => p.Status == ObjectStatus.Closed && p.SyncStatus == SyncStatus.Synced)
-            .Select(p => p.AbsEntry)
-            .Distinct()
-            .ToArrayAsync();
+        .Where(p => p.Status == ObjectStatus.Closed && p.SyncStatus == SyncStatus.Synced)
+        .Select(p => p.AbsEntry)
+        .Distinct()
+        .ToArrayAsync();
 
         if (syncedPickLists.Length == 0) {
             return;
@@ -236,10 +243,10 @@ public class PickListDetailService(
 
         // Check if these pick lists have any unprocessed packages
         var pickListsWithUnprocessedPackages = await db.PickListPackages
-            .Where(plp => syncedPickLists.Contains(plp.AbsEntry) && plp.ProcessedAt == null)
-            .Select(plp => plp.AbsEntry)
-            .Distinct()
-            .ToArrayAsync();
+        .Where(plp => syncedPickLists.Contains(plp.AbsEntry) && plp.ProcessedAt == null)
+        .Select(plp => plp.AbsEntry)
+        .Distinct()
+        .ToArrayAsync();
 
         if (pickListsWithUnprocessedPackages.Length == 0) {
             return;

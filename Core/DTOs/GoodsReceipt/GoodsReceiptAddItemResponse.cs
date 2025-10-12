@@ -7,10 +7,14 @@ public class GoodsReceiptAddItemResponse {
     public bool    Showroom       { get; set; }
     public bool    Warehouse      { get; set; }
     public decimal Quantity       { get; set; }
-    public int     NumInBuy       { get; set; }
+    public decimal     NumInBuy       { get; set; }
     public string? BuyUnitMsr     { get; set; }
-    public int     PurPackUn      { get; set; }
+    public decimal     PurPackUn      { get; set; }
     public string? PurPackMsr     { get; set; }
+    public decimal     Factor1      { get; set; }
+    public decimal     Factor2      { get; set; }
+    public decimal     Factor3      { get; set; }
+    public decimal     Factor4      { get; set; }
     public string? ErrorMessage   { get; set; }
     
     public Dictionary<string, object> CustomFields { get; set; } = new();

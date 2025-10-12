@@ -13,35 +13,41 @@ namespace Infrastructure.Services;
 public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService, IPackageService packageService) : IGoodsReceiptReportService {
     public async Task<GoodsReceiptReportAllResponse> GetGoodsReceiptAllReport(Guid id, string warehouse) {
         var response = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .Include(l => l.Targets)
-            .Where(l => l.GoodsReceiptId == id)
-            .GroupBy(l => new { l.ItemCode })
-            .Select(g => new GoodsReceiptReportAllResponseLine {
-                ItemCode = g.Key.ItemCode,
-                Quantity = g.Sum(a => a.Quantity),
-                Delivery = g.SelectMany(a => a.Targets
-                        .Where(b => b.TargetType == 13 || b.TargetType == 17)
-                        .Select(b => b.TargetQuantity))
-                    .Sum(),
-                Showroom = g.SelectMany(a => a.Targets
-                        .Where(b => b.TargetType == 1250000001)
-                        .Select(b => b.TargetQuantity))
-                    .Sum(),
-            })
-            .ToListAsync();
+        .Include(l => l.GoodsReceipt)
+        .Include(l => l.Targets)
+        .Where(l => l.GoodsReceiptId == id)
+        .GroupBy(l => new { l.ItemCode })
+        .Select(g => new GoodsReceiptReportAllResponseLine {
+            ItemCode = g.Key.ItemCode,
+            Quantity = g.Sum(a => a.Quantity),
+            Delivery = g.SelectMany(a => a.Targets
+            .Where(b => b.TargetType == 13 || b.TargetType == 17)
+            .Select(b => b.TargetQuantity))
+            .Sum(),
+            Showroom = g.SelectMany(a => a.Targets
+            .Where(b => b.TargetType == 1250000001)
+            .Select(b => b.TargetQuantity))
+            .Sum(),
+        })
+        .ToListAsync();
 
-        string[] items          = response.Select(r => r.ItemCode).ToArray();
-        var      itemsStockData = await adapter.ItemsWarehouseStockAsync(warehouse, items);
-        response.ForEach(r => {
+        string[] items = response.Select(r => r.ItemCode).ToArray();
+        var itemsStockData = await adapter.ItemsWarehouseStockAsync(warehouse, items);
+        response.ForEach(r =>
+        {
             if (!itemsStockData.TryGetValue(r.ItemCode, out var itemStockData))
                 throw new InvalidOperationException($"Item {r.ItemCode} not found in stock data from external adapter");
-            r.ItemName     = itemStockData.ItemName;
-            r.Stock        = itemStockData.Stock;
-            r.NumInBuy     = itemStockData.NumInBuy;
-            r.BuyUnitMsr   = itemStockData.BuyUnitMsr;
-            r.PurPackUn    = itemStockData.PurPackUn;
-            r.PurPackMsr   = itemStockData.PurPackMsr;
+
+            r.ItemName = itemStockData.ItemName;
+            r.Stock = itemStockData.Stock;
+            r.NumInBuy = itemStockData.NumInBuy;
+            r.BuyUnitMsr = itemStockData.BuyUnitMsr;
+            r.PurPackUn = itemStockData.PurPackUn;
+            r.PurPackMsr = itemStockData.PurPackMsr;
+            r.Factor1 = itemStockData.Factor1;
+            r.Factor2 = itemStockData.Factor2;
+            r.Factor3 = itemStockData.Factor3;
+            r.Factor4 = itemStockData.Factor4;
             r.CustomFields = itemStockData.CustomFields;
         });
 
@@ -49,23 +55,25 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
 
         return new GoodsReceiptReportAllResponse {
             Status = status,
-            Lines  = response,
+            Lines = response,
         };
     }
 
     public async Task<IEnumerable<GoodsReceiptReportAllDetailsResponse>> GetGoodsReceiptAllReportDetails(Guid id, string itemCode) {
         var values = await db.GoodsReceiptLines
-            .Include(l => l.CreatedByUser)
-            .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
-            .Select(l => l.TotReportAllDetailsResponseDto())
-            .ToListAsync();
-        var packagesTransactions = await db.PackageTransactions
-            .Include(v => v.Package)
-            .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.GoodsReceipt && v.ItemCode == itemCode)
-            .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
-            .ToArrayAsync();
+        .Include(l => l.CreatedByUser)
+        .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
+        .Select(l => l.TotReportAllDetailsResponseDto())
+        .ToListAsync();
 
-        values.ForEach(v => {
+        var packagesTransactions = await db.PackageTransactions
+        .Include(v => v.Package)
+        .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.GoodsReceipt && v.ItemCode == itemCode)
+        .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
+        .ToArrayAsync();
+
+        values.ForEach(v =>
+        {
             var package = packagesTransactions.FirstOrDefault(p => p.SourceOperationLineId == v.LineId);
             if (package != null)
                 v.Package = new PackageValueResponse(package.PackageId, package.Barcode);
@@ -81,13 +89,14 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
             await lineService.RemoveRows(request.RemoveRows, sessionInfo);
 
             foreach (var pair in request.QuantityChanges) {
-                var lineId   = pair.Key;
+                var lineId = pair.Key;
                 decimal quantity = pair.Value;
                 var updateRequest = new UpdateGoodsReceiptLineQuantityRequest {
-                    Id       = request.Id,
-                    LineId   = lineId,
+                    Id = request.Id,
+                    LineId = lineId,
                     Quantity = quantity
                 };
+
                 var updateGoodsReceiptLineQuantityRequest = updateRequest;
                 var response = await lineService.UpdateLineQuantity(sessionInfo, updateGoodsReceiptLineQuantityRequest);
                 if (!string.IsNullOrWhiteSpace(response.ErrorMessage) || response.ReturnValue != UpdateLineReturnValue.Ok) {
@@ -107,38 +116,41 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
     public async Task<IEnumerable<GoodsReceiptVSExitReportResponse>> GetGoodsReceiptVSExitReport(Guid id) {
         // This would need integration with exit/shipment data
         var lines = await db.GoodsReceiptLines
-            .Include(l => l.GoodsReceipt)
-            .Where(l => l.GoodsReceipt.Id == id)
-            .GroupBy(l => new { l.ItemCode })
-            .Select(g => new GoodsReceiptVSExitReportResponse {
-                ItemCode         = g.Key.ItemCode,
-                ItemName         = g.Key.ItemCode, // Would need item master
-                ReceivedQuantity = g.Sum(l => l.Quantity),
-                ExitQuantity     = 0, // Would need exit data
-                Variance         = g.Sum(l => l.Quantity)
-            })
-            .ToListAsync();
+        .Include(l => l.GoodsReceipt)
+        .Where(l => l.GoodsReceipt.Id == id)
+        .GroupBy(l => new { l.ItemCode })
+        .Select(g => new GoodsReceiptVSExitReportResponse {
+            ItemCode = g.Key.ItemCode,
+            ItemName = g.Key.ItemCode, // Would need item master
+            ReceivedQuantity = g.Sum(l => l.Quantity),
+            ExitQuantity = 0, // Would need exit data
+            Variance = g.Sum(l => l.Quantity)
+        })
+        .ToListAsync();
 
         return lines;
     }
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessResponse>> GetGoodsReceiptValidateProcess(Guid id) {
         var linesQuery = db.GoodsReceiptLines
-            .Where(v => v.GoodsReceiptId == id);
+        .Where(v => v.GoodsReceiptId == id);
+
         var linesIds = linesQuery.Select(v => v.Id).ToList();
 
         var sourcesQuery = db.GoodsReceiptSources
-            .Where(v => linesIds.Contains(v.GoodsReceiptLineId));
+        .Where(v => linesIds.Contains(v.GoodsReceiptLineId));
+
         var documentsQuery = db.GoodsReceiptDocuments
-            .Where(v => v.GoodsReceiptId == id);
+        .Where(v => v.GoodsReceiptId == id);
 
         var baseDocs = sourcesQuery
-            .Select(v => new { Type = v.SourceType, Entry = v.SourceEntry })
-            .Union(documentsQuery.Select(v => new { Type = v.ObjType, Entry = v.DocEntry }));
+        .Select(v => new { Type = v.SourceType, Entry = v.SourceEntry })
+        .Union(documentsQuery.Select(v => new { Type = v.ObjType, Entry = v.DocEntry }));
+
         var docs = await baseDocs
-            .Distinct()                                        // still SQL-translatable
-            .Select(x => new ObjectKey(x.Type, x.Entry, null)) // custom projection
-            .ToArrayAsync();
+        .Distinct()                                        // still SQL-translatable
+        .Select(x => new ObjectKey(x.Type, x.Entry, null)) // custom projection
+        .ToArrayAsync();
 
 
         var docsData = await adapter.GoodsReceiptValidateProcessDocumentsData(docs);
@@ -148,21 +160,24 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
         foreach (var doc in docsData) {
             var value = new GoodsReceiptValidateProcessResponse {
                 DocumentNumber = doc.DocumentNumber,
-                Vendor         = doc.Vendor,
-                BaseType       = doc.ObjectType,
-                BaseEntry      = doc.DocumentEntry,
+                Vendor = doc.Vendor,
+                BaseType = doc.ObjectType,
+                BaseEntry = doc.DocumentEntry,
             };
+
             foreach (var docLine in doc.Lines) {
                 var baseLine = (await sourcesQuery
-                    .Where(v => v.SourceType == doc.ObjectType &&
-                                v.SourceEntry == doc.DocumentEntry &&
-                                v.SourceLine == docLine.LineNumber)
-                    .FirstOrDefaultAsync())?.GoodsReceiptLineId ?? Guid.Empty;
+                .Where(v => v.SourceType == doc.ObjectType &&
+                            v.SourceEntry == doc.DocumentEntry &&
+                            v.SourceLine == docLine.LineNumber)
+                .FirstOrDefaultAsync())?.GoodsReceiptLineId ?? Guid.Empty;
+
                 decimal sourceQuantity = await sourcesQuery
-                    .Where(v => v.SourceType == doc.ObjectType &&
-                                v.SourceEntry == doc.DocumentEntry &&
-                                v.SourceLine == docLine.LineNumber)
-                    .SumAsync(v => v.Quantity);
+                .Where(v => v.SourceType == doc.ObjectType &&
+                            v.SourceEntry == doc.DocumentEntry &&
+                            v.SourceLine == docLine.LineNumber)
+                .SumAsync(v => v.Quantity);
+
                 var lineValue = docLine.ToValidateProcessLineDto((int)sourceQuantity, baseLine);
                 value.Lines!.Add(lineValue);
             }
@@ -176,21 +191,21 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
 
     public async Task<IEnumerable<GoodsReceiptValidateProcessLineDetailsResponse>> GetGoodsReceiptValidateProcessLineDetails(GoodsReceiptValidateProcessLineDetailsRequest request) {
         var data =
-            await db.GoodsReceiptLines
-                .Where(v => v.GoodsReceiptId == request.ID)
-                .Include(a => a.Sources
-                    .Where(b => b.SourceType == request.BaseType &&
-                                b.SourceEntry == request.BaseEntry &&
-                                b.SourceLine == request.BaseLine))
-                .ThenInclude(v => v.CreatedByUser)
-                .ToArrayAsync();
+        await db.GoodsReceiptLines
+        .Where(v => v.GoodsReceiptId == request.ID)
+        .Include(a => a.Sources
+        .Where(b => b.SourceType == request.BaseType &&
+                    b.SourceEntry == request.BaseEntry &&
+                    b.SourceLine == request.BaseLine))
+        .ThenInclude(v => v.CreatedByUser)
+        .ToArrayAsync();
 
         return data.SelectMany(a => a.Sources.Select(b => new GoodsReceiptValidateProcessLineDetailsResponse {
-            TimeStamp         = b.CreatedAt,
+            TimeStamp = b.CreatedAt,
             CreatedByUserName = b.CreatedByUser!.FullName,
-            Quantity          = b.Quantity,
-            ScannedQuantity   = a.Quantity,
-            Unit              = a.Unit,
+            Quantity = b.Quantity,
+            ScannedQuantity = a.Quantity,
+            Unit = a.Unit,
         }));
     }
 }

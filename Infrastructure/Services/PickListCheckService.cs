@@ -299,6 +299,10 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
                         QuantityInUnit = item.NumInBuy,
                         PackMeasure = item.PurPackMsr,
                         QuantityInPack = item.PurPackUn,
+                        Factor1 = item.Factor1,
+                        Factor2 = item.Factor2,
+                        Factor3 = item.Factor3,
+                        Factor4 = item.Factor4,
                     });
 
                     if (difference != 0) {

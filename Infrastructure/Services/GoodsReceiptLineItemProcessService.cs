@@ -58,15 +58,15 @@ public class GoodsReceiptLineItemProcessService(
     }
 
 
-    public async Task<ProcessSourceDocumentsAllocationResponse> ProcessSourceDocumentsAllocation(
-        string itemCode,
+    public async Task<ProcessSourceDocumentsAllocationResponse> ProcessSourceDocumentsAllocation(string itemCode,
         UnitType unit,
         string warehouse,
         GoodsReceipt goodsReceipt,
         ItemCheckResponse item,
         List<ObjectKey> specificDocuments,
         decimal quantity = 1,
-        Guid? updateLineId = null) {
+        Guid? updateLineId = null, 
+        bool applyFactor = true) {
         var linesIds = goodsReceipt.Lines.Select(l => l.Id).ToList();
 
         var sourceDocuments = (await adapter.AddItemSourceDocuments(itemCode, unit, warehouse, goodsReceipt.Type, goodsReceipt.CardCode, specificDocuments)).ToList();
@@ -90,7 +90,10 @@ public class GoodsReceiptLineItemProcessService(
         sourceDocuments.RemoveAll(s => s.Quantity <= 0);
 
         // Calculate required quantity
-        quantity = quantity * (unit != UnitType.Unit ? item.NumInBuy : 1) * (unit == UnitType.Pack ? item.PurPackUn : 1);
+        quantity *= (unit != UnitType.Unit ? item.NumInBuy : 1) * (unit == UnitType.Pack ? item.PurPackUn : 1);
+        if (applyFactor) {
+            quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
+        }
 
         // Allocate quantities using FIFO
         decimal unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
@@ -305,11 +308,15 @@ public class GoodsReceiptLineItemProcessService(
             Fulfillment = fulfillment > 0,
             Showroom = showroom > 0,
             Warehouse = warehouseQuantity > 0,
-            Quantity = 1,
+            Quantity = 1 * item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4,
             NumInBuy = item.NumInBuy,
             BuyUnitMsr = item.BuyUnitMsr,
             PurPackUn = item.PurPackUn,
             PurPackMsr = item.PurPackMsr,
+            Factor1 = item.Factor1,
+            Factor2 = item.Factor2,
+            Factor3 = item.Factor3,
+            Factor4 = item.Factor4,
             CustomFields = item.CustomFields
         };
 

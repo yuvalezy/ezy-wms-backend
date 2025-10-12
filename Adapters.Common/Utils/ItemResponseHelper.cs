@@ -13,8 +13,12 @@ public static class ItemResponseHelper {
         response.ItemCode = reader["ItemCode"] as string ?? string.Empty;
         response.ItemName = reader["ItemName"] as string ?? string.Empty;
         response.BuyUnitMsr = reader["BuyUnitMsr"] as string ?? string.Empty;
-        response.NumInBuy = Convert.ToInt32(reader["NumInBuy"]);
+        response.NumInBuy = Convert.ToDecimal(reader["NumInBuy"]);
         response.PurPackMsr = reader["PurPackMsr"] as string ?? string.Empty;
-        response.PurPackUn = Convert.ToInt32(reader["PurPackUn"]);
+        response.PurPackUn = Convert.ToDecimal(reader["PurPackUn"]);
+        response.Factor1 = Convert.ToDecimal(reader["PurFactor1"]);
+        response.Factor2 = Convert.ToDecimal(reader["PurFactor2"]);
+        response.Factor3 = Convert.ToDecimal(reader["PurFactor3"]);
+        response.Factor4 = Convert.ToDecimal(reader["PurFactor4"]);
     }
 }

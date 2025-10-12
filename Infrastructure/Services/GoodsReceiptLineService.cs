@@ -124,7 +124,7 @@ public class GoodsReceiptLineService(
                 await contentService.AddItemToPackageAsync(new AddItemToPackageRequest {
                     PackageId = request.PackageId.Value,
                     ItemCode = request.ItemCode,
-                    Quantity = 1.0m,
+                    Quantity = 1 * item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4,
                     UnitQuantity = line.Quantity,
                     UnitType = line.Unit,
                     BinEntry = sessionInfo.DefaultBinLocation,
@@ -196,7 +196,7 @@ public class GoodsReceiptLineService(
 
             // Step 2: Process source documents allocation
             var sourceAllocationResult =
-            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, request.Quantity, lineId);
+            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, request.Quantity, lineId, applyFactor: false);
 
             if (sourceAllocationResult.ErrorResponse != null) {
                 logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);

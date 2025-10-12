@@ -9,15 +9,15 @@ namespace Core.Interfaces;
 public interface IGoodsReceiptLineItemProcessService {
     Task<ValidateGoodsReceiptAndItemResponse> ValidateGoodsReceiptAndItem(GoodsReceiptAddItemRequest request, Guid userId, string warehouse);
 
-    Task<ProcessSourceDocumentsAllocationResponse> ProcessSourceDocumentsAllocation(
-        string            itemCode,
-        UnitType          unit,
-        string            warehouse,
-        GoodsReceipt      goodsReceipt,
+    Task<ProcessSourceDocumentsAllocationResponse> ProcessSourceDocumentsAllocation(string itemCode,
+        UnitType unit,
+        string warehouse,
+        GoodsReceipt goodsReceipt,
         ItemCheckResponse item,
-        List<ObjectKey>   specificDocuments,
-        decimal           quantity     = 1,
-        Guid?             updateLineId = null);
+        List<ObjectKey> specificDocuments,
+        decimal quantity = 1,
+        Guid? updateLineId = null, 
+        bool applyFactor = true);
 
     Task<GoodsReceiptLine> CreateGoodsReceiptLine(
         GoodsReceiptAddItemRequest                      request,
