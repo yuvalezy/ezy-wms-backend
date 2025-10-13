@@ -65,7 +65,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             Type = 22,
             Entry = reader.GetInt32(1),
             LineNum = reader.GetInt32(2),
-            Quantity = (int)reader.GetDecimal(3),
+            Quantity = reader.GetDecimal(3),
             Number = reader.GetInt32(4),
         });
     }
@@ -115,7 +115,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             Type = 20,
             Entry = reader.GetInt32(1),
             LineNum = reader.GetInt32(2),
-            Quantity = (int)reader.GetDecimal(3),
+            Quantity = reader.GetDecimal(3),
             Number = reader.GetInt32(4),
         });
     }
@@ -186,7 +186,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             Type = 18,
             Entry = reader.GetInt32(1),
             LineNum = reader.GetInt32(2),
-            Quantity = (int)reader.GetDecimal(3),
+            Quantity = reader.GetDecimal(3),
             Number = reader.GetInt32(4),
         });
     }
@@ -235,7 +235,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             Type = 67,
             Entry = reader.GetInt32(1),
             LineNum = reader.GetInt32(2),
-            Quantity = (int)reader.GetDecimal(3),
+            Quantity = reader.GetDecimal(3),
             Number = reader.GetInt32(4),
         });
     }

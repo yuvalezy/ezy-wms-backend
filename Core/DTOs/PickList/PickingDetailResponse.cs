@@ -10,7 +10,7 @@ public class PickingDetailResponse : IResponseCustomFields {
     public DateTime Date { get; set; }
     public string CardCode { get; set; } = string.Empty;
     public string CardName { get; set; } = string.Empty;
-    public int TotalItems { get; set; }
-    public int TotalOpenItems { get; set; }
+    public decimal TotalItems { get; set; }
+    public decimal TotalOpenItems { get; set; }
     public Dictionary<string, object> CustomFields { get; set; } = new();
 }

@@ -18,14 +18,18 @@ public class PickListLineService(
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
+            var items = await adapter.ItemCheckAsync(request.ItemCode, null);
+            var item = items.FirstOrDefault();
             if (request.Unit != UnitType.Unit) {
-                var items = await adapter.ItemCheckAsync(request.ItemCode, null);
-                var item = items.FirstOrDefault();
                 if (item == null) {
                     throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
                 }
 
                 request.Quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+            }
+
+            if (item != null) {
+                request.Quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
             }
 
             // Handle package-specific logic if PackageId is provided

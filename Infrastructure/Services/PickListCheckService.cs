@@ -72,13 +72,14 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
             };
         }
 
+        var itemInfo = await adapter.GetItemInfo(request.ItemCode);
         if (request.Unit != UnitType.Unit) {
-            var itemInfo = await adapter.GetItemInfo(request.ItemCode);
             request.CheckedQuantity *= itemInfo.QuantityInUnit;
             if (request.Unit == UnitType.Pack) {
                 request.CheckedQuantity *= itemInfo.QuantityInPack;
             }
         }
+        request.CheckedQuantity *= itemInfo.Factor1 * itemInfo.Factor2 * itemInfo.Factor3 * itemInfo.Factor4;
 
         // Add new item
         var newItem = new Core.Entities.PickListCheckItem {
@@ -199,7 +200,7 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
 
             if (existingItem != null) {
                 // Update existing item by adding the committed quantity
-                existingItem.CheckedQuantity += (int)commitment.Quantity;
+                existingItem.CheckedQuantity += commitment.Quantity;
                 existingItem.UpdatedAt = DateTime.UtcNow;
                 existingItem.UpdatedByUserId = sessionInfo.Guid;
             }
@@ -208,7 +209,7 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
                 var newItem = new Core.Entities.PickListCheckItem {
                     CheckSessionId = session.Id,
                     ItemCode = commitment.ItemCode,
-                    CheckedQuantity = (int)commitment.Quantity,
+                    CheckedQuantity = commitment.Quantity,
                     Unit = UnitType.Unit,
                     BinEntry = package.BinEntry,
                     CheckedAt = DateTime.UtcNow,
@@ -226,7 +227,7 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
             checkedItems.Add(new CheckedPackageItem {
                 ItemCode = commitment.ItemCode,
                 ItemName = itemInfo.ItemName,
-                Quantity = (int)commitment.Quantity
+                Quantity = commitment.Quantity
             });
         }
 

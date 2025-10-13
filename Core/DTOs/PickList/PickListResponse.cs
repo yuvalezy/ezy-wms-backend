@@ -28,8 +28,8 @@ public class PickListDetailResponse {
     public DateTime Date { get; set; }
     public string CardCode { get; set; } = string.Empty;
     public string CardName { get; set; } = string.Empty;
-    public int TotalItems { get; set; }
-    public int TotalOpenItems { get; set; }
+    public decimal TotalItems { get; set; }
+    public decimal TotalOpenItems { get; set; }
     public List<PickListDetailItemResponse>? Items { get; set; }
     public Dictionary<string, object>? CustomFields { get; set; }
 }
@@ -49,7 +49,7 @@ public class PickListDetailItemResponse {
     public decimal Factor3 { get; set; }
     public decimal Factor4 { get; set; }
     public List<BinLocationQuantityResponse>? BinQuantities { get; set; }
-    public int? Available { get; set; }
+    public decimal? Available { get; set; }
 
     public required Dictionary<string, object> CustomFields { get; set; }
     public BinLocationPackageQuantityResponse[]? Packages { get; set; }

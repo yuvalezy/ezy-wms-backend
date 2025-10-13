@@ -61,7 +61,7 @@ public class TransferPackageService(
                     BarCode         = content.ItemCode, // Use item code as barcode
                     BinEntry        = request.BinEntry ?? scannedPackage.BinEntry,
                     Date            = DateTime.UtcNow,
-                    Quantity        = (int)content.Quantity,
+                    Quantity        = content.Quantity,
                     Type            = SourceTarget.Source,
                     UnitType        = UnitType.Unit,
                     TransferId      = request.TransferId,

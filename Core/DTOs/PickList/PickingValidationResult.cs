@@ -5,7 +5,7 @@ public class PickingValidationResult {
     public int? PickEntry { get; set; }
     public int ReturnValue { get; set; }
     public decimal OpenQuantity { get; set; }
-    public int BinOnHand { get; set; }
-    public int OnHand { get; set; }
+    public decimal BinOnHand { get; set; }
+    public decimal OnHand { get; set; }
     public string? ErrorMessage { get; set; }
 }

@@ -185,7 +185,7 @@ public class PickListCancelService(
                     BarCode = commitment.ItemCode,
                     Type = SourceTarget.Source,
                     BinEntry = cancelBinEntry,
-                    Quantity = (int)quantity,
+                    Quantity = quantity,
                     Unit = UnitType.Unit
                 };
 
@@ -207,14 +207,14 @@ public class PickListCancelService(
         var items = selection
         .Where(s => !processedItems.Contains(s.ItemCode)) // Skip items already handled by packages
         .GroupBy(v => new { v.ItemCode, BarCode = v.CodeBars, v.NumInBuy, v.PackUn })
-        .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, (int)v.Key.NumInBuy, (int)v.Key.PackUn, v.Sum(w => w.Quantity)));
+        .Select(v => new RegularItemCancellationRequest(v.Key.ItemCode, v.Key.BarCode, v.Key.NumInBuy, v.Key.PackUn, v.Sum(w => w.Quantity)));
 
         foreach (var item in items) {
             await ProcessRegularItem(item, transferId, cancelBinEntry, sessionInfo);
         }
     }
 
-    private record RegularItemCancellationRequest(string ItemCode, string BarCode, int NumInBuy, int PackUn, decimal Quantity);
+    private record RegularItemCancellationRequest(string ItemCode, string BarCode, decimal NumInBuy, decimal PackUn, decimal Quantity);
 
     private async Task ProcessRegularItem(RegularItemCancellationRequest item, Guid transferId, int cancelBinEntry, SessionInfo sessionInfo) {
         var addRequest = new TransferAddItemRequest {
@@ -229,31 +229,31 @@ public class PickListCancelService(
         decimal packUn = item.PackUn;
 
         // Calculate packs
-        int packs = (int)Math.Floor(quantity / (numInBuy * packUn));
+        decimal packs = packUn == 1 ? 0 : Math.Floor(quantity / (numInBuy * packUn));
 
         // Calculate dozens
-        int remainderAfterPacks = (int)(quantity - packs * numInBuy * packUn);
-        int dozens = (int)Math.Floor(remainderAfterPacks / numInBuy);
+        decimal remainderAfterPacks = packUn == 1 ? quantity : (quantity - packs * numInBuy * packUn);
+        decimal dozens = Math.Floor(remainderAfterPacks / numInBuy);
 
         // Calculate units
-        int units = (int)(remainderAfterPacks % numInBuy);
+        decimal units = (remainderAfterPacks % numInBuy);
 
         addRequest.BinEntry = cancelBinEntry;
 
         if (packs > 0) {
-            addRequest.Quantity = (int)packs;
+            addRequest.Quantity = packs;
             addRequest.Unit = UnitType.Pack;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }
 
         if (dozens > 0) {
-            addRequest.Quantity = (int)dozens;
+            addRequest.Quantity = dozens;
             addRequest.Unit = UnitType.Dozen;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }
 
         if (units > 0) {
-            addRequest.Quantity = (int)units;
+            addRequest.Quantity = units;
             addRequest.Unit = UnitType.Unit;
             await transferLineService.AddItem(sessionInfo, addRequest);
         }

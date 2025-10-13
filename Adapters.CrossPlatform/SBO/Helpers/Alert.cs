@@ -98,7 +98,7 @@ public class Alert(SboCompany sboCompany, ILoggerFactory loggerFactory) : IDispo
             AlertableObjectType.PickListCancellation => (
                 "Lista de Picking Cancelada desde WMS",
                 "Transferencia de Cancelación",
-                "67"
+                "156"
             ),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown alert type")
         };

@@ -209,7 +209,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
             reader =>
             {
                 var value = new ItemWarehouseStockResponse {
-                    Stock = (int)reader.GetDecimal("OnHand"),
+                    Stock = reader.GetDecimal("OnHand"),
                 };
 
                 ItemResponseHelper.PopulateItemResponse(reader, value);

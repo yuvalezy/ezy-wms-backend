@@ -131,7 +131,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
         foreach (var value in response) {
             if (packages.Length > 0)
                 value.Packages = packages
-                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, (int)v.Quantity))
+                .Select(v => new PackageStockValue(v.PackageId, v.Package.Barcode, v.Quantity))
                 .ToArray();
         }
 

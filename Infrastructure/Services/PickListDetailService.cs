@@ -21,7 +21,7 @@ public class PickListDetailService(
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
         foreach (var detail in response.Detail!) {
-            int dbPickQty = (int)dbPick.Where(p => p.AbsEntry == absEntry && p.PickEntry == detail.Entry).Sum(p => p.Quantity);
+            decimal dbPickQty = dbPick.Where(p => p.AbsEntry == absEntry && p.PickEntry == detail.Entry).Sum(p => p.Quantity);
             detail.TotalOpenItems -= dbPickQty;
         }
 
@@ -78,7 +78,7 @@ public class PickListDetailService(
                 itemResponse.OpenQuantity += item.OpenQuantity;
             }
 
-            int dbPickQty = (int)dbPick.Where(p => p.AbsEntry == absEntry && p.ItemCode == item.ItemCode).Sum(p => p.Quantity);
+            decimal dbPickQty = dbPick.Where(p => p.AbsEntry == absEntry && p.ItemCode == item.ItemCode).Sum(p => p.Quantity);
             itemResponse.Picked += dbPickQty;
             itemResponse.OpenQuantity -= dbPickQty;
         }
@@ -188,8 +188,8 @@ public class PickListDetailService(
         // Calculate available quantities and filter if bin entry specified
         responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
         foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
-            item.Available = (int)item.BinQuantities.Sum(b => b.Quantity);
-            item.Packages = item.BinQuantities.Where(b => b.Packages != null).SelectMany(b => b.Packages).Where(b => b.Quantity > 0).ToArray();
+            item.Available = item.BinQuantities!.Sum(b => b.Quantity);
+            item.Packages = item.BinQuantities!.Where(b => b.Packages != null).SelectMany(b => b.Packages!).Where(b => b.Quantity > 0).ToArray();
         }
 
         // Check for full packages when packages are enabled and bin entry is specified
@@ -202,11 +202,9 @@ public class PickListDetailService(
             var processedPackages = new HashSet<Guid>();
 
             foreach (var item in responseDetail.Items.Where(i => i.Packages != null)) {
-                foreach (var package in item.Packages) {
-                    if (processedPackages.Contains(package.Id))
+                foreach (var package in item.Packages!) {
+                    if (!processedPackages.Add(package.Id))
                         continue;
-
-                    processedPackages.Add(package.Id);
 
                     if (!packageContentsLookup.TryGetValue(package.Id, out var contents))
                         continue;
@@ -219,7 +217,7 @@ public class PickListDetailService(
 
                     // Mark package as full in ALL items that reference it
                     foreach (var otherItem in responseDetail.Items.Where(i => i.Packages != null)) {
-                        var pkg = otherItem.Packages.FirstOrDefault(p => p.Id == package.Id);
+                        var pkg = otherItem.Packages!.FirstOrDefault(p => p.Id == package.Id);
                         if (pkg != null) {
                             pkg.FullPackage = true;
                         }

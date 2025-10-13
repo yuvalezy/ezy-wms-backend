@@ -178,7 +178,7 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
                             v.SourceLine == docLine.LineNumber)
                 .SumAsync(v => v.Quantity);
 
-                var lineValue = docLine.ToValidateProcessLineDto((int)sourceQuantity, baseLine);
+                var lineValue = docLine.ToValidateProcessLineDto(sourceQuantity, baseLine);
                 value.Lines!.Add(lineValue);
             }
 

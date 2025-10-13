@@ -87,9 +87,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 SalesOrders = reader.IsDBNull(4) ? null : StringAggregateDistinct(reader.GetString(4)),
                 Invoices = reader.IsDBNull(5) ? null : StringAggregateDistinct(reader.GetString(5)),
                 Transfers = reader.IsDBNull(6) ? null : StringAggregateDistinct(reader.GetString(6)),
-                Quantity = (int)reader.GetDecimal(7),
-                OpenQuantity = (int)reader.GetDecimal(8),
-                UpdateQuantity = (int)reader.GetDecimal(9),
+                Quantity = reader.GetDecimal(7),
+                OpenQuantity = reader.GetDecimal(8),
+                UpdateQuantity = reader.GetDecimal(9),
                 PickPackOnly = pickPackOnly is not null && Convert.ToBoolean(reader["PickPackOnly"])
             };
 
@@ -166,8 +166,8 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 Date = reader.GetDateTime(3),
                 CardCode = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
                 CardName = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
-                TotalItems = (int)reader.GetDecimal(6),
-                TotalOpenItems = (int)reader.GetDecimal(7),
+                TotalItems = reader.GetDecimal(6),
+                TotalOpenItems = reader.GetDecimal(7),
                 PickEntry = reader.GetInt32(8),
             };
 
@@ -186,9 +186,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         return await dbService.QueryAsync(query, sqlParams, reader =>
         {
             var item = new PickingDetailItemResponse {
-                Quantity = (int)reader.GetDecimal("Quantity"),
-                Picked = (int)reader.GetDecimal("Picked"),
-                OpenQuantity = (int)reader.GetDecimal("OpenQuantity")
+                Quantity = reader.GetDecimal("Quantity"),
+                Picked = reader.GetDecimal("Picked"),
+                OpenQuantity = reader.GetDecimal("OpenQuantity")
             };
 
             ItemResponseHelper.PopulateItemResponse(reader, item);
@@ -209,7 +209,11 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                                 COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
                                 OITM."BuyUnitMsr" as "BuyUnitMsr",
                                 COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
-                                OITM."PurPackMsr" as "PurPackMsr"
+                                OITM."PurPackMsr" as "PurPackMsr", 
+                                OITM."PurFactor1", 
+                                OITM."PurFactor2", 
+                                OITM."PurFactor3", 
+                                OITM."PurFactor4"
                             """);
 
         var customFields = CustomFieldsHelper.GetCustomFields(settings, "Items");
@@ -222,7 +226,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                             left outer join WTQ1 T5 on T5."DocEntry" = PKL1."OrderEntry" and T5."LineNum" = PKL1."OrderLine" and T5."ObjType" = PKL1."BaseObject"
                             INNER JOIN OITM ON OITM."ItemCode" = COALESCE(T3."ItemCode", T4."ItemCode", T5."ItemCode")
                             WHERE PKL1."AbsEntry" = @AbsEntry AND PKL1."BaseObject" = @Type AND PKL1."OrderEntry" = @Entry
-                            Group by T5."ItemCode", T4."ItemCode", T3."ItemCode", OITM."ItemName", OITM."NumInBuy", OITM."BuyUnitMsr", OITM."PurPackUn", OITM."PurPackMsr"
+                            Group by T5."ItemCode", T4."ItemCode", T3."ItemCode", OITM."ItemName", OITM."NumInBuy", OITM."BuyUnitMsr", OITM."PurPackUn", OITM."PurPackMsr", OITM."PurFactor1", OITM."PurFactor2", OITM."PurFactor3", OITM."PurFactor4"
                             """);
 
         // Add custom fields to GROUP BY clause
@@ -274,7 +278,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             ItemCode = reader.GetString(0),
             Entry = reader.GetInt32(1),
             Code = reader.GetString(2),
-            Quantity = (int)reader.GetDecimal(3)
+            Quantity = reader.GetDecimal(3)
         });
     }
 
@@ -286,13 +290,18 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                Sum(T3."PickQtty") "Quantity",
                 T4."NumInBuy",
                 T4.PurPackUn,
-                T4."CodeBars"
+                T4."CodeBars", 
+                T4."PurFactor1", 
+                T4."PurFactor2", 
+                T4."PurFactor3", 
+                T4."PurFactor4"
         from PKL1 T1
                  inner join OILM T2 on T2.TransType = T1.BaseObject and T2.DocEntry = T1.OrderEntry and T2.DocLineNum = T1.OrderLine
                  inner join PKL2 T3 on T3.AbsEntry = T1.AbsEntry and T3.PickEntry = T1.PickEntry
                 inner join OITM T4 on T4."ItemCode" = T2."ItemCode"
         where T1."AbsEntry" = @AbsEntry
-        GROUP BY T2."ItemCode", T3."BinAbs", T4."NumInBuy", T4.PurPackUn, T4."CodeBars"
+        GROUP BY T2."ItemCode", T3."BinAbs", T4."NumInBuy", T4.PurPackUn, T4."CodeBars", 
+        T4."PurFactor1", T4."PurFactor2", T4."PurFactor3", T4."PurFactor4"
         """;
 
         return await dbService.QueryAsync(query, [new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }],
@@ -302,7 +311,11 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
                 BinEntry = (int)reader["BinAbs"],
                 Quantity = Convert.ToDecimal(reader["Quantity"]),
                 NumInBuy = Convert.ToDecimal(reader["NumInBuy"]),
-                PackUn = Convert.ToDecimal(reader["PurPackUn"])
+                PackUn = Convert.ToDecimal(reader["PurPackUn"]),
+                Factor1 = Convert.ToDecimal(reader["PurFactor1"]),
+                Factor2 = Convert.ToDecimal(reader["PurFactor1"]),
+                Factor3 = Convert.ToDecimal(reader["PurFactor1"]),
+                Factor4 = Convert.ToDecimal(reader["PurFactor1"])
             });
     }
 
@@ -377,9 +390,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             return new PickingValidationResult {
                 PickEntry = reader.IsDBNull(0) ? null : reader.GetInt32(0),
                 ReturnValue = returnValue,
-                OpenQuantity = (int)reader.GetDecimal(2),
-                BinOnHand = (int)reader.GetDecimal(3),
-                OnHand = (int)reader.GetDecimal(4),
+                OpenQuantity = reader.GetDecimal(2),
+                BinOnHand = reader.GetDecimal(3),
+                OnHand = reader.GetDecimal(4),
                 ErrorMessage = returnValue switch {
                     -2 => "Wrong item code",
                     -3 => "Item already fully picked",
