@@ -99,7 +99,7 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
 
         var transfers = await query.ToListAsync();
 
-        return transfers.Select(transfer => GetTransferResponse(request.Progress, transfer)).ToList();
+        return transfers.Select(transfer => GetTransferResponse(request.Progress, transfer, false)).ToList();
     }
 
     public async Task<TransferResponse> GetProcessInfo(Guid id) {
@@ -123,8 +123,8 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
         return transfer;
     }
 
-    private static TransferResponse GetTransferResponse(bool progress, Transfer transfer) {
-        var response = TransferResponse.FromTransfer(transfer);
+    private static TransferResponse GetTransferResponse(bool progress, Transfer transfer, bool includeLines = true) {
+        var response = TransferResponse.FromTransfer(transfer, includeLines);
 
         if (progress && transfer.Lines.Any()) {
             decimal sourceQuantity = transfer.Lines

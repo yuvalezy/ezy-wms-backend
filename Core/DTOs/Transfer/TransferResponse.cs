@@ -26,7 +26,7 @@ public class TransferResponse {
 
     public IEnumerable<TransferLineResponse> Lines { get; set; } = new List<TransferLineResponse>();
 
-    public static TransferResponse FromTransfer(Entities.Transfer transfer) {
+    public static TransferResponse FromTransfer(Entities.Transfer transfer, bool includeTransferInfo = false) {
         return new TransferResponse {
             Id              = transfer.Id,
             Number          = transfer.Number,
@@ -44,7 +44,7 @@ public class TransferResponse {
             Status          = transfer.Status,
             WhsCode         = transfer.WhsCode,
             TargetWhsCode   = transfer.TargetWhsCode,
-            Lines           = transfer.Lines.Select(l => TransferLineResponse.FromTransferLine(l)),
+            Lines           = includeTransferInfo ? transfer.Lines.Select(l => TransferLineResponse.FromTransferLine(l)) : [],
             Progress        = 0,
             IsComplete      = false
         };
