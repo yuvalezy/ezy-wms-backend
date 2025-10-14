@@ -33,6 +33,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
 
         int countingCount = await db.InventoryCountings.CountAsync(v => (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress) && v.WhsCode == warehouse);
         int transfersCount = await db.Transfers.CountAsync(v => (v.Status == ObjectStatus.Open || v.Status == ObjectStatus.InProgress) && v.WhsCode == warehouse);;
+        int transfersApprovalCount = await db.Transfers.CountAsync(v => (v.Status == ObjectStatus.WaitingForApproval) && v.WhsCode == warehouse);;
 
         await Task.WhenAll(itemAndBinCountTask, pickingDocumentsTask);
 
@@ -48,6 +49,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Picking = pickingDocuments.Count(),
             Counting = countingCount,
             Transfers = transfersCount,
+            TransfersApproval = transfersApprovalCount,
             TransfersConfirmation = transferConfirmationCount
         };
     }
