@@ -5,6 +5,7 @@ using Core.DTOs.Transfer;
 using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -105,7 +106,7 @@ public class CheckTransferHelper(
     private async Task ValidatePickingCancelTransferData()
     {
         using var scope = factory.Services.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<ITransferService>();
+        var service = scope.ServiceProvider.GetRequiredService<ITransferProcessingService>();
         var data = await service.PrepareTransferData(transferId);
         Assert.That(data, Is.Not.Null);
         Assert.That(data.ContainsKey(itemCode), Is.True, $"Transfer data should contain item {itemCode}");

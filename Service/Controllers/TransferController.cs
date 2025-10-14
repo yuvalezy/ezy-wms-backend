@@ -20,7 +20,13 @@ namespace Service.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class TransferController(ITransferService transferService, ITransferLineService transferLineService, ITransferPackageService transferPackageService, ISettings settings) : ControllerBase {
+public class TransferController(
+    ITransferDocumentService transferDocumentService,
+    ITransferContentService transferContentService,
+    ITransferProcessingService transferProcessingService,
+    ITransferLineService transferLineService,
+    ITransferPackageService transferPackageService,
+    ISettings settings) : ControllerBase {
     /// <summary>
     /// Creates a new transfer document (supervisor only)
     /// </summary>
@@ -36,7 +42,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferService.CreateTransfer(transferRequest, HttpContext.GetSession());
+    public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferDocumentService.CreateTransfer(transferRequest, HttpContext.GetSession());
 
     /// <summary>
     /// Gets processing information for a transfer document
@@ -53,7 +59,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<TransferResponse> ProcessInfo(Guid id) => await transferService.GetProcessInfo(id);
+    public async Task<TransferResponse> ProcessInfo(Guid id) => await transferDocumentService.GetProcessInfo(id);
 
 
     /// <summary>
@@ -181,7 +187,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CancelTransfer([FromBody] CancelTransferRequest request) {
         var  sessionInfo = HttpContext.GetSession();
-        bool result      = await transferService.CancelTransfer(request.ID, sessionInfo);
+        bool result      = await transferProcessingService.CancelTransfer(request.ID, sessionInfo);
         return Ok(new { success = result });
     }
 
@@ -202,7 +208,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProcessTransferResponse>> ProcessTransfer([FromBody] ProcessTransferRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var result      = await transferService.ProcessTransfer(request.ID, sessionInfo);
+        var result      = await transferProcessingService.ProcessTransfer(request.ID, sessionInfo);
         return Ok(result);
     }
 
@@ -223,7 +229,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProcessTransferResponse>> ApproveTransfer([FromBody] TransferApprovalRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        var result      = await transferService.ApproveTransferRequest(request, sessionInfo);
+        var result      = await transferProcessingService.ApproveTransferRequest(request, sessionInfo);
         return Ok(result);
     }
 
@@ -240,7 +246,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(typeof(IEnumerable<TransferResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IEnumerable<TransferResponse>> GetTransfers([FromQuery] TransfersRequest request) => await transferService.GetTransfers(request, HttpContext.GetSession().Warehouse);
+    public async Task<IEnumerable<TransferResponse>> GetTransfers([FromQuery] TransfersRequest request) => await transferDocumentService.GetTransfers(request, HttpContext.GetSession().Warehouse);
 
     /// <summary>
     /// Gets a specific transfer document by its ID
@@ -258,7 +264,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<TransferResponse> GetTransfer(Guid id) => await transferService.GetTransfer(id);
+    public async Task<TransferResponse> GetTransfer(Guid id) => await transferDocumentService.GetTransfer(id);
 
     /// <summary>
     /// Gets the content details for a transfer document
@@ -274,7 +280,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<TransferContentResponse>> TransferContent([FromBody] TransferContentRequest request) {
-        return await transferService.GetTransferContent(request);
+        return await transferContentService.GetTransferContent(request);
     }
 
     /// <summary>
@@ -291,7 +297,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<TransferContentTargetDetailResponse>> TransferContentTargetDetail([FromBody] TransferContentTargetDetailRequest request) {
-        return await transferService.GetTransferContentTargetDetail(request);
+        return await transferContentService.GetTransferContentTargetDetail(request);
     }
 
     /// <summary>
@@ -311,7 +317,7 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateContentTargetDetail([FromBody] TransferUpdateContentTargetDetailRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        await transferService.UpdateContentTargetDetail(request, sessionInfo);
+        await transferContentService.UpdateContentTargetDetail(request, sessionInfo);
         return Ok(new { success = true });
     }
 
@@ -332,6 +338,6 @@ public class TransferController(ITransferService transferService, ITransferLineS
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<CreateTransferRequestResponse> CreateTransferRequest([FromBody] CreateTransferRequestRequest request) {
         var sessionInfo = HttpContext.GetSession();
-        return await transferService.CreateTransferRequest(request, sessionInfo);
+        return await transferProcessingService.CreateTransferRequest(request, sessionInfo);
     }
 }

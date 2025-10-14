@@ -1,5 +1,6 @@
 ﻿using Core.Extensions;
 using Core.Interfaces;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ public class CancelTransferReleaseCommit(Guid transferId, string testItem, WebAp
 
     public async Task Execute() {
         using var scope = factory.Services.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<ITransferService>();
+        var service = scope.ServiceProvider.GetRequiredService<ITransferProcessingService>();
         await service.CancelTransfer(transferId, TestConstants.SessionInfo);
 
         var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();

@@ -39,7 +39,9 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPublicService, PublicService>();
-        services.AddScoped<ITransferService, TransferService>();
+        services.AddScoped<ITransferDocumentService, TransferDocumentService>();
+        services.AddScoped<ITransferContentService, TransferContentService>();
+        services.AddScoped<ITransferProcessingService, TransferProcessingService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<ITransferPackageService, TransferPackageService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();

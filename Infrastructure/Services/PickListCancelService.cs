@@ -16,7 +16,7 @@ namespace Infrastructure.Services;
 public class PickListCancelService(
     SystemDbContext db,
     IPickListProcessService pickListProcessService,
-    ITransferService transferService,
+    ITransferDocumentService transferDocumentService,
     ITransferLineService transferLineService,
     ITransferPackageService transferPackageService,
     IPackageLocationService packageLocationService,
@@ -54,8 +54,8 @@ public class PickListCancelService(
             return response.ToDto();
 
         // Create a new transfer for cancelled pick list items
-        var transfer = await transferService.CreateTransfer(new CreateTransferRequest {
-            Name = $"Cancelación Picking {absEntry}", 
+        var transfer = await transferDocumentService.CreateTransfer(new CreateTransferRequest {
+            Name = $"Cancelación Picking {absEntry}",
             Comments = "Reubicación de artículos de picking"
         }, sessionInfo);
 

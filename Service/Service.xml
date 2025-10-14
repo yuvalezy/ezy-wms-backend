@@ -1118,7 +1118,7 @@
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
             </summary>
         </member>
-        <member name="M:Service.Controllers.TransferController.#ctor(Core.Interfaces.ITransferService,Core.Interfaces.ITransferLineService,Core.Services.ITransferPackageService,Core.Interfaces.ISettings)">
+        <member name="M:Service.Controllers.TransferController.#ctor(Core.Services.ITransferDocumentService,Core.Services.ITransferContentService,Core.Services.ITransferProcessingService,Core.Interfaces.ITransferLineService,Core.Services.ITransferPackageService,Core.Interfaces.ISettings)">
             <summary>
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management
             </summary>
