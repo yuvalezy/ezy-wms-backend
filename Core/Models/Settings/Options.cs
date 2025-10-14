@@ -33,6 +33,7 @@ public record Options {
     public bool EnableTransferConfirm { get; init; }
     public bool EnableTransferRequest { get; init; }
     public bool EnableWarehouseTransfer { get; init; }
+    public bool TransferCreateSupervisorRequired { get; init; }
 
     //Packages & Units
     public bool EnablePackages { get; init; }

@@ -1125,13 +1125,13 @@
         </member>
         <member name="M:Service.Controllers.TransferController.CreateTransfer(Core.DTOs.Transfer.CreateTransferRequest)">
             <summary>
-            Creates a new transfer document (supervisor only)
+            Creates a new transfer document
             </summary>
             <param name="transferRequest">The transfer creation request containing source/destination warehouse and details</param>
             <returns>The created transfer document with its details</returns>
             <response code="200">Returns the created transfer</response>
             <response code="400">If the request is invalid</response>
-            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="403">If the user lacks required permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
         <member name="M:Service.Controllers.TransferController.ProcessInfo(System.Guid)">

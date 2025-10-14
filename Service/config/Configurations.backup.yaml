@@ -76,6 +76,9 @@ Options:
   # When enabled, users can transfer items between warehouses
   # Non-supervisor users will require supervisor approval for cross-warehouse transfers
   EnableWarehouseTransfer: false
+  
+  # Whether supervisor approval is required to create inventory transfer (bool, default: false)
+  TransferCreateSupervisorRequired: false
 
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)

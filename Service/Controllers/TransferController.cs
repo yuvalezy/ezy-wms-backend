@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Core.DTOs.General;
 using Core.DTOs.Transfer;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models;
 using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -27,22 +29,57 @@ public class TransferController(
     ITransferLineService transferLineService,
     ITransferPackageService transferPackageService,
     ISettings settings) : ControllerBase {
+
+    private RoleType[] GetRequiredRole(bool supervisorOnly = false) {
+        if (supervisorOnly)
+            return [RoleType.TransferSupervisor];
+
+        if (settings.Options.TransferCreateSupervisorRequired)
+            return [RoleType.Transfer];
+
+        return [RoleType.Transfer, RoleType.TransferSupervisor];
+    }
+
+    private bool HasRequiredRole(SessionInfo sessionInfo, bool supervisorOnly = false) {
+        if (sessionInfo.SuperUser) return true;
+
+        var requiredRole = GetRequiredRole(supervisorOnly);
+        if (sessionInfo.Roles.Any(r => requiredRole.Contains(r)))
+            return true;
+
+        // Check if user has supervisor role when non-supervisor role is required
+        if (!supervisorOnly && sessionInfo.Roles.Contains(RoleType.TransferSupervisor)) {
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
-    /// Creates a new transfer document (supervisor only)
+    /// Creates a new transfer document
     /// </summary>
     /// <param name="transferRequest">The transfer creation request containing source/destination warehouse and details</param>
     /// <returns>The created transfer document with its details</returns>
     /// <response code="200">Returns the created transfer</response>
     /// <response code="400">If the request is invalid</response>
-    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="403">If the user lacks required permissions</response>
     /// <response code="401">If the user is not authenticated</response>
     [HttpPost("create")]
-    [RequireRolePermission(RoleType.TransferSupervisor)]
+    [RequireAnyRole(RoleType.Transfer, RoleType.TransferSupervisor)]
     [ProducesResponseType(typeof(TransferResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<TransferResponse> CreateTransfer([FromBody] CreateTransferRequest transferRequest) => await transferDocumentService.CreateTransfer(transferRequest, HttpContext.GetSession());
+    public async Task<ActionResult<TransferResponse>> CreateTransfer([FromBody] CreateTransferRequest transferRequest) {
+        var sessionInfo = HttpContext.GetSession();
+
+        if (!HasRequiredRole(sessionInfo)) {
+            return Forbid();
+        }
+
+        var result = await transferDocumentService.CreateTransfer(transferRequest, sessionInfo);
+        return Ok(result);
+    }
 
     /// <summary>
     /// Gets processing information for a transfer document
@@ -186,8 +223,13 @@ public class TransferController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CancelTransfer([FromBody] CancelTransferRequest request) {
-        var  sessionInfo = HttpContext.GetSession();
-        bool result      = await transferProcessingService.CancelTransfer(request.ID, sessionInfo);
+        var sessionInfo = HttpContext.GetSession();
+
+        if (!HasRequiredRole(sessionInfo, supervisorOnly: true)) {
+            return Forbid();
+        }
+
+        bool result = await transferProcessingService.CancelTransfer(request.ID, sessionInfo);
         return Ok(new { success = result });
     }
 
