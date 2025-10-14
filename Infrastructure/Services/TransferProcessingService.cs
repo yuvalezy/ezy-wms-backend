@@ -92,8 +92,8 @@ public class TransferProcessingService(
                         WmsAlertType.TransferApprovalRequest,
                         WmsAlertObjectType.Transfer,
                         transfer.Id,
-                        "Transfer Approval Request",
-                        $"{sessionInfo.Name} has requested approval for cross-warehouse transfer #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode}",
+                        "Solicitud de Aprobación de Transferencia",
+                        $"{sessionInfo.Name} ha solicitado aprobación para transferencia entre almacenes #{transfer.Number} de {transfer.WhsCode} a {transfer.TargetWhsCode}",
                         null,
                         $"/transfer/approve/{transfer.Id}"
                     );
@@ -322,8 +322,8 @@ public class TransferProcessingService(
                         WmsAlertType.TransferApproved,
                         WmsAlertObjectType.Transfer,
                         transfer.Id,
-                        "Transfer Approved",
-                        $"Your transfer request #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode} has been approved by {sessionInfo.Name}",
+                        "Transferencia Aprobada",
+                        $"Su solicitud de transferencia #{transfer.Number} de {transfer.WhsCode} a {transfer.TargetWhsCode} ha sido aprobada por {sessionInfo.Name}",
                         null,
                         $"/transfer/process/{transfer.Id}"
                     );
@@ -360,9 +360,9 @@ public class TransferProcessingService(
                 await transaction.CommitAsync();
 
                 // Notify the requester
-                string rejectionMessage = $"Your transfer request #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode} has been rejected by {sessionInfo.Name}";
+                string rejectionMessage = $"Su solicitud de transferencia #{transfer.Number} de {transfer.WhsCode} a {transfer.TargetWhsCode} ha sido rechazada por {sessionInfo.Name}";
                 if (!string.IsNullOrWhiteSpace(request.RejectionReason)) {
-                    rejectionMessage += $". Reason: {request.RejectionReason}";
+                    rejectionMessage += $". Razón: {request.RejectionReason}";
                 }
 
                 if (transfer.CreatedByUserId.HasValue) {
@@ -371,7 +371,7 @@ public class TransferProcessingService(
                         WmsAlertType.TransferRejected,
                         WmsAlertObjectType.Transfer,
                         transfer.Id,
-                        "Transfer Rejected",
+                        "Transferencia Rechazada",
                         rejectionMessage,
                         null,
                         $"/transfer/{transfer.Id}"

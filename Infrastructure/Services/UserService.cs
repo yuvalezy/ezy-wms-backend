@@ -238,13 +238,17 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
 
     public async Task<IEnumerable<User>> GetUsersByRoleAndWarehouseAsync(RoleType role, string warehouse) {
         try {
-            return await dbContext.Users
+            // Load active users with their authorization groups
+            var users = await dbContext.Users
                 .Include(u => u.AuthorizationGroup)
-                .Where(u => u.Active &&
-                            !u.Deleted &&
-                            u.Warehouses.Contains(warehouse) &&
-                            (u.SuperUser || (u.AuthorizationGroup != null && u.AuthorizationGroup.Authorizations.Contains(role))))
+                .Where(u => u.Active && !u.Deleted)
                 .ToListAsync();
+
+            // Filter in memory for collections (Warehouses and Authorizations are stored as JSON)
+            return users.Where(u =>
+                u.Warehouses.Contains(warehouse) &&
+                (u.SuperUser || (u.AuthorizationGroup != null && u.AuthorizationGroup.Authorizations.Contains(role)))
+            ).ToList();
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error retrieving users by role {Role} and warehouse {Warehouse}", role, warehouse);
