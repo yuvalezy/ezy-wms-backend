@@ -15,4 +15,5 @@ public interface ITransferService {
     Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest  request);
     Task                                                   UpdateContentTargetDetail(TransferUpdateContentTargetDetailRequest request, SessionInfo sessionInfo);
     Task<CreateTransferRequestResponse>                    CreateTransferRequest(CreateTransferRequestRequest                 request, SessionInfo sessionInfo);
+    Task<ProcessTransferResponse>                          ApproveTransferRequest(TransferApprovalRequest                     request, SessionInfo sessionInfo);
 }

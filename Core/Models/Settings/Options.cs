@@ -32,6 +32,7 @@ public record Options {
     public bool TransferTargetItems { get; init; }
     public bool EnableTransferConfirm { get; init; }
     public bool EnableTransferRequest { get; init; }
+    public bool EnableWarehouseTransfer { get; init; }
 
     //Packages & Units
     public bool EnablePackages { get; init; }

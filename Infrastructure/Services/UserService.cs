@@ -1,5 +1,6 @@
 using Core.DTOs.Settings;
 using Core.Entities;
+using Core.Enums;
 using Core.Interfaces;
 using Core.Utils;
 using Infrastructure.DbContexts;
@@ -231,6 +232,22 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
         }
         catch (Exception ex) {
             logger.LogError(ex, "Error enabling user {UserId}", id);
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<User>> GetUsersByRoleAndWarehouseAsync(RoleType role, string warehouse) {
+        try {
+            return await dbContext.Users
+                .Include(u => u.AuthorizationGroup)
+                .Where(u => u.Active &&
+                            !u.Deleted &&
+                            u.Warehouses.Contains(warehouse) &&
+                            (u.SuperUser || (u.AuthorizationGroup != null && u.AuthorizationGroup.Authorizations.Contains(role))))
+                .ToListAsync();
+        }
+        catch (Exception ex) {
+            logger.LogError(ex, "Error retrieving users by role {Role} and warehouse {Warehouse}", role, warehouse);
             throw;
         }
     }

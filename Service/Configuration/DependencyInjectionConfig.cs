@@ -7,6 +7,7 @@ using Infrastructure.Auth;
 using Infrastructure.DbContexts;
 using Infrastructure.Services;
 using Infrastructure.SessionManager;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,6 +63,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
         services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
+        services.AddScoped<IWmsAlertService, WmsAlertService>();
 
         // Package Management Services
         services.AddScoped<IPackageContentService, PackageContentService>();
@@ -121,6 +123,10 @@ public static class DependencyInjectionConfig {
 
         services.AddSingleton<CloudSyncBackgroundService>();
         services.AddHostedService<CloudSyncBackgroundService>(provider => provider.GetRequiredService<CloudSyncBackgroundService>());
+
+        // Configure SignalR for real-time notifications
+        services.AddSignalR();
+        services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
 
         switch (settings.ExternalAdapter) {
             // case ExternalAdapterType.SboWindows:

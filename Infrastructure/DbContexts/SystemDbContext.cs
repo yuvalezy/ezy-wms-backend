@@ -13,6 +13,7 @@ public class SystemDbContext : DbContext {
     public DbSet<User>               Users               { get; set; }
     public DbSet<CancellationReason>    CancellationReasons    { get; set; }
     public DbSet<ExternalSystemAlert>   ExternalSystemAlerts   { get; set; }
+    public DbSet<WmsAlert>              WmsAlerts              { get; set; }
 
     // Objects Entities
     public DbSet<GoodsReceipt>      GoodsReceipts      { get; set; }
@@ -64,6 +65,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new AuthorizationGroupConfiguration());
         modelBuilder.ApplyConfiguration(new CancellationReasonConfiguration());
         modelBuilder.ApplyConfiguration(new ExternalSystemAlertConfiguration());
+        modelBuilder.ApplyConfiguration(new WmsAlertConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptLineConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptTargetConfiguration());

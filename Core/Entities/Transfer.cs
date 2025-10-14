@@ -25,6 +25,9 @@ public sealed class Transfer : BaseEntity {
     [StringLength(8)]
     public required string WhsCode { get; set; } = string.Empty;
 
+    [StringLength(8)]
+    public string? TargetWhsCode { get; set; }
+
     // Navigation properties
     public ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
     public ICollection<TransferPackage> Packages { get; set; } = new List<TransferPackage>();

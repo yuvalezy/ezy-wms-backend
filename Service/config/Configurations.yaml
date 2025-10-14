@@ -62,15 +62,20 @@ Options:
   # Price list ID to use when adjusting stock during goods receipt confirmation (nullable int, default: null)
   #GoodsReceiptConfirmationAdjustStockPriceList: 1
 
-  # Transfer Configuration  
+  # Transfer Configuration
   # Whether to enable target item selection in transfers (bool, default: false)
   TransferTargetItems: false
-  
+
   # Whether transfer operations require confirmation step (bool, default: false)
   EnableTransferConfirm: true
-  
+
   # Enable / Disable Stock Transfer Requests (bool, default: false)
   EnableTransferRequest: false
+
+  # Whether to enable cross-warehouse transfers with approval workflow (bool, default: false)
+  # When enabled, users can transfer items between warehouses
+  # Non-supervisor users will require supervisor approval for cross-warehouse transfers
+  EnableWarehouseTransfer: true
 
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)

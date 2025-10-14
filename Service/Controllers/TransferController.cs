@@ -206,6 +206,26 @@ public class TransferController(ITransferService transferService, ITransferLineS
         return Ok(result);
     }
 
+    /// <summary>
+    /// Approves or rejects a cross-warehouse transfer request (supervisor only)
+    /// </summary>
+    /// <param name="request">The approval request containing transfer ID, approval status, and optional rejection reason</param>
+    /// <returns>Response indicating success or failure of the approval/rejection operation</returns>
+    /// <response code="200">Returns the process transfer response</response>
+    /// <response code="400">If the request is invalid or transfer is not in waiting for approval status</response>
+    /// <response code="403">If the user lacks required supervisor permissions</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpPost("approve")]
+    [RequireRolePermission(RoleType.TransferSupervisor)]
+    [ProducesResponseType(typeof(ProcessTransferResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ProcessTransferResponse>> ApproveTransfer([FromBody] TransferApprovalRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        var result      = await transferService.ApproveTransferRequest(request, sessionInfo);
+        return Ok(result);
+    }
 
     /// <summary>
     /// Gets a list of transfer documents with optional filtering

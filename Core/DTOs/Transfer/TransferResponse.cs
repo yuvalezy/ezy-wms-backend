@@ -22,6 +22,7 @@ public class TransferResponse {
     public bool?        IsComplete      { get; set; }
 
     public required string WhsCode { get; set; }
+    public string? TargetWhsCode { get; set; }
 
     public IEnumerable<TransferLineResponse> Lines { get; set; } = new List<TransferLineResponse>();
 
@@ -42,6 +43,7 @@ public class TransferResponse {
             Date            = transfer.Date,
             Status          = transfer.Status,
             WhsCode         = transfer.WhsCode,
+            TargetWhsCode   = transfer.TargetWhsCode,
             Lines           = transfer.Lines.Select(l => TransferLineResponse.FromTransferLine(l)),
             Progress        = 0,
             IsComplete      = false

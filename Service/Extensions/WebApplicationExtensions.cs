@@ -1,5 +1,6 @@
 using System;
 using Infrastructure.DbContexts;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -51,6 +52,9 @@ public static class WebApplicationExtensions {
 
         app.UseAuthorization();
         app.MapControllers();
+
+        // Map SignalR hubs
+        app.MapHub<NotificationHub>("/hubs/notifications");
 
         // Fallback route for React app (SPA)
         app.MapFallbackToFile("index.html");

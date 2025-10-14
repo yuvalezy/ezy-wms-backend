@@ -14,7 +14,9 @@ public class TransferService(
     IExternalSystemAdapter adapter,
     ITransferPackageService transferPackageService,
     ISettings settings,
-    IExternalSystemAlertService alertService) : ITransferService {
+    IExternalSystemAlertService alertService,
+    IWmsAlertService wmsAlertService,
+    IUserService userService) : ITransferService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         var now = DateTime.UtcNow.Date;
         var transfer = new Transfer {
@@ -24,6 +26,7 @@ public class TransferService(
             Date = now,
             Status = ObjectStatus.Open,
             WhsCode = sessionInfo.Warehouse,
+            TargetWhsCode = request.TargetWhsCode ?? sessionInfo.Warehouse,
             Lines = []
         };
 
@@ -186,6 +189,45 @@ public class TransferService(
 
             if (transfer.Status != ObjectStatus.InProgress) {
                 throw new InvalidOperationException("Cannot process transfer if the Status is not In Progress");
+            }
+
+            // Check if this is a cross-warehouse transfer requiring approval
+            bool isCrossWarehouse = transfer.TargetWhsCode != null && transfer.TargetWhsCode != transfer.WhsCode;
+            bool isSupervisor = sessionInfo.Roles.Contains(RoleType.TransferSupervisor) || sessionInfo.SuperUser;
+
+            if (settings.Options.EnableWarehouseTransfer && isCrossWarehouse && !isSupervisor) {
+                // Non-supervisor attempting cross-warehouse transfer - require approval
+                transfer.Status = ObjectStatus.WaitingForApproval;
+                transfer.UpdatedAt = DateTime.UtcNow;
+                transfer.UpdatedByUserId = sessionInfo.Guid;
+                await db.SaveChangesAsync();
+
+                // Get supervisors for the source warehouse
+                var supervisors = await userService.GetUsersByRoleAndWarehouseAsync(
+                    RoleType.TransferSupervisor,
+                    transfer.WhsCode
+                );
+
+                // Create alert for each supervisor
+                foreach (var supervisor in supervisors) {
+                    await wmsAlertService.CreateAlertAsync(
+                        supervisor.Id,
+                        WmsAlertType.TransferApprovalRequest,
+                        WmsAlertObjectType.Transfer,
+                        transfer.Id,
+                        "Transfer Approval Request",
+                        $"{sessionInfo.Name} has requested approval for cross-warehouse transfer #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode}",
+                        null,
+                        $"/transfer/approve/{transfer.Id}"
+                    );
+                }
+
+                await transaction.CommitAsync();
+
+                return new ProcessTransferResponse {
+                    Success = true,
+                    Message = "Transfer submitted for approval"
+                };
             }
 
             // Update transfer status to Processing
@@ -542,6 +584,128 @@ public class TransferService(
                 Success = false,
                 ErrorMessage = ex.Message
             };
+        }
+    }
+
+    public async Task<ProcessTransferResponse> ApproveTransferRequest(TransferApprovalRequest request, SessionInfo sessionInfo) {
+        var transaction = await db.Database.BeginTransactionAsync();
+        try {
+            var transfer = await db.Transfers
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed))
+                .FirstOrDefaultAsync(t => t.Id == request.TransferId);
+
+            if (transfer == null) {
+                throw new KeyNotFoundException($"Transfer with ID {request.TransferId} not found.");
+            }
+
+            if (transfer.Status != ObjectStatus.WaitingForApproval) {
+                throw new InvalidOperationException("Cannot approve/reject transfer that is not waiting for approval");
+            }
+
+            // Verify user has supervisor role
+            bool isSupervisor = sessionInfo.Roles.Contains(RoleType.TransferSupervisor) || sessionInfo.SuperUser;
+            if (!isSupervisor) {
+                throw new UnauthorizedAccessException("Only supervisors can approve or reject transfer requests");
+            }
+
+            if (request.Approved) {
+                // Approval: Change status to InProgress and process the transfer
+                transfer.Status = ObjectStatus.InProgress;
+                transfer.UpdatedAt = DateTime.UtcNow;
+                transfer.UpdatedByUserId = sessionInfo.Guid;
+                await db.SaveChangesAsync();
+
+                // Mark all approval request alerts for this transfer as read
+                var approvalAlerts = await db.WmsAlerts
+                    .Where(a => a.ObjectId == transfer.Id &&
+                                a.AlertType == WmsAlertType.TransferApprovalRequest &&
+                                !a.IsRead)
+                    .ToListAsync();
+
+                foreach (var alert in approvalAlerts) {
+                    alert.IsRead = true;
+                    alert.ReadAt = DateTime.UtcNow;
+                }
+
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Process the transfer (this will create a new transaction internally)
+                var processResult = await ProcessTransfer(request.TransferId, sessionInfo);
+
+                // Notify the requester
+                if (transfer.CreatedByUserId.HasValue) {
+                    await wmsAlertService.CreateAlertAsync(
+                        transfer.CreatedByUserId.Value,
+                        WmsAlertType.TransferApproved,
+                        WmsAlertObjectType.Transfer,
+                        transfer.Id,
+                        "Transfer Approved",
+                        $"Your transfer request #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode} has been approved by {sessionInfo.Name}",
+                        null,
+                        $"/transfer/process/{transfer.Id}"
+                    );
+                }
+
+                return processResult;
+            }
+            else {
+                // Rejection: Change status to Cancelled
+                transfer.Status = ObjectStatus.Cancelled;
+                transfer.UpdatedAt = DateTime.UtcNow;
+                transfer.UpdatedByUserId = sessionInfo.Guid;
+
+                // Update all open lines to cancelled
+                foreach (var line in transfer.Lines) {
+                    line.LineStatus = LineStatus.Closed;
+                    line.UpdatedAt = DateTime.UtcNow;
+                    line.UpdatedByUserId = sessionInfo.Guid;
+                }
+
+                // Mark all approval request alerts for this transfer as read
+                var approvalAlerts = await db.WmsAlerts
+                    .Where(a => a.ObjectId == transfer.Id &&
+                                a.AlertType == WmsAlertType.TransferApprovalRequest &&
+                                !a.IsRead)
+                    .ToListAsync();
+
+                foreach (var alert in approvalAlerts) {
+                    alert.IsRead = true;
+                    alert.ReadAt = DateTime.UtcNow;
+                }
+
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Notify the requester
+                string rejectionMessage = $"Your transfer request #{transfer.Number} from {transfer.WhsCode} to {transfer.TargetWhsCode} has been rejected by {sessionInfo.Name}";
+                if (!string.IsNullOrWhiteSpace(request.RejectionReason)) {
+                    rejectionMessage += $". Reason: {request.RejectionReason}";
+                }
+
+                if (transfer.CreatedByUserId.HasValue) {
+                    await wmsAlertService.CreateAlertAsync(
+                        transfer.CreatedByUserId.Value,
+                        WmsAlertType.TransferRejected,
+                        WmsAlertObjectType.Transfer,
+                        transfer.Id,
+                        "Transfer Rejected",
+                        rejectionMessage,
+                        null,
+                        $"/transfer/{transfer.Id}"
+                    );
+                }
+
+                return new ProcessTransferResponse {
+                    Success = false,
+                    Message = "Transfer rejected"
+                };
+            }
+        }
+        catch (Exception ex) {
+            await transaction.RollbackAsync();
+            throw;
         }
     }
 }

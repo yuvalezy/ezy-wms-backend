@@ -1222,6 +1222,17 @@
             <response code="403">If the user lacks required permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="M:Service.Controllers.TransferController.ApproveTransfer(Core.DTOs.Transfer.TransferApprovalRequest)">
+            <summary>
+            Approves or rejects a cross-warehouse transfer request (supervisor only)
+            </summary>
+            <param name="request">The approval request containing transfer ID, approval status, and optional rejection reason</param>
+            <returns>Response indicating success or failure of the approval/rejection operation</returns>
+            <response code="200">Returns the process transfer response</response>
+            <response code="400">If the request is invalid or transfer is not in waiting for approval status</response>
+            <response code="403">If the user lacks required supervisor permissions</response>
+            <response code="401">If the user is not authenticated</response>
+        </member>
         <member name="M:Service.Controllers.TransferController.GetTransfers(Core.DTOs.Transfer.TransfersRequest)">
             <summary>
             Gets a list of transfer documents with optional filtering
@@ -1403,6 +1414,55 @@
             <response code="500">If a server error occurs</response>
             <response code="403">If the user lacks super user permissions</response>
             <response code="401">If the user is not authenticated</response>
+        </member>
+        <member name="T:Service.Controllers.WmsAlertController">
+            <summary>
+            WMS Alert Controller - Manages internal WMS notification alerts for users
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.WmsAlertController.#ctor(Core.Interfaces.IWmsAlertService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.WmsAlertController})">
+            <summary>
+            WMS Alert Controller - Manages internal WMS notification alerts for users
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.WmsAlertController.GetAlerts(Core.DTOs.Alerts.WmsAlertRequest)">
+            <summary>
+            Gets alerts for the current user
+            </summary>
+            <param name="request">Optional filters for alerts (unread only, limit)</param>
+            <returns>List of alerts for the current user</returns>
+            <response code="200">Returns the list of alerts</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.WmsAlertController.GetUnreadCount">
+            <summary>
+            Gets the count of unread alerts for the current user
+            </summary>
+            <returns>The number of unread alerts</returns>
+            <response code="200">Returns the unread count</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.WmsAlertController.MarkAsRead(System.Guid)">
+            <summary>
+            Marks a specific alert as read
+            </summary>
+            <param name="id">The unique identifier of the alert</param>
+            <returns>Success message if marked as read</returns>
+            <response code="200">Returns success message</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="404">If the alert is not found or doesn't belong to the user</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.WmsAlertController.MarkAllAsRead">
+            <summary>
+            Marks all alerts as read for the current user
+            </summary>
+            <returns>Success message if all alerts marked as read</returns>
+            <response code="200">Returns success message</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="500">If a server error occurs</response>
         </member>
         <member name="M:Service.Extensions.SettingsLoggingExtensions.LogYamlMigrationCandidates(Core.Interfaces.ISettings)">
             <summary>

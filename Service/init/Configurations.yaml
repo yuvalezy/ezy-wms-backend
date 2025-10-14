@@ -75,6 +75,11 @@ Options:
   # Enable / Disable Stock Transfer Requests (bool, default: false)
   EnableTransferRequest: false
 
+  # Whether to enable cross-warehouse transfers with approval workflow (bool, default: false)
+  # When enabled, users can transfer items between warehouses
+  # Non-supervisor users will require supervisor approval for cross-warehouse transfers
+  EnableWarehouseTransfer: false
+
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)
   # Set to true if you plan to use package features
