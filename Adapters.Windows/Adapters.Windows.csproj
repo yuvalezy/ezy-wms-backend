@@ -4,6 +4,7 @@
         <TargetFramework>net9.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,10 +19,10 @@
     <ItemGroup>
         <!-- SAP COM Interop - Windows only -->
         <Reference Include="Interop.SAPbobsCOM">
-            <HintPath>..\..\dependencies\Interop.SAPbobsCOM_100.dll</HintPath>
+          <HintPath>lib\Interop.SAPbobsCOM_100.dll</HintPath>
         </Reference>
         <Reference Include="Interop.SAPbouiCOM">
-            <HintPath>..\..\dependencies\Interop.SAPbouiCOM_100.dll</HintPath>
+          <HintPath>lib\Interop.SAPbouiCOM_100.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.Extensions.Logging.Abstractions">
           <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\9.0.5\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>

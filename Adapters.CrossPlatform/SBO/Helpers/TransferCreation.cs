@@ -6,13 +6,14 @@ using Microsoft.Extensions.Logging;
 namespace Adapters.CrossPlatform.SBO.Helpers;
 
 public class TransferCreation(
-    SboCompany                                       sboCompany,
-    int                                              transferNumber,
-    string                                           whsCode,
-    string?                                          comments,
-    int                                              series,
+    SboCompany sboCompany,
+    int transferNumber,
+    string sourceWarehouse,
+    string? targetWarehouse,
+    string? comments,
+    int series,
     Dictionary<string, TransferCreationDataResponse> data,
-    ILoggerFactory                                   loggerFactory) : IDisposable {
+    ILoggerFactory loggerFactory) : IDisposable {
     
     private readonly ILogger<TransferCreation> logger = loggerFactory.CreateLogger<TransferCreation>();
     
@@ -22,9 +23,7 @@ public class TransferCreation(
     public async Task<ProcessTransferResponse> Execute() {
         var response = new ProcessTransferResponse();
 
-        logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} in warehouse {Warehouse}", 
-            transferNumber, whsCode);
-
+        logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} in warehouse {Warehouse} to {TargetWarehouse}", transferNumber, sourceWarehouse, targetWarehouse ?? sourceWarehouse);
         try {
             var transferData = CreateTransferData();
             
@@ -67,51 +66,46 @@ public class TransferCreation(
         var lines = new List<object>();
         
         foreach (var pair in data) {
-            logger.LogDebug("Adding line for item {ItemCode} with quantity {Quantity}", 
-                pair.Value.ItemCode, pair.Value.Quantity);
+            logger.LogDebug("Adding line for item {ItemCode} with quantity {Quantity}", pair.Value.ItemCode, pair.Value.Quantity);
             
             var value = pair.Value;
             var binAllocations = new List<object>();
             
             // Add source bin allocations
             if (value.SourceBins.Any()) {
-                logger.LogDebug("Adding {Count} source bin allocations for item {ItemCode}", 
-                    value.SourceBins.Count, value.ItemCode);
+                logger.LogDebug("Adding {Count} source bin allocations for item {ItemCode}", value.SourceBins.Count, value.ItemCode);
                 
                 foreach (var source in value.SourceBins) {
                     binAllocations.Add(new {
                         BinActionType = "batFromWarehouse",
                         BinAbsEntry = source.BinEntry,
-                        Quantity = source.Quantity
+                        source.Quantity
                     });
                     
-                    logger.LogDebug("Added source bin {BinEntry} with quantity {Quantity}", 
-                        source.BinEntry, source.Quantity);
+                    logger.LogDebug("Added source bin {BinEntry} with quantity {Quantity}", source.BinEntry, source.Quantity);
                 }
             }
             
             // Add target bin allocations
             if (value.TargetBins.Any()) {
-                logger.LogDebug("Adding {Count} target bin allocations for item {ItemCode}", 
-                    value.TargetBins.Count, value.ItemCode);
+                logger.LogDebug("Adding {Count} target bin allocations for item {ItemCode}", value.TargetBins.Count, value.ItemCode);
                 
                 foreach (var target in value.TargetBins) {
                     binAllocations.Add(new {
                         BinActionType = "batToWarehouse",
                         BinAbsEntry = target.BinEntry,
-                        Quantity = target.Quantity
+                        target.Quantity
                     });
                     
-                    logger.LogDebug("Added target bin {BinEntry} with quantity {Quantity}", 
-                        target.BinEntry, target.Quantity);
+                    logger.LogDebug("Added target bin {BinEntry} with quantity {Quantity}", target.BinEntry, target.Quantity);
                 }
             }
             
             lines.Add(new {
-                ItemCode = value.ItemCode,
-                FromWarehouseCode = whsCode,
-                WarehouseCode = whsCode,
-                Quantity = value.Quantity,
+                value.ItemCode,
+                FromWarehouseCode = sourceWarehouse,
+                WarehouseCode = targetWarehouse ?? sourceWarehouse,
+                value.Quantity,
                 UseBaseUnits = "tYES",
                 StockTransferLinesBinAllocations = binAllocations
             });

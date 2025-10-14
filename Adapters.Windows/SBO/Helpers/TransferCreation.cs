@@ -7,7 +7,15 @@ using SAPbobsCOM;
 
 namespace Adapters.Windows.SBO.Helpers;
 
-public class TransferCreation(SboCompany sboCompany, int transferNumber, string whsCode, string? comments, int series, Dictionary<string, TransferCreationDataResponse> data, ILoggerFactory loggerFactory)
+public class TransferCreation(
+    SboCompany sboCompany,
+    int transferNumber,
+    string sourceWarehouse,
+    string? targetWarehouse,
+    string? comments,
+    int series,
+    Dictionary<string, TransferCreationDataResponse> data,
+    ILoggerFactory loggerFactory)
     : IDisposable {
     private StockTransfer? transfer;
     private Recordset?     rs;
@@ -21,9 +29,7 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
         var      response = new ProcessTransferResponse();
         Company? company  = null;
 
-        logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} in warehouse {Warehouse}", 
-            transferNumber, whsCode);
-
+        logger.LogInformation("Starting transfer creation for WMS transfer {TransferNumber} from warehouse {Warehouse} to warehouse {TargetWarehouse}", transferNumber, sourceWarehouse, targetWarehouse);
         try {
             sboCompany.TransactionMutex.WaitOne();
             
@@ -92,8 +98,8 @@ public class TransferCreation(SboCompany sboCompany, int transferNumber, string 
 
             var value = pair.Value;
             lines.ItemCode          = value.ItemCode;
-            lines.FromWarehouseCode = whsCode;
-            lines.WarehouseCode     = whsCode;
+            lines.FromWarehouseCode = sourceWarehouse;
+            lines.WarehouseCode     = targetWarehouse ?? sourceWarehouse;
             lines.Quantity          = (double)value.Quantity;
             lines.UseBaseUnits      = BoYesNoEnum.tYES;
 

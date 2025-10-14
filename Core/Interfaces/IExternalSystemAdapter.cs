@@ -63,7 +63,8 @@ public interface IExternalSystemAdapter {
     Task<ItemMetadataResponse> UpdateItemMetadataAsync(string itemCode, ItemMetadataRequest request);
 
     // Transfer
-    Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients);
+    Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string sourceWarehouse, string? targetWaarehouse, string? comments, Dictionary<string, TransferCreationDataResponse> data,
+        string[] alertRecipients);
     Task Canceltransfer(int transferEntry);
 
     // Picking methods

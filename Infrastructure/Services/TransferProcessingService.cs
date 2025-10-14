@@ -120,7 +120,7 @@ public class TransferProcessingService(
             var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.Transfer);
 
             // Call external system to create the transfer in SAP B1
-            var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.Comments, transferData, alertRecipients);
+            var result = await adapter.ProcessTransfer(transfer.Number, transfer.WhsCode, transfer.TargetWhsCode, transfer.Comments, transferData, alertRecipients);
 
             if (result.Success) {
                 transferEntry = result.ExternalEntry;

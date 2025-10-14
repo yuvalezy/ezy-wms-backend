@@ -104,6 +104,10 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
 
     public async Task<TransferResponse> GetProcessInfo(Guid id) {
         var transfer = await GetTransfer(id, true);
+        if (transfer.TargetWhsCode != null && transfer.WhsCode != transfer.TargetWhsCode) {
+            transfer.IsComplete = true;
+            return transfer;
+        }
 
         bool hasIncompleteItems = await db.TransferLines
         .Where(l => l.TransferId == id && l.LineStatus != LineStatus.Closed)
@@ -131,7 +135,12 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
             .Where(l => l.Type == SourceTarget.Target && l.LineStatus != LineStatus.Closed)
             .Sum(l => l.Quantity);
 
-            response.Progress = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
+            if (transfer.WhsCode == transfer.TargetWhsCode || transfer.TargetWhsCode == null) {
+                response.Progress = sourceQuantity > 0 ? (int?)((targetQuantity * 100) / sourceQuantity) : 0;
+            }
+            else {
+                response.Progress = 100;
+            }
         }
 
         return response;

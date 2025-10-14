@@ -27,7 +27,6 @@ public class SboAdapter(
     SboCompany sboCompany,
     SboDatabaseService databaseService,
     ILoggerFactory loggerFactory) : IExternalSystemAdapter {
-
     // General 
     public async Task<bool> ValidateUserDefinedFieldAsync(string table, string field) => await generalRepository.ValidateUserDefinedFieldAsync(table, field);
 
@@ -70,9 +69,10 @@ public class SboAdapter(
     public async Task<ItemUnitResponse> GetItemInfo(string itemCode) => await itemRepository.GetItemPurchaseUnits(itemCode);
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string sourceWarehouse, string? targetWarehouse, string? comments,
+        Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
-        using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
+        using var transferCreation = new TransferCreation(sboCompany, transferNumber, sourceWarehouse, targetWarehouse, comments, series, data, loggerFactory);
         try {
             return transferCreation.Execute();
         }
@@ -150,7 +150,8 @@ public class SboAdapter(
     }
 
     //Inventory Counting
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients) {
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data,
+        string[] alertRecipients) {
         int series = await generalRepository.GetSeries("1470000065");
         using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
         try {

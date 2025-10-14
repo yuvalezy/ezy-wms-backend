@@ -112,9 +112,10 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     // Transfers
-    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string whsCode, string? comments, Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
+    public async Task<ProcessTransferResponse> ProcessTransfer(int transferNumber, string sourceWarehouse, string? targetWaarehouse, string? comments,
+        Dictionary<string, TransferCreationDataResponse> data, string[] alertRecipients) {
         int series = await generalRepository.GetSeries(ObjectTypes.oStockTransfer);
-        using var transferCreation = new TransferCreation(sboCompany, transferNumber, whsCode, comments, series, data, loggerFactory);
+        using var transferCreation = new TransferCreation(sboCompany, transferNumber, sourceWarehouse, targetWaarehouse, comments, series, data, loggerFactory);
         try {
             var response = await transferCreation.Execute();
 
