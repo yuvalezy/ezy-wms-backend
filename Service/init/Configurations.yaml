@@ -81,7 +81,7 @@ Options:
   EnableWarehouseTransfer: false
   
   # Whether supervisor approval is required to create inventory transfer (bool, default: false)
-  TransferCreateSupervisorRequired: false
+  TransferCreateSupervisorRequired: true
 
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)
