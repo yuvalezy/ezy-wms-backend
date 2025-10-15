@@ -333,13 +333,13 @@ public class TransferProcessingService(
             }
             else {
                 // Rejection: Change status to Cancelled
-                transfer.Status = ObjectStatus.Cancelled;
+                transfer.Status = ObjectStatus.Rejected;
                 transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
 
-                // Update all open lines to cancelled
+                // Update all open lines to rejected
                 foreach (var line in transfer.Lines) {
-                    line.LineStatus = LineStatus.Closed;
+                    line.LineStatus = LineStatus.Rejected;
                     line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }

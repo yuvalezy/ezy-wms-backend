@@ -4,5 +4,6 @@ public enum LineStatus {
     Open = 0,
     Closed = 1,
     Processing = 2,
-    Finished = 3
+    Finished = 3,
+    Rejected = 4
 }

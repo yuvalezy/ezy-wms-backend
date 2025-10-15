@@ -17,7 +17,7 @@ public class TransferContentService(
         .Where(tl => tl.TransferId == request.ID && tl.LineStatus != LineStatus.Closed);
 
         // Apply filters based on request
-        if (request.BinEntry.HasValue && request.BinEntry > 0) {
+        if (request.BinEntry is > 0) {
             transferLines = transferLines.Where(tl => tl.BinEntry == request.BinEntry.Value);
         }
 

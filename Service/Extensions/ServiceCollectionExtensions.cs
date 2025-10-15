@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using System.Threading.Tasks;
 using Core;
 using Core.Enums;
 using Core.Interfaces;
@@ -69,6 +70,21 @@ public static class ServiceCollectionExtensions {
                     ValidIssuer              = jwtIssuer,
                     ValidAudience            = jwtAudience,
                     IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                };
+
+                // Configure SignalR to accept JWT token from query string
+                options.Events = new JwtBearerEvents {
+                    OnMessageReceived = context => {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        // If the request is for our SignalR hub and has a token
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs")) {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
