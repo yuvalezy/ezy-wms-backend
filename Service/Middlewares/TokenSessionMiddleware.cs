@@ -15,6 +15,12 @@ public class TokenSessionMiddleware(RequestDelegate next, ISessionManager sessio
     public static string MockSessionToken { get; set; }
 #endif
     public async Task InvokeAsync(HttpContext context) {
+        // Skip session check for SignalR hubs (they use JWT token authentication)
+        if (context.Request.Path.StartsWithSegments("/hubs")) {
+            await next(context);
+            return;
+        }
+
         var endpoint                       = context.GetEndpoint();
         var authorizeAttribute             = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>();
         var requireAnyRoleAttribute        = endpoint?.Metadata.GetMetadata<RequireAnyRoleAttribute>();

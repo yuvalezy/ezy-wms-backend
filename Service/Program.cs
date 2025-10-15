@@ -66,6 +66,7 @@ var app = builder.Build();
 
 // Configure request pipeline
 app.ConfigureCorsIfConfigured(allowedOrigins);
+app.UseRouting();
 app.UseAuthentication();
 app.ConfigureDatabase()
 .ConfigureStaticFiles()

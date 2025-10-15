@@ -41,8 +41,6 @@ public static class WebApplicationExtensions {
     }
 
     public static WebApplication ConfigureRequestPipeline(this WebApplication app) {
-        app.UseRouting();
-
         if (app.Environment.IsDevelopment()) {
             app.ConfigureDevelopmentMiddleware();
         }
@@ -66,13 +64,19 @@ public static class WebApplicationExtensions {
         // Add Content Security Policy for development
         if (app.Environment.IsDevelopment()) {
             app.Use(async (ctx, next) => {
-                // Minimal policy that keeps most protections
-                const string csp =
+                // Get the host dynamically to support WebSocket connections
+                var host = ctx.Request.Host.Host;
+                var port = ctx.Request.Host.Port;
+                var wsOrigin = port.HasValue ? $"ws://{host}:{port} wss://{host}:{port}" : $"ws://{host} wss://{host}";
+                var httpOrigin = port.HasValue ? $"http://{host}:{port} https://{host}:{port}" : $"http://{host} https://{host}";
+
+                // Minimal policy that keeps most protections and allows WebSocket for SignalR
+                var csp =
                     "default-src 'self'; " +
                     "script-src 'self' 'unsafe-eval'; " +   //  <— allows eval / new Function()
                     "style-src  'self' 'unsafe-inline'; " + //  Nitro injects inline <style>
                     "img-src    'self' data:; " +
-                    "connect-src 'self' https://your-api-host.com;";
+                    $"connect-src 'self' {wsOrigin} {httpOrigin};";
 
                 ctx.Response.Headers["Content-Security-Policy"] = csp;
                 await next();

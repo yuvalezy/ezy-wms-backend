@@ -325,7 +325,7 @@ public class TransferProcessingService(
                         "Transferencia Aprobada",
                         $"Su solicitud de transferencia #{transfer.Number} de {transfer.WhsCode} a {transfer.TargetWhsCode} ha sido aprobada por {sessionInfo.Name}",
                         null,
-                        $"/transfer/process/{transfer.Id}"
+                        $"/transfer/{transfer.Id}"
                     );
                 }
 
