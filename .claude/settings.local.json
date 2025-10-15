@@ -25,7 +25,10 @@
       "Bash(find:*)",
       "Bash(dotnet test:*)",
       "Read(//d/source/node/light_wms/src/pages/transfer/**)",
-      "Read(//d/source/node/light_wms/src/pages/**)"
+      "Read(//d/source/node/light_wms/src/pages/**)",
+      "Read(//d/source/ezy-wms/ezy-wms-frontend/src/pages/transfer/**)",
+      "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/components/**)",
+      "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/**)"
     ],
     "deny": []
   }

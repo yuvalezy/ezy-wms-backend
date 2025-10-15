@@ -16,7 +16,8 @@ public class TransferProcessingService(
     ISettings settings,
     IExternalSystemAlertService alertService,
     IWmsAlertService wmsAlertService,
-    IUserService userService) : ITransferProcessingService {
+    IUserService userService,
+    IApprovalWorkflowService approvalWorkflowService) : ITransferProcessingService {
     public async Task<bool> CancelTransfer(Guid id, SessionInfo sessionInfo) {
         var transfer = await db.Transfers.FindAsync(id);
         if (transfer == null) {
@@ -78,6 +79,12 @@ public class TransferProcessingService(
                 transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
                 await db.SaveChangesAsync();
+
+                // Create approval workflow record
+                await approvalWorkflowService.CreateApprovalRequestAsync(
+                    transfer.Id,
+                    ApprovalObjectType.Transfer,
+                    sessionInfo);
 
                 // Get supervisors for the source warehouse
                 var supervisors = await userService.GetUsersByRoleAndWarehouseAsync(
@@ -291,7 +298,14 @@ public class TransferProcessingService(
             }
 
             if (request.Approved) {
-                // Approval: Change status to InProgress and process the transfer
+                // Approval: Update approval workflow
+                await approvalWorkflowService.ApproveAsync(
+                    transfer.Id,
+                    ApprovalObjectType.Transfer,
+                    sessionInfo,
+                    null);
+
+                // Change status to InProgress and process the transfer
                 transfer.Status = ObjectStatus.InProgress;
                 transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
@@ -332,7 +346,15 @@ public class TransferProcessingService(
                 return processResult;
             }
             else {
-                // Rejection: Change status to Cancelled
+                // Rejection: Update approval workflow
+                await approvalWorkflowService.RejectAsync(
+                    transfer.Id,
+                    ApprovalObjectType.Transfer,
+                    request.RejectionReason ?? "No reason provided",
+                    sessionInfo,
+                    null);
+
+                // Change status to Rejected
                 transfer.Status = ObjectStatus.Rejected;
                 transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;

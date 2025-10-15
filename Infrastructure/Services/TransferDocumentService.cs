@@ -5,6 +5,7 @@ using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Infrastructure.Services;
 
@@ -123,8 +124,16 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
         return transfer;
     }
 
-    private static TransferResponse GetTransferResponse(bool progress, Transfer transfer, bool includeLines = true) {
+    private TransferResponse GetTransferResponse(bool progress, Transfer transfer, bool includeLines = true) {
         var response = TransferResponse.FromTransfer(transfer, includeLines);
+
+        // Load approval workflow if exists
+        var approvalWorkflow = db.ApprovalWorkflows
+            .Include(aw => aw.RequestedByUser)
+            .Include(aw => aw.ReviewedByUser)
+            .FirstOrDefault(aw => aw.ObjectId == transfer.Id && aw.ObjectType == ApprovalObjectType.Transfer);
+
+        response.ApprovalWorkflow = approvalWorkflow;
 
         if (progress && transfer.Lines.Any()) {
             decimal sourceQuantity = transfer.Lines

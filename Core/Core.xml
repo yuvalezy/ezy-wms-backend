@@ -783,6 +783,36 @@
             </summary>
             <returns>List of validation error messages, empty if valid</returns>
         </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.CreateApprovalRequestAsync(System.Guid,Core.Enums.ApprovalObjectType,Core.Models.SessionInfo)">
+            <summary>
+            Creates a new approval workflow request
+            </summary>
+        </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.ApproveAsync(System.Guid,Core.Enums.ApprovalObjectType,Core.Models.SessionInfo,System.String)">
+            <summary>
+            Approves an approval workflow
+            </summary>
+        </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.RejectAsync(System.Guid,Core.Enums.ApprovalObjectType,System.String,Core.Models.SessionInfo,System.String)">
+            <summary>
+            Rejects an approval workflow
+            </summary>
+        </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.CancelAsync(System.Guid,Core.Enums.ApprovalObjectType)">
+            <summary>
+            Cancels a pending approval workflow
+            </summary>
+        </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.GetApprovalWorkflowAsync(System.Guid,Core.Enums.ApprovalObjectType)">
+            <summary>
+            Gets the approval workflow for a specific object
+            </summary>
+        </member>
+        <member name="M:Core.Services.IApprovalWorkflowService.HasPendingApprovalAsync(System.Guid,Core.Enums.ApprovalObjectType)">
+            <summary>
+            Checks if an object has a pending approval
+            </summary>
+        </member>
         <member name="T:Core.Services.IExternalCommandService">
             <summary>
             Service for executing external commands

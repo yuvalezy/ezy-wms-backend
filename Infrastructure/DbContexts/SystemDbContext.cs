@@ -14,6 +14,7 @@ public class SystemDbContext : DbContext {
     public DbSet<CancellationReason>    CancellationReasons    { get; set; }
     public DbSet<ExternalSystemAlert>   ExternalSystemAlerts   { get; set; }
     public DbSet<WmsAlert>              WmsAlerts              { get; set; }
+    public DbSet<ApprovalWorkflow>      ApprovalWorkflows      { get; set; }
 
     // Objects Entities
     public DbSet<GoodsReceipt>      GoodsReceipts      { get; set; }
@@ -66,6 +67,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new CancellationReasonConfiguration());
         modelBuilder.ApplyConfiguration(new ExternalSystemAlertConfiguration());
         modelBuilder.ApplyConfiguration(new WmsAlertConfiguration());
+        modelBuilder.ApplyConfiguration(new ApprovalWorkflowConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptLineConfiguration());
         modelBuilder.ApplyConfiguration(new GoodsReceiptTargetConfiguration());

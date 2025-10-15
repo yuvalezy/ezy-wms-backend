@@ -66,6 +66,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
         services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
         services.AddScoped<IWmsAlertService, WmsAlertService>();
+        services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
 
         // Package Management Services
         services.AddScoped<IPackageContentService, PackageContentService>();

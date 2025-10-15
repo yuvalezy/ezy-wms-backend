@@ -23,6 +23,9 @@ public class TransferResponse {
 
     public required string WhsCode { get; set; }
     public string? TargetWhsCode { get; set; }
+    public string? SourceWhsCode => WhsCode;
+
+    public ApprovalWorkflow? ApprovalWorkflow { get; set; }
 
     public IEnumerable<TransferLineResponse> Lines { get; set; } = new List<TransferLineResponse>();
 
