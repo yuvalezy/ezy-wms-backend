@@ -24,11 +24,13 @@ public class UtcDateTimeConverter : JsonConverter<DateTime>
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        // Ensure the datetime is in UTC
-        var utcDateTime = value.Kind == DateTimeKind.Unspecified 
-            ? DateTime.SpecifyKind(value, DateTimeKind.Utc) 
-            : value.ToUniversalTime();
-        
+        // All DateTime values in our database are stored as UTC (using DateTime.UtcNow and GETUTCDATE())
+        // When EF Core reads them back, they may have Kind=Unspecified or Kind=Local
+        // We should treat them as UTC values and NOT call ToUniversalTime() which would add the UTC offset
+        var utcDateTime = value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
         // Write in ISO 8601 format with Z suffix
         writer.WriteStringValue(utcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.FFF'Z'", CultureInfo.InvariantCulture));
     }
@@ -61,12 +63,14 @@ public class NullableUtcDateTimeConverter : JsonConverter<DateTime?>
             writer.WriteNullValue();
             return;
         }
-        
-        // Ensure the datetime is in UTC
-        var utcDateTime = value.Value.Kind == DateTimeKind.Unspecified 
-            ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) 
-            : value.Value.ToUniversalTime();
-        
+
+        // All DateTime values in our database are stored as UTC (using DateTime.UtcNow and GETUTCDATE())
+        // When EF Core reads them back, they may have Kind=Unspecified or Kind=Local
+        // We should treat them as UTC values and NOT call ToUniversalTime() which would add the UTC offset
+        var utcDateTime = value.Value.Kind == DateTimeKind.Utc
+            ? value.Value
+            : DateTime.SpecifyKind(value.Value, DateTimeKind.Utc);
+
         // Write in ISO 8601 format with Z suffix
         writer.WriteStringValue(utcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.FFF'Z'", CultureInfo.InvariantCulture));
     }

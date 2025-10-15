@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Infrastructure.Services;
 
-public class EmailTemplateService : IEmailTemplateService {
+public class EmailTemplateService(ISettings settings) : IEmailTemplateService {
     public string GenerateAlertEmailHtml(WmsAlert alert, string userName) {
         var sb = new StringBuilder();
 
@@ -48,10 +48,11 @@ public class EmailTemplateService : IEmailTemplateService {
         }
 
         // Alert details
+        var localTime = ConvertToLocalTime(alert.CreatedAt);
         sb.AppendLine("                            <div style='background-color: #f8f9fa; border-left: 4px solid #0066cc; padding: 15px; margin: 20px 0; border-radius: 4px;'>");
         sb.AppendLine("                                <h3 style='margin: 0 0 10px 0; color: #333; font-size: 14px; font-weight: bold;'>Detalles de la Alerta:</h3>");
         sb.AppendLine($"                                <p style='margin: 5px 0; color: #666; font-size: 13px;'><strong>Tipo:</strong> {GetAlertTypeDescription(alert.AlertType)}</p>");
-        sb.AppendLine($"                                <p style='margin: 5px 0; color: #666; font-size: 13px;'><strong>Fecha:</strong> {alert.CreatedAt:dd/MM/yyyy HH:mm}</p>");
+        sb.AppendLine($"                                <p style='margin: 5px 0; color: #666; font-size: 13px;'><strong>Fecha:</strong> {localTime:dd/MM/yyyy hh:mm tt}</p>");
         sb.AppendLine($"                                <p style='margin: 5px 0; color: #666; font-size: 13px;'><strong>Objeto:</strong> {GetObjectTypeDescription(alert.ObjectType)}</p>");
         sb.AppendLine("                            </div>");
 
@@ -76,6 +77,24 @@ public class EmailTemplateService : IEmailTemplateService {
         sb.AppendLine("</html>");
 
         return sb.ToString();
+    }
+
+    private DateTime ConvertToLocalTime(DateTime utcTime) {
+        try {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(settings.Smtp.TimeZoneId);
+            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, timeZone);
+        }
+        catch {
+            // Fallback to America/Panama if timezone not found
+            try {
+                var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Panama");
+                return TimeZoneInfo.ConvertTimeFromUtc(utcTime, timeZone);
+            }
+            catch {
+                // If all else fails, return UTC time
+                return utcTime;
+            }
+        }
     }
 
     private static string GetAlertColor(WmsAlertType alertType) {

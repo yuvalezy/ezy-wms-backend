@@ -10,4 +10,5 @@ public class SmtpSettingsResponse {
     public string FromEmail { get; set; } = string.Empty;
     public string FromName { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; }
+    public string TimeZoneId { get; set; } = string.Empty;
 }

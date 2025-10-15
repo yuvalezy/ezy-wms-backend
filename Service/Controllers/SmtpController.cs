@@ -61,7 +61,8 @@ public class SmtpController(
                 HasPassword = !string.IsNullOrEmpty(settings.Smtp.Password),
                 FromEmail = settings.Smtp.FromEmail,
                 FromName = settings.Smtp.FromName,
-                TimeoutSeconds = settings.Smtp.TimeoutSeconds
+                TimeoutSeconds = settings.Smtp.TimeoutSeconds,
+                TimeZoneId = settings.Smtp.TimeZoneId
             };
 
             return Ok(response);

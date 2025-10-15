@@ -34,4 +34,8 @@ public class SmtpSettingsRequest {
 
     [Range(5, 300, ErrorMessage = "El timeout debe estar entre 5 y 300 segundos")]
     public int TimeoutSeconds { get; set; } = 30;
+
+    [Required(ErrorMessage = "El TimeZone ID es requerido")]
+    [MaxLength(100)]
+    public required string TimeZoneId { get; set; } = "America/Panama";
 }

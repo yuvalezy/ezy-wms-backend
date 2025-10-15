@@ -10,4 +10,5 @@ public class SmtpSettings {
     public string FromEmail { get; set; } = string.Empty;
     public string FromName { get; set; } = "EzyWMS";
     public int TimeoutSeconds { get; set; } = 30;
+    public string TimeZoneId { get; set; } = "America/Panama";
 }
