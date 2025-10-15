@@ -305,6 +305,36 @@
             Manually triggered by user action
             </summary>
         </member>
+        <member name="M:Core.Interfaces.IEmailService.SendEmailAsync(System.String,System.String,System.String)">
+            <summary>
+            Sends an email asynchronously
+            </summary>
+            <param name="to">Recipient email address</param>
+            <param name="subject">Email subject</param>
+            <param name="htmlBody">HTML body of the email</param>
+            <returns>True if email was sent successfully, false otherwise</returns>
+        </member>
+        <member name="M:Core.Interfaces.IEmailService.TestSmtpConnectionAsync(System.String)">
+            <summary>
+            Tests the SMTP connection and sends a test email
+            </summary>
+            <param name="testEmailAddress">Email address to send test email to</param>
+            <returns>True if connection test and email sending succeeded</returns>
+        </member>
+        <member name="M:Core.Interfaces.IEmailService.IsSmtpConfigured">
+            <summary>
+            Checks if SMTP is configured and enabled
+            </summary>
+            <returns>True if SMTP is ready to send emails</returns>
+        </member>
+        <member name="M:Core.Interfaces.IEmailTemplateService.GenerateAlertEmailHtml(Core.Entities.WmsAlert,System.String)">
+            <summary>
+            Generates an HTML email template for a WMS alert
+            </summary>
+            <param name="alert">The alert to generate email content for</param>
+            <param name="userName">The name of the user receiving the alert</param>
+            <returns>HTML string for the email body</returns>
+        </member>
         <member name="M:Core.Interfaces.IExternalSystemAdapter.GetItemMetadataAsync(System.String)">
             <summary>
             Retrieves item metadata from the external system by item code

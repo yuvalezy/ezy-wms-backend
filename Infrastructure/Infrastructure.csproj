@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.14.1" />
       <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.8" />
       <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.9" />

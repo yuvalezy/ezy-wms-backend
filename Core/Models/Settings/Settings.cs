@@ -17,4 +17,5 @@ public class Settings : ISettings {
     public BackgroundServicesSettings BackgroundServices { get; set; } = new();
     public ExternalCommandsSettings ExternalCommands { get; set; } = new();
     public List<PickingPostProcessorSettings> PickingPostProcessingProcessors { get; set; } = [];
+    public SmtpSettings Smtp { get; set; } = new();
 }

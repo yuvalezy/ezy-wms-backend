@@ -68,6 +68,10 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IWmsAlertService, WmsAlertService>();
         services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
 
+        // Email Services
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
+
         // Package Management Services
         services.AddScoped<IPackageContentService, PackageContentService>();
         services.AddScoped<IPackageValidationService, PackageValidationService>();

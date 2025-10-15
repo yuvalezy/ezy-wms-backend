@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Core.Interfaces;
 using Core.Models.Settings;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Check for test mode arguments
 if (args.Length > 0 && args[0] == "--test-sbo") {
     await SboConnectionTester.RunTest(builder.Configuration);
+    return;
+}
+
+if (args.Length > 0 && args[0] == "--test-email") {
+    await EmailTester.RunTest(builder.Configuration);
     return;
 }
 

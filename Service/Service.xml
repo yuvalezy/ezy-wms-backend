@@ -1113,6 +1113,38 @@
             <response code="403">If the user lacks required permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="T:Service.Controllers.SmtpController">
+            <summary>
+            SMTP Configuration Controller - Manages SMTP email settings for alert notifications
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.SmtpController.#ctor(Core.Interfaces.ISettings,Core.Interfaces.IEmailService,Core.Interfaces.IUserService,Microsoft.Extensions.Logging.ILogger{Service.Controllers.SmtpController})">
+            <summary>
+            SMTP Configuration Controller - Manages SMTP email settings for alert notifications
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.SmtpController.GetSettings">
+            <summary>
+            Gets the current SMTP configuration (passwords are masked for security)
+            </summary>
+            <returns>Current SMTP settings</returns>
+            <response code="200">Returns the SMTP settings</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user is not a super user</response>
+            <response code="500">If a server error occurs</response>
+        </member>
+        <member name="M:Service.Controllers.SmtpController.TestConnection(Service.Controllers.TestSmtpRequest)">
+            <summary>
+            Tests the SMTP connection by sending a test email
+            </summary>
+            <param name="request">Test email request containing the recipient email address</param>
+            <returns>Success or failure message</returns>
+            <response code="200">Returns success message if test email sent</response>
+            <response code="400">If the email address is invalid or SMTP is not configured</response>
+            <response code="401">If the user is not authenticated</response>
+            <response code="403">If the user is not a super user</response>
+            <response code="500">If a server error occurs</response>
+        </member>
         <member name="T:Service.Controllers.TransferController">
             <summary>
             Transfer Controller - Manages inventory transfer operations between warehouses including creation, processing, and line item management

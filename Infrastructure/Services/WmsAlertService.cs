@@ -12,6 +12,9 @@ namespace Infrastructure.Services;
 public class WmsAlertService(
     SystemDbContext context,
     IHubContext<NotificationHub> hubContext,
+    IUserService userService,
+    IEmailService emailService,
+    IEmailTemplateService emailTemplateService,
     ILogger<WmsAlertService> logger) : IWmsAlertService {
 
     public async Task<WmsAlert> CreateAlertAsync(
@@ -51,6 +54,34 @@ public class WmsAlertService(
         catch (Exception ex) {
             logger.LogWarning(ex, "Failed to send SignalR notification for alert {AlertId}", alert.Id);
             // Don't throw - alert is still saved in database
+        }
+
+        // Send email notification if user has email configured and SMTP is enabled
+        try {
+            if (!emailService.IsSmtpConfigured()) {
+                logger.LogDebug("SMTP not configured, skipping email notification for alert {AlertId}", alert.Id);
+                return alert;
+            }
+
+            var user = await userService.GetUserAsync(userId);
+            if (user != null && !string.IsNullOrEmpty(user.Email)) {
+                var emailHtml = emailTemplateService.GenerateAlertEmailHtml(alert, user.FullName);
+                var emailSent = await emailService.SendEmailAsync(user.Email, title, emailHtml);
+
+                if (emailSent) {
+                    logger.LogInformation("Email notification sent for alert {AlertId} to {Email}", alert.Id, user.Email);
+                }
+                else {
+                    logger.LogWarning("Failed to send email notification for alert {AlertId} to {Email}", alert.Id, user.Email);
+                }
+            }
+            else {
+                logger.LogDebug("User {UserId} has no email configured, skipping email notification", userId);
+            }
+        }
+        catch (Exception ex) {
+            logger.LogWarning(ex, "Failed to send email notification for alert {AlertId}", alert.Id);
+            // Don't throw - alert is still saved in database and SignalR was sent
         }
 
         return alert;

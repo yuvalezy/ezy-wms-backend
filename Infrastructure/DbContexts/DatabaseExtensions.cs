@@ -6,7 +6,6 @@ using Core.Utils;
 namespace Infrastructure.DbContexts;
 
 public static class DatabaseExtensions {
-    public static Guid AdminUserId { get; private set; } = Guid.Empty;
     public static Guid SystemUserId { get; private set; } = Guid.Empty;
     public static void EnsureDatabaseCreated(this IServiceProvider services) {
         using var scope   = services.CreateScope();
@@ -24,10 +23,8 @@ public static class DatabaseExtensions {
     private static void SeedDefaultAdminUser(SystemDbContext context) {
         const string email = "admin@localhost";
         
-        // Check if default admin user already exists
-        var user = context.Users.FirstOrDefault(u => u.Email == email);
-        if (user != null) {
-            AdminUserId = user.Id;
+        // Check if user exists
+        if (context.Users.Any()) {
             return;
         }
 
@@ -46,7 +43,6 @@ public static class DatabaseExtensions {
 
         context.Users.Add(defaultAdmin);
         context.SaveChanges();
-        AdminUserId = defaultAdmin.Id;
     }
 
     private static void SeedSystemUser(SystemDbContext context) {

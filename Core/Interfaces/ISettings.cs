@@ -17,4 +17,5 @@ public interface ISettings {
     public BackgroundServicesSettings BackgroundServices { get; set; }
     public ExternalCommandsSettings ExternalCommands { get; set; }
     public List<PickingPostProcessorSettings> PickingPostProcessingProcessors { get; set; }
+    public SmtpSettings Smtp { get; set; }
 }
