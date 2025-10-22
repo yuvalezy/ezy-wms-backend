@@ -28,7 +28,8 @@
       "Read(//d/source/node/light_wms/src/pages/**)",
       "Read(//d/source/ezy-wms/ezy-wms-frontend/src/pages/transfer/**)",
       "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/components/**)",
-      "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/**)"
+      "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/**)",
+      "Read(//d/source/template/ezy-portal/backend/**)"
     ],
     "deny": []
   }

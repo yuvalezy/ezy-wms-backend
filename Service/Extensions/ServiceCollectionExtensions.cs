@@ -184,13 +184,12 @@ public static class ServiceCollectionExtensions {
     }
 
     public static IServiceCollection AddCustomLogging(this IServiceCollection services, IHostEnvironment environment) {
+        // Note: Serilog is configured in Program.cs before the host is built
+        // This method is kept for any additional logging configuration if needed
+
         services.AddLogging(config => {
-            if (environment.IsDevelopment()) {
-                config.AddConsole();
-                config.AddDebug();
-            }
-            // Add Windows Event Log only on Windows
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            // Add Windows Event Log only on Windows (in addition to Serilog)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !environment.IsDevelopment()) {
                 config.AddEventLog();
             }
         });

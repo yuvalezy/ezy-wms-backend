@@ -8,8 +8,19 @@ using Microsoft.Extensions.Hosting;
 using Service.Configuration;
 using Service.Extensions;
 using Service.Testing;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Check for test mode arguments
 if (args.Length > 0 && args[0] == "--test-sbo") {

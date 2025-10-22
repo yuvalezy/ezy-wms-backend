@@ -53,6 +53,11 @@
 
         <!-- Crystal Reports - Note: Limited .NET Core support -->
 
+        <!-- Logging packages -->
+        <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+
         <!-- Other packages -->
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
