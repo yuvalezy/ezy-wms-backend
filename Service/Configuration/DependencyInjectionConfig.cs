@@ -135,6 +135,12 @@ public static class DependencyInjectionConfig {
         services.AddSignalR();
         services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
 
+        // Configure Presence Tracking
+        if (settings.PresenceTracking.Type == SessionManagementType.InMemory)
+            services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        else
+            services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
+
         switch (settings.ExternalAdapter) {
             // case ExternalAdapterType.SboWindows:
             //     SboWindowsDependencyInjection.ConfigureServices(services);

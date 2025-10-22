@@ -9,6 +9,7 @@ public class Settings : ISettings {
     public Dictionary<string, CustomField[]>? CustomFields { get; set; }
     public Dictionary<string, WarehouseSettings>? Warehouses { get; set; }
     public SessionManagementSettings SessionManagement { get; set; } = new();
+    public PresenceTrackingSettings PresenceTracking { get; set; } = new();
     public SboSettings? SboSettings { get; set; }
     public ExternalAdapterType ExternalAdapter { get; set; } = new();
     public PackageSettings Package { get; set; } = new();

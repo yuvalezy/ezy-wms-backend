@@ -375,6 +375,38 @@
             <param name="itemCode">The item code to retrieve metadata for</param>
             <returns>Item metadata response or null if not found</returns>  
         </member>
+        <member name="T:Core.Interfaces.IPresenceTracker">
+            <summary>
+            Service for tracking online presence of users
+            </summary>
+        </member>
+        <member name="M:Core.Interfaces.IPresenceTracker.UserConnectedAsync(System.String)">
+            <summary>
+            Mark a user as connected
+            </summary>
+            <param name="userId">The user ID</param>
+            <returns>Task that completes when the operation is done</returns>
+        </member>
+        <member name="M:Core.Interfaces.IPresenceTracker.UserDisconnectedAsync(System.String)">
+            <summary>
+            Mark a user as disconnected
+            </summary>
+            <param name="userId">The user ID</param>
+            <returns>Task that completes when the operation is done</returns>
+        </member>
+        <member name="M:Core.Interfaces.IPresenceTracker.GetOnlineUsersAsync">
+            <summary>
+            Get all currently online user IDs
+            </summary>
+            <returns>Array of online user IDs</returns>
+        </member>
+        <member name="M:Core.Interfaces.IPresenceTracker.IsUserOnlineAsync(System.String)">
+            <summary>
+            Check if a specific user is online
+            </summary>
+            <param name="userId">The user ID to check</param>
+            <returns>True if the user is online, false otherwise</returns>
+        </member>
         <member name="P:Core.Models.Settings.BackgroundPickListSyncOptions.CheckClosedPickLists">
             <summary>
             Whether to check for closed pick lists during sync
