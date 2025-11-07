@@ -626,6 +626,55 @@
             <response code="404">If the goods receipt document is not found</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="T:Service.Controllers.HealthController">
+            <summary>
+            Health Check Controller - Provides health check endpoints for monitoring
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.HealthController.GetHealth">
+            <summary>
+            Basic health check endpoint
+            </summary>
+            <returns>Health status</returns>
+            <response code="200">Service is healthy</response>
+        </member>
+        <member name="M:Service.Controllers.HealthController.GetDetailedHealth">
+            <summary>
+            Detailed health check with version information
+            </summary>
+            <returns>Detailed health status</returns>
+            <response code="200">Service is healthy with details</response>
+        </member>
+        <member name="T:Service.Controllers.HealthResponse">
+            <summary>
+            Basic health response
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.HealthResponse.Status">
+            <summary>
+            Current health status
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.HealthResponse.Timestamp">
+            <summary>
+            UTC timestamp of the health check
+            </summary>
+        </member>
+        <member name="T:Service.Controllers.DetailedHealthResponse">
+            <summary>
+            Detailed health response with additional information
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.DetailedHealthResponse.Version">
+            <summary>
+            Application version
+            </summary>
+        </member>
+        <member name="P:Service.Controllers.DetailedHealthResponse.Uptime">
+            <summary>
+            Service uptime
+            </summary>
+        </member>
         <member name="T:Service.Controllers.ItemsController">
             <summary>
             Item Controller - Provides item/barcode/bin location utilities and metadata management
@@ -1501,6 +1550,31 @@
             Logs configurations that will be moved to YAML files during migration
             </summary>
             <param name="settings">The settings object to log</param>
+        </member>
+        <member name="T:Service.Services.UptimeKumaHeartbeatService">
+            <summary>
+            Background service that sends periodic heartbeat signals to Uptime Kuma.
+            Implements push-based monitoring for intranet services.
+            </summary>
+        </member>
+        <member name="M:Service.Services.UptimeKumaHeartbeatService.#ctor(Microsoft.Extensions.Logging.ILogger{Service.Services.UptimeKumaHeartbeatService},Microsoft.Extensions.Configuration.IConfiguration,System.Net.Http.IHttpClientFactory)">
+            <summary>
+            Background service that sends periodic heartbeat signals to Uptime Kuma.
+            Implements push-based monitoring for intranet services.
+            </summary>
+        </member>
+        <member name="M:Service.Services.UptimeKumaHeartbeatService.SendHeartbeatAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Sends a heartbeat signal to Uptime Kuma.
+            </summary>
+            <param name="status">Status to send (up or down)</param>
+            <param name="message">Optional message</param>
+            <param name="cancellationToken">Cancellation token</param>
+        </member>
+        <member name="M:Service.Services.UptimeKumaHeartbeatService.MaskUrl(System.String)">
+            <summary>
+            Masks sensitive parts of the URL for logging.
+            </summary>
         </member>
         <member name="T:Service.Swagger.AuthorizeOperationFilter">
             <summary>

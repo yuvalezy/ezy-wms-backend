@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Service.Configuration;
 using Service.Extensions;
+using Service.Services;
 using Service.Testing;
 using Serilog;
 
@@ -73,6 +74,9 @@ services.AddSwaggerServices(builder.Environment);
 services.AddCustomLogging(builder.Environment);
 services.AddServerConfiguration(builder.Environment);
 services.AddCustomRateLimiting();
+
+// Register Uptime Kuma heartbeat service
+services.AddHostedService<UptimeKumaHeartbeatService>();
 
 // Get CORS origins for later use
 string[]? allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
