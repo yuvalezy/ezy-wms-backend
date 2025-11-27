@@ -20,6 +20,7 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
         "/api/license",
         "/api/general/userInfo",
         "/api/general/warehouses",
+        "/api/wmsalert",
         "/swagger",
         "/health"
     };
