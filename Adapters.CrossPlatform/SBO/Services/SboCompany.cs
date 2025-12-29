@@ -186,6 +186,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         if (response.IsSuccessStatusCode) {
             string responseContent = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("Service Layer response for {Endpoint}: {ResponseContent}", endpoint, responseContent);
             logger.LogInformation("{Method} successful for endpoint {Endpoint}", methodName, endpoint);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -200,10 +201,9 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     private async Task<(bool success, string? errorMessage)> HandleErrorResponse(HttpResponseMessage response, string methodName, string endpoint) {
         if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) {
             string errorContent = await response.Content.ReadAsStringAsync();
+            logger.LogDebug("Service Layer error response for {Endpoint}: {ResponseContent}", endpoint, errorContent);
 
-            var    options       = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var    errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(errorContent, options);
-            string errorMessage  = errorResponse?.Error?.Message ?? errorResponse?.Error?.Details?[0]?.Message ?? "Unknown error";
+            string errorMessage = ExtractErrorMessage(errorContent);
 
             logger.LogWarning("{Method} failed for {Endpoint}: {ErrorMessage}", methodName, endpoint, errorMessage);
             return (false, errorMessage);
@@ -211,6 +211,46 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         logger.LogError("{Method} failed for {Endpoint} with status {StatusCode}: {ReasonPhrase}", methodName, endpoint, response.StatusCode, response.ReasonPhrase);
         return (false, $"HTTP {response.StatusCode}: {response.ReasonPhrase}");
+    }
+
+    private string ExtractErrorMessage(string errorContent) {
+        try {
+            using var jsonDoc = JsonDocument.Parse(errorContent);
+            var root = jsonDoc.RootElement;
+
+            // Try to get error object
+            if (root.TryGetProperty("error", out var errorElement)) {
+                // Try message property (might be string or object)
+                if (errorElement.TryGetProperty("message", out var messageElement)) {
+                    if (messageElement.ValueKind == JsonValueKind.String) {
+                        return messageElement.GetString() ?? "Unknown error";
+                    }
+                    else if (messageElement.ValueKind == JsonValueKind.Object) {
+                        // Message is an object, try to extract text or value property
+                        if (messageElement.TryGetProperty("text", out var textElement)) {
+                            return textElement.GetString() ?? "Unknown error";
+                        }
+                        if (messageElement.TryGetProperty("value", out var valueElement)) {
+                            return valueElement.GetString() ?? "Unknown error";
+                        }
+                    }
+                }
+
+                // Try details array
+                if (errorElement.TryGetProperty("details", out var detailsElement) && detailsElement.ValueKind == JsonValueKind.Array) {
+                    foreach (var detail in detailsElement.EnumerateArray()) {
+                        if (detail.TryGetProperty("message", out var detailMessage) && detailMessage.ValueKind == JsonValueKind.String) {
+                            return detailMessage.GetString() ?? "Unknown error";
+                        }
+                    }
+                }
+            }
+        }
+        catch {
+            // If JSON parsing fails, fall back to generic message
+        }
+
+        return "Unknown error";
     }
     private class LoginResponse {
         public string SessionId      { get; set; } = string.Empty;
@@ -223,8 +263,8 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     }
 
     private class ServiceLayerError {
-        public string Code { get; set; }
-        public string Message { get; set; }
+        public int? Code { get; set; }
+        public string? Message { get; set; }
         public List<ServiceLayerErrorDetail> Details { get; set; } = new();
     }
 
@@ -315,7 +355,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
                     string jsonError = errorContent.Substring(startIndex, endIndex - startIndex);
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(jsonError, options);
-                    string errorMessage = errorResponse?.Error?.Message ?? "Unknown batch error";
+                    string errorMessage = errorResponse?.Error?.Message ?? errorResponse?.Error?.Details?[0]?.Message ?? "Unknown batch error";
                     logger.LogError("Batch operation failed: {ErrorMessage}", errorMessage);
                     return (false, errorMessage);
                 }
@@ -370,7 +410,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
                         try {
                             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                             var errorResponse = JsonSerializer.Deserialize<ServiceLayerErrorResponse>(result.Body, options);
-                            result.ErrorMessage = errorResponse?.Error?.Message;
+                            result.ErrorMessage = errorResponse?.Error?.Message ?? errorResponse?.Error?.Details?[0]?.Message;
                         }
                         catch {
                             // Ignore parsing errors
