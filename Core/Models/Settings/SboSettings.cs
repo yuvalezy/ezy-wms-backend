@@ -10,4 +10,5 @@ public class SboSettings {
     public required string  Database          { get; set; }
     public          string? User              { get; set; }
     public          string? Password          { get; set; }
+    public          int     ServiceLayerTimeoutSeconds { get; set; } = 300;
 }

@@ -217,7 +217,7 @@ public class TransferProcessingService(
 
             var data = new TransferCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,
-                Quantity = itemGroup.Lines.Sum(l => l.Quantity),
+                Quantity = transferQuantity,
                 SourceBins = sourceBins,
                 TargetBins = targetBins
             };

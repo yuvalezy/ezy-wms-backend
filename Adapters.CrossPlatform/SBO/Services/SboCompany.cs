@@ -11,14 +11,16 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     private readonly string password = settings.SboSettings.Password ?? throw new InvalidOperationException("SBO password is not configured.");
     private readonly string database = settings.SboSettings.Database ?? throw new InvalidOperationException("SBO database is not configured.");
 
-    private readonly HttpClient    httpClient          = CreateHttpClient();
+    private readonly HttpClient    httpClient          = CreateHttpClient(settings.SboSettings?.ServiceLayerTimeoutSeconds ?? 300);
     private readonly SemaphoreSlim connectionSemaphore = new(1, 1);
 
-    private static HttpClient CreateHttpClient() {
+    private static HttpClient CreateHttpClient(int timeoutSeconds) {
         var handler = new HttpClientHandler() {
             ServerCertificateCustomValidationCallback = (_, _, _, _) => true
         };
-        return new HttpClient(handler);
+        return new HttpClient(handler) {
+            Timeout = TimeSpan.FromSeconds(timeoutSeconds)
+        };
     }
 
     private DateTime sessionExpiry = DateTime.MinValue;
