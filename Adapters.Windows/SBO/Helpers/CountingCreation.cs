@@ -13,7 +13,8 @@ public class CountingCreation(
     string                                            whsCode,
     int                                               series,
     Dictionary<string, InventoryCountingCreationDataResponse> data,
-    ILoggerFactory                                    loggerFactory)
+    ILoggerFactory                                    loggerFactory,
+    string?                                           reference2Override = null)
     : IDisposable {
     private          CompanyService?            companyService;
     private          InventoryCountingsService? service;
@@ -74,7 +75,7 @@ public class CountingCreation(
         counting            = (InventoryCounting)service.GetDataInterface(InventoryCountingsServiceDataInterfaces.icsInventoryCounting);
         
         counting.Series     = series;
-        counting.Reference2 = countingNumber.ToString();
+        counting.Reference2 = reference2Override ?? countingNumber.ToString();
         
         int totalLines = 0;
         foreach (var value in data) {

@@ -184,6 +184,35 @@ public class CountingController(
     }
 
     /// <summary>
+    /// Gets the batch statuses for an inventory counting document being processed
+    /// </summary>
+    [HttpGet("batches/{countingId:guid}")]
+    [RequireAnyRole(RoleType.Counting, RoleType.CountingSupervisor)]
+    [ProducesResponseType(typeof(IEnumerable<InventoryCountingBatchResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IEnumerable<InventoryCountingBatchResponse>> GetBatches(Guid countingId)
+    {
+        return await service.GetBatches(countingId);
+    }
+
+    /// <summary>
+    /// Retries failed batches for a partially processed inventory counting
+    /// </summary>
+    [HttpPost("retryBatches")]
+    [RequireRolePermission(RoleType.CountingSupervisor)]
+    [ProducesResponseType(typeof(ProcessInventoryCountingResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ProcessInventoryCountingResponse>> RetryBatches([FromBody] RetryBatchRequest request)
+    {
+        var sessionInfo = HttpContext.GetSession();
+        var result = await service.RetryFailedBatches(request, sessionInfo);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Gets the content details for an inventory counting document
     /// </summary>
     /// <param name="request">The request containing counting content criteria</param>

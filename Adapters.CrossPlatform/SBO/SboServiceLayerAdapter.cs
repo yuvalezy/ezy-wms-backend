@@ -215,9 +215,9 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
 
 
     //Inventory Counting
-    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients) {
+    public async Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients, string? reference2Override = null) {
         int series = await generalRepository.GetSeries("1470000065");
-        using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory);
+        using var creation = new CountingCreation(sboCompany, countingNumber, warehouse, series, data, loggerFactory, reference2Override);
         try {
             var response = await creation.Execute();
 

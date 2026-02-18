@@ -31,6 +31,16 @@ public class InventoryCountingConfiguration : IEntityTypeConfiguration<Inventory
     }
 }
 
+public class InventoryCountingBatchConfiguration : IEntityTypeConfiguration<InventoryCountingBatch> {
+    public void Configure(EntityTypeBuilder<InventoryCountingBatch> builder) {
+        builder
+            .HasOne(b => b.InventoryCounting)
+            .WithMany(ic => ic.Batches)
+            .HasForeignKey(b => b.InventoryCountingId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class InventoryCountingLineConfiguration : IEntityTypeConfiguration<InventoryCountingLine> {
     public void Configure(EntityTypeBuilder<InventoryCountingLine> builder) {
     }

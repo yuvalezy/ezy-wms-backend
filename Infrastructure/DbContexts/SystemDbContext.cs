@@ -28,6 +28,8 @@ public class SystemDbContext : DbContext {
     public DbSet<PickListCheckItem>    PickListCheckItems    { get; set; }
     public DbSet<PickListCheckPackage> PickListCheckPackages { get; set; }
 
+    public DbSet<InventoryCountingBatch> InventoryCountingBatches { get; set; }
+
     // Object Lines Entites
     public DbSet<GoodsReceiptLine>      GoodsReceiptLines      { get; set; }
     public DbSet<GoodsReceiptTarget>    GoodsReceiptTargets    { get; set; }
@@ -77,6 +79,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new TransferLineConfiguration());
         modelBuilder.ApplyConfiguration(new TransferPackageConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
+        modelBuilder.ApplyConfiguration(new InventoryCountingBatchConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingPackageConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingPackageContentConfiguration());

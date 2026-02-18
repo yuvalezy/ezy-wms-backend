@@ -50,4 +50,7 @@ public record Options {
 
     //Quantities
     public bool EnableDecimalQuantities { get; init; }
+
+    // Inventory Counting
+    public int InventoryCountingBatchSize { get; set; } = 200;
 }

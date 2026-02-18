@@ -9,6 +9,7 @@ public enum ObjectStatus {
     Closed = 5,
     WaitingForApproval = 6,
     Rejected = 7,
+    PartiallyProcessed = 8,
 }
 
 public enum SyncStatus {

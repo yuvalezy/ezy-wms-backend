@@ -304,6 +304,16 @@
             <response code="403">If the user lacks required supervisor permissions</response>
             <response code="401">If the user is not authenticated</response>
         </member>
+        <member name="M:Service.Controllers.CountingController.GetBatches(System.Guid)">
+            <summary>
+            Gets the batch statuses for an inventory counting document being processed
+            </summary>
+        </member>
+        <member name="M:Service.Controllers.CountingController.RetryBatches(Core.DTOs.InventoryCounting.RetryBatchRequest)">
+            <summary>
+            Retries failed batches for a partially processed inventory counting
+            </summary>
+        </member>
         <member name="M:Service.Controllers.CountingController.CountingContent(Core.DTOs.InventoryCounting.InventoryCountingContentRequest)">
             <summary>
             Gets the content details for an inventory counting document

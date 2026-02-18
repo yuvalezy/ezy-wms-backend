@@ -27,6 +27,7 @@ public sealed class InventoryCounting : BaseEntity {
     // Navigation properties
     public ICollection<InventoryCountingLine> Lines { get; set; } = new List<InventoryCountingLine>();
     public ICollection<InventoryCountingPackage> CountingPackages { get; set; } = new List<InventoryCountingPackage>();
+    public ICollection<InventoryCountingBatch> Batches { get; set; } = new List<InventoryCountingBatch>();
 }
 
 public sealed class InventoryCountingLine : BaseEntity {

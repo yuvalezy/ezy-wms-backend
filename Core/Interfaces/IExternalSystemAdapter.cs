@@ -84,7 +84,7 @@ public interface IExternalSystemAdapter {
     Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations, string[] alertRecipients);
 
     // Inventory Counting methods
-    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients);
+    Task<ProcessInventoryCountingResponse> ProcessInventoryCounting(int countingNumber, string warehouse, Dictionary<string, InventoryCountingCreationDataResponse> data, string[] alertRecipients, string? reference2Override = null);
     Task<bool> ValidateOpenInventoryCounting(string whsCode, int binEntry, string itemCode);
 
     // Goods Receipt methods

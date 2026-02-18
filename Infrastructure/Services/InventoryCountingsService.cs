@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
 using Core.DTOs.Package;
@@ -9,6 +10,8 @@ using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
@@ -20,7 +23,10 @@ public class InventoryCountingsService(
     IPackageService packageService,
     IExternalCommandService externalCommandService,
     IPackageLocationService packageLocationService,
-    IExternalSystemAlertService alertService) : IInventoryCountingsService {
+    IExternalSystemAlertService alertService,
+    IServiceScopeFactory serviceScopeFactory,
+    ILogger<InventoryCountingsService> logger) : IInventoryCountingsService {
+
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
             Name = request.Name,
@@ -76,7 +82,6 @@ public class InventoryCountingsService(
         return InventoryCountingResponse.FromEntity(counting);
     }
 
-
     public async Task<bool> CancelCounting(Guid id, SessionInfo sessionInfo) {
         var counting = await db.InventoryCountings.FindAsync(id);
         if (counting == null) {
@@ -97,6 +102,7 @@ public class InventoryCountingsService(
         return true;
     }
 
+    // Phase A: Create batches and return immediately, fire-and-forget background processing
     public async Task<ProcessInventoryCountingResponse> ProcessCounting(Guid id, SessionInfo sessionInfo) {
         var transaction = await db.Database.BeginTransactionAsync();
         try {
@@ -121,22 +127,136 @@ public class InventoryCountingsService(
             // Prepare data for SAP B1 inventory counting creation
             var countingData = await PrepareCountingData(id, counting.WhsCode, sessionInfo.EnableBinLocations);
 
-            // Get alert recipients
-            var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.InventoryCounting);
+            // Create batch records
+            int batchSize = settings.Options.InventoryCountingBatchSize;
+            int? initialCountingBinEntry = sessionInfo.EnableBinLocations ? settings.GetInitialCountingBinEntry(counting.WhsCode) : null;
+            var batches = CreateBatches(counting.Id, countingData, initialCountingBinEntry, batchSize);
 
-            // Call external system to process the counting
-            var result = await adapter.ProcessInventoryCounting(counting.Number, sessionInfo.Warehouse, countingData, alertRecipients);
+            await db.InventoryCountingBatches.AddRangeAsync(batches);
+            await db.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            // Fire-and-forget: start background processing
+            _ = Task.Run(async () => {
+                try {
+                    using var scope = serviceScopeFactory.CreateScope();
+                    var bgService = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+                    await bgService.ProcessBatchesInBackground(id, sessionInfo);
+                }
+                catch (Exception ex) {
+                    // Log but don't throw - this is fire-and-forget
+                    using var scope = serviceScopeFactory.CreateScope();
+                    var bgLogger = scope.ServiceProvider.GetRequiredService<ILogger<InventoryCountingsService>>();
+                    bgLogger.LogError(ex, "Unhandled error in background batch processing for counting {CountingId}", id);
+                }
+            });
+
+            return new ProcessInventoryCountingResponse {
+                Success = true,
+                Status = ResponseStatus.Ok,
+                TotalBatches = batches.Count,
+                CompletedBatches = 0,
+                FailedBatches = 0,
+                Batches = batches.Select(MapBatchToResponse).ToList()
+            };
+        }
+        catch (Exception) {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    // Phase B: Process batches sequentially in background
+    public async Task ProcessBatchesInBackground(Guid countingId, SessionInfo sessionInfo) {
+        var counting = await db.InventoryCountings.FirstOrDefaultAsync(ic => ic.Id == countingId);
+        if (counting == null) return;
+
+        var batches = await db.InventoryCountingBatches
+            .Where(b => b.InventoryCountingId == countingId)
+            .OrderBy(b => b.SequenceOrder)
+            .ToListAsync();
+
+        var alertRecipients = await alertService.GetAlertRecipientsAsync(AlertableObjectType.InventoryCounting);
+
+        // Process regular batches first
+        var regularBatches = batches.Where(b => !b.IsInitialBinBatch).OrderBy(b => b.SequenceOrder).ToList();
+        foreach (var batch in regularBatches) {
+            if (batch.Status == BatchStatus.Completed) continue;
+            await ProcessSingleBatch(counting, batch, sessionInfo.Warehouse, alertRecipients);
+        }
+
+        // Check if all regular batches succeeded
+        bool allRegularSucceeded = regularBatches.All(b => b.Status == BatchStatus.Completed);
+
+        // Process initial bin batches only if all regular batches succeeded
+        var initialBinBatches = batches.Where(b => b.IsInitialBinBatch).OrderBy(b => b.SequenceOrder).ToList();
+        if (allRegularSucceeded && initialBinBatches.Count > 0) {
+            foreach (var batch in initialBinBatches) {
+                if (batch.Status == BatchStatus.Completed) continue;
+                await ProcessSingleBatch(counting, batch, sessionInfo.Warehouse, alertRecipients);
+            }
+        }
+
+        // Evaluate final state
+        await EvaluateAndFinalize(counting, batches, sessionInfo, alertRecipients);
+    }
+
+    private async Task ProcessSingleBatch(InventoryCounting counting, InventoryCountingBatch batch, string warehouse, string[] alertRecipients) {
+        batch.Status = BatchStatus.Processing;
+        batch.LastAttemptAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        try {
+            var data = JsonSerializer.Deserialize<Dictionary<string, InventoryCountingCreationDataResponse>>(batch.PayloadJson)!;
+
+            // Build reference2: if multiple batches, use "{number}-{sequence}" format
+            var totalBatches = await db.InventoryCountingBatches
+                .CountAsync(b => b.InventoryCountingId == counting.Id);
+            string reference2 = totalBatches > 1
+                ? $"{counting.Number}-{batch.SequenceOrder}"
+                : counting.Number.ToString();
+
+            var result = await adapter.ProcessInventoryCounting(counting.Number, warehouse, data, alertRecipients, reference2);
 
             if (result.Success) {
-                // Update status to Closed
+                batch.Status = BatchStatus.Completed;
+                batch.SapDocEntry = result.ExternalEntry;
+                batch.SapDocNumber = result.ExternalNumber;
+                batch.ErrorMessage = null;
+            }
+            else {
+                batch.Status = BatchStatus.Failed;
+                batch.ErrorMessage = result.ErrorMessage ?? "Unknown error";
+                batch.RetryCount++;
+            }
+        }
+        catch (Exception ex) {
+            batch.Status = BatchStatus.Failed;
+            batch.ErrorMessage = ex.Message;
+            batch.RetryCount++;
+            logger.LogError(ex, "Failed to process batch {BatchId} (sequence {Sequence}) for counting {CountingId}",
+                batch.Id, batch.SequenceOrder, counting.Id);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private async Task EvaluateAndFinalize(InventoryCounting counting, List<InventoryCountingBatch> batches, SessionInfo sessionInfo, string[] alertRecipients) {
+        bool allCompleted = batches.All(b => b.Status == BatchStatus.Completed);
+
+        if (allCompleted) {
+            // Finalize - all batches succeeded
+            var finalizeTx = await db.Database.BeginTransactionAsync();
+            try {
                 counting.Status = ObjectStatus.Closed;
                 counting.UpdatedAt = DateTime.UtcNow;
                 counting.UpdatedByUserId = sessionInfo.Guid;
 
-                // Update all open lines to Closed
+                // Close all open lines
                 var openLines = await db.InventoryCountingLines
-                .Where(icl => icl.InventoryCountingId == id && icl.LineStatus != LineStatus.Closed)
-                .ToListAsync();
+                    .Where(icl => icl.InventoryCountingId == counting.Id && icl.LineStatus != LineStatus.Closed)
+                    .ToListAsync();
 
                 foreach (var line in openLines) {
                     line.LineStatus = LineStatus.Closed;
@@ -144,23 +264,273 @@ public class InventoryCountingsService(
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
 
-                // Process packages based on counting results
-                await ProcessCountingPackages(id, sessionInfo);
+                // Process packages
+                await ProcessCountingPackages(counting.Id, sessionInfo);
 
                 await db.SaveChangesAsync();
+                await finalizeTx.CommitAsync();
             }
-            else {
-                throw new InvalidOperationException(result.ErrorMessage ?? "Unknown error");
+            catch (Exception ex) {
+                await finalizeTx.RollbackAsync();
+                logger.LogError(ex, "Failed to finalize counting {CountingId}", counting.Id);
+                counting.Status = ObjectStatus.PartiallyProcessed;
+                await db.SaveChangesAsync();
             }
-
-            await transaction.CommitAsync();
-            return result;
         }
-        catch (Exception) {
-            await transaction.RollbackAsync();
-            throw;
+        else {
+            counting.Status = ObjectStatus.PartiallyProcessed;
+            counting.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
         }
     }
+
+    public async Task<ProcessInventoryCountingResponse> RetryFailedBatches(RetryBatchRequest request, SessionInfo sessionInfo) {
+        var counting = await db.InventoryCountings.FirstOrDefaultAsync(ic => ic.Id == request.CountingId);
+        if (counting == null) {
+            throw new KeyNotFoundException($"Inventory counting with ID {request.CountingId} not found.");
+        }
+
+        if (counting.Status != ObjectStatus.PartiallyProcessed) {
+            throw new InvalidOperationException("Can only retry batches for partially processed countings");
+        }
+
+        var batches = await db.InventoryCountingBatches
+            .Where(b => b.InventoryCountingId == request.CountingId)
+            .OrderBy(b => b.SequenceOrder)
+            .ToListAsync();
+
+        // If specific batch requested, validate it's failed
+        if (request.BatchId.HasValue) {
+            var targetBatch = batches.FirstOrDefault(b => b.Id == request.BatchId.Value);
+            if (targetBatch == null) throw new KeyNotFoundException("Batch not found");
+            if (targetBatch.Status != BatchStatus.Failed) throw new InvalidOperationException("Batch is not in Failed status");
+        }
+
+        // Set counting back to Processing
+        counting.Status = ObjectStatus.Processing;
+        counting.UpdatedAt = DateTime.UtcNow;
+        counting.UpdatedByUserId = sessionInfo.Guid;
+        await db.SaveChangesAsync();
+
+        // Fire-and-forget: start background retry
+        _ = Task.Run(async () => {
+            try {
+                using var scope = serviceScopeFactory.CreateScope();
+                var bgDb = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
+                var bgAdapter = scope.ServiceProvider.GetRequiredService<IExternalSystemAdapter>();
+                var bgAlertService = scope.ServiceProvider.GetRequiredService<IExternalSystemAlertService>();
+                var bgLogger = scope.ServiceProvider.GetRequiredService<ILogger<InventoryCountingsService>>();
+
+                var bgCounting = await bgDb.InventoryCountings.FirstAsync(ic => ic.Id == request.CountingId);
+                var bgBatches = await bgDb.InventoryCountingBatches
+                    .Where(b => b.InventoryCountingId == request.CountingId)
+                    .OrderBy(b => b.SequenceOrder)
+                    .ToListAsync();
+
+                var alertRecipients = await bgAlertService.GetAlertRecipientsAsync(AlertableObjectType.InventoryCounting);
+
+                // Get failed batches to retry
+                var failedBatches = request.BatchId.HasValue
+                    ? bgBatches.Where(b => b.Id == request.BatchId.Value).ToList()
+                    : bgBatches.Where(b => b.Status == BatchStatus.Failed && !b.IsInitialBinBatch).ToList();
+
+                // Use a temporary service-like object for processing
+                var bgService = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>() as InventoryCountingsService;
+                if (bgService == null) return;
+
+                foreach (var batch in failedBatches) {
+                    await bgService.ProcessSingleBatch(bgCounting, batch, sessionInfo.Warehouse, alertRecipients);
+                }
+
+                // Check if all regular batches succeeded, process initial bin batches
+                var regularBatches = bgBatches.Where(b => !b.IsInitialBinBatch).ToList();
+                bool allRegularSucceeded = regularBatches.All(b => b.Status == BatchStatus.Completed);
+
+                var initialBinBatches = bgBatches.Where(b => b.IsInitialBinBatch).ToList();
+                if (allRegularSucceeded && initialBinBatches.Any(b => b.Status != BatchStatus.Completed)) {
+                    foreach (var batch in initialBinBatches.Where(b => b.Status != BatchStatus.Completed)) {
+                        await bgService.ProcessSingleBatch(bgCounting, batch, sessionInfo.Warehouse, alertRecipients);
+                    }
+                }
+
+                await bgService.EvaluateAndFinalize(bgCounting, bgBatches, sessionInfo, alertRecipients);
+            }
+            catch (Exception ex) {
+                using var scope = serviceScopeFactory.CreateScope();
+                var bgLogger = scope.ServiceProvider.GetRequiredService<ILogger<InventoryCountingsService>>();
+                bgLogger.LogError(ex, "Unhandled error in background retry processing for counting {CountingId}", request.CountingId);
+            }
+        });
+
+        return new ProcessInventoryCountingResponse {
+            Success = true,
+            Status = ResponseStatus.Ok,
+            TotalBatches = batches.Count,
+            CompletedBatches = batches.Count(b => b.Status == BatchStatus.Completed),
+            FailedBatches = batches.Count(b => b.Status == BatchStatus.Failed),
+            Batches = batches.Select(MapBatchToResponse).ToList()
+        };
+    }
+
+    public async Task<IEnumerable<InventoryCountingBatchResponse>> GetBatches(Guid countingId) {
+        var batches = await db.InventoryCountingBatches
+            .Where(b => b.InventoryCountingId == countingId)
+            .OrderBy(b => b.SequenceOrder)
+            .ToListAsync();
+
+        return batches.Select(MapBatchToResponse);
+    }
+
+    private List<InventoryCountingBatch> CreateBatches(
+        Guid countingId,
+        Dictionary<string, InventoryCountingCreationDataResponse> countingData,
+        int? initialCountingBinEntry,
+        int batchSize) {
+
+        // Flatten all lines into (ItemCode, BinEntry, ...) tuples, separated by regular vs initial bin
+        var regularLines = new List<(string ItemCode, InventoryCountingCreationBinResponse Bin)>();
+        var initialBinLines = new List<(string ItemCode, InventoryCountingCreationBinResponse Bin)>();
+        var noBinItems = new List<(string ItemCode, InventoryCountingCreationDataResponse Data)>();
+
+        foreach (var kvp in countingData) {
+            var item = kvp.Value;
+            if (item.CountedBins.Count == 0) {
+                // Items with no bins go to regular
+                noBinItems.Add((item.ItemCode, item));
+                continue;
+            }
+
+            foreach (var bin in item.CountedBins) {
+                if (initialCountingBinEntry.HasValue && bin.BinEntry == initialCountingBinEntry.Value) {
+                    initialBinLines.Add((item.ItemCode, bin));
+                }
+                else {
+                    regularLines.Add((item.ItemCode, bin));
+                }
+            }
+        }
+
+        var batches = new List<InventoryCountingBatch>();
+        int sequence = 1;
+
+        // Chunk regular lines into batches
+        var regularChunks = ChunkLines(regularLines, noBinItems, batchSize);
+        foreach (var chunk in regularChunks) {
+            batches.Add(new InventoryCountingBatch {
+                InventoryCountingId = countingId,
+                SequenceOrder = sequence++,
+                IsInitialBinBatch = false,
+                LineCount = chunk.lineCount,
+                Status = BatchStatus.Pending,
+                PayloadJson = JsonSerializer.Serialize(chunk.data)
+            });
+        }
+
+        // Chunk initial bin lines into batches (usually just 1)
+        if (initialBinLines.Count > 0) {
+            var initialChunks = ChunkLines(initialBinLines, [], batchSize);
+            foreach (var chunk in initialChunks) {
+                batches.Add(new InventoryCountingBatch {
+                    InventoryCountingId = countingId,
+                    SequenceOrder = sequence++,
+                    IsInitialBinBatch = true,
+                    LineCount = chunk.lineCount,
+                    Status = BatchStatus.Pending,
+                    PayloadJson = JsonSerializer.Serialize(chunk.data)
+                });
+            }
+        }
+
+        // Edge case: if no batches were created (empty counting data), create at least one
+        if (batches.Count == 0) {
+            batches.Add(new InventoryCountingBatch {
+                InventoryCountingId = countingId,
+                SequenceOrder = 1,
+                IsInitialBinBatch = false,
+                LineCount = 0,
+                Status = BatchStatus.Pending,
+                PayloadJson = JsonSerializer.Serialize(new Dictionary<string, InventoryCountingCreationDataResponse>())
+            });
+        }
+
+        return batches;
+    }
+
+    private static List<(Dictionary<string, InventoryCountingCreationDataResponse> data, int lineCount)> ChunkLines(
+        List<(string ItemCode, InventoryCountingCreationBinResponse Bin)> binLines,
+        List<(string ItemCode, InventoryCountingCreationDataResponse Data)> noBinItems,
+        int batchSize) {
+
+        var result = new List<(Dictionary<string, InventoryCountingCreationDataResponse> data, int lineCount)>();
+
+        // Combine all SAP lines: each bin line = 1 SAP line, each no-bin item = 1 SAP line
+        var allLines = new List<(string ItemCode, InventoryCountingCreationBinResponse? Bin, InventoryCountingCreationDataResponse? NoBinData)>();
+
+        foreach (var (itemCode, bin) in binLines) {
+            allLines.Add((itemCode, bin, null));
+        }
+        foreach (var (itemCode, data) in noBinItems) {
+            allLines.Add((itemCode, null, data));
+        }
+
+        // Chunk into groups of batchSize
+        for (int i = 0; i < allLines.Count; i += batchSize) {
+            var chunk = allLines.Skip(i).Take(batchSize).ToList();
+            var batchData = new Dictionary<string, InventoryCountingCreationDataResponse>();
+            int lineCount = 0;
+
+            foreach (var (itemCode, bin, noBinData) in chunk) {
+                if (noBinData != null) {
+                    // No-bin item: include as-is
+                    batchData[itemCode] = new InventoryCountingCreationDataResponse {
+                        ItemCode = noBinData.ItemCode,
+                        CountedQuantity = noBinData.CountedQuantity,
+                        SystemQuantity = noBinData.SystemQuantity,
+                        Variance = noBinData.Variance,
+                        CountedBins = new List<InventoryCountingCreationBinResponse>()
+                    };
+                    lineCount++;
+                }
+                else if (bin != null) {
+                    // Bin line: group into existing or new item entry
+                    if (!batchData.TryGetValue(itemCode, out var existing)) {
+                        existing = new InventoryCountingCreationDataResponse {
+                            ItemCode = itemCode,
+                            CountedQuantity = 0,
+                            SystemQuantity = 0,
+                            Variance = 0,
+                            CountedBins = new List<InventoryCountingCreationBinResponse>()
+                        };
+                        batchData[itemCode] = existing;
+                    }
+                    existing.CountedBins.Add(bin);
+                    existing.CountedQuantity += bin.CountedQuantity;
+                    existing.SystemQuantity += bin.SystemQuantity;
+                    existing.Variance = existing.CountedQuantity - existing.SystemQuantity;
+                    lineCount++;
+                }
+            }
+
+            if (lineCount > 0) {
+                result.Add((batchData, lineCount));
+            }
+        }
+
+        return result;
+    }
+
+    private static InventoryCountingBatchResponse MapBatchToResponse(InventoryCountingBatch batch) => new() {
+        Id = batch.Id,
+        SequenceOrder = batch.SequenceOrder,
+        Status = batch.Status,
+        IsInitialBinBatch = batch.IsInitialBinBatch,
+        LineCount = batch.LineCount,
+        SapDocEntry = batch.SapDocEntry,
+        SapDocNumber = batch.SapDocNumber,
+        ErrorMessage = batch.ErrorMessage,
+        LastAttemptAt = batch.LastAttemptAt,
+        RetryCount = batch.RetryCount
+    };
 
     private async Task<Dictionary<string, InventoryCountingCreationDataResponse>> PrepareCountingData(Guid countingId, string warehouse, bool enableBinLocation) {
         var lines = await db.InventoryCountingLines

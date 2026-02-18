@@ -82,7 +82,7 @@ Options:
 
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)
-  EnablePackages: true
+  EnablePackages: false
   
   # Default unit type for quantity calculations (enum, default: Pack)
   # Values: Unit(0) (individual units), Dozen(1) (12 units), Pack(2) (package/case)

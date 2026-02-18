@@ -12,4 +12,7 @@ public interface IInventoryCountingsService {
     Task<ProcessInventoryCountingResponse>              ProcessCounting(Guid                               id,          SessionInfo                        sessionInfo);
     Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request);
     Task<InventoryCountingSummaryResponse>              GetCountingSummaryReport(Guid                      id);
+    Task<IEnumerable<InventoryCountingBatchResponse>>   GetBatches(Guid                                   countingId);
+    Task<ProcessInventoryCountingResponse>              RetryFailedBatches(RetryBatchRequest               request, SessionInfo sessionInfo);
+    Task                                                ProcessBatchesInBackground(Guid                    countingId, SessionInfo sessionInfo);
 }

@@ -11,7 +11,8 @@ public class CountingCreation(
     string whsCode,
     int series,
     Dictionary<string, InventoryCountingCreationDataResponse> data,
-    ILoggerFactory loggerFactory) : IDisposable {
+    ILoggerFactory loggerFactory,
+    string? reference2Override = null) : IDisposable {
     
     private readonly ILogger<CountingCreation> logger = loggerFactory.CreateLogger<CountingCreation>();
 
@@ -100,7 +101,7 @@ public class CountingCreation(
 
         var countingData = new {
             Series = series,
-            Reference2 = countingNumber.ToString(),
+            Reference2 = reference2Override ?? countingNumber.ToString(),
             InventoryCountingLines = lines
         };
         return (countingData, totalLines);
