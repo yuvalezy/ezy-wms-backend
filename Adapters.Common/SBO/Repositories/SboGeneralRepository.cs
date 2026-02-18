@@ -127,6 +127,90 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return binCode;
     }
 
+    private const int MaxBatchSize = 500;
+
+    public async Task<Dictionary<int, IEnumerable<BinContentResponse>>> BulkBinCheckAsync(int[] binEntries) {
+        var result = new Dictionary<int, IEnumerable<BinContentResponse>>();
+        if (binEntries.Length == 0) return result;
+
+        var customFields = GetCustomFields();
+        var grouped = new Dictionary<int, List<BinContentResponse>>();
+
+        foreach (var batch in binEntries.Chunk(MaxBatchSize)) {
+            var inParams = string.Join(", ", batch.Select((_, i) => $"@AbsEntry{i}"));
+
+            var queryBuilder = new StringBuilder();
+            queryBuilder.Append("""
+                               select T1."BinAbs" as "BinAbs", T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand",
+                               COALESCE(OITM."NumInBuy", 1) as "NumInBuy", OITM."BuyUnitMsr" as "BuyUnitMsr",
+                               COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
+                               OITM."PurFactor1", OITM."PurFactor2", OITM."PurFactor3", OITM."PurFactor4"
+                               """);
+            CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
+            queryBuilder.Append($"""
+                               from OIBQ T1
+                               inner join OITM on OITM."ItemCode" = T1."ItemCode"
+                               inner join OBIN T3 on T3."AbsEntry" = T1."BinAbs" and T3."WhsCode" = T1."WhsCode"
+                               where T1."BinAbs" in ({inParams}) and T1."OnHandQty" <> 0
+                               order by T1."ItemCode"
+                               """);
+
+            var parameters = new SqlParameter[batch.Length];
+            for (int i = 0; i < batch.Length; i++) {
+                parameters[i] = new SqlParameter($"@AbsEntry{i}", SqlDbType.Int) { Value = batch[i] };
+            }
+
+            await dbService.QueryAsync(queryBuilder.ToString(), parameters, reader => {
+                int binAbs = reader.GetInt32(reader.GetOrdinal("BinAbs"));
+                var response = new BinContentResponse {
+                    OnHand = Convert.ToDouble(reader["OnHand"]),
+                    BinCode = reader["BinCode"] as string ?? string.Empty
+                };
+                ItemResponseHelper.PopulateItemResponse(reader, response);
+                CustomFieldsHelper.ReadCustomFields(reader, customFields, response);
+
+                if (!grouped.TryGetValue(binAbs, out var list)) {
+                    list = new List<BinContentResponse>();
+                    grouped[binAbs] = list;
+                }
+                list.Add(response);
+                return response;
+            });
+        }
+
+        foreach (var kvp in grouped) {
+            result[kvp.Key] = kvp.Value;
+        }
+
+        foreach (var entry in binEntries) {
+            result.TryAdd(entry, Enumerable.Empty<BinContentResponse>());
+        }
+
+        return result;
+    }
+
+    public async Task<Dictionary<int, string>> BulkGetBinCodesAsync(int[] binEntries) {
+        var result = new Dictionary<int, string>();
+        if (binEntries.Length == 0) return result;
+
+        foreach (var batch in binEntries.Chunk(MaxBatchSize)) {
+            var inParams = string.Join(", ", batch.Select((_, i) => $"@BinEntry{i}"));
+            var query = $"""select "AbsEntry", "BinCode" from OBIN where "AbsEntry" in ({inParams})""";
+
+            var parameters = new SqlParameter[batch.Length];
+            for (int i = 0; i < batch.Length; i++) {
+                parameters[i] = new SqlParameter($"@BinEntry{i}", SqlDbType.Int) { Value = batch[i] };
+            }
+
+            await dbService.QueryAsync(query, parameters, reader => {
+                result[reader.GetInt32(0)] = reader.GetString(1);
+                return true;
+            });
+        }
+
+        return result;
+    }
+
     public async Task<IEnumerable<BinContentResponse>> BinCheckAsync(int binEntry) {
         var (query, customFields) = BuildBinCheckQuery();
         

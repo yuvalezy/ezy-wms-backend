@@ -149,6 +149,55 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         }
     }
 
+    private const int MaxBatchSize = 500;
+
+    public async Task<Dictionary<string, ItemCheckResponse>> BulkItemCheckAsync(string[] itemCodes) {
+        var result = new Dictionary<string, ItemCheckResponse>();
+        if (itemCodes.Length == 0) return result;
+
+        var barcodeLookup = new Dictionary<string, List<string>>();
+
+        foreach (var batch in itemCodes.Chunk(MaxBatchSize)) {
+            var inParams = string.Join(", ", batch.Select((_, i) => $"@ItemCode{i}"));
+            var (query, customFields) = BuildItemQuery($""" from OITM where "ItemCode" in ({inParams})""");
+
+            var parameters = new SqlParameter[batch.Length];
+            for (int i = 0; i < batch.Length; i++) {
+                parameters[i] = new SqlParameter($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = batch[i] };
+            }
+
+            var items = await dbService.QueryAsync(query, parameters, reader => MapItemCheckResponse(reader, customFields));
+            foreach (var item in items) {
+                result[item.ItemCode] = item;
+            }
+
+            var barcodeQuery = $"""select "ItemCode", "BcdCode" from OBCD where "ItemCode" in ({inParams})""";
+            var barcodeParameters = new SqlParameter[batch.Length];
+            for (int i = 0; i < batch.Length; i++) {
+                barcodeParameters[i] = new SqlParameter($"@ItemCode{i}", SqlDbType.NVarChar, 50) { Value = batch[i] };
+            }
+
+            await dbService.QueryAsync(barcodeQuery, barcodeParameters, reader => {
+                var itemCode = reader.GetString(0);
+                var barcode = reader.GetString(1);
+                if (!barcodeLookup.TryGetValue(itemCode, out var list)) {
+                    list = new List<string>();
+                    barcodeLookup[itemCode] = list;
+                }
+                list.Add(barcode);
+                return barcode;
+            });
+        }
+
+        foreach (var item in result.Values) {
+            if (barcodeLookup.TryGetValue(item.ItemCode, out var barcodes)) {
+                item.Barcodes.AddRange(barcodes);
+            }
+        }
+
+        return result;
+    }
+
     public async Task<IEnumerable<ItemStockResponse>> ItemStockAsync(string itemCode, string whsCode) {
         const string query = """
                              select T0."OnHand"

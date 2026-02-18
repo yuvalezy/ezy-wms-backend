@@ -88,7 +88,7 @@ public class CountingCreation(
                     line.WarehouseCode   = whsCode;
                     line.BinEntry        = countedBin.BinEntry;
                     line.Counted         = BoYesNoEnum.tYES;
-                    line.CountedQuantity = countedBin.CountedQuantity;
+                    line.CountedQuantity = (double)countedBin.CountedQuantity;
                     totalLines++;
                     
                     logger.LogDebug("Added counting line for item {ItemCode} in bin {BinEntry} with quantity {Quantity} (system: {SystemQuantity})", 
@@ -101,7 +101,7 @@ public class CountingCreation(
                 line.ItemCode        = value.Value.ItemCode;
                 line.WarehouseCode   = whsCode;
                 line.Counted         = BoYesNoEnum.tYES;
-                line.CountedQuantity = value.Value.CountedQuantity;
+                line.CountedQuantity = (double)value.Value.CountedQuantity;
                 totalLines++;
                 
                 logger.LogDebug("Added counting line for item {ItemCode} with quantity {Quantity} (system: {SystemQuantity}, variance: {Variance})", 

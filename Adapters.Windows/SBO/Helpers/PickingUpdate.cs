@@ -137,7 +137,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                 throw new Exception($"Source measure data not found for pick entry {pl.Lines.LineNumber} in pick {absEntry}");
             }
 
-            pl.Lines.PickedQuantity += value.Quantity;
+            pl.Lines.PickedQuantity += (double)value.Quantity;
 
             // Process bins
             var bins = pl.Lines.BinAllocations;
@@ -163,7 +163,7 @@ public class PickingUpdate(int absEntry, List<PickList> data, SboCompany sboComp
                     control.Add(binEntry, bins.Count - 1);
                 }
 
-                bins.Quantity += binValue.Quantity;
+                bins.Quantity += (double)binValue.Quantity;
             }
         }
 
