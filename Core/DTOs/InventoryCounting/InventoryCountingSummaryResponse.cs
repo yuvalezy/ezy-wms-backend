@@ -20,6 +20,7 @@ public class InventoryCountingReportLine {
     public required string                      ItemCode     { get; set; }
     public required string                      ItemName     { get; set; }
     public required string                      BinCode      { get; set; }
+    public          int?                        BinEntry     { get; set; }
     public          decimal                     Quantity     { get; set; }
     public          string?                     BuyUnitMsr   { get; set; }
     public          decimal                     NumInBuy     { get; set; }

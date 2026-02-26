@@ -249,4 +249,40 @@ public class CountingController(
     {
         return await service.GetCountingSummaryReport(id);
     }
+
+    /// <summary>
+    /// Gets detailed report information for a specific item/bin in an inventory counting document (supervisor only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the inventory counting</param>
+    /// <param name="itemCode">The item code to get detailed information for</param>
+    /// <param name="binEntry">Optional bin entry to filter by</param>
+    /// <returns>Detailed report information for the specified item/bin</returns>
+    [HttpGet("{id:guid}/report/all/{itemCode}/{binEntry:int?}")]
+    [RequireRolePermission(RoleType.CountingSupervisor)]
+    [ProducesResponseType(typeof(IEnumerable<InventoryCountingReportAllDetailsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry)
+    {
+        itemCode = Uri.UnescapeDataString(itemCode);
+        return await service.GetCountingReportAllDetails(id, itemCode, binEntry);
+    }
+
+    /// <summary>
+    /// Updates counting lines in bulk - remove rows and update quantities (supervisor only)
+    /// </summary>
+    /// <param name="request">The request containing bulk update information</param>
+    /// <returns>True if update was successful, error message otherwise</returns>
+    [HttpPost("updateAll")]
+    [RequireRolePermission(RoleType.CountingSupervisor)]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<bool>> UpdateCountingAll([FromBody] UpdateInventoryCountingAllRequest request)
+    {
+        var sessionInfo = HttpContext.GetSession();
+        string? errorMessage = await service.UpdateCountingAll(request, sessionInfo);
+        return string.IsNullOrWhiteSpace(errorMessage) ? Ok(true) : BadRequest(errorMessage);
+    }
 }

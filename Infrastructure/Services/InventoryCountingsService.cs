@@ -861,6 +861,7 @@ public class InventoryCountingsService(
                 ItemCode = group.Key.ItemCode,
                 ItemName = itemName,
                 BinCode = binCode,
+                BinEntry = group.Key.BinEntry,
                 Quantity = totalCountedQuantity,
                 BuyUnitMsr = item?.BuyUnitMsr,
                 NumInBuy = item?.NumInBuy ?? 1,
@@ -993,6 +994,164 @@ public class InventoryCountingsService(
                     await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.ActivatePackage, ObjectType.Package, packageId);
                 }
             }
+        }
+    }
+
+    public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry) {
+        var values = await db.InventoryCountingLines
+            .Include(l => l.CreatedByUser)
+            .Where(l => l.InventoryCountingId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
+            .Where(l => binEntry == null ? !l.BinEntry.HasValue : l.BinEntry == binEntry)
+            .Select(l => new InventoryCountingReportAllDetailsResponse {
+                LineId = l.Id,
+                CreatedByUserName = l.CreatedByUser!.FullName,
+                TimeStamp = l.UpdatedAt ?? l.CreatedAt,
+                Quantity = l.Quantity,
+                Unit = l.Unit,
+            })
+            .ToListAsync();
+
+        var lineIds = values.Select(v => v.LineId).ToArray();
+
+        var packageTransactions = await db.PackageTransactions
+            .Include(v => v.Package)
+            .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.InventoryCounting && v.SourceOperationLineId != null && lineIds.Contains(v.SourceOperationLineId.Value))
+            .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
+            .ToArrayAsync();
+
+        values.ForEach(v => {
+            var package = packageTransactions.FirstOrDefault(p => p.SourceOperationLineId == v.LineId);
+            if (package != null)
+                v.Package = new PackageValueResponse(package.PackageId, package.Barcode);
+        });
+
+        return values;
+    }
+
+    public async Task<string?> UpdateCountingAll(UpdateInventoryCountingAllRequest request, SessionInfo sessionInfo) {
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try {
+            // Validate counting exists and is in valid state
+            var counting = await db.InventoryCountings.FindAsync(request.Id);
+            if (counting == null)
+                return "Inventory counting not found";
+
+            if (counting.Status != ObjectStatus.Open && counting.Status != ObjectStatus.InProgress)
+                return "Counting status is not Open or In Progress";
+
+            // Remove rows
+            if (request.RemoveRows.Length > 0) {
+                var linesToRemove = await db.InventoryCountingLines
+                    .Where(l => request.RemoveRows.Contains(l.Id) && l.InventoryCountingId == request.Id)
+                    .ToArrayAsync();
+
+                var packageTransactions = await db.PackageTransactions
+                    .Where(v => v.SourceOperationLineId != null && request.RemoveRows.Contains(v.SourceOperationLineId.Value))
+                    .ToArrayAsync();
+
+                foreach (var line in linesToRemove) {
+                    line.UpdatedAt = DateTime.UtcNow;
+                    line.UpdatedByUserId = sessionInfo.Guid;
+                    line.LineStatus = LineStatus.Closed;
+                    line.Deleted = true;
+                    line.DeletedAt = DateTime.UtcNow;
+                    db.InventoryCountingLines.Update(line);
+
+                    var pkgTransaction = packageTransactions.FirstOrDefault(v => v.SourceOperationLineId == line.Id);
+                    if (pkgTransaction != null && line.PackageId.HasValue) {
+                        decimal removeQuantity = line.Quantity;
+                        if (line.Unit != UnitType.Unit) {
+                            var data = await adapter.GetItemInfo(line.ItemCode);
+                            removeQuantity /= data.QuantityInUnit;
+                            if (line.Unit == UnitType.Pack)
+                                removeQuantity /= data.QuantityInPack;
+                        }
+
+                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
+                            PackageId = line.PackageId.Value,
+                            ItemCode = line.ItemCode,
+                            Quantity = removeQuantity,
+                            UnitQuantity = line.Quantity,
+                            UnitType = line.Unit,
+                            SourceOperationType = ObjectType.InventoryCounting,
+                            SourceOperationId = request.Id
+                        }, sessionInfo.Guid);
+                    }
+                }
+            }
+
+            // Update quantities
+            foreach (var pair in request.QuantityChanges) {
+                var lineId = pair.Key;
+                decimal newDisplayQuantity = pair.Value;
+
+                var line = await db.InventoryCountingLines
+                    .FirstOrDefaultAsync(l => l.Id == lineId && l.InventoryCountingId == request.Id);
+
+                if (line == null)
+                    continue;
+
+                // Convert display quantity back to base quantity
+                decimal newQuantity = newDisplayQuantity;
+                var items = await adapter.ItemCheckAsync(line.ItemCode, null);
+                var item = items.FirstOrDefault();
+                if (line.Unit != UnitType.Unit && item != null) {
+                    newQuantity *= item.NumInBuy;
+                    if (line.Unit == UnitType.Pack) {
+                        newQuantity *= item.PurPackUn;
+                    }
+                }
+
+                decimal diff = newQuantity - line.Quantity;
+                line.Quantity = newQuantity;
+                line.UpdatedAt = DateTime.UtcNow;
+                line.UpdatedByUserId = sessionInfo.Guid;
+
+                // Update package content if applicable
+                if (diff != 0 && line.PackageId.HasValue && item != null) {
+                    decimal unitDiff = diff;
+                    if (line.Unit != UnitType.Unit) {
+                        unitDiff /= item.NumInBuy;
+                        if (line.Unit == UnitType.Pack) {
+                            unitDiff /= item.PurPackUn;
+                        }
+                    }
+
+                    if (unitDiff > 0) {
+                        await packageContentService.AddItemToPackageAsync(new AddItemToPackageRequest {
+                            PackageId = line.PackageId.Value,
+                            ItemCode = line.ItemCode,
+                            Quantity = unitDiff,
+                            UnitQuantity = diff,
+                            UnitType = line.Unit,
+                            SourceOperationType = ObjectType.InventoryCounting,
+                            SourceOperationId = request.Id,
+                            SourceOperationLineId = line.Id
+                        }, counting.WhsCode, sessionInfo.Guid);
+                    }
+                    else {
+                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
+                            PackageId = line.PackageId.Value,
+                            ItemCode = line.ItemCode,
+                            Quantity = unitDiff * -1,
+                            UnitQuantity = diff * -1,
+                            UnitType = line.Unit,
+                            SourceOperationType = ObjectType.InventoryCounting,
+                            SourceOperationId = request.Id
+                        }, sessionInfo.Guid);
+                    }
+                }
+
+                db.InventoryCountingLines.Update(line);
+            }
+
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return null;
+        }
+        catch (Exception e) {
+            await transaction.RollbackAsync();
+            return e.Message;
         }
     }
 }
