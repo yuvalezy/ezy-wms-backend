@@ -123,6 +123,7 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
         var session = await dbContext.PickListCheckSessions
         .Include(s => s.CheckedItems)
         .Include(s => s.CheckedPackages)
+        .AsSplitQuery()
         .FirstOrDefaultAsync(s => s.PickListId == request.PickListId && !s.IsCompleted && !s.IsCancelled && !s.Deleted);
 
         if (session == null) {
@@ -260,6 +261,7 @@ public class PickListCheckService(SystemDbContext dbContext, IPickListService pi
         var session = await dbContext.PickListCheckSessions
         .Include(s => s.CheckedItems)
         .Include(s => s.CheckedPackages)
+        .AsSplitQuery()
         .FirstOrDefaultAsync(s => s.PickListId == pickListId && !s.Deleted);
 
         if (session == null) {

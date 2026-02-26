@@ -132,6 +132,7 @@ public class GoodsReceiptService(
         .Include(gr => gr.Documents)
         .Include(gr => gr.Lines)
         .ThenInclude(l => l.CancellationReason)
+        .AsSplitQuery()
         .AsNoTracking()
         .FirstOrDefaultAsync(gr => gr.Id == id);
 

@@ -106,7 +106,7 @@ public class PackageService(
         if (parameters is { Details: true })
             query = query.Include(c => c.CreatedByUser);
 
-        return await query.FirstOrDefaultAsync(p => p.Barcode == parameters.Barcode && !p.Deleted);
+        return await query.AsSplitQuery().FirstOrDefaultAsync(p => p.Barcode == parameters.Barcode && !p.Deleted);
     }
 
     public async Task<IEnumerable<Package>> GetActivePackagesAsync(string? whsCode = null)

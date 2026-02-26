@@ -893,6 +893,7 @@ public class InventoryCountingsService(
         .Include(cp => cp.Contents)
         .Include(cp => cp.Package)
         .ThenInclude(p => p.Contents)
+        .AsSplitQuery()
         .Where(cp => cp.InventoryCountingId == countingId)
         .ToListAsync();
 

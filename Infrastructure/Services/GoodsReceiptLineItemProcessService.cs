@@ -24,6 +24,7 @@ public class GoodsReceiptLineItemProcessService(
         var goodsReceipt = await db.GoodsReceipts
         .Include(gr => gr.Documents)
         .Include(gr => gr.Lines)
+        .AsSplitQuery()
         .FirstOrDefaultAsync(gr => gr.Id == request.Id && (gr.Status == ObjectStatus.Open || gr.Status == ObjectStatus.InProgress));
 
         if (goodsReceipt == null) {
