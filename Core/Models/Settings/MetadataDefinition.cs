@@ -49,6 +49,12 @@ public class MetadataDefinition {
     public bool ReadOnly { get; set; }
 
     /// <summary>
+    /// When set, the same value will also be written to this SAP field during PATCH updates.
+    /// Used to mirror Purchase fields to their Sales counterparts (e.g., PurchaseUnitWidth → SalesUnitWidth).
+    /// </summary>
+    public string? MirrorTo { get; set; }
+
+    /// <summary>
     /// Optional calculation configuration for computed metadata fields
     /// </summary>
     public Calculated? Calculated { get; set; }

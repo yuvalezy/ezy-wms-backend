@@ -216,6 +216,15 @@ public class ItemMetadataProcessor(
             sapPayload[kvp.Key] = convertedValue;
             logger.LogDebug("Adding field {FieldName} = {Value} to SAP payload",
                 kvp.Key, convertedValue);
+
+            // Mirror the value to the configured target field (e.g., Purchase → Sales)
+            var fieldDef = metaDataDefinitions.MetadataDefinition.FirstOrDefault(f =>
+                string.Equals(f.Id, kvp.Key, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(fieldDef?.MirrorTo)) {
+                sapPayload[fieldDef.MirrorTo] = convertedValue;
+                logger.LogDebug("Mirroring field {FieldName} → {MirrorField} = {Value}",
+                    kvp.Key, fieldDef.MirrorTo, convertedValue);
+            }
         }
 
         return sapPayload;
