@@ -18,4 +18,5 @@ public enum RoleType {
     ItemManagementSupervisor = 15,
     TransferConfirmation = 16,
     TransferConfirmationSupervisor = 17,
+    DirectTransfer = 18,
 }
