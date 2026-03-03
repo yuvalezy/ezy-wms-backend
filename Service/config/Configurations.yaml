@@ -7,7 +7,7 @@
 Options:
   # General Settings
   # Whether to enable base unit conversion functionality (bool, default: true)
-  EnableUseBaseUn: false
+  EnableUseBaseUn: true
   
   # Unit labels for base unit conversion (nullable string)
   #UnitLabel: ""
@@ -24,7 +24,7 @@ Options:
   #   Dozen - stop at "dozen" level (show remainder in base units, e.g. meters)
   #   Pack  - stop at "pack" level (show remainder in dozens or base units)
   # Example: with MaxUnitLevel: Dozen and 21.6 meters (pack=14.4, unit=1.44) → "1 Pack, 7.2 Meters"
-  MaxUnitLevel: Dozen
+  MaxUnitLevel: Pack
 
   # Scanner input mode for barcode/item identification (enum, default: ItemBarcode)
   # Values: ItemBarcode (scan item barcodes), ItemCode (manual item code entry)
@@ -106,6 +106,21 @@ Options:
   # false = Integer quantities only (default for backward compatibility)
   EnableDecimalQuantities: true
 
+  # Per-document-type unit overrides (optional)
+  # Overrides the global unit settings for specific document types
+  # Supported keys: GoodsReceipt, InventoryCounting, Transfer, Picking
+  # Any property not specified falls back to the global Options value
+  DocumentUnitOverrides:
+  #  GoodsReceipt:
+  #    DefaultUnitType: Pack
+  #    #EnableUnitSelection: true
+  #  InventoryCounting:
+  #    DefaultUnitType: Dozen
+    Transfer:
+      DefaultUnitType: Unit
+  #  #Picking:
+  #  #  DefaultUnitType: Unit
+
 # Data Filtering Configuration
 # SQL-based filters for restricting data visibility and access
 Filters:
@@ -148,12 +163,12 @@ ExternalAdapter: SboServiceLayer
 # Configuration for connecting to SAP B1 database and services
 SboSettings:
   # SAP B1 server hostname or IP address (required string)
-  Server: YUVAL-PC
+  Server: 192.168.88.35
   
   # SAP Service Layer URL for REST API access (nullable string)
   # Required when ExternalAdapter is SboServiceLayer
   # Format: https://server:port (usually port 50000)
-  ServiceLayerUrl: https://localhost:50000
+  ServiceLayerUrl: https://192.168.88.35:50000
   
   # SAP B1 database server type (required int)
   # SQL Server values: 4(MSSQL2005), 6(MSSQL2008), 7(MSSQL2012), 

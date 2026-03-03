@@ -53,4 +53,19 @@ public record Options {
 
     // Inventory Counting
     public int InventoryCountingBatchSize { get; set; } = 200;
+
+    // Per-document-type unit overrides (optional)
+    public Dictionary<ObjectType, DocumentUnitSettings>? DocumentUnitOverrides { get; set; }
+
+    public DocumentUnitSettings GetUnitSettingsFor(ObjectType objectType)
+    {
+        var overrides = DocumentUnitOverrides?.GetValueOrDefault(objectType);
+        return new DocumentUnitSettings
+        {
+            DefaultUnitType = overrides?.DefaultUnitType ?? DefaultUnitType,
+            EnableUnitSelection = overrides?.EnableUnitSelection ?? EnableUnitSelection,
+            EnableUseBaseUn = overrides?.EnableUseBaseUn ?? EnableUseBaseUn,
+            MaxUnitLevel = overrides?.MaxUnitLevel ?? MaxUnitLevel,
+        };
+    }
 }
