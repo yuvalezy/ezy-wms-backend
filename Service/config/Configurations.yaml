@@ -80,6 +80,10 @@ Options:
   # Whether supervisor approval is required to create inventory transfer (bool, default: false)
   TransferCreateSupervisorRequired: false
 
+  # Whether Direct Transfer should transfer all item stock from source bin (bool, default: false)
+  # When enabled, skips quantity input and transfers 100% of the scanned item's stock in source bin
+  DirectTransferAll: true
+
   # Package & Unit Configuration
   # Whether package functionality is enabled system-wide (bool, default: false)
   EnablePackages: false

@@ -12,10 +12,10 @@ public class DirectTransferRequest {
     [Required]
     public int TargetBinEntry { get; set; }
 
-    [Required]
-    [Range(0.01, double.MaxValue, ErrorMessage = "Quantity must be greater than zero")]
+    [Range(0, double.MaxValue, ErrorMessage = "Quantity must be zero or greater")]
     public decimal Quantity { get; set; }
 
-    [Required]
-    public required string UnitCode { get; set; }
+    public string? UnitCode { get; set; }
+
+    public bool TransferAll { get; set; }
 }
