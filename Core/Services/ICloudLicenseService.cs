@@ -9,5 +9,6 @@ public interface ICloudLicenseService {
     Task<bool>                      IsCloudAvailableAsync();
     Task                            QueueDeviceEventAsync(CloudLicenseEvent eventType, string deviceUuid, string deviceName = "");
     Task                            ProcessQueuedEventsAsync();
+    Task                            ForceSyncAllDevicesAsync();
     Task<int>                       GetPendingEventCountAsync();
 }

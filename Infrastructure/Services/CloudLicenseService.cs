@@ -26,7 +26,7 @@ public class CloudLicenseService(
             string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/license/device-event", content);
+            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/myezy/license/device-event", content);
             
             if (response.IsSuccessStatusCode) {
                 string responseJson = await response.Content.ReadAsStringAsync();
@@ -77,7 +77,7 @@ public class CloudLicenseService(
             string json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
-            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/license/validate-account", content);
+            var response = await httpClient.PostAsync($"{cloudEndpoint}/api/myezy/license/validate-account", content);
             
             if (response.IsSuccessStatusCode) {
                 string responseJson = await response.Content.ReadAsStringAsync();
@@ -140,6 +140,41 @@ public class CloudLicenseService(
 
         logger.LogInformation("Queued device event {EventType} for device {DeviceUuid}", 
             eventType, deviceUuid);
+    }
+
+    public async Task ForceSyncAllDevicesAsync() {
+        var activeDevices = await context.Devices
+            .Where(d => d.Status == DeviceStatus.Active)
+            .ToListAsync();
+
+        foreach (var device in activeDevices) {
+            var request = new CloudLicenseRequest {
+                DeviceUuid = device.DeviceUuid,
+                Event = CloudLicenseEvent.Register,
+                DeviceName = device.DeviceName,
+                Timestamp = DateTime.UtcNow,
+                AdditionalData = new Dictionary<string, object>()
+            };
+
+            var response = await SendDeviceEventAsync(request);
+            if (response.Success) {
+                logger.LogInformation("Force-synced device {DeviceName} ({DeviceUuid})",
+                    device.DeviceName, device.DeviceUuid);
+            } else {
+                logger.LogWarning("Failed to force-sync device {DeviceName}: {Error}",
+                    device.DeviceName, response.Message);
+            }
+        }
+
+        // Process all remaining pending queue items (no limit)
+        var pendingItems = await context.CloudSyncQueues
+            .Where(q => (q.Status == CloudSyncStatus.Pending || q.Status == CloudSyncStatus.Failed) && q.NextRetryAt <= DateTime.UtcNow)
+            .OrderBy(q => q.CreatedAt)
+            .ToListAsync();
+
+        foreach (var item in pendingItems) {
+            await ProcessQueueItemAsync(item);
+        }
     }
 
     public async Task ProcessQueuedEventsAsync() {

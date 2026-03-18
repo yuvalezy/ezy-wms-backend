@@ -59,7 +59,7 @@ public class LicenseController(
     [RequireSuperUser]
     public async Task<ActionResult> ForceSync() {
         try {
-            await cloudService.ProcessQueuedEventsAsync();
+            await cloudService.ForceSyncAllDevicesAsync();
             return Ok(new { message = "Sync initiated successfully" });
         }
         catch (Exception ex) {
