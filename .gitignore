@@ -10,3 +10,5 @@ Release
 *.idea
 packages
 Service/logs
+Core/Core.xml
+Service/Service.xml

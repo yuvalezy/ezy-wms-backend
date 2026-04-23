@@ -66,7 +66,7 @@ services.AddRouting(options => options.LowercaseUrls = true);
 services.AddAuthenticationAndAuthorization(builder.Configuration);
 
 // Configure application services
-services.ConfigureServices(settings, builder.Configuration);
+services.ConfigureServices(settings, builder.Configuration, builder.Environment);
 services.AddJsonConfiguration();
 services.AddSessionManagement(settings);
 services.AddCustomCors(builder.Configuration);

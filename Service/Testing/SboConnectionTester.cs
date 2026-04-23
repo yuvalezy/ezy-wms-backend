@@ -6,9 +6,18 @@ using Core.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.FileProviders;
 using Service.Configuration;
 
 namespace Service.Testing;
+
+public class MockHostEnvironment : IHostEnvironment {
+    public string EnvironmentName { get; set; } = Environments.Development;
+    public string ApplicationName { get; set; } = "SboConnectionTester";
+    public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+    public IFileProvider ContentRootFileProvider { get; set; } = null!;
+}
 
 public static class SboConnectionTester {
     public async static Task RunTest(IConfiguration configuration) {
@@ -64,6 +73,7 @@ public static class SboConnectionTester {
 
         // Add settings
         services.AddSingleton<ISettings>(settings);
+        var environment = new MockHostEnvironment();
 
         // Configure the appropriate adapter
         switch (settings.ExternalAdapter) {
@@ -76,6 +86,8 @@ public static class SboConnectionTester {
             default:
                 throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
         }
+
+        services.ConfigureServices(settings, configuration, environment);
 
         // Build service provider
         await using var serviceProvider = services.BuildServiceProvider();

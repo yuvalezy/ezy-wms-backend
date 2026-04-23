@@ -11,12 +11,14 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Service.Services;
+using System.Net.Http;
 
 namespace Service.Configuration;
 
 public static class DependencyInjectionConfig {
-    public static IServiceCollection ConfigureServices(this IServiceCollection services, Settings settings, IConfiguration configuration) {
+    public static IServiceCollection ConfigureServices(this IServiceCollection services, Settings settings, IConfiguration configuration, IHostEnvironment environment) {
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
 
@@ -97,7 +99,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ILicenseValidationService, LicenseValidationService>();
 
         // Configure HTTP client for cloud services
-        services.AddHttpClient<ICloudLicenseService, CloudLicenseService>((serviceProvider, httpClient) =>
+        var httpClientBuilder = services.AddHttpClient<ICloudLicenseService, CloudLicenseService>((serviceProvider, httpClient) =>
         {
             var settingsService = serviceProvider.GetRequiredService<ISettings>();
             var bearerToken = settingsService.Licensing.BearerToken ??
@@ -109,6 +111,12 @@ public static class DependencyInjectionConfig {
             httpClient.DefaultRequestHeaders.Add("User-Agent", "WMS-License-Client/1.0");
             httpClient.Timeout = TimeSpan.FromSeconds(30);
         });
+
+        if (environment.IsDevelopment()) {
+            httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+        }
 
         // Configure BackgroundPickListSyncService
         services.Configure<BackgroundPickListSyncOptions>(options =>
