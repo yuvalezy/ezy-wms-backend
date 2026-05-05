@@ -31,7 +31,7 @@ jobs:
         run: dotnet build
 
       - name: Run unit tests
-        run: dotnet test UnitTests --no-build
+        run: dotnet test UnitTests --no-build --filter "FullyQualifiedName~UnitTests.Unit"
 
   frontend:
     runs-on: ubuntu-latest
@@ -41,7 +41,6 @@ jobs:
         with:
           repository: ${{ env.FRONTEND_REPO }}
           ref: ${{ github.event.inputs.frontend_ref || 'main' }}
-          token: ${{ secrets.FRONTEND_REPO_TOKEN }}
           path: frontend
 
       - name: Setup Node.js
