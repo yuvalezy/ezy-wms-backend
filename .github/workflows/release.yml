@@ -100,6 +100,9 @@ jobs:
       - name: Publish Service (${{ matrix.rid }})
         run: dotnet publish Service/Service.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }}
 
+      - name: Stage config folder
+        run: cp -r Service/config publish/${{ matrix.rid }}/config
+
       - name: Create archive
         run: |
           cd publish/${{ matrix.rid }}
