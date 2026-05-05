@@ -160,7 +160,7 @@ Warehouses:
 
 # External System Integration
 # Specifies which adapter to use for SAP Business One integration (enum, required)
-# Values: SboWindows (COM interop), SboServiceLayer (REST API via Service Layer)
+# Values: SboServiceLayer (REST API via Service Layer)
 ExternalAdapter: SboServiceLayer
 
 # SAP Business One Connection Settings

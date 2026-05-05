@@ -151,9 +151,6 @@ public static class DependencyInjectionConfig {
             services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
 
         switch (settings.ExternalAdapter) {
-            // case ExternalAdapterType.SboWindows:
-            //     SboWindowsDependencyInjection.ConfigureServices(services);
-            //     break;
             case ExternalAdapterType.SboServiceLayer:
                 SboServiceLayerDependencyInjection.ConfigureServices(services);
                 break;

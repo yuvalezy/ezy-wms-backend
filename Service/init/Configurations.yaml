@@ -149,8 +149,7 @@ Warehouses:
 
 # External System Integration
 # Specifies which adapter to use for SAP Business One integration (enum, required)
-# Values: SboWindows (COM interop), SboServiceLayer (REST API via Service Layer)
-# Recommendation: Use SboServiceLayer for new installations (more modern, better performance)
+# Values: SboServiceLayer (REST API via Service Layer)
 ExternalAdapter: SboServiceLayer
 
 # SAP Business One Connection Settings
@@ -215,7 +214,6 @@ SboSettings:
 # - Ensure proper network security for Service Layer connections
 
 # Performance Notes:
-# - SboServiceLayer generally offers better performance than SboWindows
 # - Configure appropriate timeouts for your network environment
 # - Monitor bin entry access patterns and optimize as needed
 # - Consider caching strategies for frequently accessed warehouse data

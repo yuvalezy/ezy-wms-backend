@@ -1,21 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MailKit" Version="4.14.1" />
-      <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.8" />
-      <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
-      <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.9" />
-      <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.16.0" />
       <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
       <PackageReference Include="StackExchange.Redis" Version="2.9.11" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     </ItemGroup>
@@ -23,12 +23,6 @@
     <ItemGroup>
       <ProjectReference Include="..\Adapters.Common\Adapters.Common.csproj" />
       <ProjectReference Include="..\Core\Core.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
-        <HintPath>..\..\..\..\..\Program Files\dotnet\shared\Microsoft.AspNetCore.App\9.0.5\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
-      </Reference>
     </ItemGroup>
 
     <ItemGroup>

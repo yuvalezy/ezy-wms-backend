@@ -6,7 +6,7 @@ namespace Infrastructure.DbContexts;
 
 public class PickListConfiguration : IEntityTypeConfiguration<PickList> {
     public void Configure(EntityTypeBuilder<PickList> builder) {
-        // Enums are now stored as integers by default
+        builder.Property(p => p.Quantity).HasPrecision(18, 2);
     }
 }
 

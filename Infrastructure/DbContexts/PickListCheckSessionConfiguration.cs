@@ -54,7 +54,8 @@ public class PickListCheckItemConfiguration : IEntityTypeConfiguration<PickListC
             .HasMaxLength(50);
 
         builder.Property(p => p.CheckedQuantity)
-            .IsRequired();
+            .IsRequired()
+            .HasPrecision(18, 2);
 
         builder.Property(p => p.Unit)
             .IsRequired()

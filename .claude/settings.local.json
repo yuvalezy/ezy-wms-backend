@@ -29,7 +29,8 @@
       "Read(//d/source/ezy-wms/ezy-wms-frontend/src/pages/transfer/**)",
       "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/components/**)",
       "Read(//d/source/ezy-wms/ezy-wms-frontend/src/features/transfer/**)",
-      "Read(//d/source/template/ezy-portal/backend/**)"
+      "Read(//d/source/template/ezy-portal/backend/**)",
+      "Bash(git rm *)"
     ],
     "deny": []
   }

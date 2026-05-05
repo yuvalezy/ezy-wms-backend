@@ -43,5 +43,6 @@ public class InventoryCountingBatchConfiguration : IEntityTypeConfiguration<Inve
 
 public class InventoryCountingLineConfiguration : IEntityTypeConfiguration<InventoryCountingLine> {
     public void Configure(EntityTypeBuilder<InventoryCountingLine> builder) {
+        builder.Property(l => l.Quantity).HasPrecision(18, 2);
     }
 }

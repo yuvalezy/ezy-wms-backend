@@ -32,9 +32,7 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
 }
 public class TransferLineConfiguration : IEntityTypeConfiguration<TransferLine> {
     public void Configure(EntityTypeBuilder<TransferLine> builder) {
-        // Configure StatusUser relationship
-
-        // Enums are now stored as integers by default
+        builder.Property(l => l.Quantity).HasPrecision(18, 2);
     }
 }
 
