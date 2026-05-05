@@ -9,7 +9,7 @@ on:
       frontend_ref:
         description: 'Frontend git ref to build (branch, tag, or SHA)'
         required: false
-        default: 'main'
+        default: 'master'
 
 env:
   DOTNET_VERSION: '10.0.x'
@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.FRONTEND_REPO }}
-          ref: ${{ github.event.inputs.frontend_ref || 'main' }}
+          ref: ${{ github.event.inputs.frontend_ref || 'master' }}
           path: frontend
 
       - name: Setup Node.js
