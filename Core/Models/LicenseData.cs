@@ -8,7 +8,7 @@ public class LicenseData {
     public DateTime?                   PaymentCycleDate     { get; set; }
     public DateTime?                   DemoExpirationDate   { get; set; }
     public string?                     InactiveReason       { get; set; }
-    public int                         MaxAllowedDevices    { get; set; }
+    public int?                        MaxAllowedDevices    { get; set; }
     public int                         ActiveDeviceCount    { get; set; }
     public Dictionary<string, object>  AdditionalData       { get; set; } = new();
 }

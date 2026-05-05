@@ -30,8 +30,10 @@ public class CloudLicenseService(
             
             if (response.IsSuccessStatusCode) {
                 string responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonUtils.Deserialize<CloudLicenseResponse>(responseJson) ?? 
-                    new CloudLicenseResponse { Success = false, Message = "Failed to deserialize response" };
+                var result = CloudLicenseResponseParser.ParseDeviceEventResponse(responseJson);
+                if (!result.Success && string.IsNullOrWhiteSpace(result.Message)) {
+                    result.Message = "Cloud service returned an unsuccessful response";
+                }
                 
                 logger.LogInformation("Device event {Event} sent successfully for device {DeviceUuid}", 
                     request.Event, request.DeviceUuid);
@@ -81,8 +83,10 @@ public class CloudLicenseService(
             
             if (response.IsSuccessStatusCode) {
                 string responseJson = await response.Content.ReadAsStringAsync();
-                var result = JsonUtils.Deserialize<AccountValidationResponse>(responseJson) ??
-                    new AccountValidationResponse { Success = false, Message = "Failed to deserialize response" };
+                var result = CloudLicenseResponseParser.ParseAccountValidationResponse(responseJson);
+                if (!result.Success && string.IsNullOrWhiteSpace(result.Message)) {
+                    result.Message = "Account validation returned an unsuccessful response";
+                }
                 
                 logger.LogInformation("Account validation completed successfully");
                 return result;
