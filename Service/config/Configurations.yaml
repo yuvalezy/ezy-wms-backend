@@ -104,6 +104,10 @@ Options:
   # Whether picking operations require verification/check steps (bool, default: false)
   EnablePickingCheck: true
 
+  # Whether the picking detail screen shows a guided, location-first walk ordered by bin code
+  # (pick-path routing). false = classic item-first view (bool, default: false)
+  EnablePickPathRouting: true
+
   # Quantity Configuration
   # Whether to allow decimal quantities in all operations (bool, default: false)
   # true = Allow decimals with 2 decimal places precision
@@ -167,12 +171,12 @@ ExternalAdapter: SboServiceLayer
 # Configuration for connecting to SAP B1 database and services
 SboSettings:
   # SAP B1 server hostname or IP address (required string)
-  Server: 192.168.88.35
+  Server: 192.168.88.34
   
   # SAP Service Layer URL for REST API access (nullable string)
   # Required when ExternalAdapter is SboServiceLayer
   # Format: https://server:port (usually port 50000)
-  ServiceLayerUrl: https://192.168.88.35:50000
+  ServiceLayerUrl: https://192.168.88.34:50000
   
   # SAP B1 database server type (required int)
   # SQL Server values: 4(MSSQL2005), 6(MSSQL2008), 7(MSSQL2012), 
@@ -192,7 +196,7 @@ SboSettings:
   ServerPassword: null
   
   # SAP B1 database name (required string)
-  Database: UNIT_TEST
+  Database: 192.168.88.34DemoPA
   
   # SAP B1 application username (nullable string)
   # User account for SAP B1 application login

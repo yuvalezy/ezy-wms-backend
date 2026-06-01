@@ -59,6 +59,12 @@ public class BinLocationQuantityResponse {
     public int Entry { get; set; }
     public string Code { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
+
+    /// <summary>
+    /// Numeric walk-order derived from the bin code (see IPickPathSequencer). Lower comes first.
+    /// The frontend groups items by bin and orders the walk by this value when pick-path routing is on.
+    /// </summary>
+    public int Sequence { get; set; }
     public BinLocationPackageQuantityResponse[]? Packages { get; set; }
 }
 

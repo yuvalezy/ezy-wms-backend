@@ -104,6 +104,10 @@ Options:
   # Whether picking operations require verification/check steps (bool, default: false)
   EnablePickingCheck: false
 
+  # Whether the picking detail screen shows a guided, location-first walk ordered by bin code
+  # (pick-path routing). false = classic item-first view (bool, default: false)
+  EnablePickPathRouting: false
+
   # Quantity Configuration
   # Whether to allow decimal quantities in all operations (bool, default: false)
   # true = Allow decimals with 2 decimal places precision

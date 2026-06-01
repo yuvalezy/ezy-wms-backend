@@ -16,7 +16,8 @@ public class PickListDetailService(
     ILogger<PickListDetailService> logger,
     ISettings settings,
     IPickListPackageEligibilityService eligibilityService,
-    IPickListPackageService packageService) : IPickListDetailService {
+    IPickListPackageService packageService,
+    IPickPathSequencer pickPathSequencer) : IPickListDetailService {
     private readonly bool enablePackages = settings.Options.EnablePackages;
 
     public async Task GetPickListItemDetails(int absEntry, PickListDetailRequest request, PickListResponse response, PickList[] dbPick) {
@@ -167,6 +168,7 @@ public class PickListDetailService(
             var binResponse = new BinLocationQuantityResponse {
                 Entry = bin.Entry,
                 Code = bin.Code,
+                Sequence = pickPathSequencer.GetSequence(bin.Code),
                 Quantity = bin.Quantity - result.Where(v => v.ItemCode == item.ItemCode && v.BinEntry == bin.Entry).Sum(v => v.Quantity)
             };
 

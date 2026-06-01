@@ -49,6 +49,12 @@ public record Options {
     //Pick List
     public bool EnablePickingCheck { get; init; }
 
+    /// <summary>
+    /// When enabled, the picking detail screen presents items as a guided, location-first walk
+    /// ordered by bin code (pick-path routing). Default off preserves the item-first view.
+    /// </summary>
+    public bool EnablePickPathRouting { get; init; }
+
     //Quantities
     public bool EnableDecimalQuantities { get; init; }
 
