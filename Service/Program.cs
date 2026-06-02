@@ -13,6 +13,15 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load YAML configuration files before command handling or settings binding.
+builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: false, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/PickingDetails.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/CustomFields.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/Item.yaml", optional: true, reloadOnChange: true);
+builder.Configuration.AddYamlFile("config/Package.yaml", optional: true, reloadOnChange: true);
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -41,15 +50,6 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
     builder.Host.UseSystemd();
 }
-
-// Load YAML configuration files before binding
-builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: false, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/PickingDetails.yaml", optional: true, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/CustomFields.yaml", optional: true, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/Item.yaml", optional: true, reloadOnChange: true);
-builder.Configuration.AddYamlFile("config/Package.yaml", optional: true, reloadOnChange: true);
 
 var settings = new Settings();
 builder.Configuration.Bind(settings);

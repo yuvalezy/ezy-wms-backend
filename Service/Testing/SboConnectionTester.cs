@@ -54,9 +54,11 @@ public static class SboConnectionTester {
             Environment.Exit(1);
         }
 
-        Console.WriteLine();
-        Console.WriteLine("Press any key to exit...");
-        Console.ReadKey();
+        if (!Console.IsInputRedirected) {
+            Console.WriteLine();
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
     }
 
     private async static Task TestConnectionUsingAdapter(Settings settings, IConfiguration configuration) {
