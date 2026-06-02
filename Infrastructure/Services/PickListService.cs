@@ -1,3 +1,4 @@
+using Core.Constants;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
@@ -69,7 +70,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         }
 
         if (!request.DisplayCompleted) {
-            response.RemoveAll(v => v is { OpenQuantity: 0, CheckStarted: false });
+            // Hide finished pickings (no remaining open work) unless an active check session
+            // requires the picker to recheck (CheckStarted == true).
+            response.RemoveAll(v => v.OpenQuantity < QuantityTolerances.Completed && !v.CheckStarted);
             if (!enableBinLocations) {
                 response.RemoveAll(v => v is { SyncStatus: SyncStatus.Synced, CheckStarted: false });
             }

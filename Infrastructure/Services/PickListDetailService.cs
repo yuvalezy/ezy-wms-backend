@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Core.Constants;
 using Core.DTOs.PickList;
 using Core.Entities;
 using Core.Enums;
@@ -164,6 +165,10 @@ public class PickListDetailService(
             if (!itemDict.TryGetValue(bin.ItemCode, out var item))
                 continue;
 
+            // Item fully picked → none of its bins are relevant any more.
+            if (item.OpenQuantity < QuantityTolerances.Completed)
+                continue;
+
             item.BinQuantities ??= [];
             var binResponse = new BinLocationQuantityResponse {
                 Entry = bin.Entry,
@@ -188,7 +193,7 @@ public class PickListDetailService(
         }
 
         // Calculate available quantities and filter if bin entry specified
-        responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity == 0);
+        responseDetail.Items!.RemoveAll(v => v.BinQuantities == null || v.OpenQuantity < QuantityTolerances.Completed);
         foreach (var item in responseDetail.Items.Where(i => i.BinQuantities != null)) {
             item.Available = item.BinQuantities!.Sum(b => b.Quantity);
             item.Packages = item.BinQuantities!.Where(b => b.Packages != null).SelectMany(b => b.Packages!).Where(b => b.Quantity > 0).ToArray();
