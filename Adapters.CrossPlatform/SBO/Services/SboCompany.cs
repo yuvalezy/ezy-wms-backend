@@ -112,6 +112,10 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         return await ExecuteHttpRequestAsync(HttpMethod.Patch, endpoint, data);
     }
 
+    public async Task<(bool success, string? errorMessage)> PatchAsync<T>(string endpoint, T data, IReadOnlyDictionary<string, string> headers) {
+        return await ExecuteHttpRequestAsync(HttpMethod.Patch, endpoint, data, headers);
+    }
+
     public async Task<(bool success, string? errorMessage)> PutAsync<T>(string endpoint, T data) {
         return await ExecuteHttpRequestAsync(HttpMethod.Put, endpoint, data);
     }
@@ -144,7 +148,11 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         return await ExecuteHttpRequestAsync(HttpMethod.Post, endpoint, data);
     }
 
-    private async Task<(bool success, string? errorMessage)> ExecuteHttpRequestAsync(HttpMethod httpMethod, string endpoint, object data) {
+    private async Task<(bool success, string? errorMessage)> ExecuteHttpRequestAsync(
+        HttpMethod httpMethod,
+        string endpoint,
+        object? data,
+        IReadOnlyDictionary<string, string>? headers = null) {
         await ConnectCompany();
 
         string json    = JsonSerializer.Serialize(data);
@@ -155,6 +163,12 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         var request = new HttpRequestMessage(httpMethod, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
+        if (headers != null) {
+            foreach (var header in headers) {
+                request.Headers.Add(header.Key, header.Value);
+            }
+        }
+
         request.Content = content;
 
         logger.LogDebug("Sending to service layer method: {httpMethod} {endpoint} with body: {body}", httpMethod.Method, endpoint, json);

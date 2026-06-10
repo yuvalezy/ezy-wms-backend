@@ -52,6 +52,7 @@ public class PickListProcessService(
         try {
             // Prepare data for SAP B1
             var pickingData = await db.PickLists
+            .Include(p => p.PickingPackageLabel)
             .Where(p => p.AbsEntry == absEntry && p.Status == ObjectStatus.Processing && p.SyncStatus == SyncStatus.Processing)
             .ToListAsync();
 
