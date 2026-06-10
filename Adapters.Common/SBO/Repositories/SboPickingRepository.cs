@@ -376,7 +376,7 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
             new SqlParameter("@SourceType", SqlDbType.Int) { Value = request.Type },
             new SqlParameter("@SourceEntry", SqlDbType.Int) { Value = request.Entry },
             new SqlParameter("@ItemCode", SqlDbType.NVarChar, 50) { Value = request.ItemCode },
-            new SqlParameter("@Quantity", SqlDbType.Int) { Value = request.Quantity },
+            new SqlParameter("@Quantity", SqlDbType.Decimal) { Precision = 18, Scale = 6, Value = request.Quantity },
             new SqlParameter("@BinEntry", SqlDbType.Int) { Value = request.BinEntry ?? -1 },
         };
 

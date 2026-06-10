@@ -25,6 +25,7 @@ namespace Service.Controllers;
 public class PickingController(
     IPickListService service,
     IPickListLineService lineService,
+    IPickingPackageLabelService packageLabelService,
     IPickListProcessService processService,
     IPickListCancelService cancelService,
     IPickListCheckService checkService,
@@ -111,6 +112,24 @@ public class PickingController(
     public async Task<PickListAddItemResponse> AddItem([FromBody] PickListAddItemRequest request) {
         var sessionInfo = HttpContext.GetSession();
         return await lineService.AddItem(sessionInfo, request);
+    }
+
+    [HttpGet("{id:int}/package-labels")]
+    [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(IEnumerable<PickingPackageLabelResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IEnumerable<PickingPackageLabelResponse>> GetPackageLabels(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await packageLabelService.ListAsync(id, sessionInfo.Warehouse);
+    }
+
+    [HttpPost("{id:int}/package-labels")]
+    [RequireRolePermission(RoleType.Picking)]
+    [ProducesResponseType(typeof(PickingPackageLabelResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<PickingPackageLabelResponse> CreatePackageLabel(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await packageLabelService.CreateNextAsync(id, sessionInfo);
     }
 
     /// <summary>

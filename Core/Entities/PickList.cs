@@ -21,6 +21,12 @@ public class PickList : BaseEntity {
     [Required]
     public decimal Quantity { get; set; }
 
+    public decimal? ScannedQuantity { get; set; }
+
+    public Guid? PickingPackageLabelId { get; set; }
+
+    public PickingPackageLabel? PickingPackageLabel { get; set; }
+
     [Required]
     public UnitType Unit { get; set; }
 

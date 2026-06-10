@@ -13,10 +13,27 @@ public class PickListLineService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
-    IPickListValidationService validationService) : IPickListLineService {
+    IPickListValidationService validationService,
+    IPickingPackageLabelService packageLabelService) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
+        if (request.Quantity <= 0) {
+            return PickListAddItemResponse.Error("Quantity must be greater than zero");
+        }
+
+        var scannedQuantity = request.Quantity;
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
+            if (request.PickingPackageLabelId.HasValue) {
+                try {
+                    await packageLabelService.ValidateForPickListAsync(request.PickingPackageLabelId.Value, request.ID, sessionInfo.Warehouse);
+                }
+                catch (InvalidOperationException ex) {
+                    await transaction.RollbackAsync();
+                    logger.LogWarning(ex, "Invalid picking package label for pick list {AbsEntry}", request.ID);
+                    return PickListAddItemResponse.Error(ex.Message);
+                }
+            }
+
             var items = await adapter.ItemCheckAsync(request.ItemCode, null);
             var item = items.FirstOrDefault();
             if (request.Unit != UnitType.Unit) {
@@ -63,6 +80,8 @@ public class PickListLineService(
                 PickEntry = selectedValidation.PickEntry ?? request.PickEntry ?? 0,
                 ItemCode = request.ItemCode,
                 Quantity = request.Quantity,
+                ScannedQuantity = scannedQuantity,
+                PickingPackageLabelId = request.PickingPackageLabelId,
                 BinEntry = request.BinEntry,
                 Unit = request.Unit,
                 Status = ObjectStatus.Open,

@@ -98,6 +98,13 @@ Options:
   # Whether picking operations require verification/check steps (bool, default: false)
   EnablePickingCheck: true
 
+  # Whether picking can create/select optional WMS package labels (R1, R2, etc.)
+  # Labels are stored with picked scan rows and do not change SAP picking quantities (bool, default: false)
+  EnablePickingPackageLabels: true
+
+  # Prefix used when auto-generating picking package labels (string, default: R)
+  PickingPackageLabelPrefix: "R"
+
   # Whether the picking detail screen shows a guided, location-first walk ordered by bin code
   # (pick-path routing). false = classic item-first view (bool, default: false)
   EnablePickPathRouting: true

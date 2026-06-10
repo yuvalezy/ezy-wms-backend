@@ -46,6 +46,8 @@ public record Options {
 
     //Pick List
     public bool EnablePickingCheck { get; init; }
+    public bool EnablePickingPackageLabels { get; init; }
+    public string PickingPackageLabelPrefix { get; init; } = "R";
 
     /// <summary>
     /// When enabled, the picking detail screen presents items as a guided, location-first walk
