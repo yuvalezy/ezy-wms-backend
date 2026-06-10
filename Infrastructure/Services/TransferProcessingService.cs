@@ -207,13 +207,7 @@ public class TransferProcessingService(
             })
             .ToList();
 
-            // Calculate the transfer quantity - should be the source quantity (what we're transferring)
-            decimal sourceQuantity = sourceBins.Sum(s => s.Quantity);
-            decimal targetQuantity = targetBins.Sum(t => t.Quantity);
-
-            // Use the maximum of source or target as the line quantity
-            // In a proper transfer, these should be equal
-            decimal transferQuantity = Math.Max(sourceQuantity, targetQuantity);
+            decimal transferQuantity = CalculateTransferQuantity(itemGroup.Lines, sourceBins, targetBins);
 
             var data = new TransferCreationDataResponse {
                 ItemCode = itemGroup.ItemCode,
@@ -226,6 +220,21 @@ public class TransferProcessingService(
         }
 
         return transferData;
+    }
+
+    public static decimal CalculateTransferQuantity(
+        IEnumerable<TransferLine> lines,
+        IReadOnlyCollection<TransferCreationBinResponse> sourceBins,
+        IReadOnlyCollection<TransferCreationBinResponse> targetBins) {
+        decimal sourceQuantity = sourceBins.Count > 0
+            ? sourceBins.Sum(s => s.Quantity)
+            : lines.Where(l => l.Type == SourceTarget.Source).Sum(l => l.Quantity);
+
+        decimal targetQuantity = targetBins.Count > 0
+            ? targetBins.Sum(t => t.Quantity)
+            : lines.Where(l => l.Type == SourceTarget.Target).Sum(l => l.Quantity);
+
+        return Math.Max(sourceQuantity, targetQuantity);
     }
 
     public async Task<CreateTransferRequestResponse> CreateTransferRequest(CreateTransferRequestRequest request, SessionInfo sessionInfo) {
