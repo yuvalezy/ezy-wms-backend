@@ -190,7 +190,7 @@ SboSettings:
   ServerPassword: null
   
   # SAP B1 database name (required string)
-  Database: 192.168.88.34DemoPA
+  Database: SBODemoPA
   
   # SAP B1 application username (nullable string)
   # User account for SAP B1 application login
@@ -198,7 +198,7 @@ SboSettings:
   
   # SAP B1 application password (nullable string)
   # Password for SAP B1 application login
-  Password: be1s
+  Password: if88RYFHuD!
 
 # Configuration Notes:
 # - This file is mandatory and must be present for system operation
