@@ -20,29 +20,11 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
             .HasForeignKey(tl => tl.TransferId)
             .OnDelete(DeleteBehavior.Cascade);
             
-        // Configure Packages relationship with cascade delete
-        builder
-            .HasMany(t => t.Packages)
-            .WithOne(tp => tp.Transfer)
-            .HasForeignKey(tp => tp.TransferId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         // Enums are now stored as integers by default
     }
 }
 public class TransferLineConfiguration : IEntityTypeConfiguration<TransferLine> {
     public void Configure(EntityTypeBuilder<TransferLine> builder) {
         builder.Property(l => l.Quantity).HasPrecision(18, 2);
-    }
-}
-
-public class TransferPackageConfiguration : IEntityTypeConfiguration<TransferPackage> {
-    public void Configure(EntityTypeBuilder<TransferPackage> builder) {
-        // Create unique constraint to prevent duplicate package additions
-        builder.HasIndex(tp => new { tp.TransferId, tp.PackageId, tp.Type })
-            .IsUnique()
-            .HasDatabaseName("IX_TransferPackages_TransferId_PackageId_Type");
-            
-        // Enums are now stored as integers by default
     }
 }

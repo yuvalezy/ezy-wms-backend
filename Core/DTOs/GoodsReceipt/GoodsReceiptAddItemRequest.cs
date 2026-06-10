@@ -16,8 +16,4 @@ public class GoodsReceiptAddItemRequest {
 
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;
-
-    // Package-related properties
-    public Guid? PackageId { get; set; }
-    public bool StartNewPackage { get; set; }
 }

@@ -1,10 +1,7 @@
 ﻿using System.Text.Json;
 using Adapters.CrossPlatform.SBO.Services;
-using Core.DTOs.Package;
-using Core.Enums;
 using Core.Extensions;
 using Core.Interfaces;
-using Core.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi;
@@ -15,9 +12,6 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
     private readonly int testBinLocation = settings.GetInitialCountingBinEntry(TestConstants.Warehouse)!.Value;
     private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
 
-    public bool Package { get; set; }
-    public Dictionary<string, List<Guid>> CreatedPackages { get; set; } = [];
-
     public async Task Execute() {
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
 
@@ -26,15 +20,6 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         await ValidateWarehouseStock();
 
         await ValidateBinStock();
-
-        if (!Package)
-            return;
-
-        foreach (var item in items) {
-            await CreatePackages(item);
-
-            await ValidatePackageContent(item);
-        }
     }
 
 
@@ -124,58 +109,4 @@ public class CreateGoodsReceipt(SboCompany sboCompany, ISettings settings, int s
         }
     }
 
-    private async Task CreatePackages(string item) {
-        var sessionInfo = TestConstants.SessionInfo;
-        using (var scope = factory.Services.CreateScope()) {
-            var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-            var request = new CreatePackageRequest {
-                BinEntry = testBinLocation,
-                SourceOperationType = ObjectType.Package,
-            };
-
-            CreatedPackages[item] = [];
-
-            var package = await packageService.CreatePackageAsync(sessionInfo, request);
-            CreatedPackages[item].Add(package.Id);
-
-            var package2 = await packageService.CreatePackageAsync(sessionInfo, request);
-            CreatedPackages[item].Add(package2.Id);
-        }
-
-        using (var scope = factory.Services.CreateScope()) {
-            var packageService = scope.ServiceProvider.GetRequiredService<IPackageContentService>();
-            foreach (var package in CreatedPackages[item]) {
-                var request = new AddItemToPackageRequest {
-                    PackageId = package,
-                    ItemCode = item,
-                    Quantity = 2,
-                    UnitQuantity = 24,
-                    UnitType = UnitType.Dozen,
-                    BinEntry = testBinLocation,
-                    SourceOperationType = ObjectType.Package,
-                };
-
-                await packageService.AddItemToPackageAsync(request, sessionInfo.Warehouse, sessionInfo.Guid);
-            }
-        }
-
-        using (var scope = factory.Services.CreateScope()) {
-            var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-            foreach (var id in CreatedPackages[item]) {
-                await packageService.ActivatePackagesByIdAsync(id, sessionInfo);
-            }
-        }
-    }
-
-    private async Task ValidatePackageContent(string item) {
-        using var scope = factory.Services.CreateScope();
-        var packageService = scope.ServiceProvider.GetRequiredService<IPackageService>();
-        foreach (var id in CreatedPackages[item]) {
-            var package = await packageService.GetPackageAsync(id);
-            Assert.That(package.Contents.Count == 1);
-            var content = package.Contents.First();
-            Assert.That(content.ItemCode, Is.EqualTo(item));
-            Assert.That(content.Quantity, Is.EqualTo(24));
-        }
-    }
 }

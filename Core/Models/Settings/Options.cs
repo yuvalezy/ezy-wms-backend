@@ -23,7 +23,6 @@ public record Options {
     public bool GoodsReceiptCreateSupervisorRequired { get; init; }
     public GoodsReceiptDocumentType GoodsReceiptType { get; set; } = GoodsReceiptDocumentType.Both;
     public bool GoodsReceiptTargetDocuments { get; set; }
-    public bool GoodsReceiptPackages { get; set; } = true;
 
     public bool GoodsReceiptConfirmationAdjustStock { get; set; }
     public int? GoodsReceiptConfirmationAdjustStockPriceList { get; set; }
@@ -36,8 +35,7 @@ public record Options {
     public bool TransferCreateSupervisorRequired { get; init; }
     public bool DirectTransferAll { get; init; }
 
-    //Packages & Units
-    public bool EnablePackages { get; init; }
+    // Units
     public UnitType DefaultUnitType { get; set; } = UnitType.Pack;
     public bool EnableUnitSelection { get; init; }
 

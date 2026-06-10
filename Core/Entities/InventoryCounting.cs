@@ -26,7 +26,6 @@ public sealed class InventoryCounting : BaseEntity {
 
     // Navigation properties
     public ICollection<InventoryCountingLine> Lines { get; set; } = new List<InventoryCountingLine>();
-    public ICollection<InventoryCountingPackage> CountingPackages { get; set; } = new List<InventoryCountingPackage>();
     public ICollection<InventoryCountingBatch> Batches { get; set; } = new List<InventoryCountingBatch>();
 }
 
@@ -59,9 +58,6 @@ public sealed class InventoryCountingLine : BaseEntity {
 
     [Required]
     public UnitType Unit { get; set; } = UnitType.Pack;
-
-    // Package-related properties
-    public Guid? PackageId { get; set; }
 
     // Navigation property
     [ForeignKey("InventoryCounting")]

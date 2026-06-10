@@ -52,7 +52,6 @@ public class PickListDetailItemResponse {
     public decimal? Available { get; set; }
 
     public required Dictionary<string, object> CustomFields { get; set; }
-    public BinLocationPackageQuantityResponse[]? Packages { get; set; }
 }
 
 public class BinLocationQuantityResponse {
@@ -65,9 +64,4 @@ public class BinLocationQuantityResponse {
     /// The frontend groups items by bin and orders the walk by this value when pick-path routing is on.
     /// </summary>
     public int Sequence { get; set; }
-    public BinLocationPackageQuantityResponse[]? Packages { get; set; }
-}
-
-public record BinLocationPackageQuantityResponse(Guid Id, string Barcode, int BinEntry, string ItemCode, decimal Quantity) {
-    public bool FullPackage { get; set; }
 }

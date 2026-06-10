@@ -21,12 +21,10 @@ public class SystemDbContext : DbContext {
     public DbSet<InventoryCounting> InventoryCountings { get; set; }
     public DbSet<Transfer>          Transfers          { get; set; }
     public DbSet<PickList>          PickLists          { get; set; }
-    public DbSet<PickListPackage>   PickListPackages   { get; set; }
     
     // Pick List Check Entities
     public DbSet<PickListCheckSession> PickListCheckSessions { get; set; }
     public DbSet<PickListCheckItem>    PickListCheckItems    { get; set; }
-    public DbSet<PickListCheckPackage> PickListCheckPackages { get; set; }
 
     public DbSet<InventoryCountingBatch> InventoryCountingBatches { get; set; }
 
@@ -37,19 +35,6 @@ public class SystemDbContext : DbContext {
     public DbSet<GoodsReceiptSource>    GoodsReceiptSources    { get; set; }
     public DbSet<InventoryCountingLine> InventoryCountingLines { get; set; }
     public DbSet<TransferLine>          TransferLines          { get; set; }
-    public DbSet<TransferPackage>       TransferPackages       { get; set; }
-    
-    // Inventory Counting Package Entities
-    public DbSet<InventoryCountingPackage>        InventoryCountingPackages        { get; set; }
-    public DbSet<InventoryCountingPackageContent> InventoryCountingPackageContents { get; set; }
-
-    // Package Entities
-    public DbSet<Package>                Packages                { get; set; }
-    public DbSet<PackageContent>         PackageContents         { get; set; }
-    public DbSet<PackageTransaction>     PackageTransactions     { get; set; }
-    public DbSet<PackageLocationHistory> PackageLocationHistory  { get; set; }
-    public DbSet<PackageInconsistency>   PackageInconsistencies  { get; set; }
-    public DbSet<PackageCommitment>      PackageCommitments      { get; set; }
 
     // Device Entities
     public DbSet<Device>      Devices      { get; set; }
@@ -77,25 +62,12 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new GoodsReceiptSourceConfiguration());
         modelBuilder.ApplyConfiguration(new TransferConfiguration());
         modelBuilder.ApplyConfiguration(new TransferLineConfiguration());
-        modelBuilder.ApplyConfiguration(new TransferPackageConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingBatchConfiguration());
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
-        modelBuilder.ApplyConfiguration(new InventoryCountingPackageConfiguration());
-        modelBuilder.ApplyConfiguration(new InventoryCountingPackageContentConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
-        modelBuilder.ApplyConfiguration(new PickListPackageConfiguration());
         modelBuilder.ApplyConfiguration(new PickListCheckSessionConfiguration());
         modelBuilder.ApplyConfiguration(new PickListCheckItemConfiguration());
-        modelBuilder.ApplyConfiguration(new PickListCheckPackageConfiguration());
-        
-        // Package configurations
-        modelBuilder.ApplyConfiguration(new PackageConfiguration());
-        modelBuilder.ApplyConfiguration(new PackageContentConfiguration());
-        modelBuilder.ApplyConfiguration(new PackageTransactionConfiguration());
-        modelBuilder.ApplyConfiguration(new PackageLocationHistoryConfiguration());
-        modelBuilder.ApplyConfiguration(new PackageInconsistencyConfiguration());
-        modelBuilder.ApplyConfiguration(new PackageCommitmentConfiguration());
 
         // Device configurations
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());

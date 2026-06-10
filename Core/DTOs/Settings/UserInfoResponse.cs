@@ -17,5 +17,4 @@ public class UserInfoResponse
     public Dictionary<string, CustomField[]>? CustomFields { get; set; }
     public DeviceStatus? DeviceStatus { get; set; }
     public required MetadataDefinition[] ItemMetaData { get; set; }
-    public required MetadataDefinition[] PackageMetaData { get; set; }
 }

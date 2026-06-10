@@ -93,7 +93,7 @@ public class ExternalCommandService(
         try
         {
             var batchParameters = parameters ?? new Dictionary<string, object>();
-            batchParameters["PackageIds"] = string.Join(",", objectIds.Select(id => $"'{id}'"));
+            batchParameters["ObjectIds"] = string.Join(",", objectIds.Select(id => $"'{id}'"));
             batchParameters["BatchIndex"] = DateTime.UtcNow.Ticks;
 
             var data = await ExecuteQueriesAsync(command, objectIds.First(), batchParameters, cancellationToken);

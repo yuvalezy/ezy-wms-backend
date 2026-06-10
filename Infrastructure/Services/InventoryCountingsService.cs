@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Core.DTOs.InventoryCounting;
 using Core.DTOs.Items;
-using Core.DTOs.Package;
 using Core.Entities;
 using Core.Enums;
 using Core.Extensions;
@@ -19,10 +18,6 @@ public class InventoryCountingsService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
     ISettings settings,
-    IPackageContentService packageContentService,
-    IPackageService packageService,
-    IExternalCommandService externalCommandService,
-    IPackageLocationService packageLocationService,
     IExternalSystemAlertService alertService,
     IServiceScopeFactory serviceScopeFactory,
     ILogger<InventoryCountingsService> logger) : IInventoryCountingsService {
@@ -263,9 +258,6 @@ public class InventoryCountingsService(
                     line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }
-
-                // Process packages
-                await ProcessCountingPackages(counting.Id, sessionInfo);
 
                 await db.SaveChangesAsync();
                 await finalizeTx.CommitAsync();
@@ -887,117 +879,6 @@ public class InventoryCountingsService(
         };
     }
 
-
-    private async Task ProcessCountingPackages(Guid countingId, SessionInfo sessionInfo) {
-        var countingPackages = await db.InventoryCountingPackages
-        .Include(cp => cp.Contents)
-        .Include(cp => cp.Package)
-        .ThenInclude(p => p.Contents)
-        .AsSplitQuery()
-        .Where(cp => cp.InventoryCountingId == countingId)
-        .ToListAsync();
-
-        foreach (var countingPackage in countingPackages) {
-            var package = countingPackage.Package;
-
-            // Handle package location changes
-            if (countingPackage.CountedWhsCode != countingPackage.OriginalWhsCode ||
-                countingPackage.CountedBinEntry != countingPackage.OriginalBinEntry) {
-                await packageLocationService.LogLocationMovementAsync(
-                    package.Id,
-                    PackageMovementType.Moved,
-                    countingPackage.OriginalWhsCode,
-                    countingPackage.OriginalBinEntry,
-                    countingPackage.CountedWhsCode,
-                    countingPackage.CountedBinEntry,
-                    ObjectType.InventoryCounting,
-                    countingId,
-                    sessionInfo.Guid
-                );
-
-                // Update package location
-                package.WhsCode = countingPackage.CountedWhsCode;
-                package.BinEntry = countingPackage.CountedBinEntry;
-                package.UpdatedAt = DateTime.UtcNow;
-                package.UpdatedByUserId = sessionInfo.Guid;
-            }
-
-            // Process package contents
-            var itemsToProcess = new Dictionary<string, (decimal counted, decimal? original)>();
-
-            // Collect all items from counting
-            foreach (var countingContent in countingPackage.Contents) {
-                itemsToProcess[countingContent.ItemCode] = (countingContent.CountedQuantity, countingContent.OriginalQuantity);
-            }
-
-            // Process each item
-            foreach (var item in itemsToProcess) {
-                string itemCode = item.Key;
-                decimal countedQty = item.Value.counted;
-                decimal originalQty = item.Value.original ?? 0;
-
-                if (countedQty == originalQty)
-                    continue;
-
-                decimal difference = countedQty - originalQty;
-
-                switch (difference) {
-                    case > 0:
-                        // Add items to package
-                        await packageContentService.AddItemToPackageAsync(new AddItemToPackageRequest {
-                            PackageId = package.Id,
-                            ItemCode = itemCode,
-                            Quantity = difference,
-                            UnitQuantity = difference,
-                            UnitType = UnitType.Unit,
-                            BinEntry = countingPackage.CountedBinEntry,
-                            SourceOperationType = ObjectType.InventoryCounting,
-                            SourceOperationId = countingId
-                        }, sessionInfo.Warehouse, sessionInfo.Guid);
-
-                        break;
-                    case < 0:
-                        // Remove items from package
-                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
-                            PackageId = package.Id,
-                            ItemCode = itemCode,
-                            Quantity = Math.Abs(difference),
-                            UnitQuantity = Math.Abs(difference),
-                            UnitType = UnitType.Unit,
-                            SourceOperationType = ObjectType.InventoryCounting,
-                            SourceOperationId = countingId
-                        }, sessionInfo.Guid);
-
-                        break;
-                }
-            }
-
-            // Handle items that were in the original package but not counted (removed)
-            var originalItems = package.Contents.Where(c => !itemsToProcess.ContainsKey(c.ItemCode));
-            foreach (var originalItem in originalItems) {
-                if (originalItem.Quantity > 0) {
-                    await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
-                        PackageId = package.Id,
-                        ItemCode = originalItem.ItemCode,
-                        Quantity = originalItem.Quantity,
-                        UnitQuantity = originalItem.Quantity,
-                        UnitType = UnitType.Unit,
-                        SourceOperationType = ObjectType.InventoryCounting,
-                        SourceOperationId = countingId
-                    }, sessionInfo.Guid);
-                }
-            }
-
-            // Activate package if it was created during counting and has content
-            if (countingPackage.IsNewPackage && package.Status == PackageStatus.Init) {
-                var packages = await packageService.ActivatePackagesBySourceAsync(ObjectType.InventoryCounting, countingId, sessionInfo);
-                foreach (var packageId in packages) {
-                    await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.ActivatePackage, ObjectType.Package, packageId);
-                }
-            }
-        }
-    }
-
     public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry) {
         var values = await db.InventoryCountingLines
             .Include(l => l.CreatedByUser)
@@ -1011,20 +892,6 @@ public class InventoryCountingsService(
                 Unit = l.Unit,
             })
             .ToListAsync();
-
-        var lineIds = values.Select(v => v.LineId).ToArray();
-
-        var packageTransactions = await db.PackageTransactions
-            .Include(v => v.Package)
-            .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.InventoryCounting && v.SourceOperationLineId != null && lineIds.Contains(v.SourceOperationLineId.Value))
-            .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
-            .ToArrayAsync();
-
-        values.ForEach(v => {
-            var package = packageTransactions.FirstOrDefault(p => p.SourceOperationLineId == v.LineId);
-            if (package != null)
-                v.Package = new PackageValueResponse(package.PackageId, package.Barcode);
-        });
 
         return values;
     }
@@ -1046,10 +913,6 @@ public class InventoryCountingsService(
                     .Where(l => request.RemoveRows.Contains(l.Id) && l.InventoryCountingId == request.Id)
                     .ToArrayAsync();
 
-                var packageTransactions = await db.PackageTransactions
-                    .Where(v => v.SourceOperationLineId != null && request.RemoveRows.Contains(v.SourceOperationLineId.Value))
-                    .ToArrayAsync();
-
                 foreach (var line in linesToRemove) {
                     line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
@@ -1057,27 +920,6 @@ public class InventoryCountingsService(
                     line.Deleted = true;
                     line.DeletedAt = DateTime.UtcNow;
                     db.InventoryCountingLines.Update(line);
-
-                    var pkgTransaction = packageTransactions.FirstOrDefault(v => v.SourceOperationLineId == line.Id);
-                    if (pkgTransaction != null && line.PackageId.HasValue) {
-                        decimal removeQuantity = line.Quantity;
-                        if (line.Unit != UnitType.Unit) {
-                            var data = await adapter.GetItemInfo(line.ItemCode);
-                            removeQuantity /= data.QuantityInUnit;
-                            if (line.Unit == UnitType.Pack)
-                                removeQuantity /= data.QuantityInPack;
-                        }
-
-                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
-                            PackageId = line.PackageId.Value,
-                            ItemCode = line.ItemCode,
-                            Quantity = removeQuantity,
-                            UnitQuantity = line.Quantity,
-                            UnitType = line.Unit,
-                            SourceOperationType = ObjectType.InventoryCounting,
-                            SourceOperationId = request.Id
-                        }, sessionInfo.Guid);
-                    }
                 }
             }
 
@@ -1103,45 +945,9 @@ public class InventoryCountingsService(
                     }
                 }
 
-                decimal diff = newQuantity - line.Quantity;
                 line.Quantity = newQuantity;
                 line.UpdatedAt = DateTime.UtcNow;
                 line.UpdatedByUserId = sessionInfo.Guid;
-
-                // Update package content if applicable
-                if (diff != 0 && line.PackageId.HasValue && item != null) {
-                    decimal unitDiff = diff;
-                    if (line.Unit != UnitType.Unit) {
-                        unitDiff /= item.NumInBuy;
-                        if (line.Unit == UnitType.Pack) {
-                            unitDiff /= item.PurPackUn;
-                        }
-                    }
-
-                    if (unitDiff > 0) {
-                        await packageContentService.AddItemToPackageAsync(new AddItemToPackageRequest {
-                            PackageId = line.PackageId.Value,
-                            ItemCode = line.ItemCode,
-                            Quantity = unitDiff,
-                            UnitQuantity = diff,
-                            UnitType = line.Unit,
-                            SourceOperationType = ObjectType.InventoryCounting,
-                            SourceOperationId = request.Id,
-                            SourceOperationLineId = line.Id
-                        }, counting.WhsCode, sessionInfo.Guid);
-                    }
-                    else {
-                        await packageContentService.RemoveItemFromPackageAsync(new RemoveItemFromPackageRequest {
-                            PackageId = line.PackageId.Value,
-                            ItemCode = line.ItemCode,
-                            Quantity = unitDiff * -1,
-                            UnitQuantity = diff * -1,
-                            UnitType = line.Unit,
-                            SourceOperationType = ObjectType.InventoryCounting,
-                            SourceOperationId = request.Id
-                        }, sessionInfo.Guid);
-                    }
-                }
 
                 db.InventoryCountingLines.Update(line);
             }

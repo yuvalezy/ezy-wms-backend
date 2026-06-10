@@ -5,7 +5,6 @@ using Core.DTOs.General;
 using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Interfaces;
-using Core.Services;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -24,7 +23,6 @@ namespace Service.Controllers;
 public class CountingController(
     IInventoryCountingsService service,
     IInventoryCountingsLineService lineService,
-    IExternalCommandService externalCommandService,
     ILogger<CountingController> logger
 ) : ControllerBase
 {
@@ -107,15 +105,7 @@ public class CountingController(
     {
         var sessionInfo = HttpContext.GetSession();
 
-        // Call the standard service method to add item to counting
-        var response = await lineService.AddItem(sessionInfo, request);
-
-        if (request.StartNewPackage)
-        {
-            await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.CreatePackage, ObjectType.Package, response.PackageId!.Value);
-        }
-
-        return response;
+        return await lineService.AddItem(sessionInfo, request);
     }
 
 

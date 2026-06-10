@@ -12,7 +12,6 @@ public interface ISettings {
     public PresenceTrackingSettings PresenceTracking { get; set; }
     public SboSettings? SboSettings { get; set; }
     public ExternalAdapterType ExternalAdapter { get; set; }
-    public PackageSettings Package { get; set; }
     public MetaDataDefinitions Item { get; set; }
     public LicensingSettings Licensing { get; set; }
     public BackgroundServicesSettings BackgroundServices { get; set; }

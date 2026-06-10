@@ -12,7 +12,6 @@ namespace Infrastructure.Services;
 public class TransferProcessingService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
-    ITransferPackageService transferPackageService,
     ISettings settings,
     IExternalSystemAlertService alertService,
     IWmsAlertService wmsAlertService,
@@ -42,11 +41,6 @@ public class TransferProcessingService(
             line.LineStatus = LineStatus.Closed;
             line.UpdatedAt = DateTime.UtcNow;
             line.UpdatedByUserId = sessionInfo.Guid;
-        }
-
-        // Clear package commitments if package feature is enabled
-        if (settings.Options.EnablePackages) {
-            await transferPackageService.ClearTransferCommitmentsAsync(id, sessionInfo);
         }
 
         await db.SaveChangesAsync();
@@ -131,13 +125,6 @@ public class TransferProcessingService(
 
             if (result.Success) {
                 transferEntry = result.ExternalEntry;
-                // Move packages if package feature is enabled
-                if (settings.Options.EnablePackages) {
-                    await transferPackageService.MovePackagesOnTransferProcessAsync(id, sessionInfo);
-
-                    // Clear package commitments since transfer is now complete
-                    await transferPackageService.ClearTransferCommitmentsAsync(id, sessionInfo);
-                }
 
                 // Update transfer status to Finished
                 transfer.Status = ObjectStatus.Finished;

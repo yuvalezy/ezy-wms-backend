@@ -54,9 +54,6 @@ Options:
   # Whether to enable target document selection in goods receipt (bool, default: false)
   GoodsReceiptTargetDocuments: false
   
-  # Whether goods receipt supports package creation (bool, default: true)
-  GoodsReceiptPackages: true
-  
   # Whether goods receipt confirmation automatically adjusts stock levels (bool, default: false)
   GoodsReceiptConfirmationAdjustStock: true
   # Price list ID to use when adjusting stock during goods receipt confirmation (nullable int, default: null)
@@ -84,12 +81,9 @@ Options:
   # When enabled, skips quantity input and transfers 100% of the scanned item's stock in source bin
   DirectTransferAll: true
 
-  # Package & Unit Configuration
-  # Whether package functionality is enabled system-wide (bool, default: false)
-  EnablePackages: false
-  
+  # Unit Configuration
   # Default unit type for quantity calculations (enum, default: Pack)
-  # Values: Unit(0) (individual units), Dozen(1) (12 units), Pack(2) (package/case)
+  # Values: Unit(0) (individual units), Dozen(1) (12 units), Pack(2) (case/pack unit)
   DefaultUnitType: Pack
   
   # Whether users can select different unit types during operations (bool, default: false)

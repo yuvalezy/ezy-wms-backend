@@ -56,17 +56,9 @@ public class BackgroundPickListSyncService(
             lastSync = DateTime.UtcNow;
             logger.LogInformation("Starting background pick list sync");
 
-            using var scope           = scopeFactory.CreateScope();
-            var       pickListService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
-            var       pickListDetailService = scope.ServiceProvider.GetRequiredService<IPickListDetailService>();
+            using var scope = scopeFactory.CreateScope();
+            var pickListService = scope.ServiceProvider.GetRequiredService<IPickListProcessService>();
 
-            // First, process any closed pick lists with packages if enabled
-            if (options.CheckClosedPickLists) {
-                logger.LogInformation("Processing closed pick lists with packages");
-                await pickListDetailService.ProcessClosedPickListsWithPackages();
-            }
-            
-            // Then sync pending pick lists
             await pickListService.SyncPendingPickLists();
 
             logger.LogInformation("Background pick list sync completed");

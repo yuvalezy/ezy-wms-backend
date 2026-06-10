@@ -11,6 +11,4 @@ public class PickListAddItemRequest {
     public int? BinEntry { get; set; }
     public UnitType Unit { get; set; }
     public int? PickEntry { get; set; }
-    public Guid? PackageId { get; set; }
-    public Guid? PickingPackageId { get; set; }
 }

@@ -2,48 +2,31 @@
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Items;
 using Core.DTOs.Transfer;
-using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Services;
-using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi;
 
 namespace UnitTests.Integration.ExternalSystems.Picking.Helpers;
 
-public enum CheckTransferHelperType
-{
-    FullPickList,
-    FullAndHalfPackage
-}
-
 public class CheckTransferHelper(
-    int pickEntry,
     PickingSelectionResponse[] selection,
     WebApplicationFactory<Program> factory,
     int binEntry,
     int salesEntry,
     string itemCode,
     SboCompany sboCompany,
-    Guid transferId,
-    CheckTransferHelperType type = CheckTransferHelperType.FullPickList,
-    List<Guid>? packages = null)
+    Guid transferId)
 {
-    int expectedQuantity = type == CheckTransferHelperType.FullPickList ? 960 : 36;
+    private const int ExpectedQuantity = 960;
+
     public async Task Validate()
     {
         int cancelTransferEntry = await GetCancelTransferEntry();
         await ValidateCancelTransfer(cancelTransferEntry);
         await ValidatePickingCancelTransferData();
-
-        // Validate package handling if packages are provided
-        if (packages is { Count: > 0 })
-        {
-            await ValidatePackages();
-        }
     }
 
 
@@ -111,7 +94,7 @@ public class CheckTransferHelper(
         Assert.That(data, Is.Not.Null);
         Assert.That(data.ContainsKey(itemCode), Is.True, $"Transfer data should contain item {itemCode}");
         var itemData = data[itemCode];
-        ValidatePickCancelTransferItemData(itemData, expectedQuantity);
+        ValidatePickCancelTransferItemData(itemData, ExpectedQuantity);
     }
 
     private void ValidatePickCancelTransferItemData(TransferCreationDataResponse itemData, int validateQuantity)
@@ -126,143 +109,5 @@ public class CheckTransferHelper(
         var binTarget = itemData.SourceBins.First();
         Assert.That(binTarget.BinEntry, Is.EqualTo(binEntry), "Target bin should be the cancel bin");
         Assert.That(binTarget.Quantity, Is.EqualTo(validateQuantity), $"Target bin quantity should be {validateQuantity}");
-    }
-
-    private async Task ValidatePackages()
-    {
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<SystemDbContext>();
-
-        // Load packages with all necessary data
-        var packageData = await db.Packages
-        .Where(p => packages.Contains(p.Id))
-        .Include(p => p.Contents)
-        .Include(p => p.Commitments)
-        .ToListAsync();
-
-        // Get PickListPackages for this pick operation
-        var pickListPackages = await db.PickListPackages
-        .Where(plp => plp.AbsEntry == pickEntry && packages.Contains(plp.PackageId))
-        .ToListAsync();
-
-        // Get TransferPackages for this transfer
-        var transferPackages = await db.TransferPackages
-        .Where(tp => tp.TransferId == transferId && packages.Contains(tp.PackageId))
-        .ToListAsync();
-
-        Assert.That(packageData.Count, Is.EqualTo(packages.Count),
-            $"Should find all {packages.Count} packages in database");
-
-        Assert.That(pickListPackages.Count, Is.GreaterThan(0),
-            "Should have PickListPackage relationships for the packages");
-
-        foreach (var package in packageData)
-        {
-            await ValidateIndividualPackage(package, pickListPackages, transferPackages);
-        }
-    }
-
-    private async Task ValidateIndividualPackage(Package package, List<PickListPackage> pickListPackages, List<TransferPackage> transferPackages)
-    {
-        // Check if this package was added to pick list
-        var pickListPackage = pickListPackages.FirstOrDefault(plp => plp.PackageId == package.Id);
-        Assert.That(pickListPackage, Is.Not.Null, $"Package {package.Barcode} should have PickListPackage relationship");
-
-        // Determine if this was a full or partial package commitment
-        var wasFullPackage = DetermineIfFullPackageCommitment(package);
-
-        if (wasFullPackage)
-        {
-            await ValidateFullPackageCancellation(package, transferPackages);
-        }
-        else
-        {
-            await ValidatePartialPackageCancellation(package, transferPackages);
-        }
-
-        // Common validations for both full and partial packages
-        await ValidateCommonPackageState(package, wasFullPackage);
-    }
-
-    private bool DetermineIfFullPackageCommitment(Package package)
-    {
-        // Since commitments are cleared during cancellation, we need to determine this another way
-        // We can check if the package appears in TransferPackages (full package) or not (partial)
-        // Or we could check the committed quantities before they were reset
-
-        // Working assumption:
-        // - First package (packages[0]) was picked as full package
-        // - Second package (packages[1]) was picked as partial package
-        if (packages == null || packages.Count == 0)
-        {
-            return false; // Default to partial if no packages info
-        }
-
-        // Find the index of this package ID in the packages list
-        var packageIndex = packages.IndexOf(package.Id);
-        return packageIndex == 0; // First package (index 0) was full, others were partial
-    }
-
-    private async Task ValidateFullPackageCancellation(Package package, List<TransferPackage> transferPackages)
-    {
-        // 1. Validate TransferPackage record exists
-        var transferPackage = transferPackages.FirstOrDefault(tp => tp.PackageId == package.Id);
-        Assert.That(transferPackage, Is.Not.Null,
-            $"Full package {package.Barcode} should have TransferPackage record");
-
-        Assert.That(transferPackage.Type, Is.EqualTo(SourceTarget.Source),
-            $"Package {package.Barcode} should be marked as Source in transfer");
-
-        // 2. Validate package location moved to cancel bin
-        Assert.That(package.BinEntry, Is.EqualTo(binEntry),
-            $"Full package {package.Barcode} should be moved to cancel bin {binEntry}");
-
-        // 3. Validate package status remains Active
-        Assert.That(package.Status, Is.EqualTo(PackageStatus.Active),
-            $"Full package {package.Barcode} should remain Active after cancellation");
-
-        Console.WriteLine($"✓ Full package {package.Barcode} validation passed");
-    }
-
-    private async Task ValidatePartialPackageCancellation(Package package, List<TransferPackage> transferPackages)
-    {
-        // 1. Validate NO TransferPackage record exists (partial packages aren't added as full packages)
-        var transferPackage = transferPackages.FirstOrDefault(tp => tp.PackageId == package.Id);
-        Assert.That(transferPackage, Is.Null,
-            $"Partial package {package.Barcode} should NOT have TransferPackage record");
-
-        // 2. Validate package location remains unchanged (not moved to cancel bin)
-        Assert.That(package.BinEntry, Is.Not.EqualTo(binEntry),
-            $"Partial package {package.Barcode} should NOT be moved to cancel bin");
-
-        // 3. Validate package status remains Active
-        Assert.That(package.Status, Is.EqualTo(PackageStatus.Active),
-            $"Partial package {package.Barcode} should remain Active after partial cancellation");
-
-        Console.WriteLine($"✓ Partial package {package.Barcode} validation passed");
-    }
-
-    private async Task ValidateCommonPackageState(Package package, bool wasFullPackage)
-    {
-        // 1. Validate no remaining PackageCommitments for picking operations
-        Assert.That(package.Commitments.Where(c => c.SourceOperationType == ObjectType.Picking).Count(),
-            Is.EqualTo(0), $"Package {package.Barcode} should have no picking commitments after cancellation");
-
-        // 2. Validate PackageContent committed quantities are reset to 0 after cancellation
-        // Note: Both full and partial packages have commitments cleared during cancellation
-        foreach (var content in package.Contents)
-        {
-            Assert.That(content.CommittedQuantity, Is.EqualTo(wasFullPackage ? 24 : 0),
-                $"Package {package.Barcode} content {content.ItemCode} should have 0 committed quantity after cancellation");
-        }
-
-        // 3. Validate package integrity (contents still exist)
-        Assert.That(package.Contents.Count, Is.GreaterThan(0),
-            $"Package {package.Barcode} should still have contents after cancellation");
-
-        Assert.That(package.Contents.All(c => c.Quantity > 0), Is.True,
-            $"Package {package.Barcode} all contents should have positive quantities");
-
-        Console.WriteLine($"✓ Common package state validation passed for {package.Barcode}");
     }
 }

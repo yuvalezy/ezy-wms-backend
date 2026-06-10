@@ -44,7 +44,7 @@ ExternalCommands: []
 #   - id: ExampleCommand
 #     name: "Example Command"
 #     description: "Sample command configuration"
-#     objectType: Item              # ObjectType enum: Item, Package, PickList, etc.
+#     objectType: Item              # ObjectType enum value, such as GoodsReceipt, InventoryCounting, Transfer, or Picking
 #     triggerType: Create           # CommandTriggerType enum: Create, Update, Delete
 #     enabled: false
 #     queries:

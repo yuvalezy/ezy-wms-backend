@@ -19,10 +19,6 @@ public class PickListClosureInfo {
     /// </summary>
     public List<FollowUpDocumentInfo> FollowUpDocuments { get; set; } = [];
     
-    /// <summary>
-    /// Indicates if package movements should be processed
-    /// </summary>
-    public bool RequiresPackageMovement => IsClosed && ClosureReason == PickListClosureReasonType.FollowUpDocument && FollowUpDocuments.Count > 0;
 }
 
 public enum PickListClosureReasonType {

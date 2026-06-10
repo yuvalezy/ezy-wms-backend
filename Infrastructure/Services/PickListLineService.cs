@@ -13,8 +13,7 @@ public class PickListLineService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
-    IPickListValidationService validationService,
-    IPickListPackageOperationsService packageOperations) : IPickListLineService {
+    IPickListValidationService validationService) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
@@ -30,12 +29,6 @@ public class PickListLineService(
 
             if (item != null) {
                 request.Quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
-            }
-
-            // Handle package-specific logic if PackageId is provided
-            var (package, packageContent, packageValidation) = await packageOperations.ValidatePackageForItem(request);
-            if (packageValidation != null) {
-                return packageValidation;
             }
 
             // Validate the add item request
@@ -80,10 +73,6 @@ public class PickListLineService(
 
             await db.PickLists.AddAsync(pickList);
 
-            await AddItemPackage(sessionInfo, pickList, package, packageContent, request);
-
-            await AddNewPackageContent(sessionInfo, request, pickList.Id);
-
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -93,37 +82,6 @@ public class PickListLineService(
             await transaction.RollbackAsync();
             logger.LogError(ex, "Error adding item to pick list");
             throw;
-        }
-    }
-
-    private async Task AddItemPackage(SessionInfo sessionInfo, PickList pickList, Package? package, PackageContent? packageContent, PickListAddItemRequest request) {
-        if (!request.PackageId.HasValue || packageContent == null || package == null) {
-            return;
-        }
-
-        packageContent.CommittedQuantity += request.Quantity;
-        db.PackageContents.Update(packageContent);
-
-        // Create package commitment
-        await packageOperations.CreatePackageCommitment(sessionInfo, pickList, request);
-
-        // Create PickListPackage record if not exists
-        await packageOperations.CreatePickListPackageIfNotExists(sessionInfo, pickList, request, package);
-    }
-
-    private async Task AddNewPackageContent(SessionInfo sessionInfo, PickListAddItemRequest request, Guid pickListId) {
-        // If content is added to a new picking package
-        if (request.PickingPackageId != null) {
-            await packageOperations.AddOrUpdatePackageContent(
-                sessionInfo,
-                request.PickingPackageId.Value,
-                request.ItemCode,
-                request.Quantity,
-                request.BinEntry,
-                request.ID,
-                request.Type,
-                request.Entry,
-                pickListId);
         }
     }
 }

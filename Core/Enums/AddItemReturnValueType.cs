@@ -14,6 +14,5 @@ public enum AddItemReturnValueType {
     BinNotExists                                  = -10,
     BinNotInWarehouse                             = -11,
     BinMissing                                    = -12,
-    QuantityMoreAvailable                         = -13,
-    PackageBinLocation                            = -14
+    QuantityMoreAvailable                         = -13
 }

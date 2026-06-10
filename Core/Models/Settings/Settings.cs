@@ -12,7 +12,6 @@ public class Settings : ISettings {
     public PresenceTrackingSettings PresenceTracking { get; set; } = new();
     public SboSettings? SboSettings { get; set; }
     public ExternalAdapterType ExternalAdapter { get; set; } = new();
-    public PackageSettings Package { get; set; } = new();
     public MetaDataDefinitions Item { get; set; } = new();
     public LicensingSettings Licensing { get; set; } = new();
     public BackgroundServicesSettings BackgroundServices { get; set; } = new();

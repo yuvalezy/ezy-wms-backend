@@ -78,7 +78,7 @@ public class PickingCancellation : BaseExternalTest {
     [Order(6)]
     public async Task CheckTransfer() {
         int binEntry = settings.GetCancelPickingBinEntry(TestConstants.Warehouse);
-        var helper   = new CheckTransferHelper(absEntry, selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
+        var helper   = new CheckTransferHelper(selection, factory, binEntry, salesEntry, testItem, sboCompany, transferId);
         await helper.Validate();
     }
 }

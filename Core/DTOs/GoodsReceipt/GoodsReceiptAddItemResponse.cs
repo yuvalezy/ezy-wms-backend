@@ -16,12 +16,8 @@ public class GoodsReceiptAddItemResponse {
     public decimal     Factor3      { get; set; }
     public decimal     Factor4      { get; set; }
     public string? ErrorMessage   { get; set; }
-    
+
     public Dictionary<string, object> CustomFields { get; set; } = new();
-    
-    // Package-related properties
-    public Guid? PackageId { get; set; }
-    public string? PackageBarcode { get; set; }
 
     public GoodsReceiptAddItemResponse() {
         

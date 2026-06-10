@@ -26,7 +26,6 @@ public class GoodsReceiptController(
     IGoodsReceiptService receiptService,
     IGoodsReceiptReportService receiptReportService,
     IGoodsReceiptLineService receiptLineService,
-    IExternalCommandService externalCommandService,
     ISettings settings)
 : ControllerBase {
     private RoleType[] GetRequiredRole(GoodsReceiptType type, bool supervisorOnly = false) {
@@ -140,14 +139,7 @@ public class GoodsReceiptController(
         }
 
         try {
-            // Standard goods receipt line creation
-            var response = await receiptLineService.AddItem(sessionInfo, request);
-
-            if (request.StartNewPackage) {
-                await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.CreatePackage, ObjectType.Package, response.PackageId!.Value);
-            }
-
-            return response;
+            return await receiptLineService.AddItem(sessionInfo, request);
         }
         catch (Exception ex) {
             return new GoodsReceiptAddItemResponse(ex.Message);
@@ -280,13 +272,7 @@ public class GoodsReceiptController(
             return Forbid();
         }
 
-        var response = await receiptService.ProcessGoodsReceipt(id, sessionInfo);
-
-        foreach (var packageId in response.ActivatedPackages) {
-            await externalCommandService.ExecuteCommandsAsync(CommandTriggerType.ActivatePackage, ObjectType.Package, packageId);
-        }
-
-        return response;
+        return await receiptService.ProcessGoodsReceipt(id, sessionInfo);
     }
 
     /// <summary>

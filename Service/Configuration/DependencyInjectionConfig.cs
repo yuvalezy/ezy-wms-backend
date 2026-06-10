@@ -45,17 +45,12 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferContentService, TransferContentService>();
         services.AddScoped<ITransferProcessingService, TransferProcessingService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
-        services.AddScoped<ITransferPackageService, TransferPackageService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();
         services.AddScoped<IDirectTransferService, DirectTransferService>();
         services.AddSingleton<IPickPathSequencer, PickPathSequencer>();
         services.AddScoped<IPickListService, PickListService>();
         services.AddScoped<IPickListDetailService, PickListDetailService>();
-        services.AddScoped<IPickListPackageService, PickListPackageService>();
-        services.AddScoped<IPickListPackageEligibilityService, PickListPackageEligibilityService>();
         services.AddScoped<IPickListValidationService, PickListValidationService>();
-        services.AddScoped<IPickListPackageOperationsService, PickListPackageOperationsService>();
-        services.AddScoped<IPickListPackageClosureService, PickListPackageClosureService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();
         services.AddScoped<IPickListCancelService, PickListCancelService>();
@@ -76,11 +71,6 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 
-        // Package Management Services
-        services.AddScoped<IPackageContentService, PackageContentService>();
-        services.AddScoped<IPackageValidationService, PackageValidationService>();
-        services.AddScoped<IPackageLocationService, PackageLocationService>();
-        services.AddScoped<IPackageService, PackageService>();
         services.AddScoped<IExternalCommandService, ExternalCommandService>();
         services.AddScoped<IFileDeliveryService, FileDeliveryService>();
 

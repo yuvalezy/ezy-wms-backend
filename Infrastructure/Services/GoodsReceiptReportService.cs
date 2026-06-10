@@ -1,5 +1,4 @@
 ﻿using Core.DTOs.GoodsReceipt;
-using Core.DTOs.Package;
 using Core.Enums;
 using Core.Extensions;
 using Core.Interfaces;
@@ -10,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService, IPackageService packageService) : IGoodsReceiptReportService {
+public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapter adapter, IGoodsReceiptLineService lineService) : IGoodsReceiptReportService {
     public async Task<GoodsReceiptReportAllResponse> GetGoodsReceiptAllReport(Guid id, string warehouse) {
         var response = await db.GoodsReceiptLines
         .Include(l => l.GoodsReceipt)
@@ -65,19 +64,6 @@ public class GoodsReceiptReportService(SystemDbContext db, IExternalSystemAdapte
         .Where(l => l.GoodsReceiptId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
         .Select(l => l.TotReportAllDetailsResponseDto())
         .ToListAsync();
-
-        var packagesTransactions = await db.PackageTransactions
-        .Include(v => v.Package)
-        .Where(v => v.SourceOperationId == id && v.SourceOperationType == ObjectType.GoodsReceipt && v.ItemCode == itemCode)
-        .Select(v => new { v.SourceOperationLineId, v.PackageId, v.Package.Barcode })
-        .ToArrayAsync();
-
-        values.ForEach(v =>
-        {
-            var package = packagesTransactions.FirstOrDefault(p => p.SourceOperationLineId == v.LineId);
-            if (package != null)
-                v.Package = new PackageValueResponse(package.PackageId, package.Barcode);
-        });
 
         return values;
     }

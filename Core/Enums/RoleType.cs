@@ -12,8 +12,6 @@ public enum RoleType {
     TransferRequest = 9,
     GoodsReceiptConfirmation = 10,
     GoodsReceiptConfirmationSupervisor = 11,
-    PackageManagement = 12,
-    PackageManagementSupervisor = 13,
     ItemManagement = 14,
     ItemManagementSupervisor = 15,
     TransferConfirmation = 16,

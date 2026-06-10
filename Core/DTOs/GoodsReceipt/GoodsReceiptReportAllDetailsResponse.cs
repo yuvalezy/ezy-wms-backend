@@ -1,4 +1,3 @@
-using Core.DTOs.Package;
 using Core.Enums;
 
 namespace Core.DTOs.GoodsReceipt;
@@ -9,5 +8,4 @@ public class GoodsReceiptReportAllDetailsResponse {
     public DateTime              TimeStamp         { get; set; }
     public decimal               Quantity          { get; set; }
     public UnitType              Unit              { get; set; }
-    public PackageValueResponse? Package           { get; set; }
 }

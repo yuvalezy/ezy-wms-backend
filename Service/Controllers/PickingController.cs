@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Core.DTOs.Package;
 using Core.DTOs.PickList;
 using Core.Enums;
 using Core.Interfaces;
@@ -28,7 +27,6 @@ public class PickingController(
     IPickListLineService lineService,
     IPickListProcessService processService,
     IPickListCancelService cancelService,
-    IPickListPackageService packageService,
     IPickListCheckService checkService,
     IServiceProvider serviceProvider) : ControllerBase {
     /// <summary>
@@ -116,26 +114,6 @@ public class PickingController(
     }
 
     /// <summary>
-    /// Adds an entire package to a pick list
-    /// </summary>
-    /// <param name="request">The request containing package details and pick list ID</param>
-    /// <returns>Response indicating success or failure of the operation</returns>
-    /// <response code="200">Returns the add package response</response>
-    /// <response code="400">If the request is invalid</response>
-    /// <response code="403">If the user lacks required permissions</response>
-    /// <response code="401">If the user is not authenticated</response>
-    [HttpPost("addPackage")]
-    [RequireRolePermission(RoleType.Picking)]
-    [ProducesResponseType(typeof(PickListPackageResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<PickListPackageResponse> AddPackage([FromBody] PickListAddPackageRequest request) {
-        var sessionInfo = HttpContext.GetSession();
-        return await packageService.AddPackageAsync(request, sessionInfo);
-    }
-
-    /// <summary>
     /// Processes a pick list, finalizing the picking operation and triggering background sync (supervisor only)
     /// </summary>
     /// <param name="request">The processing request containing pick list ID</param>
@@ -218,18 +196,6 @@ public class PickingController(
     }
 
     /// <summary>
-    /// Checks a package in the pick list
-    /// </summary>
-    [HttpPost("{id:int}/check/package")]
-    [RequireRolePermission(RoleType.Picking)]
-    [ProducesResponseType(typeof(PickListCheckPackageResponse), StatusCodes.Status200OK)]
-    public async Task<PickListCheckPackageResponse> CheckPackage(int id, [FromBody] PickListCheckPackageRequest request) {
-        var sessionInfo = HttpContext.GetSession();
-        request.PickListId = id; // Ensure consistency
-        return await checkService.CheckPackage(request, sessionInfo);
-    }
-
-    /// <summary>
     /// Gets the check summary for a pick list
     /// </summary>
     [HttpGet("{id:int}/check/summary")]
@@ -276,23 +242,4 @@ public class PickingController(
         return Ok();
     }
 
-    /// <summary>
-    /// Creates a new package for a pick list
-    /// </summary>
-    /// <param name="absEntry">The pick list entry ID</param>
-    /// <returns>The created package</returns>
-    /// <response code="200">Returns the created package</response>
-    /// <response code="400">If the request is invalid</response>
-    /// <response code="403">If the user lacks required permissions</response>
-    /// <response code="401">If the user is not authenticated</response>
-    [HttpPost("package/{absEntry:int}")]
-    [RequireRolePermission(RoleType.Picking)]
-    [ProducesResponseType(typeof(PackageDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<PackageDto> CreatePackage(int absEntry) {
-        var sessionInfo = HttpContext.GetSession();
-        return await packageService.CreatePackageAsync(absEntry, sessionInfo);
-    }
 }

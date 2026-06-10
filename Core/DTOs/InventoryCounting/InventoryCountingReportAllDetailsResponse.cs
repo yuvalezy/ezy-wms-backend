@@ -1,4 +1,3 @@
-using Core.DTOs.Package;
 using Core.Enums;
 
 namespace Core.DTOs.InventoryCounting;
@@ -10,5 +9,4 @@ public class InventoryCountingReportAllDetailsResponse {
     public decimal               Quantity          { get; set; }
     public UnitType              Unit              { get; set; }
     public string?               BinCode           { get; set; }
-    public PackageValueResponse? Package           { get; set; }
 }

@@ -123,7 +123,7 @@ public class ItemsController(
     /// <response code="500">If a server error occurs</response>
     [HttpPost("ItemStock")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
-        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor, RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     [ProducesResponseType(typeof(IEnumerable<ItemStockResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -150,7 +150,7 @@ public class ItemsController(
     /// <response code="500">If a server error occurs</response>
     [HttpPost("ItemBinStock")]
     [RequireAnyRole(RoleType.GoodsReceiptSupervisor, RoleType.CountingSupervisor, RoleType.TransferSupervisor,
-        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor, RoleType.PackageManagement, RoleType.PackageManagementSupervisor)]
+        RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor)]
     [ProducesResponseType(typeof(IEnumerable<ItemBinStockResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

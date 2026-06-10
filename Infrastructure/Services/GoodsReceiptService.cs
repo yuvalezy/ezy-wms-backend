@@ -14,7 +14,6 @@ namespace Infrastructure.Services;
 public class GoodsReceiptService(
     SystemDbContext db,
     IExternalSystemAdapter adapter,
-    IPackageService packageService,
     IGoodsReceiptReportService receiptReportService,
     ISettings settings,
     IExternalSystemAlertService alertService) : IGoodsReceiptService {
@@ -161,15 +160,6 @@ public class GoodsReceiptService(
             line.UpdatedByUserId = session.Guid;
         }
 
-        var packages = await db
-        .Packages
-        .Where(v => v.SourceOperationId == id)
-        .ToArrayAsync();
-
-        foreach (var package in packages) {
-            await packageService.CancelPackageAsync(package.Id, session, "Goods receipt cancelled");
-        }
-
         await db.SaveChangesAsync();
         return true;
     }
@@ -200,12 +190,6 @@ public class GoodsReceiptService(
                     line.LineStatus = LineStatus.Closed;
                     line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = session.Guid;
-                }
-
-                // Activate any packages created during this operation if package feature is enabled
-                var activatedPackagesCount = new List<Guid>();
-                if (settings.Options.EnablePackages) {
-                    activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
                 }
 
                 if (settings.Options.GoodsReceiptConfirmationAdjustStock) {
@@ -257,7 +241,6 @@ public class GoodsReceiptService(
                 return new ProcessGoodsReceiptResponse {
                     Status = ResponseStatus.Ok,
                     Success = true,
-                    ActivatedPackages = activatedPackagesCount
                 };
             }
 
@@ -288,20 +271,13 @@ public class GoodsReceiptService(
                     line.UpdatedByUserId = session.Guid;
                 }
 
-                // Activate any packages created during this operation if package feature is enabled
-                var activatedPackagesCount = new List<Guid>();
-                if (settings.Options.EnablePackages) {
-                    activatedPackagesCount = await packageService.ActivatePackagesBySourceAsync(ObjectType.GoodsReceipt, goodsReceipt.Id, session);
-                }
-
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return new ProcessGoodsReceiptResponse {
                     Status = ResponseStatus.Ok,
                     Success = true,
-                    DocumentNumber = result.DocumentNumber,
-                    ActivatedPackages = activatedPackagesCount
+                    DocumentNumber = result.DocumentNumber
                 };
             }
 

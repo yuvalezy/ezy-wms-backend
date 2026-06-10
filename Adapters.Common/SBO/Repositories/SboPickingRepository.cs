@@ -408,39 +408,6 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
         return result.ToArray();
     }
 
-    public async Task<bool> ValidatePickingAddPackage(int absEntry, IEnumerable<PickListValidateAddPackageRequest> values) {
-        const string query =
-        """
-        select T0."RelQtty", T2."LocCode", T2."ItemCode"
-        from PKL1 T0
-                 INNER JOIN OILM T2 ON T2."TransType" = T0."BaseObject" AND T2."DocEntry" = T0."OrderEntry" AND T2."DocLineNum" = T0."OrderLine"
-        where T0."AbsEntry" = @AbsEntry
-        """;
-
-        var sqlParams = new[] {
-            new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }
-        };
-
-        var result = await dbService.QueryAsync(query, sqlParams, reader => new {
-            Quantity = Convert.ToDecimal(reader[0]),
-            WhsCode = reader.GetString(1),
-            ItemCode = reader.GetString(2)
-        });
-
-        foreach (var value in values) {
-            var check = result.FirstOrDefault(x => x.ItemCode == value.ItemCode && x.WhsCode == value.WhsCode);
-            if (check == null) {
-                return false;
-            }
-
-            if (check.Quantity < value.Quantity) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
         if (absEntries.Length == 0) {
             return new Dictionary<int, bool>();
