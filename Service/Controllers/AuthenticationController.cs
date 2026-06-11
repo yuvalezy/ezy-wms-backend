@@ -206,7 +206,7 @@ public class AuthenticationController(
     public async Task<IActionResult> Logout() {
         try {
             // Get the session token from the cookie
-            string? sessionToken = Request.Cookies[Const.SessionCookieName];
+            string? sessionToken = Request.Cookies[Const.SessionCookieName] ?? GetBearerToken();
 
             if (!string.IsNullOrEmpty(sessionToken)) {
                 // Remove the session from the session manager
@@ -282,6 +282,7 @@ public class AuthenticationController(
 
         var options = new CookieOptions {
             HttpOnly = cookieSettings.HttpOnly,
+            Path = "/",
             Secure = cookieSettings.Secure,
             SameSite = sameSiteMode
         };
@@ -295,5 +296,16 @@ public class AuthenticationController(
         }
 
         return options;
+    }
+
+    private string? GetBearerToken() {
+        string? authorization = Request.Headers.Authorization;
+        const string prefix = "Bearer ";
+        if (string.IsNullOrWhiteSpace(authorization) ||
+            !authorization.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) {
+            return null;
+        }
+
+        return authorization[prefix.Length..].Trim();
     }
 }

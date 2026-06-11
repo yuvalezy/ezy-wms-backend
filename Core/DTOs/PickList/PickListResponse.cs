@@ -19,6 +19,9 @@ public class PickListResponse {
     public bool PickPackOnly { get; set; }
     public bool CheckStarted { get; set; }
     public bool HasCheck { get; set; }
+    public bool HasRepack { get; set; }
+    public bool RepackStarted { get; set; }
+    public bool RepackCompleted { get; set; }
 }
 
 public class PickListDetailResponse {

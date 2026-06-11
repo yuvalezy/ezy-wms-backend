@@ -101,6 +101,9 @@ Options:
   # Labels are stored with picked scan rows and do not change SAP picking quantities (bool, default: false)
   EnablePickingPackageLabels: false
 
+  # Whether picked rows must be assigned to package labels in a post-pick repack step before SBO sync
+  EnablePostPickRepack: false
+
   # Prefix used when auto-generating picking package labels (string, default: R)
   PickingPackageLabelPrefix: "R"
 

@@ -15,8 +15,17 @@ public class PickListProcessService(
     IPickingPostProcessorFactory postProcessorFactory,
     IServiceProvider serviceProvider,
     IExternalSystemAlertService alertService,
+    ISettings settings,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
+        if (!await IsPostPickRepackReadyAsync(absEntry)) {
+            return new ProcessPickListResponse {
+                Status = ResponseStatus.Error,
+                Message = "Failed to process pick list",
+                ErrorMessage = "Post-pick repack must be completed before syncing this pick list"
+            };
+        }
+
         var transaction = await db.Database.BeginTransactionAsync();
         try {
             // Load local pick list data
@@ -127,6 +136,11 @@ public class PickListProcessService(
 
             // Process each pick entry sequentially
             foreach (var absEntry in pendingPickEntries) {
+                if (!await IsPostPickRepackReadyAsync(absEntry)) {
+                    logger.LogInformation("Skipping pick list AbsEntry {AbsEntry} because post-pick repack is not complete", absEntry);
+                    continue;
+                }
+
                 logger.LogInformation("Processing pick list AbsEntry {AbsEntry}", absEntry);
 
                 // Check if pick lists are still pending/failed before processing
@@ -155,6 +169,24 @@ public class PickListProcessService(
             logger.LogError(ex, "Error during SyncPendingPickLists");
             throw;
         }
+    }
+
+    private async Task<bool> IsPostPickRepackReadyAsync(int absEntry) {
+        if (!settings.Options.EnablePostPickRepack) {
+            return true;
+        }
+
+        var completedRepack = await db.PickingRepackSessions
+            .AnyAsync(s => s.AbsEntry == absEntry &&
+                           s.IsCompleted &&
+                           !s.IsCancelled &&
+                           !s.Deleted);
+
+        if (!completedRepack) {
+            return false;
+        }
+
+        return true;
     }
 
     private async Task UpdatePickListsSyncStatus(int absEntry, SyncStatus syncStatus, string? errorMessage, Guid? userId) {

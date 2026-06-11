@@ -22,6 +22,7 @@ public class SystemDbContext : DbContext {
     public DbSet<Transfer>          Transfers          { get; set; }
     public DbSet<PickList>          PickLists          { get; set; }
     public DbSet<PickingPackageLabel> PickingPackageLabels { get; set; }
+    public DbSet<PickingRepackSession> PickingRepackSessions { get; set; }
     
     // Pick List Check Entities
     public DbSet<PickListCheckSession> PickListCheckSessions { get; set; }
@@ -46,6 +47,7 @@ public class SystemDbContext : DbContext {
     public DbSet<AccountStatusAudit> AccountStatusAudits  { get; set; }
     public DbSet<LicenseCache>       LicenseCaches        { get; set; }
     public DbSet<CloudSyncQueue>     CloudSyncQueues      { get; set; }
+    public DbSet<WmsSession>         WmsSessions          { get; set; }
     
 
 
@@ -68,6 +70,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new InventoryCountingLineConfiguration());
         modelBuilder.ApplyConfiguration(new PickListConfiguration());
         modelBuilder.ApplyConfiguration(new PickingPackageLabelConfiguration());
+        modelBuilder.ApplyConfiguration(new PickingRepackSessionConfiguration());
         modelBuilder.ApplyConfiguration(new PickListCheckSessionConfiguration());
         modelBuilder.ApplyConfiguration(new PickListCheckItemConfiguration());
 
@@ -80,6 +83,7 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new AccountStatusAuditConfiguration());
         modelBuilder.ApplyConfiguration(new LicenseCacheConfiguration());
         modelBuilder.ApplyConfiguration(new CloudSyncQueueConfiguration());
+        modelBuilder.ApplyConfiguration(new WmsSessionConfiguration());
         
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {

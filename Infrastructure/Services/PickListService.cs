@@ -26,6 +26,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             SyncStatus = SyncStatus.Unknown,
             CheckStarted = false,
             HasCheck = false,
+            HasRepack = false,
+            RepackStarted = false,
+            RepackCompleted = false,
         })
         .ToList();
 
@@ -47,6 +50,24 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         .ToDictionaryAsync(x => x.PickListId, x => x.HasActiveSession)
         : new Dictionary<int, bool>();
 
+        Dictionary<int, RepackState> repackSessionInfo = new();
+        if (settings.Options.EnablePostPickRepack) {
+            var repackRows = await db.PickingRepackSessions
+                .Where(s => entries.Contains(s.AbsEntry) && s.WhsCode == warehouse && !s.Deleted && !s.IsCancelled)
+                .GroupBy(s => s.AbsEntry)
+                .Select(g => new {
+                    PickListId = g.Key,
+                    HasRepack = true,
+                    RepackStarted = g.Any(s => !s.IsCompleted),
+                    RepackCompleted = g.Any(s => s.IsCompleted)
+                })
+                .ToArrayAsync();
+
+            repackSessionInfo = repackRows.ToDictionary(
+                x => x.PickListId,
+                x => new RepackState(x.PickListId, x.HasRepack, x.RepackStarted, x.RepackCompleted));
+        }
+
         foreach (var r in response) {
             var values = dbPick.Where(p => p.AbsEntry == r.Entry).ToArray();
             decimal pickedQuantity = values.Where(p => p.Status != ObjectStatus.Closed).Sum(p => p.Quantity);
@@ -65,14 +86,20 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
                 r.HasCheck = true;
                 r.CheckStarted = hasActiveSession;
             }
+
+            if (settings.Options.EnablePostPickRepack && repackSessionInfo.TryGetValue(r.Entry, out var repackInfo)) {
+                r.HasRepack = repackInfo.HasRepack;
+                r.RepackStarted = repackInfo.RepackStarted;
+                r.RepackCompleted = repackInfo.RepackCompleted;
+            }
         }
 
         if (!request.DisplayCompleted) {
             // Hide finished pickings (no remaining open work) unless an active check session
             // requires the picker to recheck (CheckStarted == true).
-            response.RemoveAll(v => v.OpenQuantity < QuantityTolerances.Completed && !v.CheckStarted);
+            response.RemoveAll(v => v.OpenQuantity < QuantityTolerances.Completed && !v.CheckStarted && !v.RepackStarted);
             if (!enableBinLocations) {
-                response.RemoveAll(v => v is { SyncStatus: SyncStatus.Synced, CheckStarted: false });
+                response.RemoveAll(v => v is { SyncStatus: SyncStatus.Synced, CheckStarted: false, RepackStarted: false });
             }
         }
 
@@ -99,6 +126,9 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             OpenQuantity = pick.OpenQuantity,
             UpdateQuantity = pick.UpdateQuantity,
             PickPackOnly = pick.PickPackOnly,
+            HasRepack = false,
+            RepackStarted = false,
+            RepackCompleted = false,
             Detail = []
         };
 
@@ -120,6 +150,21 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
             if (checkSession != null) {
                 response.HasCheck = true;
                 response.CheckStarted = !checkSession.IsCompleted && !checkSession.IsCancelled;
+            }
+        }
+
+        if (settings.Options.EnablePostPickRepack) {
+            var repackSession = await db.PickingRepackSessions
+            .Where(s => s.AbsEntry == absEntry && s.WhsCode == warehouse && !s.Deleted && !s.IsCancelled)
+            .OrderBy(s => s.IsCompleted)
+            .ThenByDescending(s => s.StartedAt)
+            .Select(s => new { s.IsCompleted })
+            .FirstOrDefaultAsync();
+
+            if (repackSession != null) {
+                response.HasRepack = true;
+                response.RepackStarted = !repackSession.IsCompleted;
+                response.RepackCompleted = repackSession.IsCompleted;
             }
         }
 
@@ -170,4 +215,6 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
 
         return response;
     }
+
+    private sealed record RepackState(int PickListId, bool HasRepack, bool RepackStarted, bool RepackCompleted);
 }

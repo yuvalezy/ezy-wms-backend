@@ -30,10 +30,19 @@ public static class DependencyInjectionConfig {
         services.AddDbContext<SystemDbContext>(options =>
         options.UseSqlServer(connString));
 
-        if (settings.SessionManagement.Type == SessionManagementType.InMemory)
-            services.AddSingleton<ISessionManager, InMemorySessionManager>();
-        else
-            services.AddSingleton<ISessionManager, RedisSessionManager>();
+        switch (settings.SessionManagement.Type) {
+            case SessionManagementType.InMemory:
+                services.AddSingleton<ISessionManager, InMemorySessionManager>();
+                break;
+            case SessionManagementType.Redis:
+                services.AddSingleton<ISessionManager, RedisSessionManager>();
+                break;
+            case SessionManagementType.Sql:
+                services.AddSingleton<ISessionManager, SqlSessionManager>();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported session management type: {settings.SessionManagement.Type}");
+        }
 
         services.AddSingleton<IJwtAuthenticationService, JwtAuthenticationService>();
 
@@ -53,6 +62,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPickListValidationService, PickListValidationService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
         services.AddScoped<IPickingPackageLabelService, PickingPackageLabelService>();
+        services.AddScoped<IPickingRepackService, PickingRepackService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();
         services.AddScoped<IPickListCancelService, PickListCancelService>();
         services.AddScoped<IPickListCheckService, PickListCheckService>();

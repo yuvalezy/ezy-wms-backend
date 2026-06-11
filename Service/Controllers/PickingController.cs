@@ -26,6 +26,7 @@ public class PickingController(
     IPickListService service,
     IPickListLineService lineService,
     IPickingPackageLabelService packageLabelService,
+    IPickingRepackService repackService,
     IPickListProcessService processService,
     IPickListCancelService cancelService,
     IPickListCheckService checkService,
@@ -124,12 +125,44 @@ public class PickingController(
     }
 
     [HttpPost("{id:int}/package-labels")]
-    [RequireRolePermission(RoleType.Picking)]
+    [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
     [ProducesResponseType(typeof(PickingPackageLabelResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<PickingPackageLabelResponse> CreatePackageLabel(int id) {
         var sessionInfo = HttpContext.GetSession();
         return await packageLabelService.CreateNextAsync(id, sessionInfo);
+    }
+
+    [HttpGet("{id:int}/repack")]
+    [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(PickingRepackSummaryResponse), StatusCodes.Status200OK)]
+    public async Task<PickingRepackSummaryResponse> GetRepackSummary(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await repackService.GetSummaryAsync(id, sessionInfo);
+    }
+
+    [HttpPost("{id:int}/repack/start")]
+    [RequireRolePermission(RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(PickingRepackSummaryResponse), StatusCodes.Status200OK)]
+    public async Task<PickingRepackSummaryResponse> StartRepack(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await repackService.StartAsync(id, sessionInfo);
+    }
+
+    [HttpPost("{id:int}/repack/assign")]
+    [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(PickingRepackAssignResponse), StatusCodes.Status200OK)]
+    public async Task<PickingRepackAssignResponse> AssignRepackItem(int id, [FromBody] PickingRepackAssignRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+        return await repackService.AssignNextAsync(id, request, sessionInfo);
+    }
+
+    [HttpPost("{id:int}/repack/complete")]
+    [RequireRolePermission(RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(PickingRepackSummaryResponse), StatusCodes.Status200OK)]
+    public async Task<PickingRepackSummaryResponse> CompleteRepack(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await repackService.CompleteAsync(id, sessionInfo);
     }
 
     /// <summary>

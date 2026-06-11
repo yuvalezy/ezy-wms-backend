@@ -4,11 +4,13 @@ using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
+using Core.Models.Settings;
 using Core.Services;
 using Core.Utils;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Services;
 
@@ -18,6 +20,7 @@ public class AuthenticationService(
     ISessionManager                sessionManager,
     IExternalSystemAdapter         externalSystemAdapter,
     IDeviceService                 deviceService,
+    IOptions<JwtSettings>          jwtOptions,
     ILogger<AuthenticationService> logger) : IAuthenticationService {
     public async Task<SessionInfo?> LoginAsync(LoginRequest request, string deviceUuid) {
         try {
@@ -117,7 +120,8 @@ public class AuthenticationService(
             }
 
             // Generate token
-            var    expiresAt = DateTime.UtcNow.Date.AddDays(1); // Expires at midnight
+            var    now       = DateTime.UtcNow;
+            var    expiresAt = now.AddMinutes(jwtOptions.Value.ExpiresInMinutes);
             string token     = jwtService.GenerateToken(authenticatedUser, expiresAt);
 
             var authorizations = authenticatedUser.AuthorizationGroup?.Authorizations ?? new List<RoleType>();
@@ -143,7 +147,7 @@ public class AuthenticationService(
             }
 
             // Store session in memory
-            await sessionManager.SetValueAsync(token, sessionInfo.ToJson(), TimeSpan.FromDays(1));
+            await sessionManager.SetValueAsync(token, sessionInfo.ToJson(), expiresAt - now);
 
             return sessionInfo;
         }

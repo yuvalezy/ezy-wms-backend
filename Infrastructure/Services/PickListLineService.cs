@@ -14,7 +14,8 @@ public class PickListLineService(
     IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
     IPickListValidationService validationService,
-    IPickingPackageLabelService packageLabelService) : IPickListLineService {
+    IPickingPackageLabelService packageLabelService,
+    ISettings settings) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         if (request.Quantity <= 0) {
             return PickListAddItemResponse.Error("Quantity must be greater than zero");
@@ -23,9 +24,10 @@ public class PickListLineService(
         var scannedQuantity = request.Quantity;
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
-            if (request.PickingPackageLabelId.HasValue) {
+            var pickingPackageLabelId = settings.Options.EnablePostPickRepack ? null : request.PickingPackageLabelId;
+            if (pickingPackageLabelId.HasValue) {
                 try {
-                    await packageLabelService.ValidateForPickListAsync(request.PickingPackageLabelId.Value, request.ID, sessionInfo.Warehouse);
+                    await packageLabelService.ValidateForPickListAsync(pickingPackageLabelId.Value, request.ID, sessionInfo.Warehouse);
                 }
                 catch (InvalidOperationException ex) {
                     await transaction.RollbackAsync();
@@ -81,7 +83,7 @@ public class PickListLineService(
                 ItemCode = request.ItemCode,
                 Quantity = request.Quantity,
                 ScannedQuantity = scannedQuantity,
-                PickingPackageLabelId = request.PickingPackageLabelId,
+                PickingPackageLabelId = pickingPackageLabelId,
                 BinEntry = request.BinEntry,
                 Unit = request.Unit,
                 Status = ObjectStatus.Open,
