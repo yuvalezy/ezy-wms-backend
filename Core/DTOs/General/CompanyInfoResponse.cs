@@ -9,4 +9,7 @@ public class CompanyInfoResponse {
     public List<LicenseWarning> LicenseWarnings { get; set; } = [];
     public DeviceStatus?        DeviceStatus    { get; set; }
     public AccountState?        AccountStatus   { get; set; }
+    // Coalesced license/demo expiry (or payment-due grace deadline) so the UI can
+    // surface the date for any license that carries one — not just demo accounts.
+    public DateTime?            ExpirationDate  { get; set; }
 }

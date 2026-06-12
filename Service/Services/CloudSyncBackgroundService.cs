@@ -117,8 +117,9 @@ public class CloudSyncBackgroundService(
             var response = await cloudService.ValidateAccountAsync(validationRequest);
 
             if (response is { Success: true, LicenseData: not null }) {
-                // Update account status
-                await accountStatusService.UpdateAccountStatusAsync(response.LicenseData.AccountStatus,
+                // Update account status AND its date fields (expiry / payment cycle /
+                // demo expiry) from the cloud response, so the countdown isn't stale.
+                await accountStatusService.SyncFromCloudAsync(response.LicenseData,
                     "Daily validation from cloud service");
 
                 // Update license cache

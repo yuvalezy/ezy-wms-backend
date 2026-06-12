@@ -60,6 +60,7 @@ public class AuthenticationController(
             try {
                 var licenseValidation = await licenseValidationService.GetLicenseValidationResultAsync();
                 response.AccountStatus = licenseValidation.AccountStatus;
+                response.ExpirationDate = licenseValidation.ExpirationDate;
                 if (licenseValidation is { ShowWarning: true, DaysUntilExpiration: <= -3 }) {
                     response.LicenseWarnings.Add(licenseValidation.Warning ?? new LicenseWarning(LicenseWarningType.LicenseIssueDetected));
                 }

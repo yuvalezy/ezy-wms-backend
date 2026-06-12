@@ -1,5 +1,6 @@
 using Core.Entities;
 using Core.Enums;
+using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,38 @@ public class AccountStatusService(SystemDbContext context, ILogger<AccountStatus
 
         logger.LogInformation("Account status changed from {PreviousStatus} to {NewStatus}: {Reason}",
             previousStatus, newStatus, reason);
+
+        return current;
+    }
+
+    public async Task<AccountStatus> SyncFromCloudAsync(LicenseData licenseData, string reason) {
+        var current        = await GetCurrentAccountStatusAsync();
+        var previousStatus = current.Status;
+
+        // The cloud response is the source of truth for the current billing cycle:
+        // mirror BOTH the status and the date fields onto the singleton entity. This
+        // is what the read path (ExpirationDate ?? DemoExpirationDate in
+        // LicenseValidationService) and ProcessAccountStatusTransitionAsync rely on.
+        // We assign directly (not ??) so a field the cloud clears is cleared locally.
+        current.Status                  = licenseData.AccountStatus;
+        current.ExpirationDate          = licenseData.ExpirationDate;
+        current.PaymentCycleDate        = licenseData.PaymentCycleDate;
+        current.DemoExpirationDate      = licenseData.DemoExpirationDate;
+        current.InactiveReason          = licenseData.InactiveReason;
+        current.UpdatedAt               = DateTime.UtcNow;
+        current.LastValidationTimestamp = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+
+        // Only audit on an actual status transition, not on every daily re-sync.
+        if (previousStatus != current.Status) {
+            await LogStatusChangeAsync(previousStatus, current.Status, reason);
+            logger.LogInformation("Account status changed from {PreviousStatus} to {NewStatus} via cloud sync: {Reason}",
+                previousStatus, current.Status, reason);
+        }
+        else {
+            logger.LogInformation("Cloud sync refreshed license dates; status unchanged at {Status}", current.Status);
+        }
 
         return current;
     }

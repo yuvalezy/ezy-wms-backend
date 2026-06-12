@@ -45,7 +45,6 @@ public class LicenseValidationService(
 
     public async Task<LicenseValidationResult> GetLicenseValidationResultAsync() {
         var accountStatus = await accountStatusService.GetCurrentAccountStatusAsync();
-        // var licenseCache  = await licenseCacheService.GetLicenseCacheAsync(); // TODO check if I need this
 
         var result = new LicenseValidationResult {
             AccountStatus  = accountStatus.Status,
