@@ -63,7 +63,7 @@ public class InventoryCountingDecreaseSystemBinTest : BaseExternalTest {
     [Order(5)]
     public async Task Test_05_ProcessInventoryCounting_ShouldUploadToSapB1() {
         using var scope    = factory.Services.CreateScope();
-        var       service  = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+        var       service  = scope.ServiceProvider.GetRequiredService<IInventoryCountingBatchService>();
         var       response = await service.ProcessCounting(countingId, TestConstants.SessionInfo);
         Assert.That(response, Is.Not.Null);
         Assert.That(response.Success, Is.True, $"Processing failed: {response.ErrorMessage}");

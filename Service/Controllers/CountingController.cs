@@ -9,7 +9,6 @@ using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Service.Middlewares;
 
 namespace Service.Controllers;
@@ -22,8 +21,9 @@ namespace Service.Controllers;
 [Authorize]
 public class CountingController(
     IInventoryCountingsService service,
-    IInventoryCountingsLineService lineService,
-    ILogger<CountingController> logger
+    IInventoryCountingBatchService batchService,
+    IInventoryCountingReportService reportService,
+    IInventoryCountingsLineService lineService
 ) : ControllerBase
 {
     /// <summary>
@@ -169,7 +169,7 @@ public class CountingController(
     public async Task<ActionResult<ProcessInventoryCountingResponse>> ProcessCounting([FromBody] ProcessInventoryCountingRequest request)
     {
         var sessionInfo = HttpContext.GetSession();
-        var result = await service.ProcessCounting(request.ID, sessionInfo);
+        var result = await batchService.ProcessCounting(request.ID, sessionInfo);
         return Ok(result);
     }
 
@@ -183,7 +183,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<InventoryCountingBatchResponse>> GetBatches(Guid countingId)
     {
-        return await service.GetBatches(countingId);
+        return await batchService.GetBatches(countingId);
     }
 
     /// <summary>
@@ -198,7 +198,7 @@ public class CountingController(
     public async Task<ActionResult<ProcessInventoryCountingResponse>> RetryBatches([FromBody] RetryBatchRequest request)
     {
         var sessionInfo = HttpContext.GetSession();
-        var result = await service.RetryFailedBatches(request, sessionInfo);
+        var result = await batchService.RetryFailedBatches(request, sessionInfo);
         return Ok(result);
     }
 
@@ -217,7 +217,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<InventoryCountingContentResponse>> CountingContent([FromBody] InventoryCountingContentRequest request)
     {
-        return await service.GetCountingContent(request);
+        return await reportService.GetCountingContent(request);
     }
 
     /// <summary>
@@ -237,7 +237,7 @@ public class CountingController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<InventoryCountingSummaryResponse> GetCountingSummaryReport(Guid id)
     {
-        return await service.GetCountingSummaryReport(id);
+        return await reportService.GetCountingSummaryReport(id);
     }
 
     /// <summary>
@@ -255,7 +255,7 @@ public class CountingController(
     public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry)
     {
         itemCode = Uri.UnescapeDataString(itemCode);
-        return await service.GetCountingReportAllDetails(id, itemCode, binEntry);
+        return await reportService.GetCountingReportAllDetails(id, itemCode, binEntry);
     }
 
     /// <summary>
@@ -272,7 +272,7 @@ public class CountingController(
     public async Task<ActionResult<bool>> UpdateCountingAll([FromBody] UpdateInventoryCountingAllRequest request)
     {
         var sessionInfo = HttpContext.GetSession();
-        string? errorMessage = await service.UpdateCountingAll(request, sessionInfo);
+        string? errorMessage = await reportService.UpdateCountingAll(request, sessionInfo);
         return string.IsNullOrWhiteSpace(errorMessage) ? Ok(true) : BadRequest(errorMessage);
     }
 }

@@ -72,6 +72,8 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IGoodsReceiptLineService, GoodsReceiptLineService>();
         services.AddScoped<IGoodsReceiptLineItemProcessService, GoodsReceiptLineItemProcessService>();
         services.AddScoped<IInventoryCountingsService, InventoryCountingsService>();
+        services.AddScoped<IInventoryCountingBatchService, InventoryCountingBatchService>();
+        services.AddScoped<IInventoryCountingReportService, InventoryCountingReportService>();
         services.AddScoped<IInventoryCountingsLineService, InventoryCountingsLineService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();

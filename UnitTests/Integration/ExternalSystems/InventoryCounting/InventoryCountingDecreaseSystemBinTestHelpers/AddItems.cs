@@ -85,7 +85,7 @@ public class AddItems(Guid id, string testItem, string testWarehouse, WebApplica
 
     private async Task ValidateCountingContent(bool afterUpdate = false) {
         using var scope = factory.Services.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<IInventoryCountingsService>();
+        var service = scope.ServiceProvider.GetRequiredService<IInventoryCountingReportService>();
         var request = new InventoryCountingContentRequest {
             ID = id,
         };
