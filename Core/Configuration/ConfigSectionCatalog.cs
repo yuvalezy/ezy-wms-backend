@@ -56,6 +56,15 @@ public static class ConfigSectionCatalog {
     /// <summary>The reviewable list of sections expected to live in the YAML config files.</summary>
     public static IReadOnlyCollection<string> KnownSections => Meta.Keys;
 
+    /// <summary>
+    /// Sections that were removed from the product. Any stored rows for these are
+    /// pruned from the database on startup so they no longer surface in the admin UI.
+    /// </summary>
+    public static readonly IReadOnlySet<string> RetiredSections =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "ExternalAdapter",
+        };
+
     public static ConfigSectionMeta GetMeta(string section) =>
         Meta.TryGetValue(section, out var m)
             ? m

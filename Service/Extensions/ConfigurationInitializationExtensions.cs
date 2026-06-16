@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Core.Configuration;
 using Core.Entities;
 using Core.Enums;
 using Infrastructure.Configuration;
@@ -68,7 +69,27 @@ public static class ConfigurationInitializationExtensions {
                 "No configuration source: the config/ folder, database configuration, and init/ templates are all absent.");
         }
 
+        await PruneRetiredSectionsAsync(db, logger);
+
         return app;
+    }
+
+    /// <summary>
+    /// Removes stored configuration rows for sections that have been retired from the
+    /// product (see <see cref="ConfigSectionCatalog.RetiredSections"/>). Idempotent;
+    /// audit history is intentionally preserved.
+    /// </summary>
+    private static async Task PruneRetiredSectionsAsync(SystemDbContext db, ILogger logger) {
+        var rows = await db.SystemConfiguration.ToListAsync();
+        var retired = rows.Where(r => ConfigSectionCatalog.RetiredSections.Contains(r.Section)).ToList();
+        if (retired.Count == 0) {
+            return;
+        }
+
+        db.SystemConfiguration.RemoveRange(retired);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Configuration: pruned {Count} retired section(s): {Sections}",
+            retired.Count, string.Join(", ", retired.Select(r => r.Section)));
     }
 
     private static async Task IngestAsync(
