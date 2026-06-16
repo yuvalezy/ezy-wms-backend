@@ -1,18 +1,36 @@
 using System.Text;
 using System.Text.Json;
 using Core.Interfaces;
+using Core.Models.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace Adapters.CrossPlatform.SBO.Services;
 
 public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
-    private readonly string url      = settings.SboSettings?.ServiceLayerUrl ?? throw new InvalidOperationException("SBO service layer URL is not configured.");
-    private readonly string user     = settings.SboSettings.User ?? throw new InvalidOperationException("SBO user is not configured.");
-    private readonly string password = settings.SboSettings.Password ?? throw new InvalidOperationException("SBO password is not configured.");
-    private readonly string database = settings.SboSettings.Database ?? throw new InvalidOperationException("SBO database is not configured.");
-
-    private readonly HttpClient    httpClient          = CreateHttpClient(settings.SboSettings?.ServiceLayerTimeoutSeconds ?? 300);
     private readonly SemaphoreSlim connectionSemaphore = new(1, 1);
+    private HttpClient? httpClient;
+    private DateTime    sessionExpiry = DateTime.MinValue;
+
+    public string? SessionId { get; private set; }
+
+    // Settings are read live (not captured at construction) so a configuration
+    // change applies without a process restart and the singleton can be created
+    // even before SBO is configured (lockdown mode).
+    private SboSettings Config =>
+        settings.SboSettings ?? throw new InvalidOperationException("SAP Business One is not configured.");
+
+    private string Url =>
+        Config.ServiceLayerUrl ?? throw new InvalidOperationException("SBO service layer URL is not configured.");
+
+    private HttpClient Http {
+        get {
+            if (httpClient is null) {
+                int timeout = settings.SboSettings?.ServiceLayerTimeoutSeconds ?? 300;
+                httpClient = CreateHttpClient(timeout > 0 ? timeout : 300);
+            }
+            return httpClient;
+        }
+    }
 
     private static HttpClient CreateHttpClient(int timeoutSeconds) {
         var handler = new HttpClientHandler() {
@@ -22,10 +40,6 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
             Timeout = TimeSpan.FromSeconds(timeoutSeconds)
         };
     }
-
-    private DateTime sessionExpiry = DateTime.MinValue;
-
-    public string? SessionId { get; private set; }
 
     public async Task<bool> ConnectCompany() {
         if (IsConnected()) {
@@ -37,10 +51,14 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
                 return true;
             }
 
-            logger.LogInformation("Connecting to Service Layer at {Url}", url);
+            var cfg = Config;
+            string user     = cfg.User     ?? throw new InvalidOperationException("SBO user is not configured.");
+            string password = cfg.Password ?? throw new InvalidOperationException("SBO password is not configured.");
+
+            logger.LogInformation("Connecting to Service Layer at {Url}", Url);
 
             var loginData = new {
-                CompanyDB = database,
+                CompanyDB = cfg.Database,
                 UserName  = user,
                 Password  = password
             };
@@ -48,7 +66,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
             string json    = JsonSerializer.Serialize(loginData);
             var    content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await httpClient.PostAsync($"{url}/b1s/v2/Login", content);
+            var response = await Http.PostAsync($"{Url}/b1s/v2/Login", content);
 
             if (response.IsSuccessStatusCode) {
                 string responseContent = await response.Content.ReadAsStringAsync();
@@ -90,12 +108,12 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     public async Task<T?> GetAsync<T>(string endpoint) {
         await ConnectCompany();
 
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
+        string fullUrl = $"{Url}/b1s/v2/{endpoint}";
 
         var request = new HttpRequestMessage(HttpMethod.Get, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
 
-        var response = await httpClient.SendAsync(request);
+        var response = await Http.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {
             string content = await response.Content.ReadAsStringAsync();
@@ -123,12 +141,12 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
     public async Task<bool> DeleteAsync(string endpoint) {
         await ConnectCompany();
 
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
+        string fullUrl = $"{Url}/b1s/v2/{endpoint}";
 
         var request = new HttpRequestMessage(HttpMethod.Delete, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
 
-        var response = await httpClient.SendAsync(request);
+        var response = await Http.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {
             logger.LogInformation("DELETE successful for endpoint {Endpoint}", endpoint);
@@ -158,7 +176,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         string json    = JsonSerializer.Serialize(data);
         var    content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
+        string fullUrl = $"{Url}/b1s/v2/{endpoint}";
         string methodName = httpMethod.Method;
 
         var request = new HttpRequestMessage(httpMethod, fullUrl);
@@ -172,7 +190,7 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         request.Content = content;
 
         logger.LogDebug("Sending to service layer method: {httpMethod} {endpoint} with body: {body}", httpMethod.Method, endpoint, json);
-        var response = await httpClient.SendAsync(request);
+        var response = await Http.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {
             if (httpMethod == HttpMethod.Post) {
@@ -191,14 +209,14 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
         string json    = JsonSerializer.Serialize(data);
         var    content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        string fullUrl = $"{url}/b1s/v2/{endpoint}";
+        string fullUrl = $"{Url}/b1s/v2/{endpoint}";
         string methodName = httpMethod.Method;
 
         var request = new HttpRequestMessage(httpMethod, fullUrl);
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = content;
 
-        var response = await httpClient.SendAsync(request);
+        var response = await Http.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {
             string responseContent = await response.Content.ReadAsStringAsync();
@@ -330,11 +348,11 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
 
         batchContent.Add(changeSetContent);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{url}/b1s/v2/$batch");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{Url}/b1s/v2/$batch");
         request.Headers.Add("Cookie", $"B1SESSION={SessionId};");
         request.Content = batchContent;
 
-        var response = await httpClient.SendAsync(request);
+        var response = await Http.SendAsync(request);
 
         if (response.IsSuccessStatusCode) {
             string responseContent = await response.Content.ReadAsStringAsync();

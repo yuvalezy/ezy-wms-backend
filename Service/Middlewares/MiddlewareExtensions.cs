@@ -24,6 +24,7 @@ public static class MiddlewareExtensions {
         app.UseMiddleware<ExceptionHandlingMiddleware>();
         app.UseMiddleware<TokenSessionMiddleware>();
         app.UseMiddleware<LicenseValidationMiddleware>();
+        app.UseMiddleware<SystemLockdownMiddleware>();
 
 
         

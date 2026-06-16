@@ -50,6 +50,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IConfigurationManagementService, ConfigurationManagementService>();
+        services.AddSingleton<ISystemStatusService, SystemStatusService>();
         services.AddScoped<IPublicService, PublicService>();
         services.AddScoped<ITransferDocumentService, TransferDocumentService>();
         services.AddScoped<ITransferContentService, TransferContentService>();

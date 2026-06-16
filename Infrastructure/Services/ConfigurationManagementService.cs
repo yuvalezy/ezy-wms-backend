@@ -235,6 +235,20 @@ public sealed class ConfigurationManagementService : IConfigurationManagementSer
         };
     }
 
+    public async Task<SboSettings?> ResolveSboSettingsDraftAsync(JsonNode? draft) {
+        const string section = "SboSettings";
+        var row = await db.SystemConfiguration.AsNoTracking().FirstOrDefaultAsync(r => r.Section == section);
+
+        string incoming = draft?.ToJsonString() ?? "null";
+        // Restore masked secrets from the stored (encrypted) payload, then decrypt
+        // them by flattening through the same path the runtime config uses.
+        string merged   = ConfigSecretJson.MergeMaskedSecrets(incoming, row?.Json);
+        var pairs       = ConfigSectionJson.Flatten(section, merged, protector);
+
+        IConfigurationRoot cfg = new ConfigurationBuilder().AddInMemoryCollection(pairs).Build();
+        return cfg.GetSection(section).Get<SboSettings>();
+    }
+
     // --- internals ---
 
     private async Task ApplyAsync(

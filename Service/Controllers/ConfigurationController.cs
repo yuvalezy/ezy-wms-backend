@@ -23,6 +23,7 @@ namespace Service.Controllers;
 public class ConfigurationController(
     IConfigurationManagementService service,
     IUserService userService,
+    ISboConnectionTester sboTester,
     ILogger<ConfigurationController> logger) : ControllerBase {
 
     [HttpGet]
@@ -99,6 +100,25 @@ public class ConfigurationController(
             return forbid;
         }
         return Ok(service.Validate(section, request.Json));
+    }
+
+    /// <summary>Tests a draft SBO connection without saving (masked secrets resolved from the stored values).</summary>
+    [HttpPost("{section}/test-connection")]
+    public async Task<IActionResult> TestConnection(string section, [FromBody] ConfigSectionUpdateRequest request) {
+        if (await Forbidden() is { } forbid) {
+            return forbid;
+        }
+        if (!section.Equals("SboSettings", StringComparison.OrdinalIgnoreCase)) {
+            return BadRequest(new {
+                error = "unsupported",
+                error_description = "Test connection is only available for SboSettings."
+            });
+        }
+        return await Guarded(async () => {
+            var sbo    = await service.ResolveSboSettingsDraftAsync(request.Json);
+            var result = await sboTester.TestServiceLayerLoginAsync(sbo);
+            return Ok(new { success = result.Success, message = result.Message });
+        });
     }
 
     [HttpPut("{section}")]

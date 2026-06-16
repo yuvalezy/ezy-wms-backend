@@ -11,6 +11,7 @@ public static class SboServiceLayerDependencyInjection {
     public static void ConfigureServices(IServiceCollection services) {
         // External System Adapters for SBO 9.0
         services.AddSingleton<SboCompany>();
+        services.AddSingleton<ISboConnectionTester, SboConnectionTester>();
         services.AddScoped<SboDatabaseService>();
         services.AddScoped<SboEmployeeRepository>();
         services.AddScoped<SboGeneralRepository>();

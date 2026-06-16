@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Core.DTOs.Configuration;
 using Core.Enums;
+using Core.Models.Settings;
 
 namespace Core.Services;
 
@@ -30,6 +31,13 @@ public interface IConfigurationManagementService {
     Task<ConfigImportResult> ImportAsync(ConfigImportRequest request, bool dryRun, Guid? userId);
 
     Task<ConfigMigrationStatusDto?> GetMigrationStatusAsync();
+
+    /// <summary>
+    /// Resolves a draft "SboSettings" payload (merging masked secrets with the
+    /// stored values and decrypting) into a bound <see cref="SboSettings"/> for a
+    /// connection test. Does not persist anything.
+    /// </summary>
+    Task<SboSettings?> ResolveSboSettingsDraftAsync(JsonNode? draft);
 }
 
 /// <summary>Thrown for configuration operations that map to a specific HTTP status.</summary>

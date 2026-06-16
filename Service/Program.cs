@@ -108,7 +108,13 @@ app.ConfigureDatabase()
 // Must run after ConfigureDatabase() (tables exist) and before configuration use.
 await app.InitializeConfigurationAsync();
 
-await app.TestConfigurations(settings);
+// Evaluate readiness (SAP/SBO). Non-fatal by design: if the system is not ready
+// the service still starts in LOCKDOWN mode — business endpoints return 503 and the
+// UI locks until a superuser configures and verifies the SBO settings.
+var systemStatus = await app.Services.GetRequiredService<ISystemStatusService>().RefreshAsync();
+if (!systemStatus.Ready) {
+    Log.Warning("Starting in LOCKDOWN mode: {Detail}", systemStatus.Detail);
+}
 
 app.Run();
 
