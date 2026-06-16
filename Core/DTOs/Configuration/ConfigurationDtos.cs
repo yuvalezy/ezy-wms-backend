@@ -70,3 +70,18 @@ public class ConfigImportResult {
     public bool                            DryRun   { get; set; }
     public List<ConfigSectionImportResult> Sections { get; set; } = [];
 }
+
+/// <summary>Result of validating a single "Filters" SQL fragment against the external SAP database.</summary>
+public class FilterValidationResult {
+    public bool   Valid   { get; set; }
+    public string Message { get; set; } = "";
+}
+
+/// <summary>
+/// Per-filter results of a "Filters" draft DB validation. A filter that is not present in the draft
+/// is left null (nothing to validate).
+/// </summary>
+public class FiltersValidationResponse {
+    public FilterValidationResult? Vendors      { get; set; }
+    public FilterValidationResult? PickPackOnly { get; set; }
+}

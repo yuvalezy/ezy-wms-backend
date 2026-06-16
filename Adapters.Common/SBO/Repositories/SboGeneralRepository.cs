@@ -298,4 +298,60 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             UserName = reader.GetString(1)
         });
     }
+
+    /// <summary>
+    /// Validates the configured <c>Filters.Vendors</c> SQL fragment by running the exact vendor
+    /// query shape it is spliced into (see <see cref="GetVendorsAsync"/>) against the external SAP
+    /// database. The query is guarded with <c>1=0</c> so no rows are returned and wrapped in a
+    /// rolled-back transaction, so it stays cheap while SQL Server still fully parses and binds the
+    /// expression (catching syntax errors and unknown columns).
+    /// </summary>
+    public Task<(bool valid, string message)> ValidateVendorsFilterAsync(string vendors) {
+        string query =
+            $"""select "CardCode", "CardName" from OCRD where "CardType" = 'S' and ({vendors}) and 1 = 0""";
+        return ValidateMimicQueryAsync(query);
+    }
+
+    /// <summary>
+    /// Validates the configured <c>Filters.PickPackOnly</c> SQL fragments by running the exact
+    /// pick-list query shape they are spliced into (see <c>SboPickListRepository.GetPickLists</c>)
+    /// against the external SAP database. The <c>Query</c> is spliced into the projected
+    /// <c>Max(Case When ... Then 1 Else 0 End)</c> column and the <c>GroupBy</c> is appended to the
+    /// hard-coded <c>GROUP BY</c>, so the same columns/aliases (OCRD, T2, PICKS, PKL1) resolve. A
+    /// <c>WHERE 1 = 0</c> guard keeps it cheap; the rolled-back transaction wraps it.
+    /// </summary>
+    public Task<(bool valid, string message)> ValidatePickPackOnlyFilterAsync(FilterQuery pickPackOnly) {
+        string query =
+            $"""
+            SELECT PICKS."AbsEntry", Max(Case When {pickPackOnly.Query} Then 1 Else 0 End) "PickPackOnly"
+            FROM OPKL PICKS
+            LEFT JOIN PKL1 ON PKL1."AbsEntry" = PICKS."AbsEntry"
+            inner join OILM T2 on T2."TransType" = PKL1."BaseObject" and T2.DocEntry = PKL1."OrderEntry" and T2."DocLineNum" = PKL1."OrderLine"
+            left outer join OCRD on OCRD."CardCode" = T2."BPCardCode"
+            WHERE 1 = 0
+            GROUP BY PICKS."AbsEntry", {pickPackOnly.GroupBy}
+            """;
+        return ValidateMimicQueryAsync(query);
+    }
+
+    /// <summary>
+    /// Validates the supplied mimic query against the external SAP database. The query is executed
+    /// inside an explicit transaction that is always rolled back (never committed) — limiting the
+    /// validation to only mimic how the filter is used at runtime. SQL Server fully parses and binds
+    /// the query (so syntax errors and unknown columns surface), but the <c>1=0</c> guard returns no
+    /// rows. Returns success, or the <see cref="SqlException"/> message on failure.
+    /// </summary>
+    private async Task<(bool valid, string message)> ValidateMimicQueryAsync(string query) {
+        await using var validation = await dbService.BeginValidationAsync();
+        try {
+            await using var command = new SqlCommand(query, validation.Connection, validation.Transaction);
+            await using var reader  = await command.ExecuteReaderAsync();
+            // The 1=0 guard means there is nothing to read; parsing/binding already happened.
+            return (true, string.Empty);
+        }
+        catch (SqlException ex) {
+            return (false, ex.Message);
+        }
+        // The transaction is rolled back when `validation` is disposed (see SboValidationScope).
+    }
 }

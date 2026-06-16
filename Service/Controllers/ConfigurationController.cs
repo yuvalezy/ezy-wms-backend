@@ -2,9 +2,11 @@ using System;
 using System.Security.Claims;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Adapters.Common.SBO.Repositories;
 using Core.DTOs.Configuration;
 using Core.Enums;
 using Core.Interfaces;
+using Core.Models.Settings;
 using Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +26,7 @@ public class ConfigurationController(
     IConfigurationManagementService service,
     IUserService userService,
     ISboConnectionTester sboTester,
+    SboGeneralRepository sboGeneralRepository,
     ILogger<ConfigurationController> logger) : ControllerBase {
 
     [HttpGet]
@@ -120,6 +123,66 @@ public class ConfigurationController(
             return Ok(new { success = result.Success, message = result.Message });
         });
     }
+
+    /// <summary>
+    /// Validates the draft "Filters" SQL fragments against the external SAP database. Each present
+    /// filter is spliced into the exact query shape it is used in at runtime, guarded so it returns
+    /// no rows, and executed inside a rolled-back transaction — so SQL Server fully parses and binds
+    /// it (catching syntax errors and unknown columns) without persisting anything.
+    /// </summary>
+    [HttpPost("Filters/validate-sql")]
+    public async Task<IActionResult> ValidateFiltersSql([FromBody] ConfigSectionUpdateRequest request) {
+        if (await Forbidden() is { } forbid) {
+            return forbid;
+        }
+        return await Guarded(async () => {
+            // Filters has no secrets; read the draft fields directly so a partially-filled
+            // PickPackOnly (Query without GroupBy, while editing) never throws on bind.
+            string? vendors        = ReadFilterString(request.Json, "Vendors");
+            var     pickPackNode   = FindProperty(request.Json, "PickPackOnly");
+            string? pickPackQuery  = ReadFilterString(pickPackNode, "Query");
+            string? pickPackGroup  = ReadFilterString(pickPackNode, "GroupBy");
+
+            var response = new FiltersValidationResponse();
+
+            if (!string.IsNullOrWhiteSpace(vendors)) {
+                var (valid, message) = await sboGeneralRepository.ValidateVendorsFilterAsync(vendors);
+                response.Vendors = new FilterValidationResult { Valid = valid, Message = message };
+            }
+
+            if (!string.IsNullOrWhiteSpace(pickPackQuery)) {
+                if (string.IsNullOrWhiteSpace(pickPackGroup)) {
+                    response.PickPackOnly = new FilterValidationResult {
+                        Valid   = false,
+                        Message = "PickPackOnly GroupBy is required when a Query is set."
+                    };
+                }
+                else {
+                    var (valid, message) = await sboGeneralRepository.ValidatePickPackOnlyFilterAsync(
+                        new FilterQuery { Query = pickPackQuery, GroupBy = pickPackGroup });
+                    response.PickPackOnly = new FilterValidationResult { Valid = valid, Message = message };
+                }
+            }
+
+            return Ok(response);
+        });
+    }
+
+    /// <summary>Case-insensitive lookup of a JSON object property (PascalCase or camelCase).</summary>
+    private static JsonNode? FindProperty(JsonNode? node, string name) {
+        if (node is not JsonObject obj) {
+            return null;
+        }
+        foreach (var pair in obj) {
+            if (string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase)) {
+                return pair.Value;
+            }
+        }
+        return null;
+    }
+
+    private static string? ReadFilterString(JsonNode? node, string name) =>
+        FindProperty(node, name)?.GetValue<string?>();
 
     [HttpPut("{section}")]
     public async Task<IActionResult> Update(string section, [FromBody] ConfigSectionUpdateRequest request) {

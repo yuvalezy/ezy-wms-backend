@@ -1,5 +1,4 @@
 using System.Data;
-using Core.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -88,6 +87,18 @@ public class SboDatabaseService(IConfiguration configuration) {
     }
 
     /// <summary>
+    /// Opens the external SAP database connection and begins a transaction that is always rolled
+    /// back (never committed) when the returned scope is disposed. Intended for "mimic" validation
+    /// queries that must be fully parsed and bound by SQL Server without persisting anything.
+    /// </summary>
+    public async Task<SboValidationScope> BeginValidationAsync() {
+        var connection = new SqlConnection(ConnectionString);
+        await connection.OpenAsync();
+        var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        return new SboValidationScope(connection, transaction);
+    }
+
+    /// <summary>
     /// Executes a SQL query and processes the results with the provided reader function.
     /// </summary>
     /// <param name="query">SQL query to execute</param>
@@ -148,5 +159,26 @@ public class SboDatabaseService(IConfiguration configuration) {
             .Replace("]", "\"")
             .Replace("dbo.", string.Empty)
             .Replace("GETDATE()", "CURRENT_TIMESTAMP");
+    }
+}
+
+/// <summary>
+/// A scoped open connection + transaction against the external SAP database that always rolls back
+/// (never commits) on disposal. Used for "mimic" validation queries — the work is fully parsed and
+/// bound by SQL Server but nothing is ever persisted.
+/// </summary>
+public sealed class SboValidationScope(SqlConnection connection, SqlTransaction transaction) : IAsyncDisposable {
+    public SqlConnection  Connection  { get; } = connection;
+    public SqlTransaction Transaction { get; } = transaction;
+
+    public async ValueTask DisposeAsync() {
+        try {
+            await Transaction.RollbackAsync();
+        }
+        catch {
+            // The connection is closing anyway; a failed rollback (e.g. already aborted) is benign.
+        }
+        await Transaction.DisposeAsync();
+        await Connection.DisposeAsync();
     }
 }
