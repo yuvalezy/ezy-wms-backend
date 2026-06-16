@@ -38,8 +38,13 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
 
     public async Task<User?> GetUserAsync(Guid id) {
         try {
+            // AsNoTracking is critical: this method masks the password below for the
+            // response, and callers (e.g. superuser checks) often run in a request that
+            // later calls SaveChanges on the same scoped context. Without AsNoTracking the
+            // masked "*********" placeholder would be persisted, corrupting the password.
             var user = await dbContext.Users
                 .Include(u => u.AuthorizationGroup)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
             if (user != null) {
                 user.Password = "*********"; // Mask password for security
@@ -77,6 +82,8 @@ public class UserService(SystemDbContext dbContext, IExternalSystemAdapter exter
 
             logger.LogInformation("Created new user {UserId}", newUser.Id);
 
+            // Detach before masking so a later SaveChanges can never persist the placeholder.
+            dbContext.Entry(newUser).State = EntityState.Detached;
             newUser.Password = "*********"; // Mask password for security
 
             return newUser;
