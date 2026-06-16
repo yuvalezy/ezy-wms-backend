@@ -44,10 +44,18 @@ public class AuthenticationController(
         try {
             string? companyName = await externalSystemAdapter.GetCompanyNameAsync();
             
+            var paymentAlert = settings.Licensing.PaymentAlert;
             var response = new CompanyInfoResponse {
                 CompanyName     = companyName,
                 ServerTime      = DateTime.UtcNow,
-                LicenseWarnings = []
+                LicenseWarnings = [],
+                PaymentAlert    = new PaymentAlertSpec {
+                    Enabled                  = paymentAlert.Enabled,
+                    LoginWarnDays            = paymentAlert.LoginWarnDays,
+                    AuthenticatedWarnDays    = paymentAlert.AuthenticatedWarnDays,
+                    Audience                 = paymentAlert.Audience,
+                    ShowPaymentDetailAtLogin = paymentAlert.ShowPaymentDetailAtLogin
+                }
             };
             
             string? deviceUuid = Request.Headers["X-Device-UUID"].FirstOrDefault();

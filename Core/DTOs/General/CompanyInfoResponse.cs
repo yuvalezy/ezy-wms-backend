@@ -12,4 +12,8 @@ public class CompanyInfoResponse {
     // Coalesced license/demo expiry (or payment-due grace deadline) so the UI can
     // surface the date for any license that carries one — not just demo accounts.
     public DateTime?            ExpirationDate  { get; set; }
+    // Configurable payment-alert spec (windows + audience + enabled) so the FE's
+    // banner gates are driven by appsettings instead of hardcoded constants.
+    // Optional: absent on older backends ⇒ FE uses its built-in defaults.
+    public PaymentAlertSpec?    PaymentAlert    { get; set; }
 }
