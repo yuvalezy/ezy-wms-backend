@@ -25,6 +25,8 @@ public interface IExternalSystemAdapter {
 
     Task<WarehouseResponse?> GetWarehouseAsync(string id);
 
+    Task<IEnumerable<BinLocationResponse>> GetBinsAsync(string warehouse);
+
     // Vendor
     Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
     Task<ExternalValue<string>?> GetVendorAsync(string cardCode);

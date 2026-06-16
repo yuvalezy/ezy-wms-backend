@@ -1,5 +1,4 @@
-﻿using Core.DTOs;
-using Core.DTOs.General;
+﻿using Core.DTOs.General;
 using Core.DTOs.Items;
 using Core.DTOs.Settings;
 using Core.Models;
@@ -8,6 +7,7 @@ namespace Core.Interfaces;
 
 public interface IPublicService {
     Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter);
+    Task<IEnumerable<BinLocationResponse>> GetWarehouseBinsAsync(string warehouse);
     Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse);
     Task<UserInfoResponse> GetUserInfoAsync(SessionInfo info);
     Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();

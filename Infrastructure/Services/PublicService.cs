@@ -18,6 +18,8 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
         return warehouses;
     }
 
+    public async Task<IEnumerable<BinLocationResponse>> GetWarehouseBinsAsync(string warehouse) => await adapter.GetBinsAsync(warehouse);
+
     public async Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse) {
         var itemAndBinCountTask = adapter.GetItemAndBinCount(warehouse);
         var pickingDocumentsTask = adapter.GetPickListsAsync(new PickListsRequest(), warehouse);

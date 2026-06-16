@@ -96,6 +96,19 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         return result;
     }
 
+    public async Task<IEnumerable<BinLocationResponse>> GetBinsAsync(string warehouse) {
+        const string query = "select \"AbsEntry\", \"BinCode\" from OBIN where \"WhsCode\" = @WhsCode order by \"BinCode\"";
+
+        var parameters = new[] {
+            new SqlParameter("@WhsCode", SqlDbType.NVarChar, 50) { Value = warehouse }
+        };
+
+        return await dbService.QueryAsync(query, parameters, reader => new BinLocationResponse {
+            Entry = reader.GetInt32(0),
+            Code  = reader.GetString(1)
+        });
+    }
+
     public async Task<BinLocationResponse?> ScanBinLocationAsync(string bin) {
         const string query = $"select \"AbsEntry\", \"BinCode\" from OBIN where \"BinCode\" = @BinCode";
 

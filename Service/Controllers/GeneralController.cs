@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Core.DTOs.General;
+using Core.DTOs.Items;
 using Core.DTOs.Settings;
 using Core.Enums;
 using Core.Interfaces;
@@ -37,6 +38,23 @@ public class GeneralController(IPublicService publicService, ISettings settings)
     public async Task<ActionResult<IEnumerable<ExternalValue<string>>>> GetWarehouses([FromQuery] string[]? filter = null) {
         var warehouses = await publicService.GetWarehousesAsync(filter);
         return Ok(warehouses);
+    }
+
+    /// <summary>
+    /// Gets the list of bin locations defined for a warehouse
+    /// </summary>
+    /// <param name="warehouse">The warehouse code to list bin locations for</param>
+    /// <returns>A list of bin locations (entry and code) for the warehouse</returns>
+    /// <response code="200">Returns the list of bin locations</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="500">If a server error occurs</response>
+    [HttpGet("Warehouses/{warehouse}/bins")]
+    [ProducesResponseType(typeof(IEnumerable<BinLocationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<BinLocationResponse>>> GetWarehouseBins(string warehouse) {
+        var bins = await publicService.GetWarehouseBinsAsync(warehouse);
+        return Ok(bins);
     }
 
     /// <summary>

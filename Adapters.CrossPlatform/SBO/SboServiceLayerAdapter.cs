@@ -78,6 +78,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     // Warehouses
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter = null) => await generalRepository.GetWarehousesAsync(filter);
     public async Task<WarehouseResponse?> GetWarehouseAsync(string id) => (await generalRepository.GetWarehousesAsync([id])).FirstOrDefault();
+    public async Task<IEnumerable<BinLocationResponse>> GetBinsAsync(string warehouse) => await generalRepository.GetBinsAsync(warehouse);
 
     // Items, Warehouse & Bins
     public async Task<(int itemCount, int binCount)> GetItemAndBinCount(string warehouse) => await generalRepository.GetItemAndBinCountAsync(warehouse);
