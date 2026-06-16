@@ -48,7 +48,12 @@ public class SystemDbContext : DbContext {
     public DbSet<LicenseCache>       LicenseCaches        { get; set; }
     public DbSet<CloudSyncQueue>     CloudSyncQueues      { get; set; }
     public DbSet<WmsSession>         WmsSessions          { get; set; }
-    
+
+    // System configuration (file -> database migration)
+    public DbSet<SystemConfigurationEntry>          SystemConfiguration         { get; set; }
+    public DbSet<SystemConfigurationAudit>          SystemConfigurationAudits   { get; set; }
+    public DbSet<ConfigurationMigrationStateEntity> ConfigurationMigrationState { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -84,7 +89,12 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new LicenseCacheConfiguration());
         modelBuilder.ApplyConfiguration(new CloudSyncQueueConfiguration());
         modelBuilder.ApplyConfiguration(new WmsSessionConfiguration());
-        
+
+        // System configuration
+        modelBuilder.ApplyConfiguration(new SystemConfigurationEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new SystemConfigurationAuditConfiguration());
+        modelBuilder.ApplyConfiguration(new ConfigurationMigrationStateConfiguration());
+
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
             var entityBuilder = modelBuilder.Entity(entityType.ClrType);

@@ -93,6 +93,14 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </Content>
+      <!-- Default configuration templates: shipped in the published artifact so a
+           fresh install can seed its database from them. The live config\ folder is
+           intentionally NOT shipped by release.yml. These .yaml files default to the
+           None item type, so they are copied via None (not Content). -->
+      <None Update="init\**\*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

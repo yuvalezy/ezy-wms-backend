@@ -100,8 +100,16 @@ jobs:
       - name: Publish Service (${{ matrix.rid }})
         run: dotnet publish Service/Service.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }}
 
-      - name: Stage config folder
-        run: cp -r Service/config publish/${{ matrix.rid }}/config
+      # NOTE: the live Service/config folder is intentionally NOT packaged. It holds
+      # per-installation values and secrets, and shipping it would overwrite operator
+      # config on deploy. Configuration now lives in the database; a fresh install
+      # seeds it from the init/ templates (shipped via Service.csproj content).
+      - name: Verify init templates are present
+        run: |
+          if [ ! -f "publish/${{ matrix.rid }}/init/Configurations.yaml" ]; then
+            echo "::error::init/ templates missing from publish output — fresh installs cannot seed configuration."
+            exit 1
+          fi
 
       - name: Create archive
         run: |

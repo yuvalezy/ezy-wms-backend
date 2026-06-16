@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Core.Interfaces;
 using Core.Models.Settings;
+using Infrastructure.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,13 +14,22 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load YAML configuration files before command handling or settings binding.
-builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: false, reloadOnChange: true);
+// Load YAML configuration files (only present until migrated/archived). All
+// optional: after migration the live config/ folder is archived and these are
+// served from the database provider added below.
+builder.Configuration.AddYamlFile("config/Configurations.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/PickingPostProcessing.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/ExternalCommands.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/PickingDetails.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/CustomFields.yaml", optional: true, reloadOnChange: true);
 builder.Configuration.AddYamlFile("config/Item.yaml", optional: true, reloadOnChange: true);
+
+// Database-backed configuration. Registered LAST so that, once the database holds
+// configuration, it takes precedence over any leftover YAML. Tolerant of a missing
+// table on a fresh database (yields no keys until the seed/migration step runs).
+builder.Configuration.AddDatabaseConfiguration(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    builder.Configuration["Licensing:EncryptionKey"]);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -50,15 +60,18 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
     builder.Host.UseSystemd();
 }
 
+// Boot-time snapshot used by startup/DI configuration below.
 var settings = new Settings();
 builder.Configuration.Bind(settings);
 
-// Log configurations that will be moved to YAML files
-settings.LogYamlMigrationCandidates();
-
 // Configure services
 var services = builder.Services;
-services.AddSingleton<ISettings>(settings);
+
+// Hot-reloadable settings: bind Settings through options so runtime consumers
+// observe configuration changes (DB edits + reload) without a restart. Startup
+// code keeps using the `settings` snapshot above.
+services.Configure<Settings>(builder.Configuration);
+services.AddSingleton<ISettings, ReloadableSettings>();
 services.AddRouting(options => options.LowercaseUrls = true);
 
 // Add authentication and authorization
@@ -90,6 +103,10 @@ app.ConfigureDatabase()
 .ConfigureStaticFiles()
 .ConfigureRequestPipeline()
 .ConfigureDevelopmentSecurity();
+
+// Migrate/seed configuration from files into the database, verify, and archive.
+// Must run after ConfigureDatabase() (tables exist) and before configuration use.
+await app.InitializeConfigurationAsync();
 
 await app.TestConfigurations(settings);
 

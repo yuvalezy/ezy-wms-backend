@@ -1,6 +1,7 @@
 using System.Reflection;
 using Core.Interfaces;
 using Core.Models.Settings;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -64,8 +65,20 @@ public class PickingPostProcessorFactory : IPickingPostProcessorFactory {
 
     private IPickingPostProcessor? LoadProcessor(PickingPostProcessorSettings config) {
         try {
+            // Hardening: when an allowlist is configured, only permit listed (assembly|type)
+            // pairs to be loaded. No allowlist configured -> existing behavior (load).
+            var allowlist = serviceProvider.GetService<IConfiguration>()
+                ?.GetSection("Configuration:AssemblyAllowlist").Get<string[]>();
+            if (allowlist is { Length: > 0 } &&
+                !allowlist.Contains($"{config.Assembly}|{config.TypeName}", StringComparer.OrdinalIgnoreCase)) {
+                logger.LogError(
+                    "Post-processor '{ProcessorId}' assembly/type '{Assembly}'/'{TypeName}' is not on Configuration:AssemblyAllowlist; refusing to load.",
+                    config.Id, config.Assembly, config.TypeName);
+                return null;
+            }
+
             // Load the assembly
-            var assemblyPath = Path.IsPathRooted(config.Assembly) 
+            var assemblyPath = Path.IsPathRooted(config.Assembly)
                 ? config.Assembly 
                 : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, config.Assembly);
 
