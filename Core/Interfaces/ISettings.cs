@@ -1,5 +1,4 @@
-﻿using Core.Enums;
-using Core.Models.Settings;
+﻿using Core.Models.Settings;
 
 namespace Core.Interfaces;
 
@@ -11,7 +10,6 @@ public interface ISettings {
     public SessionManagementSettings SessionManagement { get; set; }
     public PresenceTrackingSettings PresenceTracking { get; set; }
     public SboSettings? SboSettings { get; set; }
-    public ExternalAdapterType ExternalAdapter { get; set; }
     public MetaDataDefinitions Item { get; set; }
     public LicensingSettings Licensing { get; set; }
     public BackgroundServicesSettings BackgroundServices { get; set; }

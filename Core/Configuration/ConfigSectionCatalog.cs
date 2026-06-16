@@ -49,7 +49,6 @@ public static class ConfigSectionCatalog {
         ["PickingDetails"]   = new("PickingDetails",   ConfigReloadKind.Live,            IsAdvanced: false, IsRestricted: false),
         ["ExternalCommands"] = new("ExternalCommands", ConfigReloadKind.Live,            IsAdvanced: true,  IsRestricted: true),
         ["SboSettings"]      = new("SboSettings",      ConfigReloadKind.Live,            IsAdvanced: false, IsRestricted: false),
-        ["ExternalAdapter"]  = new("ExternalAdapter",  ConfigReloadKind.RequiresRestart, IsAdvanced: false, IsRestricted: false),
         ["PickingPostProcessingProcessors"] =
             new("PickingPostProcessingProcessors", ConfigReloadKind.RequiresRestart, IsAdvanced: true, IsRestricted: true),
     };

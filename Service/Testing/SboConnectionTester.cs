@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Core.Interfaces;
 using Core.Models.Settings;
-using Core.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -42,7 +41,6 @@ public static class SboConnectionTester {
         Console.WriteLine($"  Server Type: {settings.SboSettings.ServerType}");
         Console.WriteLine($"  Service Layer URL: {settings.SboSettings.ServiceLayerUrl}");
         Console.WriteLine($"  Trusted Connection: {settings.SboSettings.TrustedConnection}");
-        Console.WriteLine($"  Adapter Type: {settings.ExternalAdapter}");
         Console.WriteLine();
 
         // Test connection using the proper adapter
@@ -62,11 +60,11 @@ public static class SboConnectionTester {
     }
 
     private async static Task TestConnectionUsingAdapter(Settings settings, IConfiguration configuration) {
-        Console.WriteLine($"Testing connection using {settings.ExternalAdapter} adapter...");
+        Console.WriteLine("Testing connection using SAP Service Layer adapter...");
 
         // Set up dependency injection
         var services = new ServiceCollection();
-        
+
         // Add logging
         services.AddLogging(builder => {
             builder.AddConsole();
@@ -77,14 +75,8 @@ public static class SboConnectionTester {
         services.AddSingleton<ISettings>(settings);
         var environment = new MockHostEnvironment();
 
-        // Configure the appropriate adapter
-        switch (settings.ExternalAdapter) {
-            case ExternalAdapterType.SboServiceLayer:
-                SboServiceLayerDependencyInjection.ConfigureServices(services);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
-        }
+        // Only one external system adapter exists (SAP Service Layer).
+        SboServiceLayerDependencyInjection.ConfigureServices(services);
 
         services.ConfigureServices(settings, configuration, environment);
 

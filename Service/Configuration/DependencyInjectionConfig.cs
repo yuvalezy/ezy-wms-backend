@@ -156,13 +156,8 @@ public static class DependencyInjectionConfig {
         else
             services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
 
-        switch (settings.ExternalAdapter) {
-            case ExternalAdapterType.SboServiceLayer:
-                SboServiceLayerDependencyInjection.ConfigureServices(services);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException($"External Adapter {settings.ExternalAdapter} is not supported");
-        }
+        // Only one external system adapter exists (SAP Service Layer); wire it directly.
+        SboServiceLayerDependencyInjection.ConfigureServices(services);
 
         return services;
     }

@@ -1,4 +1,3 @@
-using Core.Enums;
 using Core.Interfaces;
 using Core.Models.Settings;
 using Microsoft.Extensions.Options;
@@ -50,11 +49,6 @@ public sealed class ReloadableSettings(IOptionsMonitor<Settings> monitor) : ISet
     public SboSettings? SboSettings {
         get => Current.SboSettings;
         set => Current.SboSettings = value;
-    }
-
-    public ExternalAdapterType ExternalAdapter {
-        get => Current.ExternalAdapter;
-        set => Current.ExternalAdapter = value;
     }
 
     public MetaDataDefinitions Item {

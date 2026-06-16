@@ -1,4 +1,3 @@
-using Core.Enums;
 using Core.Interfaces;
 
 namespace Core.Models.Settings;
@@ -11,7 +10,6 @@ public class Settings : ISettings {
     public SessionManagementSettings SessionManagement { get; set; } = new();
     public PresenceTrackingSettings PresenceTracking { get; set; } = new();
     public SboSettings? SboSettings { get; set; }
-    public ExternalAdapterType ExternalAdapter { get; set; } = new();
     public MetaDataDefinitions Item { get; set; } = new();
     public LicensingSettings Licensing { get; set; } = new();
     public BackgroundServicesSettings BackgroundServices { get; set; } = new();

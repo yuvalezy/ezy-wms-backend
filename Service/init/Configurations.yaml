@@ -154,11 +154,6 @@ Warehouses:
     # Temporary holding location for picked items before shipping
     StagingBinEntry: null
 
-# External System Integration
-# Specifies which adapter to use for SAP Business One integration (enum, required)
-# Values: SboServiceLayer (REST API via Service Layer)
-ExternalAdapter: SboServiceLayer
-
 # SAP Business One Connection Settings
 # Configuration for connecting to SAP B1 database and services
 # IMPORTANT: Update all values to match your SAP B1 environment
