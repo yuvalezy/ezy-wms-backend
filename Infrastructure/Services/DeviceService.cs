@@ -102,7 +102,7 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
             DeviceStatus.Disabled => CloudLicenseEvent.Disable,
             _                     => CloudLicenseEvent.Update
         };
-        await cloudService.QueueDeviceEventAsync(eventType, deviceUuid);
+        await cloudService.QueueDeviceEventAsync(eventType, deviceUuid, device.DeviceName);
 
         logger.LogInformation("Device {DeviceUuid} status changed from {PreviousStatus} to {NewStatus} by user {UserId}",
             deviceUuid, previousStatus, status, sessionInfo?.Guid);
@@ -128,6 +128,9 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         device.UpdatedByUserId = sessionInfo.Guid;
 
         await context.SaveChangesAsync();
+
+        // Queue cloud event so the new name syncs to the portal
+        await cloudService.QueueDeviceEventAsync(CloudLicenseEvent.Update, deviceUuid, device.DeviceName);
 
         logger.LogInformation("Device {DeviceUuid} name updated to {NewName} by user {UserId}",
             deviceUuid, newName, sessionInfo.Guid);
