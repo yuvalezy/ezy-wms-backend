@@ -100,6 +100,17 @@ jobs:
       - name: Publish Service (${{ matrix.rid }})
         run: dotnet publish Service/Service.csproj -c Release -r ${{ matrix.rid }} --self-contained -o publish/${{ matrix.rid }}
 
+      # The live appsettings.json carries per-installation values and secrets (e.g. the
+      # database connection string). Ship only appsettings.example.json; operators copy
+      # it to appsettings.json on install.
+      - name: Ship only the example appsettings
+        run: |
+          rm -f publish/${{ matrix.rid }}/appsettings.json
+          if [ ! -f "publish/${{ matrix.rid }}/appsettings.example.json" ]; then
+            echo "::error::appsettings.example.json missing from publish output — operators have no config template."
+            exit 1
+          fi
+
       # NOTE: the live Service/config folder is intentionally NOT packaged. It holds
       # per-installation values and secrets, and shipping it would overwrite operator
       # config on deploy. Configuration now lives in the database; a fresh install
