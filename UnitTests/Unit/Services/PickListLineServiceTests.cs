@@ -10,7 +10,7 @@ public class PickListLineServiceTests {
     [TestCase(0)]
     [TestCase(-1)]
     public async Task AddItem_RejectsNonPositiveQuantity(decimal quantity) {
-        var service = new PickListLineService(null!, null!, null!, null!, null!, null!);
+        var service = new PickListLineService(null!, null!, null!, null!, null!);
         var request = new PickListAddItemRequest {
             ID = 1,
             Type = 17,
