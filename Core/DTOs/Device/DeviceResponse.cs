@@ -8,4 +8,5 @@ public class DeviceResponse {
     public          DateTime  RegistrationDate { get; set; }
     public          string?   StatusNotes      { get; set; }
     public          DateTime? LastActiveDate   { get; set; }
+    public          DateTime? LastLoginDate    { get; set; }
 }

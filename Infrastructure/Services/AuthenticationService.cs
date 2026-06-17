@@ -149,6 +149,9 @@ public class AuthenticationService(
             // Store session in memory
             await sessionManager.SetValueAsync(token, sessionInfo.ToJson(), expiresAt - now);
 
+            // Record the successful login against the device
+            await deviceService.RecordDeviceLoginAsync(deviceUuid);
+
             return sessionInfo;
         }
         catch (WarehouseSelectionRequiredException) {

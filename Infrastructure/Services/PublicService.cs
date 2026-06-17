@@ -1,4 +1,5 @@
-﻿using Core.DTOs.General;
+﻿using System.ComponentModel.DataAnnotations;
+using Core.DTOs.General;
 using Core.DTOs.Items;
 using Core.DTOs.PickList;
 using Core.DTOs.Settings;
@@ -75,8 +76,20 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Settings = settings.Options,
             ItemMetaData = settings.Item.MetadataDefinition,
             CustomFields = settings.CustomFields,
-            DeviceStatus = device?.Status
+            DeviceStatus = device?.Status,
+            DeviceName   = device?.DeviceName
         };
+    }
+
+    public async Task<string> UpdateMyDeviceNameAsync(SessionInfo info, string newName) {
+        // The device UUID comes from the trusted session/header, never from the
+        // request body, so a user can only rename their own connected device.
+        if (string.IsNullOrEmpty(info.DeviceUuid)) {
+            throw new ValidationException("No device is associated with the current session");
+        }
+
+        var device = await deviceService.UpdateDeviceNameAsync(info.DeviceUuid, newName, info);
+        return device.DeviceName;
     }
 
     public async Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync() => await adapter.GetVendorsAsync();

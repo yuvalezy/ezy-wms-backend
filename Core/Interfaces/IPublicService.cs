@@ -10,6 +10,7 @@ public interface IPublicService {
     Task<IEnumerable<BinLocationResponse>> GetWarehouseBinsAsync(string warehouse);
     Task<HomeInfoResponse> GetHomeInfoAsync(string warehouse);
     Task<UserInfoResponse> GetUserInfoAsync(SessionInfo info);
+    Task<string> UpdateMyDeviceNameAsync(SessionInfo info, string newName);
     Task<IEnumerable<ExternalValue<string>>> GetVendorsAsync();
     Task<BinLocationResponse?> ScanBinLocationAsync(string bin);
     Task<IEnumerable<ItemInfoResponse>> ScanItemBarCodeAsync(string scanCode, bool item = false);

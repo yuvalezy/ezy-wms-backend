@@ -9,4 +9,5 @@ public class Device : BaseEntity {
     public DeviceStatus Status           { get; set; }
     public string?       StatusNotes      { get; set; }
     public DateTime     LastActiveDate   { get; set; }
+    public DateTime?    LastLoginDate    { get; set; } // Last time a user logged in from this device
 }

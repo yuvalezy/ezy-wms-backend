@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using Core.DTOs.Device;
 using Core.DTOs.General;
 using Core.DTOs.Items;
 using Core.DTOs.Settings;
@@ -96,6 +99,45 @@ public class GeneralController(IPublicService publicService, ISettings settings)
         }
         
         return await publicService.GetUserInfoAsync(sessionInfo);
+    }
+
+    /// <summary>
+    /// Renames the device the authenticated user is currently connected from.
+    /// The device is resolved from the session/X-Device-UUID header, so a user
+    /// can only rename their own device (no SuperUser rights required).
+    /// </summary>
+    /// <param name="request">The new device name</param>
+    /// <returns>The updated device name</returns>
+    /// <response code="200">Returns the updated device name</response>
+    /// <response code="400">If no device is associated with the session or the name is invalid/in use</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="404">If the device is not found</response>
+    [HttpPut("Device/name")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UpdateMyDeviceName([FromBody] UpdateDeviceNameRequest request) {
+        var sessionInfo = HttpContext.GetSession();
+
+        // Resolve the device from the header if the session doesn't carry it
+        if (string.IsNullOrEmpty(sessionInfo.DeviceUuid)) {
+            var deviceUuid = HttpContext.Request.Headers["X-Device-UUID"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(deviceUuid)) {
+                sessionInfo.DeviceUuid = deviceUuid;
+            }
+        }
+
+        try {
+            var deviceName = await publicService.UpdateMyDeviceNameAsync(sessionInfo, request.DeviceName);
+            return Ok(new { deviceName });
+        }
+        catch (InvalidOperationException ex) {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ValidationException ex) {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>

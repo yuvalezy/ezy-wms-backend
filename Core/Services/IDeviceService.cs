@@ -13,4 +13,5 @@ public interface IDeviceService {
     Task<Device>            UpdateDeviceNameAsync(string      deviceUuid, string       newName, SessionInfo sessionInfo);
     Task<List<DeviceAudit>> GetDeviceAuditHistoryAsync(string deviceUuid);
     Task<bool>              IsDeviceActiveAsync(string        deviceUuid);
+    Task                    RecordDeviceLoginAsync(string     deviceUuid);
 }

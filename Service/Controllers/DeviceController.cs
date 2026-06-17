@@ -51,7 +51,8 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
                 Status           = d.Status.ToString(),
                 RegistrationDate = d.RegistrationDate,
                 StatusNotes      = d.StatusNotes,
-                LastActiveDate   = d.LastActiveDate
+                LastActiveDate   = d.LastActiveDate,
+                LastLoginDate    = d.LastLoginDate
             }).ToList();
 
             return Ok(response);
@@ -88,7 +89,8 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
                 Status           = device.Status.ToString(),
                 RegistrationDate = device.RegistrationDate,
                 StatusNotes      = device.StatusNotes,
-                LastActiveDate   = device.LastActiveDate
+                LastActiveDate   = device.LastActiveDate,
+                LastLoginDate    = device.LastLoginDate
             });
         }
         catch (Exception ex) {
@@ -131,7 +133,8 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
                 Status           = device.Status.ToString(),
                 RegistrationDate = device.RegistrationDate,
                 StatusNotes      = device.StatusNotes,
-                LastActiveDate   = device.LastActiveDate
+                LastActiveDate   = device.LastActiveDate,
+                LastLoginDate    = device.LastLoginDate
             });
         }
         catch (InvalidOperationException ex) {
@@ -169,7 +172,8 @@ public class DeviceController(IDeviceService deviceService, ILogger<DeviceContro
                 Status           = device.Status.ToString(),
                 RegistrationDate = device.RegistrationDate,
                 StatusNotes      = device.StatusNotes,
-                LastActiveDate   = device.LastActiveDate
+                LastActiveDate   = device.LastActiveDate,
+                LastLoginDate    = device.LastLoginDate
             });
         }
         catch (InvalidOperationException ex) {

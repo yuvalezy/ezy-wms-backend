@@ -156,6 +156,16 @@ public class DeviceService(SystemDbContext context, ICloudLicenseService cloudSe
         return device?.Status == DeviceStatus.Active;
     }
 
+    public async Task RecordDeviceLoginAsync(string deviceUuid) {
+        var device = await GetDeviceAsync(deviceUuid);
+        if (device == null) {
+            return;
+        }
+
+        device.LastLoginDate = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+    }
+
     private async Task LogDeviceStatusChangeAsync(Guid deviceId, DeviceStatus previousStatus, DeviceStatus newStatus, string reason, SessionInfo? sessionInfo) {
         var audit = new DeviceAudit {
             DeviceId        = deviceId,
