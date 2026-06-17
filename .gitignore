@@ -14,3 +14,5 @@ Core/Core.xml
 Service/Service.xml
 # Runtime artifact: config/ is auto-archived here after migration to DB config (may contain secrets)
 Service/config_archive/
+# Build/publish output
+publish-output/
