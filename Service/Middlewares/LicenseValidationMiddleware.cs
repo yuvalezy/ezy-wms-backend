@@ -18,6 +18,11 @@ public class LicenseValidationMiddleware(RequestDelegate next, ILogger<LicenseVa
         "/api/authorizationGroup",
         "/api/device",
         "/api/license",
+        // Lockdown bootstrap: the frontend SystemGate must reach the readiness endpoint,
+        // and a superuser must be able to read/validate/save/test SBO settings to configure
+        // the system — all before any device can be licensed. These run pre-license.
+        "/api/system",
+        "/api/configuration",
         "/api/general/userInfo",
         "/api/general/warehouses",
         "/api/wmsalert",
