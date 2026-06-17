@@ -81,5 +81,6 @@ public class LicenseValidationServiceTests {
         public Task<Device> UpdateDeviceNameAsync(string deviceUuid, string newName, SessionInfo sessionInfo) => throw new NotImplementedException();
         public Task<List<DeviceAudit>> GetDeviceAuditHistoryAsync(string deviceUuid) => throw new NotImplementedException();
         public Task<bool> IsDeviceActiveAsync(string deviceUuid) => throw new NotImplementedException();
+        public Task RecordDeviceLoginAsync(string deviceUuid) => throw new NotImplementedException();
     }
 }
