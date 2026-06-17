@@ -121,17 +121,15 @@ public class PickingRepackService(
             return true;
         }
 
-        var sessionComplete = await db.PickingRepackSessions
-            .AnyAsync(s => s.AbsEntry == absEntry &&
-                           s.WhsCode == warehouse &&
-                           s.IsCompleted &&
-                           !s.IsCancelled &&
-                           !s.Deleted);
-        if (!sessionComplete) {
-            return false;
-        }
-
-        return true;
+        // A partial pack is valid and may be synced: at least one picked row must be
+        // assigned to a package label, whether assigned during picking (pre-pack) or
+        // afterwards via a post-pick repack session. The repack session start/end is
+        // operational only and is never a sync precondition.
+        return await db.PickLists
+            .AnyAsync(p => p.AbsEntry == absEntry &&
+                           p.PickingPackageLabelId != null &&
+                           p.SyncStatus != SyncStatus.ExternalCancel &&
+                           (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
     }
 
     private async Task<PickingRepackSummaryResponse> BuildSummaryAsync(int absEntry, string warehouse) {

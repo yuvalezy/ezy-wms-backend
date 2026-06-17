@@ -137,7 +137,18 @@ public class PickListProcessService(
             // Process each pick entry sequentially
             foreach (var absEntry in pendingPickEntries) {
                 if (!await IsPostPickRepackReadyAsync(absEntry)) {
-                    logger.LogInformation("Skipping pick list AbsEntry {AbsEntry} because post-pick repack is not complete", absEntry);
+                    // Post-pick repack isn't complete, so we won't create the SAP document yet.
+                    // But external cancellation must still be honoured: if the pick list was
+                    // cancelled/closed in SAP, clear the local rows so their picked quantity
+                    // stops consuming open quantity. Without this, enabling post-pick repack
+                    // starves the cancellation detection that otherwise runs in ProcessPickList.
+                    if (await IsExternallyCancelledAsync(absEntry)) {
+                        await ClearExternallyCancelledPickListAsync(absEntry);
+                        logger.LogInformation("Pick list AbsEntry {AbsEntry} cancelled/closed in SAP; cleared local rows as ExternalCancel", absEntry);
+                    }
+                    else {
+                        logger.LogInformation("Skipping pick list AbsEntry {AbsEntry} because post-pick repack is not complete", absEntry);
+                    }
                     continue;
                 }
 
@@ -171,22 +182,47 @@ public class PickListProcessService(
         }
     }
 
+    private async Task<bool> IsExternallyCancelledAsync(int absEntry) {
+        var statuses = await adapter.GetPickListStatuses([absEntry]);
+        // GetPickListStatuses returns IsOpen=false when the SAP pick list is closed,
+        // cancelled, or no longer exists.
+        return statuses.TryGetValue(absEntry, out var isOpen) && !isOpen;
+    }
+
+    private async Task ClearExternallyCancelledPickListAsync(int absEntry) {
+        var rows = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry &&
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) &&
+                        p.SyncStatus != SyncStatus.ExternalCancel)
+            .ToListAsync();
+
+        if (rows.Count == 0) {
+            return;
+        }
+
+        foreach (var row in rows) {
+            row.SyncStatus = SyncStatus.ExternalCancel;
+            row.SyncError = "Pick list cancelled or closed in SAP";
+            row.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private async Task<bool> IsPostPickRepackReadyAsync(int absEntry) {
         if (!settings.Options.EnablePostPickRepack) {
             return true;
         }
 
-        var completedRepack = await db.PickingRepackSessions
-            .AnyAsync(s => s.AbsEntry == absEntry &&
-                           s.IsCompleted &&
-                           !s.IsCancelled &&
-                           !s.Deleted);
-
-        if (!completedRepack) {
-            return false;
-        }
-
-        return true;
+        // A partial pack is valid and may be synced: at least one picked row must be
+        // assigned to a package label. Labels may be assigned during picking (pre-pack)
+        // or afterwards via a post-pick repack session — either path satisfies this. The
+        // repack session start/end is operational only and is never a sync precondition.
+        return await db.PickLists
+            .AnyAsync(p => p.AbsEntry == absEntry &&
+                           p.PickingPackageLabelId != null &&
+                           p.SyncStatus != SyncStatus.ExternalCancel &&
+                           (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing));
     }
 
     private async Task UpdatePickListsSyncStatus(int absEntry, SyncStatus syncStatus, string? errorMessage, Guid? userId) {

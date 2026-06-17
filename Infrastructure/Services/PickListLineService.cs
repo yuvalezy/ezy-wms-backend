@@ -14,8 +14,7 @@ public class PickListLineService(
     IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
     IPickListValidationService validationService,
-    IPickingPackageLabelService packageLabelService,
-    ISettings settings) : IPickListLineService {
+    IPickingPackageLabelService packageLabelService) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         if (request.Quantity <= 0) {
             return PickListAddItemResponse.Error("Quantity must be greater than zero");
@@ -24,7 +23,11 @@ public class PickListLineService(
         var scannedQuantity = request.Quantity;
         await using var transaction = await db.Database.BeginTransactionAsync();
         try {
-            var pickingPackageLabelId = settings.Options.EnablePostPickRepack ? null : request.PickingPackageLabelId;
+            // Honour the package label assigned during picking (pre-pack) regardless of
+            // whether post-pick repack is enabled. The two features are additive: pre-pack
+            // assigns labels while picking, post-pick repack is a separate (optionally
+            // partial) start/end ceremony for assigning/adjusting labels afterwards.
+            var pickingPackageLabelId = request.PickingPackageLabelId;
             if (pickingPackageLabelId.HasValue) {
                 try {
                     await packageLabelService.ValidateForPickListAsync(pickingPackageLabelId.Value, request.ID, sessionInfo.Warehouse);
