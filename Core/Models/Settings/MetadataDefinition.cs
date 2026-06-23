@@ -55,6 +55,16 @@ public class MetadataDefinition {
     public string? MirrorTo { get; set; }
 
     /// <summary>
+    /// SAP field ID whose value is used as a scale factor for this field.
+    /// On load (SAP → WMS): wms_value = sap_value * scale_field_value.
+    /// On save (WMS → SAP): sap_value = wms_value / scale_field_value.
+    /// The referenced field must also be present in MetadataDefinition so it is included
+    /// in the SAP $select and available in the metadata response for formula references.
+    /// Example: "PurPackUn"
+    /// </summary>
+    public string? ScaleByField { get; set; }
+
+    /// <summary>
     /// Optional calculation configuration for computed metadata fields
     /// </summary>
     public Calculated? Calculated { get; set; }

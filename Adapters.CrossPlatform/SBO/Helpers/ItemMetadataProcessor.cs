@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.Items;
@@ -87,8 +87,11 @@ public class ItemMetadataProcessor(
                 throw new ArgumentException("No writable fields found in request");
             }
 
+            // Pre-fetch scale field values needed to convert WMS values back to SAP scale
+            var scaleValues = await FetchScaleFieldValuesAsync();
+
             // Build SAP update payload
-            var updatePayload = BuildSapUpdatePayload(writableFields);
+            var updatePayload = BuildSapUpdatePayload(writableFields, scaleValues);
 
             logger.LogDebug("Updating item {ItemCode} with payload: {Payload}", itemCode,
                 JsonSerializer.Serialize(updatePayload, new JsonSerializerOptions { WriteIndented = true }));
@@ -119,7 +122,9 @@ public class ItemMetadataProcessor(
     }
 
     /// <summary>
-    /// Builds the $select query parameter from configured metadata fields
+    /// Builds the $select query parameter from configured metadata fields.
+    /// Also includes any ScaleByField references so scale factors are always available
+    /// in the SAP response, even if the referenced field is not itself a defined metadata field.
     /// </summary>
     private string BuildSelectFields() {
         if (metaDataDefinitions.MetadataDefinition.Length == 0) {
@@ -127,24 +132,69 @@ public class ItemMetadataProcessor(
         }
 
         var selectFields = metaDataDefinitions.MetadataDefinition
-        .Select(field => field.Id)
-        .Where(fieldId => !string.IsNullOrEmpty(fieldId))
-        .Distinct()
-        .ToList();
+            .Select(field => field.Id)
+            .Concat(metaDataDefinitions.MetadataDefinition.Select(field => field.ScaleByField))
+            .Where(fieldId => !string.IsNullOrEmpty(fieldId))
+            .Distinct()
+            .ToList();
 
         return string.Join(",", selectFields);
     }
 
+    /// <summary>
+    /// Builds a map of scale field ID → decimal value from a raw SAP response.
+    /// Only includes fields that are referenced by at least one MetadataDefinition.ScaleByField.
+    /// </summary>
+    private Dictionary<string, decimal> BuildScaleValueMap(JsonElement response) {
+        var map = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        foreach (var fieldId in metaDataDefinitions.MetadataDefinition
+            .Select(f => f.ScaleByField)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Distinct()) {
+            if (response.TryGetProperty(fieldId!, out var el)
+                && el.TryGetDecimal(out var v) && v > 0) {
+                map[fieldId!] = v;
+            }
+        }
+        return map;
+    }
 
     /// <summary>
-    /// Extracts metadata from SAP JSON response using configured field names
+    /// Fetches only the scale factor fields from SAP — used before a PATCH when we need
+    /// to divide WMS values back to SAP scale without a full metadata load.
+    /// </summary>
+    private async Task<Dictionary<string, decimal>> FetchScaleFieldValuesAsync() {
+        var needed = metaDataDefinitions.MetadataDefinition
+            .Select(f => f.ScaleByField)
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Distinct()
+            .ToList();
+
+        if (needed.Count == 0) return new();
+
+        var select = string.Join(",", needed);
+        var el = await sboCompany.GetAsync<JsonElement>($"Items('{itemCode}')?$select={select}");
+        return BuildScaleValueMap(el);
+    }
+
+    /// <summary>
+    /// Extracts metadata from SAP JSON response using configured field names.
+    /// Fields with ScaleByField are multiplied by the corresponding scale factor value.
     /// </summary>
     private Dictionary<string, object?> ExtractMetadataFromSapResponse(JsonElement sapResponse) {
         var metadata = new Dictionary<string, object?>();
+        var scaleValues = BuildScaleValueMap(sapResponse);
 
         foreach (var fieldDef in metaDataDefinitions.MetadataDefinition) {
             if (sapResponse.TryGetProperty(fieldDef.Id, out var propertyValue)) {
-                var convertedValue = ConvertSapValueToWmsType(propertyValue, fieldDef.Type);
+                object? convertedValue = ConvertSapValueToWmsType(propertyValue, fieldDef.Type);
+
+                if (!string.IsNullOrEmpty(fieldDef.ScaleByField)
+                    && scaleValues.TryGetValue(fieldDef.ScaleByField, out var scale)
+                    && convertedValue is decimal d) {
+                    convertedValue = d * scale;
+                }
+
                 metadata[fieldDef.Id] = convertedValue;
             }
             else {
@@ -205,21 +255,39 @@ public class ItemMetadataProcessor(
     }
 
     /// <summary>
-    /// Builds the SAP update payload using configured field names
+    /// Builds the SAP update payload using configured field names.
+    /// Fields with ScaleByField are divided by the corresponding scale factor before being sent to SAP.
     /// </summary>
-    private Dictionary<string, object?> BuildSapUpdatePayload(Dictionary<string, object?> wmsFields) {
+    private Dictionary<string, object?> BuildSapUpdatePayload(
+        Dictionary<string, object?> wmsFields,
+        Dictionary<string, decimal> scaleValues) {
         var sapPayload = new Dictionary<string, object?>();
 
         foreach (var kvp in wmsFields) {
-            var convertedValue = ConvertWmsValueToSapType(kvp.Value, kvp.Key);
+            var fieldDef = metaDataDefinitions.MetadataDefinition.FirstOrDefault(f =>
+                string.Equals(f.Id, kvp.Key, StringComparison.OrdinalIgnoreCase));
+
+            object? convertedValue = ConvertWmsValueToSapType(kvp.Value, kvp.Key);
+
+            // When a field is configured to scale, the scale factor MUST be available and positive.
+            // Writing an unscaled value to SAP would corrupt stock-critical data, so fail loudly.
+            if (!string.IsNullOrEmpty(fieldDef?.ScaleByField)) {
+                if (!scaleValues.TryGetValue(fieldDef.ScaleByField, out var scale) || scale <= 0) {
+                    throw new InvalidOperationException(
+                        $"Cannot scale field '{kvp.Key}' for item '{itemCode}': scale factor " +
+                        $"'{fieldDef.ScaleByField}' is missing or not positive in SAP. Aborting update to avoid writing unscaled data.");
+                }
+
+                if (convertedValue is decimal d) {
+                    convertedValue = d / scale;
+                }
+            }
 
             sapPayload[kvp.Key] = convertedValue;
             logger.LogDebug("Adding field {FieldName} = {Value} to SAP payload",
                 kvp.Key, convertedValue);
 
             // Mirror the value to the configured target field (e.g., Purchase → Sales)
-            var fieldDef = metaDataDefinitions.MetadataDefinition.FirstOrDefault(f =>
-                string.Equals(f.Id, kvp.Key, StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrEmpty(fieldDef?.MirrorTo)) {
                 sapPayload[fieldDef.MirrorTo] = convertedValue;
                 logger.LogDebug("Mirroring field {FieldName} → {MirrorField} = {Value}",
@@ -231,7 +299,11 @@ public class ItemMetadataProcessor(
     }
 
     /// <summary>
-    /// Converts WMS field values to appropriate SAP types
+    /// Converts WMS field values to appropriate SAP types.
+    /// Request values arrive as <see cref="JsonElement"/> (System.Text.Json binds object
+    /// dictionary values to JsonElement) and are unwrapped to a CLR primitive first.
+    /// Throws on conversion failure rather than silently passing the raw value through —
+    /// sending an unconverted value would also bypass scaling and write wrong data to SAP.
     /// </summary>
     private object? ConvertWmsValueToSapType(object? wmsValue, string fieldId) {
         if (wmsValue == null) {
@@ -245,22 +317,38 @@ public class ItemMetadataProcessor(
             return wmsValue;
         }
 
+        var raw = wmsValue is JsonElement je ? UnwrapJsonElement(je) : wmsValue;
+        if (raw == null) {
+            return null;
+        }
+
         try {
             return fieldDef.Type switch {
-                MetadataFieldType.String => wmsValue.ToString(),
-                MetadataFieldType.Decimal => Convert.ToDecimal(wmsValue),
-                MetadataFieldType.Integer => Convert.ToInt32(wmsValue),
-                MetadataFieldType.Date => wmsValue is DateTime dt ? dt : DateTime.Parse(wmsValue.ToString()!),
-                _ => wmsValue
+                MetadataFieldType.String => raw.ToString(),
+                MetadataFieldType.Decimal => Convert.ToDecimal(raw, CultureInfo.InvariantCulture),
+                MetadataFieldType.Integer => Convert.ToInt32(raw, CultureInfo.InvariantCulture),
+                MetadataFieldType.Date => raw is DateTime dt ? dt : DateTime.Parse(raw.ToString()!, CultureInfo.InvariantCulture),
+                _ => raw
             };
         }
         catch (Exception ex) {
-            logger.LogWarning("Failed to convert value {Value} for field {FieldId}: {Error}",
-                wmsValue, fieldId, ex.Message);
-
-            return wmsValue; // Return original value if conversion fails
+            logger.LogError(ex, "Failed to convert value {Value} for field {FieldId}", raw, fieldId);
+            throw new InvalidOperationException(
+                $"Field '{fieldId}' value '{raw}' could not be converted to {fieldDef.Type}.", ex);
         }
     }
+
+    /// <summary>
+    /// Unwraps a JsonElement (from a deserialized request body) into a CLR primitive.
+    /// </summary>
+    private static object? UnwrapJsonElement(JsonElement el) => el.ValueKind switch {
+        JsonValueKind.Number => el.TryGetDecimal(out var d) ? d : el.GetDouble(),
+        JsonValueKind.String => el.GetString(),
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        JsonValueKind.Null or JsonValueKind.Undefined => null,
+        _ => el.ToString()
+    };
 
     public void Dispose() {
         if (!isDisposed) {
