@@ -69,6 +69,42 @@ public class PickingSourceSerialNumberBuilderTests {
     }
 
     [Test]
+    public void Build_WithEmptyLineSerial_BlanksUnlabeledLinesAndKeepsLabels() {
+        var updates = PickingSourceSerialNumberBuilder.Build([
+            PickRow(0, Label("R1", 1)),
+            PickRow(1),
+            PickRow(2, Label("R2", 2))
+        ], [
+            PickLine(0, 17, 800, 0),
+            PickLine(1, 17, 800, 1),
+            PickLine(2, 1250000001, 900, 0)
+        ], emptyLineSerial: "");
+
+        Assert.Multiple(() => {
+            Assert.That(updates.Single(u => u.OrderEntry == 800 && u.OrderRowId == 0).SerialValue, Is.EqualTo("R1"));
+            // Unlabeled line is blanked instead of receiving a fallback number.
+            Assert.That(updates.Single(u => u.OrderEntry == 800 && u.OrderRowId == 1).SerialValue, Is.EqualTo(""));
+            Assert.That(updates.Single(u => u.OrderEntry == 900 && u.OrderRowId == 0).SerialValue, Is.EqualTo("R2"));
+        });
+    }
+
+    [Test]
+    public void Build_WithEmptyLineSerial_BlanksEveryLineWhenNoLabelsExist() {
+        var updates = PickingSourceSerialNumberBuilder.Build([
+            PickRow(0),
+            PickRow(1)
+        ], [
+            PickLine(0, 17, 498, 0),
+            PickLine(1, 17, 498, 1)
+        ], emptyLineSerial: "");
+
+        Assert.Multiple(() => {
+            Assert.That(updates, Has.Count.EqualTo(2));
+            Assert.That(updates, Has.All.Property("SerialValue").EqualTo(""));
+        });
+    }
+
+    [Test]
     public void Build_WhenNoLabelsExist_StartsFallbackSerialsAtOne() {
         var updates = PickingSourceSerialNumberBuilder.Build([
             PickRow(0),

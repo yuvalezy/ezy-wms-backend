@@ -10,7 +10,13 @@ public sealed record PickingSourceSerialUpdate(
     string SerialValue);
 
 public static class PickingSourceSerialNumberBuilder {
-    public static IReadOnlyList<PickingSourceSerialUpdate> Build(IEnumerable<PickList> pickRows, IEnumerable<PickListSboLine> pickLines) {
+    /// <param name="emptyLineSerial">
+    /// Value written to source lines that have picked rows but no package label. When null (default),
+    /// an incrementing fallback number is used (after the highest label sequence) — the behaviour used
+    /// by the normal pick sync. Pass "" to blank such lines instead, used when resetting/re-pushing
+    /// serials during a repack restart.
+    /// </param>
+    public static IReadOnlyList<PickingSourceSerialUpdate> Build(IEnumerable<PickList> pickRows, IEnumerable<PickListSboLine> pickLines, string? emptyLineSerial = null) {
         var orderedPickLines = pickLines.ToArray();
         var pickLineLookup = orderedPickLines.ToDictionary(line => line.LineNumber);
         var sourceOrder = new Dictionary<SourceLineKey, int>();
@@ -62,7 +68,7 @@ public static class PickingSourceSerialNumberBuilder {
 
             var serialValue = labels.Length > 0
                 ? string.Join(",", labels)
-                : (nextFallbackSerial++).ToString();
+                : emptyLineSerial ?? (nextFallbackSerial++).ToString();
 
             return new PickingSourceSerialUpdate(
                 group.Key.BaseObjectType,

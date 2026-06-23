@@ -149,6 +149,14 @@ public class PickingController(
         return await repackService.StartAsync(id, sessionInfo);
     }
 
+    [HttpPost("{id:int}/repack/restart")]
+    [RequireRolePermission(RoleType.PickingSupervisor)]
+    [ProducesResponseType(typeof(PickingRepackSummaryResponse), StatusCodes.Status200OK)]
+    public async Task<PickingRepackSummaryResponse> RestartRepack(int id) {
+        var sessionInfo = HttpContext.GetSession();
+        return await repackService.RestartAsync(id, sessionInfo);
+    }
+
     [HttpPost("{id:int}/repack/assign")]
     [RequireAnyRole(RoleType.Picking, RoleType.PickingSupervisor)]
     [ProducesResponseType(typeof(PickingRepackAssignResponse), StatusCodes.Status200OK)]

@@ -49,6 +49,69 @@ public class PickingRepackService(
         return await BuildSummaryAsync(absEntry, sessionInfo.Warehouse);
     }
 
+    public async Task<PickingRepackSummaryResponse> RestartAsync(int absEntry, SessionInfo sessionInfo) {
+        EnsureEnabled();
+
+        // Was the pick already auto-synced? If so, the package codes were already written to the source
+        // document as serial numbers, and the rows are Closed/Synced (so they will never re-sync). We must
+        // therefore reset those serials explicitly — a plain local wipe would leave SAP stale forever.
+        var wasSynced = await db.PickLists.AnyAsync(p =>
+            p.AbsEntry == absEntry &&
+            (p.SyncStatus == SyncStatus.Synced || p.Status == ObjectStatus.Closed));
+
+        await using (var transaction = await db.Database.BeginTransactionAsync()) {
+            // 1. Unassign every picked row (back to the unassigned pool). Closed/Synced rows included —
+            //    AssignNextAsync already permits re-assigning them.
+            var assignedRows = await db.PickLists
+                .Where(p => p.AbsEntry == absEntry && p.PickingPackageLabelId != null)
+                .ToListAsync();
+            foreach (var row in assignedRows) {
+                row.PickingPackageLabelId = null;
+                row.UpdatedAt = DateTime.UtcNow;
+                row.UpdatedByUserId = sessionInfo.Guid;
+            }
+
+            // 2. Soft-delete the packages. The global Deleted=0 query filter hides them, and the unique
+            //    (AbsEntry, WhsCode, Sequence) index is filtered on Deleted=0, so sequencing restarts at R1.
+            var labels = await db.PickingPackageLabels
+                .Where(l => l.AbsEntry == absEntry && l.WhsCode == sessionInfo.Warehouse)
+                .ToListAsync();
+            foreach (var label in labels) {
+                label.Deleted = true;
+                label.DeletedAt = DateTime.UtcNow;
+                label.UpdatedAt = DateTime.UtcNow;
+                label.UpdatedByUserId = sessionInfo.Guid;
+            }
+
+            // 3. Cancel the active session(s). GetActiveSession filters !IsCancelled, so StartAsync will
+            //    create a fresh session below.
+            var sessions = await db.PickingRepackSessions
+                .Where(s => s.AbsEntry == absEntry && s.WhsCode == sessionInfo.Warehouse && !s.IsCancelled && !s.Deleted)
+                .ToListAsync();
+            foreach (var session in sessions) {
+                session.IsCancelled = true;
+                session.CancelledAt = DateTime.UtcNow;
+                session.UpdatedAt = DateTime.UtcNow;
+                session.UpdatedByUserId = sessionInfo.Guid;
+            }
+
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        // 4. Reset the SAP source-document serials. Rows now carry no labels, so every picked source line
+        //    is blanked. This only patches the SerialNum field — no quantities/allocations are touched.
+        if (wasSynced) {
+            var rows = await LoadActiveRowsAsync(absEntry);
+            await adapter.UpdatePickSourceSerialsAsync(absEntry, rows, emptyLineSerial: "");
+        }
+
+        logger.LogInformation("Picking repack restarted for AbsEntry {AbsEntry} by {UserId} (wasSynced={WasSynced})", absEntry, sessionInfo.Guid, wasSynced);
+
+        // 5. Re-open a clean repack (new session + fresh R1 label). Reuses StartAsync.
+        return await StartAsync(absEntry, sessionInfo);
+    }
+
     public async Task<PickingRepackAssignResponse> AssignNextAsync(int absEntry, PickingRepackAssignRequest request, SessionInfo sessionInfo) {
         EnsureEnabled();
         await packageLabelService.ValidateForPickListAsync(request.PickingPackageLabelId, absEntry, sessionInfo.Warehouse);
@@ -83,11 +146,28 @@ public class PickingRepackService(
         row.UpdatedByUserId = sessionInfo.Guid;
         await db.SaveChangesAsync();
 
+        // When re-packing an already-synced pick (e.g. after a restart), the row is Closed/Synced and the
+        // background sync will never touch it again. Push the updated pack codes straight to the source
+        // document's serial number so SAP tracks the repack live. Pre-sync picks are left to the normal
+        // sync, which writes the serials when the pick is processed.
+        if (row.Status == ObjectStatus.Closed || row.SyncStatus == SyncStatus.Synced) {
+            var rows = await LoadActiveRowsAsync(absEntry);
+            await adapter.UpdatePickSourceSerialsAsync(absEntry, rows, emptyLineSerial: "");
+        }
+
         return new PickingRepackAssignResponse {
             Success = true,
             Summary = await BuildSummaryAsync(absEntry, sessionInfo.Warehouse)
         };
     }
+
+    private async Task<IReadOnlyList<PickList>> LoadActiveRowsAsync(int absEntry) =>
+        await db.PickLists
+            .Include(p => p.PickingPackageLabel)
+            .Where(p => p.AbsEntry == absEntry &&
+                        p.SyncStatus != SyncStatus.ExternalCancel &&
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing || p.Status == ObjectStatus.Closed))
+            .ToListAsync();
 
     public async Task<PickingRepackSummaryResponse> CompleteAsync(int absEntry, SessionInfo sessionInfo) {
         EnsureEnabled();

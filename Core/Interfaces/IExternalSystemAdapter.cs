@@ -79,6 +79,15 @@ public interface IExternalSystemAdapter {
     Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters);
     Task<PickingValidationResult[]> ValidatePickingAddItem(PickListAddItemRequest request);
     Task<ProcessPickListResult> ProcessPickList(int absEntry, List<PickList> data, string[] alertRecipients);
+
+    /// <summary>
+    /// Writes the package-label codes of the given picked rows onto the source document (sales order /
+    /// inventory transfer request) as the line serial number, without touching any quantities or bin
+    /// allocations. Source lines whose rows carry no label are set to <paramref name="emptyLineSerial"/>.
+    /// Used to reset/re-push serials when a repack is restarted on an already-synced pick.
+    /// </summary>
+    Task UpdatePickSourceSerialsAsync(int absEntry, IReadOnlyList<PickList> rows, string emptyLineSerial);
+
     Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries);
     Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry);
     Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry);

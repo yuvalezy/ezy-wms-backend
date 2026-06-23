@@ -2,6 +2,7 @@
 using Adapters.Common.SBO.Repositories;
 using Adapters.Common.SBO.Services;
 using Adapters.CrossPlatform.SBO.Helpers;
+using Adapters.CrossPlatform.SBO.Models;
 using Adapters.CrossPlatform.SBO.Services;
 using Core.DTOs.GoodsReceipt;
 using Core.DTOs.InventoryCounting;
@@ -188,6 +189,16 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
         }
 
         return result;
+    }
+
+    public async Task UpdatePickSourceSerialsAsync(int absEntry, IReadOnlyList<PickList> rows, string emptyLineSerial) {
+        var pickList = await sboCompany.GetAsync<PickListSboResponse>($"PickLists({absEntry})");
+        if (pickList == null) {
+            throw new Exception($"Could not find Pick List {absEntry}");
+        }
+
+        var logger = loggerFactory.CreateLogger<SboServiceLayerAdapter>();
+        await SourceDocumentSerialWriter.WriteAsync(sboCompany, logger, absEntry, rows, pickList.PickListsLines, emptyLineSerial);
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
