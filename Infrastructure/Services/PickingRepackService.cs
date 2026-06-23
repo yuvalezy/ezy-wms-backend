@@ -69,7 +69,7 @@ public class PickingRepackService(
                         p.Unit == request.Unit &&
                         p.PickingPackageLabelId == null &&
                         p.SyncStatus != SyncStatus.ExternalCancel &&
-                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing || p.Status == ObjectStatus.Closed))
             .OrderBy(p => p.CreatedAt)
             .ThenBy(p => p.Id)
             .FirstOrDefaultAsync();
@@ -142,7 +142,7 @@ public class PickingRepackService(
             .Include(p => p.PickingPackageLabel)
             .Where(p => p.AbsEntry == absEntry &&
                         p.SyncStatus != SyncStatus.ExternalCancel &&
-                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing))
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing || p.Status == ObjectStatus.Closed))
             .ToArrayAsync();
 
         var labels = await packageLabelService.ListAsync(absEntry, warehouse);
