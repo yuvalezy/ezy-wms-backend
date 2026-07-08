@@ -4,12 +4,12 @@ using Core.Entities;
 namespace Core.Extensions;
 
 public static class GoodsReceiptExtensions {
-    public static GoodsReceiptReportAllDetailsResponse TotReportAllDetailsResponseDto(this GoodsReceiptLine line) {
+    public static GoodsReceiptReportAllDetailsResponse TotReportAllDetailsResponseDto(this GoodsReceiptLine line, decimal quantity) {
         return new GoodsReceiptReportAllDetailsResponse {
             LineId = line.Id,
             CreatedByUserName = line.CreatedByUser!.FullName,
             TimeStamp = line.UpdatedAt ?? line.CreatedAt,
-            Quantity = line.Quantity,
+            Quantity = quantity,
             Unit = line.Unit
         };
     }

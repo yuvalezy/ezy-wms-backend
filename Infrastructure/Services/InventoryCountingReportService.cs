@@ -11,6 +11,11 @@ public class InventoryCountingReportService(
     SystemDbContext db,
     IExternalSystemAdapter adapter) : IInventoryCountingReportService {
 
+    // Whether the caller is restricted to their own scanned lines. Supervisors and superusers see all
+    // lines; a user who reached the correction endpoints solely via CountingCorrection is restricted.
+    private static bool OwnLinesOnly(SessionInfo sessionInfo) =>
+        !sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.CountingSupervisor);
+
     public async Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request) {
         var query = db.InventoryCountingLines
         .Include(icl => icl.InventoryCounting)
@@ -224,11 +229,20 @@ public class InventoryCountingReportService(
         };
     }
 
-    public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry) {
-        var values = await db.InventoryCountingLines
+    public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry, SessionInfo sessionInfo) {
+        // Correction-only operators (not supervisors/superusers) may see only their own scanned lines.
+        bool ownLinesOnly = OwnLinesOnly(sessionInfo);
+
+        var query = db.InventoryCountingLines
             .Include(l => l.CreatedByUser)
             .Where(l => l.InventoryCountingId == id && l.ItemCode == itemCode && l.LineStatus != LineStatus.Closed)
-            .Where(l => binEntry == null ? !l.BinEntry.HasValue : l.BinEntry == binEntry)
+            .Where(l => binEntry == null ? !l.BinEntry.HasValue : l.BinEntry == binEntry);
+
+        if (ownLinesOnly) {
+            query = query.Where(l => l.CreatedByUserId == sessionInfo.Guid);
+        }
+
+        var values = await query
             .Select(l => new InventoryCountingReportAllDetailsResponse {
                 LineId = l.Id,
                 CreatedByUserName = l.CreatedByUser!.FullName,
@@ -251,6 +265,24 @@ public class InventoryCountingReportService(
 
             if (counting.Status != ObjectStatus.Open && counting.Status != ObjectStatus.InProgress)
                 return "Counting status is not Open or In Progress";
+
+            // Correction-only operators (not supervisors/superusers) may modify only their own scanned
+            // lines. This is the security boundary — the UI gate is convenience only.
+            if (OwnLinesOnly(sessionInfo)) {
+                var affectedLineIds = request.RemoveRows
+                    .Concat(request.QuantityChanges.Keys)
+                    .Distinct()
+                    .ToArray();
+
+                bool touchesForeignLine = await db.InventoryCountingLines
+                    .Where(l => l.InventoryCountingId == request.Id
+                                && affectedLineIds.Contains(l.Id)
+                                && l.CreatedByUserId != sessionInfo.Guid)
+                    .AnyAsync();
+
+                if (touchesForeignLine)
+                    return "You can only modify lines you scanned yourself";
+            }
 
             // Remove rows
             if (request.RemoveRows.Length > 0) {

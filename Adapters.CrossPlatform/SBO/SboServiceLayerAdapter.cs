@@ -202,6 +202,7 @@ public class SboServiceLayerAdapter : IExternalSystemAdapter {
     }
 
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) => await pickingRepository.GetPickListStatuses(absEntries);
+    public async Task<string[]> GetPickListWarehouses(int absEntry) => await pickingRepository.GetPickListWarehouses(absEntry);
     public async Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry) => await pickingRepository.GetPickListClosureInfo(absEntry);
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) => await pickingRepository.GetPickingSelection(absEntry);

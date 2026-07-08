@@ -353,6 +353,8 @@ public class GoodsReceiptService(
                 ItemCode = line.ItemCode,
                 BarCode = line.BarCode,
                 Quantity = line.Quantity,
+                ScannedQuantity = line.ScannedQuantity,
+                Unit = line.Unit,
                 UseBaseUnit = line.Unit == UnitType.Unit,
                 Date = line.Date,
                 Comments = line.Comments,

@@ -67,6 +67,20 @@ public record Options {
     /// </summary>
     public string? PickPathSortKey { get; init; }
 
+    /// <summary>
+    /// When enabled, blocks picking (at scan/AddItem time) of an item that belongs to a
+    /// non-finalized goods receipt in the same warehouse. Prevents the "phantom inventory"
+    /// caused by picking stock that has not yet been posted to SAP.
+    /// </summary>
+    public bool BlockPickScanDuringGoodsReceipt { get; init; }
+
+    /// <summary>
+    /// When enabled, blocks processing a pick list to SAP if any of its items belongs to a
+    /// non-finalized goods receipt in the same warehouse. Safety net for the window where the
+    /// receipt enters put-away after the item was already scanned.
+    /// </summary>
+    public bool BlockPickProcessDuringGoodsReceipt { get; init; }
+
     //Quantities
     public bool EnableDecimalQuantities { get; init; }
 

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, IPickListDetailService detailService) : IPickListService {
+public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, IPickListDetailService detailService, IPickListValidationService validationService) : IPickListService {
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse, bool enableBinLocations) {
         var picks = await adapter.GetPickListsAsync(request, warehouse);
         var response = picks.Select(p => new PickListResponse {
@@ -212,6 +212,17 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         }
 
         await detailService.GetPickListItemDetails(absEntry, request, response, dbPick);
+
+        // Flag items still being put away from a non-finalized goods receipt so the picking screen
+        // can warn the operator before they scan (same condition that blocks the scan).
+        if (settings.Options.BlockPickScanDuringGoodsReceipt) {
+            var allItems = (response.Detail ?? []).SelectMany(d => d.Items ?? []).ToList();
+            var itemCodes = allItems.Select(i => i.ItemCode).Distinct().ToList();
+            var blocked = await validationService.GetInProgressGoodsReceiptItems(itemCodes, warehouse);
+            foreach (var item in allItems.Where(item => blocked.Contains(item.ItemCode))) {
+                item.InProgressGoodsReceipt = true;
+            }
+        }
 
         return response;
     }

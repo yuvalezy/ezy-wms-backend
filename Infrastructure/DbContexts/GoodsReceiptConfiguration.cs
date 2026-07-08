@@ -50,6 +50,9 @@ public class GoodsReceiptLineConfiguration : IEntityTypeConfiguration<GoodsRecei
         // Configure decimal precision
         builder.Property(e => e.Quantity)
             .HasPrecision(16, 6);
+
+        builder.Property(e => e.ScannedQuantity)
+            .HasPrecision(16, 6);
     }
 }
 

@@ -1,4 +1,5 @@
 using Core.DTOs.PickList;
+using Core.Entities;
 using Core.Enums;
 using Core.Interfaces;
 using Infrastructure.DbContexts;
@@ -87,4 +88,44 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
 
         return itemOpenQuantities;
     }
+
+    public async Task<bool> IsItemInInProgressGoodsReceipt(string itemCode, string warehouse) =>
+        await FindItemInInProgressGoodsReceipt([itemCode], [warehouse]) != null;
+
+    public Task<string?> FindItemInInProgressGoodsReceipt(IReadOnlyCollection<string> itemCodes, IReadOnlyCollection<string> warehouses) {
+        if (itemCodes.Count == 0 || warehouses.Count == 0) {
+            return Task.FromResult<string?>(null);
+        }
+
+        return InProgressGoodsReceiptLines()
+            .Where(l => itemCodes.Contains(l.ItemCode) && warehouses.Contains(l.GoodsReceipt.WhsCode))
+            .Select(l => l.ItemCode)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<HashSet<string>> GetInProgressGoodsReceiptItems(IReadOnlyCollection<string> itemCodes, string warehouse) {
+        if (itemCodes.Count == 0) {
+            return [];
+        }
+
+        var matches = await InProgressGoodsReceiptLines()
+            .Where(l => itemCodes.Contains(l.ItemCode) && l.GoodsReceipt.WhsCode == warehouse)
+            .Select(l => l.ItemCode)
+            .Distinct()
+            .ToListAsync();
+
+        return matches.ToHashSet();
+    }
+
+    /// <summary>
+    /// Goods-receipt lines whose parent receipt is not finalized (stock not yet posted to SAP).
+    /// Enumerating the terminal states here means any in-progress state (Open/InProgress/Processing/
+    /// WaitingForApproval/PartiallyProcessed) blocks — the single source of truth for that rule.
+    /// </summary>
+    private IQueryable<GoodsReceiptLine> InProgressGoodsReceiptLines() =>
+        db.GoodsReceiptLines.Where(l =>
+            l.GoodsReceipt.Status != ObjectStatus.Finished &&
+            l.GoodsReceipt.Status != ObjectStatus.Cancelled &&
+            l.GoodsReceipt.Status != ObjectStatus.Closed &&
+            l.GoodsReceipt.Status != ObjectStatus.Rejected);
 }

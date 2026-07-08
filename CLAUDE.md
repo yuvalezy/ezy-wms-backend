@@ -2,108 +2,76 @@
 
 This file provides guidance to Claude Code when working with code in this repository.
 
-## Architecture Overview
+See also `/mnt/dev/wms/CLAUDE.md` for the cross-repo workspace overview (this backend + the `ezy-wms-frontend` sibling repo).
 
-### Solution Structure
-- **Service** - Main ASP.NET Core Web API application hosting the REST endpoints (can run as Windows Service)
-- **Service.Administration** - Windows Forms administration UI for service configuration
-- **Service.Shared** - Common components, data access, and business logic
-- **Service.UnitTest** - Unit tests for the service
-- **MetaData** - Utility for exporting/importing database metadata
+## Commands
 
-### API Module Pattern
-Each API module (Counting, GoodsReceipt, Transfer, Picking) follows this consistent architecture:
-
-1. **Controller** (`[Module]Controller.cs`) - HTTP endpoints, inherits from `LWApiController` (now `ControllerBase`)
-2. **Data** (`[Module]Data.cs`) - Business logic and database queries
-3. **Creation** (`[Module]Creation.cs`) - SAP Business One document creation
-4. **Models/** - Request/response DTOs and enumerations
-5. **Queries/SQL/** - Embedded SQL queries as resources
-
-### Key Classes and Patterns
-
-**Base Controller**: All API controllers inherit from `LWApiController` which provides:
-- Inherits from ASP.NET Core `ControllerBase`
-- `Data` property for accessing all module data classes
-- `EmployeeID` property from JWT claims
-- Common authorization checks
-
-**Query Loading**: SQL queries are embedded resources loaded via:
-```csharp
-GetQuery("QueryName") // Automatically selects SQL/HANA variant
+```bash
+dotnet build
+cd Service && dotnet run                 # http://localhost:5000, Swagger at /swagger
+dotnet test UnitTests                    # NUnit; run this before pushing
+dotnet test UnitTests --filter "FullyQualifiedName~UnitTests.Unit"          # what CI runs (fast, no external deps)
+dotnet test UnitTests --filter "FullyQualifiedName~ClassName.MethodName"    # single test
+dotnet ef migrations add <Name> --project Infrastructure --startup-project Service
 ```
 
-### Database Support
-The system supports both SQL Server and SAP HANA databases. Queries are stored in separate folders:
-- `Queries/SQL/` - SQL Server queries
-- `Queries/HANA/` - SAP HANA queries
+- `UnitTests/Unit/` — pure logic, no external deps, runs in CI.
+- `UnitTests/Integration/` — hits a live SAP/SQL environment (`BaseExternalTest.cs`); not run in CI.
+- `Tests/` at the repo root is a legacy xUnit/Moq project with **no `.csproj`** — it isn't in `ezy-wms-backend.sln` and isn't built or run anywhere. Don't add to it; add to `UnitTests/`.
+- Test naming convention: `[TestFixture]` classes, `[Test]` methods named `Method_Condition_ExpectedResult`.
+- Targets plain `net10.0` (see `global.json`), no Windows/COM dependency. CI (`.github/workflows/release.yml`, tag-triggered) publishes self-contained builds for both `win-x64` and `linux-x64`.
 
-### Service Modes
-The service can run in multiple modes:
-- **ASP.NET Core Web API** - Default mode with Kestrel
-- **Windows Service** - Using Microsoft.Extensions.Hosting.WindowsServices
-- **Interactive** - Console mode for debugging
-- **Background** - Background processing mode
-- **Load Balanced** - Multiple nodes with Redis coordination
+## Architecture
 
-### Authentication System
+### Solution structure
 
-The application uses a hybrid authentication approach that combines JWT tokens with HTTP-only session cookies:
+7 projects in `ezy-wms-backend.sln` (`Tests/` is intentionally excluded, see above):
 
-1. **Login** (`POST /api/authentication/login`)
-   - Accepts password-only authentication (no username required)
-   - Generates JWT token with user claims
-   - Stores SessionInfo in memory via ISessionManager using token as key
-   - Sets HTTP-only cookie with the token for session management
-   - Returns SessionInfo with token for API clients
+- **`Core`** — pure domain layer: `Entities/`, `DTOs/` (per module: GoodsReceipt, InventoryCounting, PickList, Transfer, DirectTransfer, Configuration...), `Interfaces/`, `Enums/`, `Configuration/ConfigSectionCatalog.cs`. No infrastructure dependencies.
+- **`Infrastructure`** — EF Core: `DbContexts/SystemDbContext.cs` + one Fluent config class per entity, `Migrations/`, `Repositories/`, ~45 `Services/*Service.cs` classes (this is where business logic actually lives — `PickListService.cs`, `TransferProcessingService.cs`, `InventoryCountingsService.cs`, `ConfigurationManagementService.cs`, etc.), `Auth/`, `Hubs/` (SignalR), `SessionManager/`.
+- **`Adapters.CrossPlatform`** — SAP Business One **Service Layer** HTTP client (`SBO/Services/SboCompany.cs`, `SboServiceLayerAdapter.cs`, `SboConnectionTester.cs`) plus SAP document-creation helpers (`CountingCreation.cs`, `GoodsReceiptCreation.cs`, `TransferCreation.cs`, `PickingUpdate.cs`). Despite the name pairing with `Adapters.Common`, this is the one with no Windows dependency.
+- **`Adapters.Common`** — direct SQL access to SAP's **underlying SQL Server database** via raw ADO.NET (`Microsoft.Data.SqlClient`): `SboDatabaseService.cs`, `SboGeneralRepository.cs`, `SqlQueryUtils.cs`, plus `SBO/Repositories/*` (Employee, GoodsReceipt, Picking, Item, InventoryCounting, General). Used for fast read-heavy queries against SAP data that the Service Layer would be too slow for.
+- **`Customer.Extensions`** — per-customer override hooks; references Core/Infrastructure/Adapters.
+- **`Service`** — ASP.NET Core Web API host (`Sdk.Web`). Flat `Controllers/` (one per module — `CountingController`, `GoodsReceiptController`, `PickingController`, `TransferController`, `DirectTransferController`, `ItemsController`, `DeviceController`, `UserController`, `AuthenticationController`, `AuthorizationGroupController`, `ConfigurationController`, `SystemController`, `LicenseController`, `HealthController`, etc.), `Middlewares/` (including `SystemLockdownMiddleware`), `Startup/`, `Configuration/`, background `Services/` (Cloud sync, Uptime Kuma, PickList sync).
+- **`UnitTests`** — the real, solution-registered test project (NUnit).
 
-2. **Session Management**
-   - JWT token is stored in HTTP-only cookie (`ezywms_session`)
-   - SessionInfo is cached in memory for fast access
-   - TokenSessionMiddleware validates sessions from cookies
-   - Supports both cookie-based sessions and Bearer token authentication
+Controllers are thin — they inject an `I*Service` interface from `Infrastructure/Services` and delegate to it. There is **no** per-module `Controller/Data/Creation/Models/Queries/SQL` folder structure and **no** embedded raw-SQL query files for WMS's own data (that pattern is retired; `Service.csproj` still has a stale, no-op `EmbeddedResource` glob pointing at a `Queries/SQL` folder that no longer exists — safe to ignore or clean up if you're in that file).
 
-3. **Password Management**
-   - Passwords are hashed using PBKDF2 with SHA256
-   - 32-byte salt + 10,000 iterations
-   - Change password endpoint requires current password verification
+### SAP Business One integration
 
-### Security Features
-- HTTP-only cookies prevent XSS attacks
-- Secure flag should be enabled in production (currently false for development)
-- Tokens expire at midnight UTC
-- Session data stored in memory for performance
+Two distinct paths, don't confuse them:
 
-## Common Development Tasks
+1. **Service Layer REST** (`Adapters.CrossPlatform`) — writes and document creation. `SboCompany.cs` is a plain `HttpClient`-based session client with a deliberately lazy config read so the singleton can be constructed even before SAP is configured (lockdown mode).
+2. **Direct SQL Server reads** (`Adapters.Common`) — SAP B1 on-premise stores its data in SQL Server (not SAP HANA in this deployment); `Adapters.Common` queries that database directly with raw SQL for performance on read-heavy endpoints.
 
-### Adding a New API Endpoint
-1. Add method to appropriate controller in `Service/API/[Module]/`
-2. Add corresponding method in `[Module]Data.cs`
-3. Create SQL query in `Queries/SQL/` (and HANA variant if needed)
-4. Add query as EmbeddedResource in Service.csproj
-5. Create request/response models in `Models/` folder
-6. Add `[Authorize]` attribute if authentication is required
+### Database & migrations
 
-### Running in Debug Mode
-**Note**: The Service project only runs on Windows due to SAP Business One COM interop dependencies.
-1. Set Service project as startup project
-2. Run with `dotnet run` or F5 in Visual Studio
-3. API will be available at http://localhost:5000
-4. Swagger UI available at http://localhost:5000/swagger
+- WMS's own data lives in SQL Server via EF Core, `Infrastructure/DbContexts/SystemDbContext.cs`. Migrations are in `Infrastructure/Migrations/`.
+- Create a migration with `dotnet ef migrations add <Name> --project Infrastructure --startup-project Service`; it's applied via `Database.Migrate()` at startup.
+- Raw SQL is used **only** for SAP's external database via `Adapters.Common` — never write raw SQL against WMS's own EF-managed tables.
 
-### Working with SAP Business One
-- The service integrates with SAP B1 via COM interop (`Interop.SAPbobsCOM.dll`)
-- Creation classes handle SAP document creation with proper transaction management
-- Always use mutex locks when creating SAP documents to prevent conflicts
-- **Note**: COM interop requires Windows platform (net9.0-windows target)
+### Configuration system
 
-### Configuration
-- Main config in `appsettings.json` and environment-specific files
-- API settings managed through Service.Administration UI
-- Database connections can be stored in configuration or registry
-- JWT settings in `Jwt` section of appsettings.json
+Two tiers:
+- **`appsettings.json`** — infra-only: connection strings, JWT, Smtp, licensing, background service intervals, session management. See `Core/Configuration/ConfigSectionCatalog.cs` for the authoritative list of what stays here.
+- **Database-backed** (everything else: `Options`, `Filters`, `Warehouses`, `CustomFields`, `Item`, `PickingDetails`, `ExternalCommands`, `SboSettings`, `PickingPostProcessingProcessors`) — stored one row per section in `SystemConfigurationEntry` (`Core/Entities/SystemConfigurationEntry.cs`): PK `Section` (PascalCase string), `Json` value (secrets marked `ENC::`), `Version`, `RowVersion`. Managed through `Infrastructure/Services/ConfigurationManagementService.cs`. Fresh installs seed from YAML templates in `Service/init/*.yaml`; changes are audited via `Core/Entities/SystemConfigurationAudit.cs`.
+- The historical YAML-file config system (`config/*.yaml`, live per-install files) has been fully migrated into the database — see `/mnt/dev/wms/plan/executed/` for the design rationale if you need the "why," but treat the DB-backed model as current truth. Don't reintroduce file-based config for new sections.
 
-## Coding Guidelines
+### Lockdown mode
 
-### Namespace Declaration
-- Use Primary constructors, declare namespace [Namespace];, not namespace { .... }
+`Service/Middlewares/SystemLockdownMiddleware.cs` returns 503 for business endpoints while `ISystemStatusService.Current.Ready` is false (i.e. SAP isn't configured yet), while allowing `/api/system`, `/api/health`, `/api/authentication`, `/api/configuration`, and `/swagger` through — this is what lets the frontend's first-run setup flow work before SAP credentials exist.
+
+### Authentication
+
+- Password-only login (`POST /api/authentication/login`), no username.
+- JWT + HTTP-only cookie (`ezywms_session`) hybrid: cookie for browser sessions, Bearer token also accepted for API clients.
+- Session info cached in memory (`ISessionManager`); tokens expire at midnight UTC.
+- Passwords hashed with PBKDF2-SHA256, 32-byte salt, 10,000 iterations.
+
+## Coding guidelines
+
+- Primary constructors; file-scoped `namespace Foo;` declarations, not block-scoped.
+- Follow SOLID; keep files under ~500 lines (refactor if larger).
+- Never change existing enum numeric values.
+- Prefix placeholder comments with `TODO:`.
+- Business logic belongs in `Infrastructure/Services`, not in controllers. This is inventory-critical code — prefer whole-bug-class fixes over narrow patches, especially around quantity/decimal logic.

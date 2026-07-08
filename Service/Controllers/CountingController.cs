@@ -248,14 +248,15 @@ public class CountingController(
     /// <param name="binEntry">Optional bin entry to filter by</param>
     /// <returns>Detailed report information for the specified item/bin</returns>
     [HttpGet("{id:guid}/report/all/{itemCode}/{binEntry:int?}")]
-    [RequireRolePermission(RoleType.CountingSupervisor)]
+    [RequireAnyRole(RoleType.CountingSupervisor, RoleType.CountingCorrection)]
     [ProducesResponseType(typeof(IEnumerable<InventoryCountingReportAllDetailsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry)
     {
+        var sessionInfo = HttpContext.GetSession();
         itemCode = Uri.UnescapeDataString(itemCode);
-        return await reportService.GetCountingReportAllDetails(id, itemCode, binEntry);
+        return await reportService.GetCountingReportAllDetails(id, itemCode, binEntry, sessionInfo);
     }
 
     /// <summary>
@@ -264,7 +265,7 @@ public class CountingController(
     /// <param name="request">The request containing bulk update information</param>
     /// <returns>True if update was successful, error message otherwise</returns>
     [HttpPost("updateAll")]
-    [RequireRolePermission(RoleType.CountingSupervisor)]
+    [RequireAnyRole(RoleType.CountingSupervisor, RoleType.CountingCorrection)]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

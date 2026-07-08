@@ -728,6 +728,10 @@ namespace Infrastructure.Migrations
                         .HasPrecision(16, 6)
                         .HasColumnType("decimal(16,6)");
 
+                    b.Property<decimal>("ScannedQuantity")
+                        .HasPrecision(16, 6)
+                        .HasColumnType("decimal(16,6)");
+
                     b.Property<int?>("StatusReason")
                         .HasColumnType("int");
 

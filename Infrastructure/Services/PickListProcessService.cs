@@ -16,8 +16,22 @@ public class PickListProcessService(
     IServiceProvider serviceProvider,
     IExternalSystemAlertService alertService,
     ISettings settings,
+    IPickListValidationService validationService,
     ILogger<PickListProcessService> logger) : IPickListProcessService {
     public async Task<ProcessPickListResponse> ProcessPickList(int absEntry, Guid userId) {
+        // Safety net for the phantom-inventory bug: refuse to post a pick list to SAP while any of
+        // its items are still being put away from a non-finalized goods receipt in the same warehouse.
+        if (settings.Options.BlockPickProcessDuringGoodsReceipt) {
+            var blockedItem = await FindItemBlockedByGoodsReceipt(absEntry);
+            if (blockedItem != null) {
+                return new ProcessPickListResponse {
+                    Status = ResponseStatus.Error,
+                    Message = "Failed to process pick list",
+                    ErrorMessage = $"Item {blockedItem} is in an in-process goods receipt"
+                };
+            }
+        }
+
         if (!await IsPostPickRepackReadyAsync(absEntry)) {
             return new ProcessPickListResponse {
                 Status = ResponseStatus.Error,
@@ -180,6 +194,32 @@ public class PickListProcessService(
             logger.LogError(ex, "Error during SyncPendingPickLists");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Returns the first item on the (still-open) pick list that belongs to a non-finalized goods
+    /// receipt in one of the pick list's warehouses, or null if none. The warehouse is resolved
+    /// from SAP because local PickList rows carry no warehouse (only an optional bin).
+    /// </summary>
+    private async Task<string?> FindItemBlockedByGoodsReceipt(int absEntry) {
+        var itemCodes = await db.PickLists
+            .Where(p => p.AbsEntry == absEntry &&
+                        (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) &&
+                        p.SyncStatus != SyncStatus.ExternalCancel)
+            .Select(p => p.ItemCode)
+            .Distinct()
+            .ToListAsync();
+
+        if (itemCodes.Count == 0) {
+            return null;
+        }
+
+        var warehouses = await adapter.GetPickListWarehouses(absEntry);
+        if (warehouses.Length == 0) {
+            return null;
+        }
+
+        return await validationService.FindItemInInProgressGoodsReceipt(itemCodes, warehouses);
     }
 
     private async Task<bool> IsExternallyCancelledAsync(int absEntry) {

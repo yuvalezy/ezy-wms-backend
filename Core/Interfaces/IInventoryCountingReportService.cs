@@ -6,6 +6,6 @@ namespace Core.Interfaces;
 public interface IInventoryCountingReportService {
     Task<IEnumerable<InventoryCountingContentResponse>>          GetCountingContent(InventoryCountingContentRequest       request);
     Task<InventoryCountingSummaryResponse>                       GetCountingSummaryReport(Guid                            id);
-    Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry);
+    Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry, SessionInfo sessionInfo);
     Task<string?>                                                UpdateCountingAll(UpdateInventoryCountingAllRequest       request, SessionInfo sessionInfo);
 }

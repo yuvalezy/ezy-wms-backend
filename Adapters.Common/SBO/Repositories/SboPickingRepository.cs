@@ -22,6 +22,9 @@ public class SboPickingRepository(SboDatabaseService dbService, ISettings settin
     public Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries)
         => _pickList.GetPickListStatuses(absEntries);
 
+    public Task<string[]> GetPickListWarehouses(int absEntry)
+        => _pickList.GetPickListWarehouses(absEntry);
+
     // --- Detail ---
     public Task<IEnumerable<PickingDetailResponse>> GetPickingDetails(Dictionary<string, object> parameters)
         => _detail.GetPickingDetails(parameters);

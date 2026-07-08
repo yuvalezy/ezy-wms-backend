@@ -89,6 +89,10 @@ public interface IExternalSystemAdapter {
     Task UpdatePickSourceSerialsAsync(int absEntry, IReadOnlyList<PickList> rows, string emptyLineSerial);
 
     Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries);
+
+    /// <summary>Distinct warehouse codes (SAP line LocCode) the pick list draws from.</summary>
+    Task<string[]> GetPickListWarehouses(int absEntry);
+
     Task<PickListClosureInfo> GetPickListClosureInfo(int absEntry);
     Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry);
     Task<ProcessPickListResponse> CancelPickList(int absEntry, PickingSelectionResponse[] selection, string warehouse, int transferBinEntry, bool enableBinLocations, string[] alertRecipients);

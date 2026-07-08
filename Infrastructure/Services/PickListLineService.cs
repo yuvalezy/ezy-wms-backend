@@ -14,10 +14,19 @@ public class PickListLineService(
     IExternalSystemAdapter adapter,
     ILogger<PickListService> logger,
     IPickListValidationService validationService,
-    IPickingPackageLabelService packageLabelService) : IPickListLineService {
+    IPickingPackageLabelService packageLabelService,
+    ISettings settings) : IPickListLineService {
     public async Task<PickListAddItemResponse> AddItem(SessionInfo sessionInfo, PickListAddItemRequest request) {
         if (request.Quantity <= 0) {
             return PickListAddItemResponse.Error("Quantity must be greater than zero");
+        }
+
+        // Block picking of items still being put away from a non-finalized goods receipt: their
+        // stock is not yet posted to SAP, so picking now would create phantom inventory when the
+        // receipt is later finalized. Checked before the SAP item lookup to fail fast.
+        if (settings.Options.BlockPickScanDuringGoodsReceipt &&
+            await validationService.IsItemInInProgressGoodsReceipt(request.ItemCode, sessionInfo.Warehouse)) {
+            return PickListAddItemResponse.Error("Item is in an in-process goods receipt");
         }
 
         var scannedQuantity = request.Quantity;

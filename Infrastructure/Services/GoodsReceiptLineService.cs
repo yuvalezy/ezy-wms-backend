@@ -83,8 +83,12 @@ public class GoodsReceiptLineService(
             var item = validationResult.Item!;
             var specificDocuments = validationResult.SpecificDocuments!;
 
+            // Each scan adds exactly one of the selected unit (bulto / docena / unidad).
+            // This scanned count is the persisted truth; base pieces are derived from the current factor.
+            const decimal scannedQuantity = 1m;
+
             // Step 2: Process source documents allocation
-            var sourceAllocationResult = await lineItemProcessService.ProcessSourceDocumentsAllocation(request.ItemCode, request.Unit, warehouse, goodsReceipt, item, specificDocuments);
+            var sourceAllocationResult = await lineItemProcessService.ProcessSourceDocumentsAllocation(request.ItemCode, request.Unit, warehouse, goodsReceipt, item, specificDocuments, scannedQuantity);
             if (sourceAllocationResult.ErrorResponse != null) {
                 logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);
                 return sourceAllocationResult.ErrorResponse;
@@ -94,7 +98,7 @@ public class GoodsReceiptLineService(
             decimal calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
             // Step 3: Create goods receipt line
-            var line = await lineItemProcessService.CreateGoodsReceiptLine(request, goodsReceipt, sourceDocuments, calculatedQuantity, userId);
+            var line = await lineItemProcessService.CreateGoodsReceiptLine(request, goodsReceipt, sourceDocuments, calculatedQuantity, scannedQuantity, userId);
 
             // Step 4: Update goods receipt status
             lineItemProcessService.UpdateGoodsReceiptStatus(goodsReceipt);
@@ -155,9 +159,12 @@ public class GoodsReceiptLineService(
             var unit = line.Unit;
             var specificDocuments = goodsReceipt.Documents.Select(d => new ObjectKey(d.ObjType, d.DocEntry, d.DocNumber)).ToList();
 
-            // Step 2: Process source documents allocation
+            // Step 2: Process source documents allocation.
+            // request.Quantity is the new scanned count in the line's unit; convert it through the
+            // same calculator used at scan time (applyFactor: true) so the edited line stays consistent
+            // with how every read/process path re-derives base pieces from the scanned count.
             var sourceAllocationResult =
-            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, request.Quantity, lineId, applyFactor: false);
+            await lineItemProcessService.ProcessSourceDocumentsAllocation(itemCode, unit, warehouse, goodsReceipt, item, specificDocuments, request.Quantity, lineId, applyFactor: true);
 
             if (sourceAllocationResult.ErrorResponse != null) {
                 logger.LogWarning("Source allocation failed for item {ItemCode}: {ErrorMessage}", itemCode, sourceAllocationResult.ErrorResponse.ErrorMessage);
@@ -169,7 +176,8 @@ public class GoodsReceiptLineService(
             var sourceDocuments = sourceAllocationResult.SourceDocuments!;
             decimal calculatedQuantity = sourceAllocationResult.CalculatedQuantity;
 
-            // Step 3: Update line
+            // Step 3: Update line — store the scanned count as truth, base as derived cache.
+            line.ScannedQuantity = request.Quantity;
             line.Quantity = calculatedQuantity;
             line.UpdatedAt = DateTime.UtcNow;
             line.UpdatedByUserId = session.Guid;

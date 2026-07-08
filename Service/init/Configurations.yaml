@@ -111,6 +111,15 @@ Options:
   # (pick-path routing). false = classic item-first view (bool, default: false)
   EnablePickPathRouting: false
 
+  # Block picking (at scan time) of an item that is still being put away from a non-finalized
+  # goods receipt in the same warehouse. Prevents "phantom inventory" from picking stock that
+  # has not yet been posted to SAP (bool, default: false)
+  BlockPickScanDuringGoodsReceipt: false
+
+  # Block processing a pick list to SAP if any of its items is still being put away from a
+  # non-finalized goods receipt in the same warehouse. Safety net for the scan-time block (bool, default: false)
+  BlockPickProcessDuringGoodsReceipt: false
+
   # Quantity Configuration
   # Whether to allow decimal quantities in all operations (bool, default: false)
   # true = Allow decimals with 2 decimal places precision

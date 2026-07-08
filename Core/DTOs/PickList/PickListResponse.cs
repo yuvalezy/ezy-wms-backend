@@ -54,6 +54,12 @@ public class PickListDetailItemResponse {
     public List<BinLocationQuantityResponse>? BinQuantities { get; set; }
     public decimal? Available { get; set; }
 
+    /// <summary>
+    /// True when this item is still being put away from a non-finalized goods receipt in the pick
+    /// list's warehouse. Surfaced so the picking screen can warn the operator before they scan.
+    /// </summary>
+    public bool InProgressGoodsReceipt { get; set; }
+
     public required Dictionary<string, object> CustomFields { get; set; }
 }
 

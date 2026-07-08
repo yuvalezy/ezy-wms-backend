@@ -5,6 +5,7 @@ using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -90,11 +91,9 @@ public class GoodsReceiptLineItemProcessService(
 
         sourceDocuments.RemoveAll(s => s.Quantity <= 0);
 
-        // Calculate required quantity
-        quantity *= (unit != UnitType.Unit ? item.NumInBuy : 1) * (unit == UnitType.Pack ? item.PurPackUn : 1);
-        if (applyFactor) {
-            quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
-        }
+        // Convert the scanned count to base pieces through the single shared calculator
+        // (scanned count is the truth; base is always derived from the current factor).
+        quantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(quantity, unit, item, applyFactor);
 
         // Allocate quantities using FIFO
         decimal unallocatedSourceQuantity = await AllocateSourceDocuments(sourceDocuments, quantity);
@@ -177,12 +176,14 @@ public class GoodsReceiptLineItemProcessService(
         GoodsReceipt goodsReceipt,
         List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments,
         decimal quantity,
+        decimal scannedQuantity,
         Guid userId) {
         var line = new GoodsReceiptLine {
             GoodsReceiptId = goodsReceipt.Id,
             ItemCode = request.ItemCode,
             BarCode = request.BarCode,
             Quantity = quantity,
+            ScannedQuantity = scannedQuantity,
             Unit = request.Unit,
             Date = DateTime.UtcNow,
             LineStatus = LineStatus.Open,

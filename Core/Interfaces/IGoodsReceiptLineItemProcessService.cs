@@ -24,6 +24,7 @@ public interface IGoodsReceiptLineItemProcessService {
         GoodsReceipt                                    goodsReceipt,
         List<GoodsReceiptAddItemSourceDocumentResponse> sourceDocuments,
         decimal                                         quantity,
+        decimal                                         scannedQuantity,
         Guid                                            userId);
 
     void UpdateGoodsReceiptStatus(GoodsReceipt goodsReceipt);

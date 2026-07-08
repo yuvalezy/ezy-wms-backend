@@ -95,6 +95,26 @@ public class SboPickListRepository(SboDatabaseService dbService, ISettings setti
         return response;
     }
 
+    public async Task<string[]> GetPickListWarehouses(int absEntry) {
+        // LocCode is the SAP line warehouse (OILM), the same source used to scope pick lists in
+        // GetPickLists. A pick list is normally single-warehouse, but return the distinct set to be safe.
+        const string query = """
+                             SELECT DISTINCT T2."LocCode"
+                             FROM PKL1
+                             INNER JOIN OILM T2 ON T2."TransType" = PKL1."BaseObject"
+                                 AND T2."DocEntry" = PKL1."OrderEntry"
+                                 AND T2."DocLineNum" = PKL1."OrderLine"
+                             WHERE PKL1."AbsEntry" = @AbsEntry AND T2."LocCode" IS NOT NULL
+                             """;
+
+        var sqlParams = new[] {
+            new SqlParameter("@AbsEntry", SqlDbType.Int) { Value = absEntry }
+        };
+
+        var results = await dbService.QueryAsync(query, sqlParams, reader => reader.GetString(0));
+        return results.ToArray();
+    }
+
     public async Task<Dictionary<int, bool>> GetPickListStatuses(int[] absEntries) {
         if (absEntries.Length == 0) {
             return new Dictionary<int, bool>();

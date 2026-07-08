@@ -56,6 +56,15 @@ public sealed class GoodsReceiptLine : BaseEntity {
     [Required]
     public decimal Quantity { get; set; }
 
+    /// <summary>
+    /// The physically-scanned count in the line's <see cref="Unit"/> (bultos / docenas / unidades).
+    /// This is the immutable source of truth; <see cref="Quantity"/> (base pieces) is a derived cache
+    /// recomputed from this value and the current SAP conversion factor on every read/process.
+    /// Legacy lines created before this field existed have 0 here and fall back to the stored <see cref="Quantity"/>.
+    /// </summary>
+    [Required]
+    public decimal ScannedQuantity { get; set; }
+
     public int? StatusReason { get; set; }
 
     [ForeignKey("CancellationReason")]

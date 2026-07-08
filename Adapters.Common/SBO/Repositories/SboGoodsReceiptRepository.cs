@@ -11,6 +11,7 @@ using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
 using Core.Models.Settings;
+using Core.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 
@@ -328,7 +329,11 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             $"""
              select "ItemCode",
                     COALESCE("NumInBuy", 1) as "NumInBuy",
-                    COALESCE("PurPackUn", 1) as "PurPackUn"
+                    COALESCE("PurPackUn", 1) as "PurPackUn",
+                    COALESCE("PurFactor1", 1) as "PurFactor1",
+                    COALESCE("PurFactor2", 1) as "PurFactor2",
+                    COALESCE("PurFactor3", 1) as "PurFactor3",
+                    COALESCE("PurFactor4", 1) as "PurFactor4"
                     from OITM
                     where "ItemCode" in (
              """);
@@ -346,11 +351,33 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         await dbService.ExecuteReaderAsync(sb.ToString(), parameters, reader =>
         {
             var itemData = data[reader.GetString("ItemCode")];
-            foreach (var value in itemData.Where(value => !value.UseBaseUnit)) {
-                value.Quantity /= Convert.ToInt32(reader["NumInBuy"]);
+
+            decimal numInBuy = Convert.ToDecimal(reader["NumInBuy"]);
+            if (numInBuy <= 0) numInBuy = 1;
+            decimal purPackUn = Convert.ToDecimal(reader["PurPackUn"]);
+            decimal factor1 = Convert.ToDecimal(reader["PurFactor1"]);
+            decimal factor2 = Convert.ToDecimal(reader["PurFactor2"]);
+            decimal factor3 = Convert.ToDecimal(reader["PurFactor3"]);
+            decimal factor4 = Convert.ToDecimal(reader["PurFactor4"]);
+
+            foreach (var value in itemData) {
+                // Re-derive base pieces from the scanned count using the *current* SAP factor, so a
+                // conversion corrected in SAP after scanning recalculates pieces without changing the
+                // scanned box/dozen count. Legacy lines (ScannedQuantity == 0) fall back to the stored base.
+                decimal oldBase = value.Quantity;
+                decimal newBase = GoodsReceiptQuantityCalculator.EffectiveBaseQuantity(
+                    value.ScannedQuantity, value.Unit, oldBase, numInBuy, purPackUn, factor1, factor2, factor3, factor4);
+
+                // Base units → line unit (buy units for non-base lines; base pieces are sent as-is). Decimal, no truncation.
+                decimal newLineQuantity = value.UseBaseUnit ? newBase : newBase / numInBuy;
+
+                // Distribute the recomputed line quantity across its source-document allocations,
+                // preserving each source's original share of the line (multiply-then-divide for precision).
                 foreach (var source in value.Sources) {
-                    source.Quantity /= Convert.ToInt32(reader["NumInBuy"]);
+                    source.Quantity = GoodsReceiptQuantityCalculator.RescaleAllocation(source.Quantity, oldBase, newLineQuantity);
                 }
+
+                value.Quantity = newLineQuantity;
             }
         });
     }
