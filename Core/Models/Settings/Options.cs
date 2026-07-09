@@ -57,15 +57,21 @@ public record Options {
     public bool EnablePickPathRouting { get; init; }
 
     /// <summary>
-    /// Optional token expression controlling pick-path walk order when EnablePickPathRouting is
-    /// on. Bin codes are split into dash-delimited segments ("s1", "s2", ...); each segment can be
-    /// further split into its leading-letters ("sN.alpha") and trailing-number ("sN.num") parts.
-    /// A comma-separated, ordered list of these tokens sets sort-key priority, e.g. "s1.num,s1.alpha"
-    /// makes bin position outrank the aisle letter for single-segment codes like A1/B1/C1 (produces
-    /// A1, B1, C1, A2, B2, ... instead of the default A1, A2, A3, B1, B2, ...). Null/empty/invalid
-    /// falls back to the default left-to-right natural compare of the whole code.
+    /// Pick-path walk-order tuning (only used when EnablePickPathRouting is on). The frontend
+    /// comparator understands the bin-code structure (zone / aisle+floor / level / section) and
+    /// walks floor-1 aisles, then the hueco racks, then floor-2 aisles, sections ascending within
+    /// each aisle. This is the aisle letter-part that identifies the hueco/mezzanine racks that
+    /// walk BETWEEN the floors (e.g. "HU" for HU1..HU4). Empty disables hueco grouping. Default "HU".
     /// </summary>
-    public string? PickPathSortKey { get; init; }
+    public string? PickPathHuecoPrefix { get; init; } = "HU";
+
+    /// <summary>
+    /// Pick-path within-aisle order (only used when EnablePickPathRouting is on). True walks the
+    /// aisle once taking every shelf level at each bay (section-major: A1-00-01, A1-10-01, ...,
+    /// A1-00-02, ...). False finishes a whole shelf level across the aisle before the next level.
+    /// Default true.
+    /// </summary>
+    public bool PickPathSectionFirst { get; init; } = true;
 
     /// <summary>
     /// When enabled, blocks picking (at scan/AddItem time) of an item that belongs to a
