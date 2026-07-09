@@ -17,9 +17,39 @@ public class SboPickListRepository(SboDatabaseService dbService, ISettings setti
                 PICKS."PickDate",
                 COALESCE(Cast(PICKS."Remarks" as varchar(8000)), '') AS "Remarks",
                 PICKS."Status" "Status",
-                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 17 THEN T2."Ref1" END, ',')          AS "SalesOrders",
-                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 13 THEN T2."Ref1" END, ',')          AS "Invoices",
-                   STRING_AGG(CASE WHEN PKL1."BaseObject" = 1250000001 THEN T2."Ref1" END, ',')  AS "Transfers",
+                STUFF((
+                    SELECT ',' + CAST(T2_AGG."Ref1" AS nvarchar(max))
+                    FROM PKL1 PKL1_AGG
+                    INNER JOIN OILM T2_AGG ON T2_AGG."TransType" = PKL1_AGG."BaseObject"
+                        AND T2_AGG."DocEntry" = PKL1_AGG."OrderEntry"
+                        AND T2_AGG."DocLineNum" = PKL1_AGG."OrderLine"
+                    WHERE PKL1_AGG."AbsEntry" = PICKS."AbsEntry"
+                        AND PKL1_AGG."BaseObject" = 17
+                        AND T2_AGG."LocCode" = @WhsCode
+                    FOR XML PATH(''), TYPE
+                ).value('.', 'nvarchar(max)'), 1, 1, '') AS "SalesOrders",
+                STUFF((
+                    SELECT ',' + CAST(T2_AGG."Ref1" AS nvarchar(max))
+                    FROM PKL1 PKL1_AGG
+                    INNER JOIN OILM T2_AGG ON T2_AGG."TransType" = PKL1_AGG."BaseObject"
+                        AND T2_AGG."DocEntry" = PKL1_AGG."OrderEntry"
+                        AND T2_AGG."DocLineNum" = PKL1_AGG."OrderLine"
+                    WHERE PKL1_AGG."AbsEntry" = PICKS."AbsEntry"
+                        AND PKL1_AGG."BaseObject" = 13
+                        AND T2_AGG."LocCode" = @WhsCode
+                    FOR XML PATH(''), TYPE
+                ).value('.', 'nvarchar(max)'), 1, 1, '') AS "Invoices",
+                STUFF((
+                    SELECT ',' + CAST(T2_AGG."Ref1" AS nvarchar(max))
+                    FROM PKL1 PKL1_AGG
+                    INNER JOIN OILM T2_AGG ON T2_AGG."TransType" = PKL1_AGG."BaseObject"
+                        AND T2_AGG."DocEntry" = PKL1_AGG."OrderEntry"
+                        AND T2_AGG."DocLineNum" = PKL1_AGG."OrderLine"
+                    WHERE PKL1_AGG."AbsEntry" = PICKS."AbsEntry"
+                        AND PKL1_AGG."BaseObject" = 1250000001
+                        AND T2_AGG."LocCode" = @WhsCode
+                    FOR XML PATH(''), TYPE
+                ).value('.', 'nvarchar(max)'), 1, 1, '') AS "Transfers",
                 COALESCE(SUM(PKL1."RelQtty" + PKL1."PickQtty"), 0) AS "Quantity",
                 COALESCE(SUM(PKL1."RelQtty"), 0) AS "OpenQuantity",
                 COALESCE(SUM(CASE WHEN PKL1."PickStatus" = 'Y' THEN PKL1."PickQtty" ELSE 0 END), 0) AS "UpdateQuantity"
