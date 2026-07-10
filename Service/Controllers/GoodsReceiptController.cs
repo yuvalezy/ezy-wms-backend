@@ -244,7 +244,7 @@ public class GoodsReceiptController(
         var requiredRoles = request.ProcessType switch {
             GoodsReceiptProcessType.Regular => new[] { RoleType.GoodsReceipt, RoleType.GoodsReceiptSupervisor },
             GoodsReceiptProcessType.Confirmation => new[] { RoleType.GoodsReceiptConfirmation, RoleType.GoodsReceiptConfirmationSupervisor },
-            GoodsReceiptProcessType.TransferConfirmation => new[] { RoleType.Transfer, RoleType.TransferSupervisor },
+            GoodsReceiptProcessType.TransferConfirmation => new[] { RoleType.TransferConfirmation, RoleType.TransferConfirmationSupervisor },
             _ => throw new ArgumentOutOfRangeException()
         };
 
