@@ -30,7 +30,6 @@ Depending on the user's role, the following modules may appear:
 | Direct Transfer | Quick item transfers |
 | Item Check | Query item stock information |
 | Bin Check | Query bin location contents |
-| Package Check | Query package contents |
 | Settings | System administration |
 
 ## Navigation

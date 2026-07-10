@@ -19,7 +19,6 @@ This guide provides detailed instructions on how to use EZY WMS for your daily w
 
 - [Item Check](/docs/item-management/item-check) — Query stock by item code or barcode.
 - [Bin Check](/docs/item-management/bin-check) — View all items in a bin location.
-- [Package Check](/docs/item-management/package-check) — Inspect package contents and location.
 
 ### Goods Receipt
 

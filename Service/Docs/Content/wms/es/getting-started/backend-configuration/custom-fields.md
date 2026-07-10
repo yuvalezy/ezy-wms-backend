@@ -9,10 +9,15 @@ description: Configura campos personalizados para Artículos, DetallesPickings, 
 
 Los Campos Personalizados permiten extender los modelos de datos estándar en EZY WMS mediante la asignación de columnas de bases de datos SAP y expresiones SQL calculadas a identificadores de campo. Estos campos están disponibles para mostrar y usar en diferentes módulos.
 
-Ubicación del archivo de configuración:
+Plantilla de inicialización/migración:
 ```
-ezy-wms-backend/Service/config/CustomFields.yaml
+ezy-wms-backend/Service/init/CustomFields.yaml
 ```
+
+La sección `CustomFields` almacenada en la base de datos es la fuente en
+ejecución. Edítela desde Configuración para superusuarios o
+`ConfigurationController`; las actualizaciones se recargan en vivo después de
+validarse.
 
 ## Estructura
 

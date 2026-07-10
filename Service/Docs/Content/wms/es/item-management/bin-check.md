@@ -137,4 +137,3 @@ Si la ubicación existe pero no tiene inventario, Revisión de Ubicación muestr
 ## Páginas Relacionadas
 
 - [Revisión de Artículo](/docs/item-management/item-check)
-- [Revisión de Paquete](/docs/item-management/package-check)

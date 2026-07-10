@@ -137,4 +137,3 @@ If the bin exists but has no stock, Bin Check shows **Bin is Empty** and **No co
 ## Related Pages
 
 - [Item Check](/docs/item-management/item-check)
-- [Package Check](/docs/item-management/package-check)

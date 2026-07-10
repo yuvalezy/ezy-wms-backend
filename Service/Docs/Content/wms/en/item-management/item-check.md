@@ -129,4 +129,3 @@ If a code is not found, the system displays an error notification.
 ## Related Pages
 
 - [Bin Check](/docs/item-management/bin-check)
-- [Package Check](/docs/item-management/package-check)

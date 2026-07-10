@@ -91,9 +91,11 @@
       "description": "Quick single-item transfers between bin locations.",
       "section": "Overview",
       "route": "/directTransfer",
-      "roles": [],
+      "roles": [
+        "DirectTransfer"
+      ],
       "superUserOnly": false,
-      "feature": null,
+      "feature": "BinLocation",
       "order": 5
     },
     {
@@ -185,8 +187,8 @@
       "module": "getting-started",
       "slug": "backend-configuration/package",
       "file": "en/getting-started/backend-configuration/package.md",
-      "title": "Package Configuration",
-      "description": "Configure package labeling, barcode generation, and metadata for EZY WMS.",
+      "title": "Package Configuration (legacy)",
+      "description": "Historical Package.yaml reference; package configuration is now part of picking settings.",
       "section": "Administration",
       "route": null,
       "roles": [],
@@ -401,8 +403,8 @@
       "module": "item-management",
       "slug": "package-check",
       "file": "en/item-management/package-check.md",
-      "title": "Package Check",
-      "description": "Query package contents, location, and metadata.",
+      "title": "Package Check (legacy)",
+      "description": "Historical reference; the current frontend has no standalone package-check route.",
       "section": "item-management",
       "route": null,
       "roles": [
@@ -850,7 +852,7 @@
         "TransferRequest"
       ],
       "superUserOnly": false,
-      "feature": "EnableInventoryTransfer",
+      "feature": "TransferRequest",
       "order": 53
     },
     {
@@ -958,9 +960,11 @@
       "description": "Transferencias rápidas de un solo artículo entre ubicaciones.",
       "section": "Overview",
       "route": "/directTransfer",
-      "roles": [],
+      "roles": [
+        "DirectTransfer"
+      ],
       "superUserOnly": false,
-      "feature": null,
+      "feature": "BinLocation",
       "order": 5
     },
     {
@@ -1052,8 +1056,8 @@
       "module": "getting-started",
       "slug": "backend-configuration/package",
       "file": "es/getting-started/backend-configuration/package.md",
-      "title": "Configuración de Paquetes",
-      "description": "Configura el etiquetado, generación de códigos de barras y metadatos de paquetes en EZY WMS.",
+      "title": "Configuración de Paquetes (heredada)",
+      "description": "Referencia histórica de Package.yaml; la configuración actual forma parte de picking.",
       "section": "Administration",
       "route": null,
       "roles": [],
@@ -1268,8 +1272,8 @@
       "module": "item-management",
       "slug": "package-check",
       "file": "es/item-management/package-check.md",
-      "title": "Revisión de Paquete",
-      "description": "Consultar contenido, ubicación y metadatos de paquetes.",
+      "title": "Revisión de Paquete (heredada)",
+      "description": "Referencia histórica; la interfaz actual no tiene una ruta independiente de revisión de paquetes.",
       "section": "item-management",
       "route": null,
       "roles": [
@@ -1645,7 +1649,7 @@
         "TransferRequest"
       ],
       "superUserOnly": false,
-      "feature": "EnableInventoryTransfer",
+      "feature": "TransferRequest",
       "order": 49
     },
     {
@@ -1717,7 +1721,7 @@
         "TransferRequest"
       ],
       "superUserOnly": false,
-      "feature": "EnableInventoryTransfer",
+      "feature": "TransferRequest",
       "order": 53
     },
     {

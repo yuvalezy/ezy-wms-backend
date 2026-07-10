@@ -30,7 +30,6 @@ Según el rol del usuario, pueden aparecer los siguientes módulos:
 | Transferencia Directa | Transferencias rápidas de artículos |
 | Revisión de Artículo | Consultar información de stock |
 | Revisión de Ubicación | Consultar contenido de ubicaciones |
-| Revisión de Paquete | Consultar contenido de paquetes |
 | Configuración | Administración del sistema |
 
 ## Navegación

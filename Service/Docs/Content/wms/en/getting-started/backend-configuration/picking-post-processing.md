@@ -9,12 +9,14 @@ description: Reference for the EZY WMS PickingPostProcessing.yaml file that regi
 
 The picking post processing configuration defines custom .NET processors that run automatically after picking operations are completed. These processors enable business logic such as SAP integration, packaging calculations, inventory adjustments, and external system notifications.
 
-**Configuration file location:**
+**Seed/migration template location:**
 ```
-ezy-wms-backend/Service/config/PickingPostProcessing.yaml
+ezy-wms-backend/Service/init/PickingPostProcessing.yaml
 ```
 
-Alternatively, processors can be configured in customer-extension `appsettings.json` under the `PickingPostProcessing.Processors` array (see Deployment Notes below).
+The database-backed `PickingPostProcessingProcessors` section is the runtime source.
+It is the one catalogued WMS section that requires a service restart after an
+update because it loads customer extension types.
 
 ## Configuration Structure
 

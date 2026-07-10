@@ -9,10 +9,14 @@ description: Configure custom fields for Items, PickingDetails, Warehouses, and 
 
 Custom Fields allow you to extend standard data models in EZY WMS by mapping SAP database columns and calculated SQL expressions to field identifiers. These fields are then available for display and use across different modules.
 
-Configuration file location:
+Seed/migration template:
 ```
-ezy-wms-backend/Service/config/CustomFields.yaml
+ezy-wms-backend/Service/init/CustomFields.yaml
 ```
+
+The database-backed `CustomFields` section is the runtime source. Edit it through
+the super-user Configuration screen or `ConfigurationController`; updates reload
+live after validation.
 
 ## Structure
 

@@ -129,4 +129,3 @@ Si un código no se encuentra, el sistema muestra una notificación de error.
 ## Páginas Relacionadas
 
 - [Revisión de Ubicación](/docs/item-management/bin-check)
-- [Revisión de Paquete](/docs/item-management/package-check)

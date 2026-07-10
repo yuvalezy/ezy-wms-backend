@@ -9,7 +9,10 @@ This document describes how to configure item metadata field definitions in the 
 
 ## Overview
 
-The `Item.yaml` configuration file, located at `ezy-wms-backend/Service/config/Item.yaml`, defines metadata fields for items that can be edited, validated, and calculated within EZY WMS. Each field definition controls how item data is handled, stored, and displayed in the system.
+The `Item.yaml` seed/migration template is located at
+`ezy-wms-backend/Service/init/Item.yaml`. The database-backed `Item` section is
+the runtime source and defines metadata fields that can be edited, validated, and
+calculated within EZY WMS.
 
 The configuration uses a structured format under `Item.MetadataDefinition`, which is an array of field definitions. Each definition maps to a supported SAP item field and specifies validation rules, data types, and optional calculations.
 

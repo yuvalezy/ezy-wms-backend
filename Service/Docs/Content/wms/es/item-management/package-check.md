@@ -1,62 +1,22 @@
 ---
-title: Revisión de Paquete
-description: Consultar contenido, ubicación y metadatos de paquetes.
+title: Revisión de Paquete (heredada)
+description: Referencia histórica de revisión de paquetes; la interfaz actual no expone una ruta independiente de revisión de paquetes.
 ---
 
-La Revisión de Paquete permite ver el contenido, ubicación actual y metadatos de cualquier paquete en la bodega.
+> **Estado actual de WMS:** Esta página independiente de Revisión de Paquete se
+> conserva como referencia porque existe en el wiki fuente, pero `/packageCheck`
+> no es una ruta de la interfaz actual y esta página no representa un flujo vigente
+> para operadores.
 
-## Acceso a la Página
+Las operaciones de paquetes actualmente compatibles forman parte del flujo de
+Picking:
 
-Ruta: `/packageCheck`
+- las etiquetas de paquetes se pueden listar o crear desde un picking cuando está
+  habilitado `EnablePickingPackageLabels`;
+- los artículos pueden asignarse a etiquetas y los supervisores pueden usar el
+  flujo de repack cuando está habilitado `EnablePostPickRepack`;
+- los endpoints del backend pertenecen a `PickingController`, no a un controlador
+  independiente de revisión de paquetes.
 
-Navegación: Panel Principal → Revisión de Paquete
-
-También puede acceder directamente con parámetros: `/packageCheck/:id/:barcode`
-
-## Cómo Usar
-
-1. Escanee o ingrese el **código de barra del paquete**.
-2. El sistema busca el paquete y muestra:
-   - Estado del paquete (Inicializado, Activo, Cerrado, Cancelado, Bloqueado)
-   - Ubicación y almacén actuales
-   - Lista de todos los artículos dentro del paquete
-   - Total de artículos únicos y cantidad total
-   - Valores de metadatos (si están configurados)
-
-## Estados del Paquete
-
-| Estado | Descripción |
-|--------|-------------|
-| Inicializado | Paquete creado pero vacío |
-| Activo | Paquete con artículos y en uso |
-| Cerrado | Paquete sellado y completo |
-| Cancelado | Paquete cancelado |
-| Bloqueado | Paquete bloqueado temporalmente |
-
-## Contenido del Paquete
-
-La tabla de contenidos muestra:
-
-| Campo | Descripción |
-|-------|-------------|
-| Código Artículo | Código del producto |
-| Nombre Artículo | Descripción del producto |
-| Cantidad | Cantidad en el paquete |
-| Tipo de Unidad | Unidad de medida |
-| Código Ubicación | Ubicación de almacenamiento |
-
-## Metadatos
-
-Si el paquete tiene campos de metadatos configurados, aparecen en una sección dedicada. Haga clic en **Editar Metadatos** para modificar valores.
-
-## Mensajes de Error
-
-| Mensaje | Causa |
-|---------|-------|
-| Paquete no encontrado | El código no coincide con ningún paquete |
-| No se encontró contenido | El paquete existe pero está vacío |
-
-## Páginas Relacionadas
-
-- [Revisión de Artículo](/docs/item-management/item-check)
-- [Revisión de Ubicación](/docs/item-management/bin-check)
+Consulte [Proceso de Picking](/docs/picking/process) y [Supervisor de Picking](/docs/picking/supervisor)
+para el flujo actual. No dirija a los usuarios a `/packageCheck`.

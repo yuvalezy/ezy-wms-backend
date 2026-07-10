@@ -1,34 +1,74 @@
 ---
 title: Backend Configuration
-description: Overview of EZY WMS backend configuration files used at installation time.
+description: Overview of EZY WMS backend configuration sources, migration, and live reload behavior.
 ---
 
-> **Current WMS note:** Live configuration is stored in the database and managed from the superuser Configuration screen. YAML files under `Service/init` are seed templates, not the runtime configuration source.
+EZY WMS has two configuration tiers:
 
-The EZY WMS backend (`ezy-wms-backend/Service`) is configured through two mechanisms:
+1. **`appsettings.json` and environment configuration** — infrastructure settings such as the WMS SQL Server connection, JWT and cookie settings, session storage, licensing, SMTP, logging, CORS, Kestrel, and background-service settings.
+2. **Database-backed WMS sections** — business options, filters, warehouses, custom fields, item metadata, external commands, SAP settings, picking details, and picking post-processors.
 
-1. **`appsettings.json`** — The main .NET configuration file controlling host settings, logging, database connections, JWT secrets, session management, licensing, SMTP, and background service parameters.
+## Configuration lifecycle
 
-2. **`Service/config/` folder** — A set of YAML files that define business behavior, data handling, and UI surface area. These files are reloaded at service startup.
+The database is the authoritative runtime source for the WMS sections. The YAML directories are initialization and migration inputs, not a continuously live configuration folder.
 
-## Configuration Files
+At startup, `ConfigurationInitializationExtensions` resolves the source in this order:
 
-| File | Purpose |
-|------|---------|
-| [`appsettings.json`](/docs/getting-started/backend-configuration/appsettings) | .NET host, logging, database, JWT, sessions, licensing, SMTP, background services |
-| [`config/Configurations.yaml`](/docs/getting-started/backend-configuration/core-system) | **Mandatory.** Core business options, data filters, warehouse mappings, SAP B1 connection details |
-| [`config/CustomFields.yaml`](/docs/getting-started/backend-configuration/custom-fields) | Extra item and document fields exposed in the UI |
-| [`config/Item.yaml`](/docs/getting-started/backend-configuration/item-metadata) | Editable item metadata definitions |
-| [`config/Package.yaml`](/docs/getting-started/backend-configuration/package) | Package label, barcode, and metadata configuration |
-| [`config/ExternalCommands.yaml`](/docs/getting-started/backend-configuration/external-commands) | XML/JSON exports triggered by events or manual buttons |
-| [`config/PickingPostProcessing.yaml`](/docs/getting-started/backend-configuration/picking-post-processing) | Custom .NET processors that run after picking operations |
+1. If `Service/config/` contains YAML files, the service migrates and verifies them into the `SystemConfiguration` database table, then archives the folder under `Service/config_archive/`.
+2. If the database already contains configuration rows, the service boots from the database without rereading `Service/config/`.
+3. On a fresh installation with no database rows, the service seeds the database from the templates in `Service/init/` and verifies the stored values.
+4. If none of those sources exists, startup fails because there is no configuration source.
 
-## Defaults and Initialization
+After migration or seeding, use the super-user Configuration screen or
+`ConfigurationController` APIs to change WMS sections. Do not edit archived or
+seed YAML files expecting an ordinary restart to apply the change.
 
-The `Service/init/` folder contains default copies of all configuration files. These defaults are used to seed the `Service/config/` folder on first run. During deployment, place your environment-specific overrides in `Service/config/` — the init folder is not modified.
+## Configuration files and templates
 
-## Conventions
+The templates shipped in `Service/init/` are:
 
-- **Reload on startup:** All YAML configuration files are parsed when the service starts. Configuration changes require a service restart.
-- **Case sensitivity:** YAML is case-sensitive. Property names and enum values must match their definitions exactly.
-- **No credentials in version control:** Never commit real database passwords, API keys, SMTP credentials, or SAP B1 logons to the repository. Use environment variables or secure deployment practices to inject them at runtime.
+| Template | Database section | Purpose |
+|------|---------|---------|
+| `Configurations.yaml` | `Options`, `Filters`, `Warehouses`, `SboSettings` | Core workflow, filters, warehouse mappings, and SAP settings |
+| `CustomFields.yaml` | `CustomFields` | Custom fields exposed by supported workflows |
+| `Item.yaml` | `Item` | Item metadata definitions |
+| `PickingDetails.yaml` | `PickingDetails` | Picking-detail configuration |
+| `ExternalCommands.yaml` | `ExternalCommands` | Event or manual file generation and delivery |
+| `PickingPostProcessing.yaml` | `PickingPostProcessingProcessors` | Customer post-pick processor registrations |
+
+There is no current `Package.yaml` or generic package-management configuration
+section. Package labels and post-pick repack are picking features configured in
+the `Options` section; see [Picking Post-Processing](picking-post-processing).
+
+The `Service/config/` folder may still be supplied for a one-time migration of
+legacy YAML configuration. It is not the preferred location for ongoing edits.
+
+## Reload behavior
+
+The catalog in `Core/Configuration/ConfigSectionCatalog.cs` defines the reload
+contract:
+
+| Section | Runtime behavior |
+|---------|------------------|
+| `Options`, `Filters`, `Warehouses`, `CustomFields`, `Item`, `PickingDetails`, `ExternalCommands`, `SboSettings` | Live-reloadable after a successful configuration update |
+| `PickingPostProcessingProcessors` | Requires a service restart |
+
+The Configuration API validates updates, applies optimistic version checks, keeps
+history, supports restore/import/export, encrypts secret leaves, and masks secrets
+at the API boundary. Infrastructure settings that are not in the catalog remain
+in `appsettings*.json` or environment-specific configuration.
+
+## Configuration references
+
+| Topic | Reference |
+|------|-----------|
+| Core WMS options and SAP settings | [Core System](core-system) |
+| Host and infrastructure settings | [appsettings.json](appsettings) |
+| Custom fields | [Custom Fields](custom-fields) |
+| Item metadata | [Item Metadata](item-metadata) |
+| External commands | [External Commands](external-commands) |
+| Picking post-processors | [Picking Post-Processing](picking-post-processing) |
+
+Keep database passwords, SAP credentials, JWT secrets, SMTP credentials, and API
+keys out of committed files. Secrets entered through configuration APIs are
+encrypted at rest when the encryption key is configured.

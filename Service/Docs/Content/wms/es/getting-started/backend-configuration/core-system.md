@@ -5,7 +5,10 @@ description: Referencia del archivo Configurations.yaml de EZY WMS que cubre opc
 
 > **Nota para la versión actual:** La configuración activa se guarda en la base de datos y se administra desde Configuración para superusuarios. Los archivos YAML en `Service/init` son plantillas iniciales; no son la fuente de configuración en tiempo de ejecución.
 
-El archivo `Configurations.yaml` es un archivo de configuración del sistema central obligatorio ubicado en `ezy-wms-backend/Service/config/Configurations.yaml`. Controla flujos de trabajo de WMS esenciales, integración con SAP Business One e configuraciones operacionales específicas del almacén.
+`Configurations.yaml` es la plantilla de inicialización/migración del sistema
+central ubicada en `ezy-wms-backend/Service/init/Configurations.yaml`. Sus valores
+se almacenan en la base de datos y se editan desde Configuración para superusuarios
+después del inicio.
 
 ## Options
 
@@ -36,7 +39,6 @@ Configuraciones de operación de negocio que controlan la funcionalidad central 
 | `GoodsReceiptCreateSupervisorRequired` | bool | `false` | Requiere aprobación del supervisor para crear recepciones |
 | `GoodsReceiptType` | enum | `Both` | Tipo de documento a crear: `Transactional` (transacción de inventario), `Confirmation` (confirmación de documento), `Both` |
 | `GoodsReceiptTargetDocuments` | bool | `false` | Habilitar selección de documento destino en recepción |
-| `GoodsReceiptPackages` | bool | `true` | Permitir creación de paquetes durante la recepción |
 | `GoodsReceiptConfirmationAdjustStock` | bool | `false` | Ajustar automáticamente niveles de stock al confirmar recepción |
 | `GoodsReceiptConfirmationAdjustStockPriceList` | int (nullable) | — | ID de lista de precios utilizado al ajustar stock durante confirmación |
 
@@ -55,7 +57,6 @@ Configuraciones de operación de negocio que controlan la funcionalidad central 
 
 | Campo | Tipo | Predeterminado | Descripción |
 |-------|------|----------------|-------------|
-| `EnablePackages` | bool | `false` | Habilitar funcionalidad de paquete en todo el sistema |
 | `DefaultUnitType` | enum | `Pack` | Tipo de unidad predeterminado: `Unit` (individual), `Dozen` (12 unidades), `Pack` (paquete/caja) |
 | `EnableUnitSelection` | bool | `false` | Permitir que los usuarios seleccionen diferentes tipos de unidad durante operaciones |
 
@@ -127,9 +128,9 @@ Warehouses:
 
 Especifica el adaptador de integración de SAP Business One.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `ExternalAdapter` | enum | Tipo de adaptador: `SboWindows` (COM interop), `SboServiceLayer` (REST API) |
+La antigua opción `ExternalAdapter` está retirada. Esta versión utiliza SAP
+Service Layer para escrituras de documentos y adaptadores basados en SQL Server
+para lecturas de SAP.
 
 ## SboSettings
 
@@ -139,7 +140,7 @@ Configuración para conectarse a la base de datos de SAP Business One y servicio
 |-------|------|-------------|
 | `Server` | string | Nombre de host o dirección IP del servidor SAP B1 |
 | `ServiceLayerUrl` | string (nullable) | URL de SAP Service Layer (requerido para `SboServiceLayer`); formato: `https://server:port` (puerto típicamente 50000) |
-| `ServerType` | int | Tipo de servidor de base de datos: SQL Server (`4`, `6`, `7`, `8`, `10`, `11`, `15`), HANA (`9`). Ver tabla de mapeo ServerType. |
+| `ServerType` | int | Tipo de servidor de base de datos SQL Server (`4`, `6`, `7`, `8`, `10`, `11`, `15`) |
 | `TrustedConnection` | bool | Utilizar autenticación de Windows para conexión de base de datos |
 | `ServerUser` | string (nullable) | Nombre de usuario de base de datos (requerido si `TrustedConnection` es false) |
 | `ServerPassword` | string (nullable) | Contraseña de base de datos (requerido si `TrustedConnection` es false) |
@@ -158,7 +159,6 @@ Configuración para conectarse a la base de datos de SAP Business One y servicio
 | `10` | MSSQL 2016 |
 | `11` | MSSQL 2017 |
 | `15` | MSSQL 2019 |
-| `9` | SAP HANA |
 
 ## Ejemplo de Configuración Completa
 
@@ -185,7 +185,6 @@ Options:
   GoodsReceiptCreateSupervisorRequired: true
   GoodsReceiptType: Both
   GoodsReceiptTargetDocuments: false
-  GoodsReceiptPackages: true
   GoodsReceiptConfirmationAdjustStock: true
 
   # Configuración de Transferencia
@@ -196,8 +195,7 @@ Options:
   TransferCreateSupervisorRequired: false
   DirectTransferAll: true
 
-  # Configuración de Paquete y Unidad
-  EnablePackages: false
+  # Configuración de Unidades
   DefaultUnitType: Pack
   EnableUnitSelection: true
 
@@ -230,10 +228,6 @@ Warehouses:
     InitialCountingBinEntry: 1001
     CancelPickingBinEntry: 1002
     StagingBinEntry: 1003
-
-# Integración de Sistema Externo
-# Especifica qué adaptador utilizar para integración de SAP Business One (enum, requerido)
-ExternalAdapter: SboServiceLayer
 
 # Configuraciones de Conexión de SAP Business One
 # Configuración para conectarse a la base de datos y servicios de SAP B1

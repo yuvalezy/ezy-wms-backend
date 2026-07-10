@@ -5,7 +5,12 @@ description: Configure the EZY WMS Service with appsettings.json. Reference for 
 
 > **Current WMS note:** Live configuration is stored in the database and managed from the superuser Configuration screen. YAML files under `Service/init` are seed templates, not the runtime configuration source.
 
-The EZY WMS Service is configured via `appsettings.json`, located in the `ezy-wms-backend/Service/` directory. This file controls CORS, logging, database connections, JWT authentication, session management, licensing, background services, email, and health checks. All settings are required unless marked optional.
+The EZY WMS Service reads infrastructure settings from `appsettings.json`, located
+in `ezy-wms-backend/Service/`. WMS business sections are database-backed; this file
+covers host settings such as CORS, logging, database connections, JWT
+authentication, session management, licensing, background services, email, and
+health checks. Use `appsettings.example.json` as a starting point and supply only
+the settings required by the deployment.
 
 ## Cors
 

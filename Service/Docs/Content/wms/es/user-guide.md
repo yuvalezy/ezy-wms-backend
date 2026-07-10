@@ -19,7 +19,6 @@ Esta guía proporciona instrucciones detalladas sobre cómo usar EZY WMS para su
 
 - [Revisión de Artículo](/docs/item-management/item-check) — Consultar stock por código o barcode.
 - [Revisión de Ubicación](/docs/item-management/bin-check) — Ver todos los artículos en una ubicación.
-- [Revisión de Paquete](/docs/item-management/package-check) — Inspeccionar contenido y ubicación de paquetes.
 
 ### Entrada de Mercancía
 

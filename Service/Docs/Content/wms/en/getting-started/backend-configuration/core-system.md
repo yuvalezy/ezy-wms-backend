@@ -5,7 +5,9 @@ description: Reference for the EZY WMS Configurations.yaml file covering busines
 
 > **Current WMS note:** Live configuration is stored in the database and managed from the superuser Configuration screen. YAML files under `Service/init` are seed templates, not the runtime configuration source.
 
-The `Configurations.yaml` file is a mandatory core system configuration file located at `ezy-wms-backend/Service/config/Configurations.yaml`. It controls essential WMS workflows, external system integration with SAP Business One, and warehouse-specific operational settings.
+`Configurations.yaml` is the core-system seed/migration template at
+`ezy-wms-backend/Service/init/Configurations.yaml`. Its values are stored in the
+database and edited through the super-user Configuration screen after startup.
 
 ## Options
 
@@ -36,7 +38,6 @@ Business operation settings that control core WMS functionality and workflow beh
 | `GoodsReceiptCreateSupervisorRequired` | bool | `false` | Require supervisor approval to create goods receipts |
 | `GoodsReceiptType` | enum | `Both` | Document type to create: `Transactional` (inventory transaction), `Confirmation` (document confirmation), `Both` |
 | `GoodsReceiptTargetDocuments` | bool | `false` | Enable target document selection in goods receipt |
-| `GoodsReceiptPackages` | bool | `true` | Allow package creation during goods receipt |
 | `GoodsReceiptConfirmationAdjustStock` | bool | `false` | Automatically adjust stock levels when confirming goods receipt |
 | `GoodsReceiptConfirmationAdjustStockPriceList` | int (nullable) | — | Price list ID used when adjusting stock during confirmation |
 
@@ -55,7 +56,6 @@ Business operation settings that control core WMS functionality and workflow beh
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `EnablePackages` | bool | `false` | Enable package functionality system-wide |
 | `DefaultUnitType` | enum | `Pack` | Default unit type: `Unit` (individual), `Dozen` (12 units), `Pack` (package/case) |
 | `EnableUnitSelection` | bool | `false` | Allow users to select different unit types during operations |
 
@@ -127,9 +127,8 @@ Warehouses:
 
 Specifies the SAP Business One integration adapter.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ExternalAdapter` | enum | Adapter type: `SboWindows` (COM interop), `SboServiceLayer` (REST API) |
+The former `ExternalAdapter` setting is retired. This checkout uses the SAP
+Service Layer for document writes and SQL Server-backed adapters for SAP reads.
 
 ## SboSettings
 
@@ -139,7 +138,7 @@ Configuration for connecting to SAP Business One database and services.
 |-------|------|-------------|
 | `Server` | string | SAP B1 server hostname or IP address |
 | `ServiceLayerUrl` | string (nullable) | SAP Service Layer URL (required for `SboServiceLayer`); format: `https://server:port` (port typically 50000) |
-| `ServerType` | int | Database server type: SQL Server (`4`, `6`, `7`, `8`, `10`, `11`, `15`), HANA (`9`). See ServerType Mapping below. |
+| `ServerType` | int | SQL Server database server type (`4`, `6`, `7`, `8`, `10`, `11`, `15`) |
 | `TrustedConnection` | bool | Use Windows Authentication for database connection |
 | `ServerUser` | string (nullable) | Database username (required if `TrustedConnection` is false) |
 | `ServerPassword` | string (nullable) | Database password (required if `TrustedConnection` is false) |
@@ -158,7 +157,6 @@ Configuration for connecting to SAP Business One database and services.
 | `10` | MSSQL 2016 |
 | `11` | MSSQL 2017 |
 | `15` | MSSQL 2019 |
-| `9` | SAP HANA |
 
 ## Complete Configuration Example
 
@@ -185,7 +183,6 @@ Options:
   GoodsReceiptCreateSupervisorRequired: true
   GoodsReceiptType: Both
   GoodsReceiptTargetDocuments: false
-  GoodsReceiptPackages: true
   GoodsReceiptConfirmationAdjustStock: true
 
   # Transfer Configuration
@@ -196,8 +193,7 @@ Options:
   TransferCreateSupervisorRequired: false
   DirectTransferAll: true
 
-  # Package & Unit Configuration
-  EnablePackages: false
+  # Unit Configuration
   DefaultUnitType: Pack
   EnableUnitSelection: true
 
@@ -230,10 +226,6 @@ Warehouses:
     InitialCountingBinEntry: 1001
     CancelPickingBinEntry: 1002
     StagingBinEntry: 1003
-
-# External System Integration
-# Specifies which adapter to use for SAP Business One integration (enum, required)
-ExternalAdapter: SboServiceLayer
 
 # SAP Business One Connection Settings
 # Configuration for connecting to SAP B1 database and services

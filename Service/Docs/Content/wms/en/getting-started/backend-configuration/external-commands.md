@@ -9,7 +9,11 @@ description: Configure automated external commands that trigger file generation 
 
 The `ExternalCommands.yaml` configuration file enables EZY WMS to automatically generate and deliver XML or JSON files to external systems in response to warehouse events. Commands can be triggered by system events (package creation, activation, closure) or manual user actions, with support for multiple destination types and advanced features like batch execution and retry policies.
 
-**Configuration location:** `ezy-wms-backend/Service/config/ExternalCommands.yaml`
+**Seed/migration template:** `ezy-wms-backend/Service/init/ExternalCommands.yaml`
+
+The database-backed `ExternalCommands` section is the runtime source. Edit it
+through the super-user Configuration screen or `ConfigurationController`; changes
+reload live after validation.
 
 For richer JSON examples with extended field coverage, see `appsettings.external_commands_example.json` in the source repository.
 

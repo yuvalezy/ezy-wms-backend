@@ -1,34 +1,70 @@
 ---
-title: Configuración de Backend
-description: Descripción general de los archivos de configuración del backend de EZY WMS utilizados durante la instalación.
+title: Configuración del Backend
+description: Fuentes de configuración del backend de EZY WMS, migración y comportamiento de recarga.
 ---
 
-> **Nota para la versión actual:** La configuración activa se guarda en la base de datos y se administra desde Configuración para superusuarios. Los archivos YAML en `Service/init` son plantillas iniciales; no son la fuente de configuración en tiempo de ejecución.
+EZY WMS tiene dos niveles de configuración:
 
-El backend de EZY WMS (`ezy-wms-backend/Service`) se configura mediante dos mecanismos:
+1. **`appsettings.json` y la configuración del entorno** — parámetros de infraestructura como la conexión de SQL Server de WMS, JWT y cookies, almacenamiento de sesiones, licencias, SMTP, registros, CORS, Kestrel y servicios en segundo plano.
+2. **Secciones de WMS almacenadas en la base de datos** — opciones de negocio, filtros, almacenes, campos personalizados, metadatos de artículos, comandos externos, configuración de SAP, detalles de picking y procesadores posteriores al picking.
 
-1. **`appsettings.json`** — El archivo de configuración principal de .NET que controla la configuración del host, registro, conexiones de bases de datos, secretos JWT, gestión de sesiones, licencias, SMTP y parámetros de servicios de fondo.
+## Ciclo de vida de la configuración
 
-2. **Carpeta `Service/config/`** — Un conjunto de archivos YAML que definen el comportamiento empresarial, el manejo de datos y el área de superficie de la interfaz de usuario. Estos archivos se recargan al inicio del servicio.
+La base de datos es la fuente autorizada en tiempo de ejecución para las secciones de WMS. Las carpetas YAML son entradas de inicialización y migración; no son una carpeta de configuración activa que se relea continuamente.
 
-## Archivos de Configuración
+Al iniciar, `ConfigurationInitializationExtensions` resuelve la fuente en este orden:
 
-| Archivo | Propósito |
-|---------|-----------|
-| [`appsettings.json`](/docs/getting-started/backend-configuration/appsettings) | Host de .NET, registro, base de datos, JWT, sesiones, licencias, SMTP, servicios de fondo |
-| [`config/Configurations.yaml`](/docs/getting-started/backend-configuration/core-system) | **Obligatorio.** Opciones empresariales principales, filtros de datos, asignaciones de almacenes, detalles de conexión SAP B1 |
-| [`config/CustomFields.yaml`](/docs/getting-started/backend-configuration/custom-fields) | Campos adicionales de artículos y documentos expuestos en la interfaz de usuario |
-| [`config/Item.yaml`](/docs/getting-started/backend-configuration/item-metadata) | Definiciones de metadatos de artículos editables |
-| [`config/Package.yaml`](/docs/getting-started/backend-configuration/package) | Configuración de etiqueta de paquete, código de barras y metadatos |
-| [`config/ExternalCommands.yaml`](/docs/getting-started/backend-configuration/external-commands) | Exportaciones XML/JSON activadas por eventos o botones manuales |
-| [`config/PickingPostProcessing.yaml`](/docs/getting-started/backend-configuration/picking-post-processing) | Procesadores personalizados de .NET que se ejecutan después de operaciones de picking |
+1. Si `Service/config/` contiene archivos YAML, el servicio los migra y verifica en la tabla `SystemConfiguration` y después archiva la carpeta en `Service/config_archive/`.
+2. Si la base de datos ya contiene filas de configuración, el servicio inicia desde la base de datos sin volver a leer `Service/config/`.
+3. En una instalación nueva sin filas de configuración, el servicio inicializa la base de datos usando las plantillas de `Service/init/` y verifica los valores almacenados.
+4. Si no existe ninguna de esas fuentes, el inicio falla porque no hay una fuente de configuración.
 
-## Valores Predeterminados e Inicialización
+Después de migrar o inicializar, use la pantalla de Configuración para superusuarios o las API de `ConfigurationController` para cambiar las secciones de WMS. No edite archivos archivados o plantillas esperando que un reinicio normal aplique el cambio.
 
-La carpeta `Service/init/` contiene copias predeterminadas de todos los archivos de configuración. Estos valores predeterminados se utilizan para inicializar la carpeta `Service/config/` en la primera ejecución. Durante la implementación, coloque sus anulaciones específicas del entorno en `Service/config/` — la carpeta init no se modifica.
+## Archivos de configuración y plantillas
 
-## Convenciones
+Las plantillas incluidas en `Service/init/` son:
 
-- **Recarga al inicio:** Todos los archivos de configuración YAML se analizan cuando se inicia el servicio. Los cambios de configuración requieren un reinicio del servicio.
-- **Sensibilidad a mayúsculas y minúsculas:** YAML es sensible a mayúsculas y minúsculas. Los nombres de propiedades y valores de enumeración deben coincidir exactamente con sus definiciones.
-- **Sin credenciales en control de versiones:** Nunca confirme contraseñas reales de bases de datos, claves API, credenciales SMTP o inicios de sesión de SAP B1 en el repositorio. Utilice variables de entorno o prácticas de implementación segura para inyectarlas en tiempo de ejecución.
+| Plantilla | Sección de base de datos | Propósito |
+|------|---------|---------|
+| `Configurations.yaml` | `Options`, `Filters`, `Warehouses`, `SboSettings` | Flujos principales, filtros, asignaciones de almacenes y configuración de SAP |
+| `CustomFields.yaml` | `CustomFields` | Campos personalizados expuestos por los flujos compatibles |
+| `Item.yaml` | `Item` | Definiciones de metadatos de artículos |
+| `PickingDetails.yaml` | `PickingDetails` | Configuración de detalles de picking |
+| `ExternalCommands.yaml` | `ExternalCommands` | Generación y entrega de archivos por eventos o acciones manuales |
+| `PickingPostProcessing.yaml` | `PickingPostProcessingProcessors` | Registros de procesadores personalizados posteriores al picking |
+
+Actualmente no existe `Package.yaml` ni una sección genérica de configuración de gestión de paquetes. Las etiquetas de paquetes y el repack posterior al picking son funciones de picking configuradas en la sección `Options`; consulte [Procesamiento posterior al picking](picking-post-processing).
+
+La carpeta `Service/config/` todavía puede entregarse para una migración única de configuración YAML heredada. No es la ubicación preferida para ediciones continuas.
+
+## Comportamiento de recarga
+
+El catálogo de `Core/Configuration/ConfigSectionCatalog.cs` define el contrato de recarga:
+
+| Sección | Comportamiento en ejecución |
+|---------|------------------|
+| `Options`, `Filters`, `Warehouses`, `CustomFields`, `Item`, `PickingDetails`, `ExternalCommands`, `SboSettings` | Se recargan en vivo después de una actualización de configuración exitosa |
+| `PickingPostProcessingProcessors` | Requiere reiniciar el servicio |
+
+La API de Configuración valida las actualizaciones, aplica control optimista de
+versiones, conserva historial, permite restaurar/importar/exportar, cifra hojas
+secretas y oculta secretos en la respuesta de la API. Los parámetros de
+infraestructura que no están en el catálogo permanecen en `appsettings*.json` o
+en la configuración específica del entorno.
+
+## Referencias de configuración
+
+| Tema | Referencia |
+|------|-----------|
+| Opciones principales de WMS y configuración de SAP | [Sistema central](core-system) |
+| Configuración del host e infraestructura | [appsettings.json](appsettings) |
+| Campos personalizados | [Campos personalizados](custom-fields) |
+| Metadatos de artículos | [Metadatos de artículos](item-metadata) |
+| Comandos externos | [Comandos externos](external-commands) |
+| Procesadores posteriores al picking | [Procesamiento posterior al picking](picking-post-processing) |
+
+Mantenga las contraseñas de bases de datos, credenciales de SAP, secretos JWT,
+credenciales SMTP y claves API fuera de los archivos versionados. Los secretos
+ingresados mediante las API de configuración se cifran en reposo cuando se
+configura la clave de cifrado.

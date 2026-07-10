@@ -3,7 +3,7 @@ title: Item Management
 description: Overview of item management operations.
 ---
 
-The Item Management module provides tools to query and verify inventory data in real time. It includes three check operations: Item Check, Bin Check, and Package Check.
+The Item Management module provides tools to query and verify inventory data in real time. The current frontend exposes Item Check and Bin Check.
 
 ## Operations
 
@@ -11,7 +11,6 @@ The Item Management module provides tools to query and verify inventory data in 
 |-----------|-------------|------|
 | [Item Check](/docs/item-management/item-check) | Query stock information by item code or barcode | `/itemCheck` |
 | [Bin Check](/docs/item-management/bin-check) | Query all items in a specific bin location | `/binCheck` |
-| [Package Check](/docs/item-management/package-check) | Query package contents and location | `/packageCheck` |
 
 ## Authorization
 
@@ -21,8 +20,6 @@ Access to Item Management requires one of the following roles:
 - Picking Supervisor
 - Counting Supervisor
 - Transfer Supervisor
-- Package Management
-- Package Management Supervisor
 
 ## Common Features
 
@@ -37,4 +34,3 @@ All check operations support:
 
 - [Item Check](/docs/item-management/item-check)
 - [Bin Check](/docs/item-management/bin-check)
-- [Package Check](/docs/item-management/package-check)

@@ -9,7 +9,10 @@ Este documento describe cómo configurar definiciones de campos de metadatos par
 
 ## Descripción general
 
-El archivo de configuración `Item.yaml`, ubicado en `ezy-wms-backend/Service/config/Item.yaml`, define campos de metadatos para artículos que pueden editarse, validarse y calcularse dentro de EZY WMS. Cada definición de campo controla cómo se manejan, almacenan y muestran los datos del artículo en el sistema.
+La plantilla de inicialización/migración `Item.yaml` está ubicada en
+`ezy-wms-backend/Service/init/Item.yaml`. La sección `Item` almacenada en la base
+de datos es la fuente en ejecución y define campos de metadatos que pueden
+editarse, validarse y calcularse dentro de EZY WMS.
 
 La configuración utiliza un formato estructurado bajo `Item.MetadataDefinition`, que es un array de definiciones de campos. Cada definición se asigna a un campo de artículo compatible de SAP y especifica reglas de validación, tipos de datos y cálculos opcionales.
 
