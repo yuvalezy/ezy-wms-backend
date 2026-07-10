@@ -51,6 +51,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IConfigurationManagementService, ConfigurationManagementService>();
         services.AddSingleton<ISystemStatusService, SystemStatusService>();
+        services.AddSingleton<IWmsDocumentationService, WmsDocumentationService>();
         services.AddScoped<IPublicService, PublicService>();
         services.AddScoped<ITransferDocumentService, TransferDocumentService>();
         services.AddScoped<ITransferContentService, TransferContentService>();
