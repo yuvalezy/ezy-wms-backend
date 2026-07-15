@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, IPickListDetailService detailService, IPickListValidationService validationService) : IPickListService {
+public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter, ILogger<PickListService> logger, ISettings settings, IPickListDetailService detailService, IPickListValidationService validationService, IPickListQuantityRepairService quantityRepairService) : IPickListService {
     public async Task<IEnumerable<PickListResponse>> GetPickLists(PickListsRequest request, string warehouse, bool enableBinLocations) {
         var picks = await adapter.GetPickListsAsync(request, warehouse);
         var response = picks.Select(p => new PickListResponse {
@@ -135,6 +135,10 @@ public class PickListService(SystemDbContext db, IExternalSystemAdapter adapter,
         var dbPick = await db.PickLists
         .Where(p => p.AbsEntry == absEntry && (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
         .ToArrayAsync();
+
+        // Restate any line whose conversion factor changed since it was scanned, before the quantities are
+        // summed here and by the database-side aggregates downstream (reservation, open-quantity checks).
+        await quantityRepairService.RepairAsync(dbPick);
 
         decimal dbPickQty = dbPick.Sum(p => p.Quantity);
         response.OpenQuantity -= dbPickQty;

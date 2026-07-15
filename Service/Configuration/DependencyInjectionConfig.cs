@@ -64,6 +64,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IPickListDetailService, PickListDetailService>();
         services.AddScoped<IPickListValidationService, PickListValidationService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
+        services.AddScoped<IPickListQuantityRepairService, PickListQuantityRepairService>();
         services.AddScoped<IPickingPackageLabelService, PickingPackageLabelService>();
         services.AddScoped<IPickingRepackService, PickingRepackService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();

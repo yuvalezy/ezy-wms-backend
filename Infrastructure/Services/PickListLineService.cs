@@ -4,6 +4,7 @@ using Core.Enums;
 using Core.Exceptions;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.Extensions.Logging;
 
@@ -50,16 +51,15 @@ public class PickListLineService(
 
             var items = await adapter.ItemCheckAsync(request.ItemCode, null);
             var item = items.FirstOrDefault();
-            if (request.Unit != UnitType.Unit) {
-                if (item == null) {
-                    throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
-                }
-
-                request.Quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+            if (item == null && request.Unit != UnitType.Unit) {
+                throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, BarCode = (string?)null });
             }
 
+            // Scanned count -> base pieces through the shared calculator, so this stays the single formula
+            // that IPickListQuantityRepairService re-derives with. A divergence here would make reopening a
+            // pick list silently restate quantities that never changed.
             if (item != null) {
-                request.Quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
+                request.Quantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(scannedQuantity, request.Unit, item);
             }
 
             // Validate the add item request
