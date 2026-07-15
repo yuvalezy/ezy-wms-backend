@@ -237,8 +237,6 @@ public class PickingRepackService(
             CompletedAt = session?.CompletedAt,
             TotalLines = rows.Length,
             AssignedLines = assignedRows.Length,
-            TotalQuantity = rows.Sum(p => p.ScannedQuantity ?? p.Quantity),
-            AssignedQuantity = assignedRows.Sum(p => p.ScannedQuantity ?? p.Quantity),
             Labels = labels.ToList(),
             Items = rows
                 .GroupBy(p => new { p.ItemCode, p.Unit })

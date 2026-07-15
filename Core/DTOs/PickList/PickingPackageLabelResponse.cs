@@ -8,7 +8,9 @@ public class PickingPackageLabelResponse {
     public int Sequence { get; set; }
     public DateTime CreatedAt { get; set; }
     public int LineCount { get; set; }
-    public decimal TotalQuantity { get; set; }
+
+    // No cross-unit quantity here on purpose: a label can hold dozens and singles at once, so one scalar
+    // cannot describe it. Per-unit detail lives in Items.
     public List<PickingPackageLabelItemResponse> Items { get; set; } = [];
 }
 

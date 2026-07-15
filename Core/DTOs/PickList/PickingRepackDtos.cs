@@ -11,8 +11,9 @@ public class PickingRepackSummaryResponse {
     public DateTime? CompletedAt { get; set; }
     public int TotalLines { get; set; }
     public int AssignedLines { get; set; }
-    public decimal TotalQuantity { get; set; }
-    public decimal AssignedQuantity { get; set; }
+
+    // No cross-unit quantity here on purpose: a pick list mixes units, so summing box, dozen and unit scans
+    // produces a number that is not a quantity of anything. Per-unit totals live on PickingRepackItemResponse.
     public List<PickingPackageLabelResponse> Labels { get; set; } = [];
     public List<PickingRepackItemResponse> Items { get; set; } = [];
 }
