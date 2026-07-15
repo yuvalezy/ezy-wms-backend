@@ -291,7 +291,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                                     COALESCE(T1."LineNum", T2."LineNum", T3."LineNum", T4."LineNum") as "LineNum",
                                     COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode", T4."ItemCode") as "ItemCode",
                                     OITM."ItemName" as "ItemName",
-                                    COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
+                                    {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy",
                                     OITM."BuyUnitMsr" as "BuyUnitMsr",
                                     COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
                                     OITM."PurPackMsr" as "PurPackMsr",
@@ -328,7 +328,7 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         var sb = new StringBuilder(
             $"""
              select "ItemCode",
-                    COALESCE("NumInBuy", 1) as "NumInBuy",
+                    {UomQueryHelper.NumInBuy(settings)} as "NumInBuy",
                     COALESCE("PurPackUn", 1) as "PurPackUn",
                     COALESCE("PurFactor1", 1) as "PurFactor1",
                     COALESCE("PurFactor2", 1) as "PurFactor2",

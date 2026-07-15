@@ -88,6 +88,11 @@ Options:
   # Whether users can select different unit types during operations (bool, default: false)
   EnableUnitSelection: false
 
+  # Treat a dozen conversion factor of 1 as 12 (bool, default: false)
+  # For item masters where NumInBuy was never given a real dozen conversion, so a "2 Dozen"
+  # scan would otherwise become 2 units instead of 24. Items with a real factor are untouched.
+  ForceDoz: false
+
   # Session Management
   # Idle timeout in seconds before automatic logout (nullable int, default: null)
   # null or 0 = no timeout, positive integer = timeout in seconds

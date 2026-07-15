@@ -40,6 +40,13 @@ public record Options {
     public bool EnableUnitSelection { get; init; }
 
     /// <summary>
+    /// Substitute a dozen conversion factor of 12 wherever SAP's OITM."NumInBuy" is 1, i.e. wherever the
+    /// item master never got a real dozen conversion. Applied in SQL at every item read, so it reaches every
+    /// flow (picking, goods receipt, counting, transfer) through the single ItemResponse.NumInBuy value.
+    /// </summary>
+    public bool ForceDoz { get; init; }
+
+    /// <summary>
     /// Idle Settings for auto log out, if null or zero, ignore
     /// </summary>
     public int? IdleLogoutTimeout { get; init; }

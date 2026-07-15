@@ -6,7 +6,15 @@ public class CreateTestItem(SboCompany sboCompany)
 {
     private readonly string testWarehouse = TestConstants.SessionInfo.Warehouse;
 
-    public async Task<ItemData> Execute()
+    /// <param name="itemsPerUnit">
+    /// Units per dozen — SAP's OITM."NumInBuy" / OITM."NumInSale". Defaults to a correct dozen (12).
+    /// Pass 1 to reproduce an item master that never got a real dozen conversion (see ForceDozTest).
+    /// </param>
+    /// <param name="unit">
+    /// The buy/sales unit label — SAP's OITM."BuyUnitMsr". Defaults to a dozen. Pass a piece label
+    /// (e.g. "PZA") to build an item for which an itemsPerUnit of 1 is correct rather than misconfigured.
+    /// </param>
+    public async Task<ItemData> Execute(int itemsPerUnit = 12, string unit = "Doz")
     {
         string testItem = $"TEST_ITEM_{Guid.NewGuid().ToString("N")[..8]}";
         Assert.That(await sboCompany.ConnectCompany(), "Connection to SAP failed");
@@ -24,15 +32,15 @@ public class CreateTestItem(SboCompany sboCompany)
             PurchaseItem = "tYES",
             PurchasePackagingUnit = "Box",
             PurchaseQtyPerPackUnit = 4,
-            PurchaseUnit = "Doz",
-            PurchaseItemsPerUnit = 12,
+            PurchaseUnit = unit,
+            PurchaseItemsPerUnit = itemsPerUnit,
 
             // Sales settings
             SalesItem = "tYES",
             SalesPackagingUnit = "Box",
             SalesQtyPerPackUnit = 4,
-            SalesUnit = "Doz",
-            SalesItemsPerUnit = 12,
+            SalesUnit = unit,
+            SalesItemsPerUnit = itemsPerUnit,
 
             // Inventory settings
             ManageStockByWarehouse = "tNO",

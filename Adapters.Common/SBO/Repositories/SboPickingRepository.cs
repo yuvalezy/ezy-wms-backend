@@ -12,7 +12,7 @@ namespace Adapters.Common.SBO.Repositories;
 public class SboPickingRepository(SboDatabaseService dbService, ISettings settings) {
     private readonly SboPickListRepository           _pickList     = new(dbService, settings);
     private readonly SboPickingDetailRepository      _detail       = new(dbService, settings);
-    private readonly SboPickingBinRepository         _bin          = new(dbService);
+    private readonly SboPickingBinRepository         _bin          = new(dbService, settings);
     private readonly SboPickingValidationRepository  _validation   = new(dbService, settings);
 
     // --- Pick list ---

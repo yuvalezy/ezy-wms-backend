@@ -1,11 +1,13 @@
 using System.Data;
 using Adapters.Common.SBO.Services;
+using Adapters.Common.Utils;
 using Core.DTOs.Items;
+using Core.Interfaces;
 using Microsoft.Data.SqlClient;
 
 namespace Adapters.Common.SBO.Repositories;
 
-public class SboPickingBinRepository(SboDatabaseService dbService) {
+public class SboPickingBinRepository(SboDatabaseService dbService, ISettings settings) {
     public async Task<IEnumerable<ItemBinLocationResponseQuantity>> GetPickingDetailItemsBins(Dictionary<string, object> parameters) {
         string query =
         """
@@ -48,12 +50,12 @@ public class SboPickingBinRepository(SboDatabaseService dbService) {
     }
 
     public async Task<IEnumerable<PickingSelectionResponse>> GetPickingSelection(int absEntry) {
-        const string query =
-        """
+        string query =
+        $"""
         select T2."ItemCode",
                T3."BinAbs",
                Sum(T3."PickQtty") "Quantity",
-                T4."NumInBuy",
+                {UomQueryHelper.NumInBuy(settings, "T4")} as "NumInBuy",
                 T4.PurPackUn,
                 T4."CodeBars",
                 T4."PurFactor1",
@@ -65,7 +67,7 @@ public class SboPickingBinRepository(SboDatabaseService dbService) {
                  inner join PKL2 T3 on T3.AbsEntry = T1.AbsEntry and T3.PickEntry = T1.PickEntry
                 inner join OITM T4 on T4."ItemCode" = T2."ItemCode"
         where T1."AbsEntry" = @AbsEntry
-        GROUP BY T2."ItemCode", T3."BinAbs", T4."NumInBuy", T4.PurPackUn, T4."CodeBars",
+        GROUP BY T2."ItemCode", T3."BinAbs", T4."NumInBuy", T4."BuyUnitMsr", T4.PurPackUn, T4."CodeBars",
         T4."PurFactor1", T4."PurFactor2", T4."PurFactor3", T4."PurFactor4"
         """;
 
