@@ -50,7 +50,7 @@ public class ForceDozAllFlowsTest : BaseExternalTest {
 
     [Test, Order(0)]
     public async Task PrepareData() {
-        dozenBrokenItem = (await new CreateTestItem(sboCompany).Execute(itemsPerUnit: 1, unit: "Doz")).ItemCode;
+        dozenBrokenItem = (await new CreateTestItem(sboCompany).Execute(itemsPerUnit: 1, unit: "PZA", qtyPerPackUnit: 72)).ItemCode;
     }
 
     // --- Items: scan / stock lookups shared by picking, transfer and counting ---
@@ -118,7 +118,7 @@ public class ForceDozAllFlowsTest : BaseExternalTest {
 
         await repo.LoadGoodsReceiptItemData(data);
 
-        // UseBaseUnit sends base pieces as-is: 1 dozen x 12 = 12.
+        // UseBaseUnit sends base pieces as-is: 1 dozen of the converted rung = 12 pieces.
         Assert.That(data[dozenBrokenItem][0].Quantity, Is.EqualTo(12m));
     }
 

@@ -11,30 +11,32 @@ using UnitTests.Integration.ExternalSystems.Shared;
 namespace UnitTests.Integration.ExternalSystems.Items;
 
 /// <summary>
-/// Options.ForceDoz substitutes a dozen factor of 12 where SAP reports NumInBuy = 1 <b>on a unit that calls
-/// itself a dozen</b>. The label is half the rule: a factor of 1 is correct for a piece unit (PZA, EA, blank),
-/// and rewriting those inflates their stock twelvefold — including Pack scans, which multiply through NumInBuy.
+/// Options.ForceDoz turns a degenerate middle rung (NumInBuy = 1 — one piece per piece, so the operator has
+/// no dozen to pick in) into a real dozen of 12, and divides the pack to match so the pack keeps holding the
+/// pieces it always held. The pack compensation is the whole point: raising NumInBuy alone multiplies every
+/// box by twelve.
 ///
-/// Real master data in this company: 4 items are 'Doz' with factor 1 (the ones to fix), 29 are 'Doz' with a
-/// real factor, and 83 carry factor 1 on a non-dozen label (PZA / 'PZA.' / blank / NULL) and must not move.
-/// Each item below stands for one of those groups; the override is applied in SQL, so these run the real
-/// queries against SAP rather than asserting on a generated string (UomQueryHelperTests covers that).
+/// Modelled on the real ladder in this company. PZA_TEST is the shape being fixed: NumInBuy 1, PurPackUn 72
+/// (a 72-piece Caja), which must become NumInBuy 12 / PurPackUn 6 — still a 72-piece Caja, now 6 dozens.
+/// BOX1 is the shape that must never move: NumInBuy 12, PurPackUn 4, a 48-piece box of 4 dozens.
+///
+/// The substitution happens in SQL, so these run the real queries against SAP rather than asserting on a
+/// generated string (UomQueryHelperTests covers that).
 /// </summary>
 public class ForceDozTest : BaseExternalTest {
-    private const decimal BrokenFactor = 1m;
-    private const decimal RealFactor = 6m;
     private const decimal SubstitutedFactor = 12m;
 
     private SboDatabaseService databaseService;
 
-    /// 'Doz' + factor 1 — misconfigured; the item ForceDoz exists for.
-    private string dozenBrokenItem = string.Empty;
+    /// NumInBuy 1, PurPackUn 72: a 72-piece pack, convertible to 12 x 6. The PZA_TEST shape.
+    private string convertibleItem = string.Empty;
+    private const decimal ConvertiblePack = 72m;
 
-    /// 'Doz' + factor 6 — a real conversion SAP already has.
-    private string dozenRealItem = string.Empty;
+    /// NumInBuy 1, PurPackUn 4: a 4-piece pack, not a whole dozen — must stay exactly as SAP describes it.
+    private string fractionalPackItem = string.Empty;
 
-    /// 'PZA' + factor 1 — a piece unit, where 1 is the *correct* factor and must survive untouched.
-    private string pieceItem = string.Empty;
+    /// NumInBuy 12, PurPackUn 4: already correct (the BOX1 shape) — must never move.
+    private string realFactorItem = string.Empty;
 
     [OneTimeSetUp]
     public new void OneTimeSetUp() {
@@ -55,151 +57,211 @@ public class ForceDozTest : BaseExternalTest {
 
     private SboItemRepository RepositoryWith(bool forceDoz) => new(databaseService, SettingsWith(forceDoz));
 
+    private async Task<Core.DTOs.Items.ItemCheckResponse> Read(string itemCode, bool forceDoz) =>
+        (await RepositoryWith(forceDoz).ItemCheckAsync(itemCode, null)).Single();
+
+    /// Base pieces in one pack — the physical quantity that must survive the substitution.
+    private static decimal PackPieces(Core.DTOs.Items.ItemResponse item) => item.NumInBuy * item.PurPackUn;
+
     [Test, Order(0)]
     public async Task PrepareData() {
         var helper = new CreateTestItem(sboCompany);
 
-        dozenBrokenItem = (await helper.Execute(itemsPerUnit: (int)BrokenFactor, unit: "Doz")).ItemCode;
-        dozenRealItem = (await helper.Execute(itemsPerUnit: (int)RealFactor, unit: "Doz")).ItemCode;
-        pieceItem = (await helper.Execute(itemsPerUnit: (int)BrokenFactor, unit: "PZA")).ItemCode;
+        convertibleItem = (await helper.Execute(itemsPerUnit: 1, unit: "PZA", qtyPerPackUnit: 72)).ItemCode;
+        fractionalPackItem = (await helper.Execute(itemsPerUnit: 1, unit: "PZA", qtyPerPackUnit: 4)).ItemCode;
+        realFactorItem = (await helper.Execute(itemsPerUnit: 12, unit: "Doz", qtyPerPackUnit: 4)).ItemCode;
 
-        await TestContext.Out.WriteLineAsync($"'Doz' factor 1 (misconfigured): {dozenBrokenItem}");
-        await TestContext.Out.WriteLineAsync($"'Doz' factor 6 (correct):       {dozenRealItem}");
-        await TestContext.Out.WriteLineAsync($"'PZA' factor 1 (correct):       {pieceItem}");
+        await TestContext.Out.WriteLineAsync($"convertible   (1 x 72, PZA_TEST shape): {convertibleItem}");
+        await TestContext.Out.WriteLineAsync($"fractional pack (1 x 4):                {fractionalPackItem}");
+        await TestContext.Out.WriteLineAsync($"already correct (12 x 4, BOX1 shape):   {realFactorItem}");
     }
 
-    // --- The label guard: the regression for the bug this override originally shipped with ---
+    // --- The conversion ---
 
     [Test, Order(1)]
-    public async Task ItemCheck_ForceDozOn_LeavesAPieceUnitAtOne() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(pieceItem, null)).Single();
+    public async Task ForceDozOff_LeavesTheDegenerateLadderExactlyAsSapDescribesIt() {
+        var item = await Read(convertibleItem, false);
 
-        Assert.That(item.NumInBuy, Is.EqualTo(BrokenFactor),
-            "a factor of 1 is correct for a piece unit; rewriting it to 12 inflates the item's stock twelvefold");
+        Assert.Multiple(() => {
+            Assert.That(item.NumInBuy, Is.EqualTo(1m));
+            Assert.That(item.PurPackUn, Is.EqualTo(ConvertiblePack));
+            Assert.That(item.BuyUnitMsr, Is.EqualTo("PZA"));
+        });
     }
 
     [Test, Order(2)]
-    public async Task ScanningAPieceItem_ForceDozOn_IsCompletelyUnaffected() {
-        var off = (await RepositoryWith(false).ItemCheckAsync(pieceItem, null)).Single();
-        var on = (await RepositoryWith(true).ItemCheckAsync(pieceItem, null)).Single();
-
-        foreach (var unit in new[] { UnitType.Unit, UnitType.Dozen, UnitType.Pack }) {
-            decimal expected = GoodsReceiptQuantityCalculator.ToBaseQuantity(9m, unit, off, applyFactor: false);
-            decimal actual = GoodsReceiptQuantityCalculator.ToBaseQuantity(9m, unit, on, applyFactor: false);
-
-            Assert.That(actual, Is.EqualTo(expected), $"a {unit} scan of a piece item must not change when ForceDoz is on");
-        }
-    }
-
-    // --- The intended substitution ---
-
-    [Test, Order(3)]
-    public async Task ItemCheck_ForceDozOff_LeavesTheBrokenFactorAtOne() {
-        var item = (await RepositoryWith(false).ItemCheckAsync(dozenBrokenItem, null)).Single();
-
-        Assert.That(item.NumInBuy, Is.EqualTo(BrokenFactor));
-    }
-
-    [Test, Order(4)]
-    public async Task ItemCheck_ForceDozOn_SubstitutesTwelveForADozenLabelledBrokenFactor() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(dozenBrokenItem, null)).Single();
+    public async Task ForceDozOn_RaisesTheMiddleRungToADozen() {
+        var item = await Read(convertibleItem, true);
 
         Assert.That(item.NumInBuy, Is.EqualTo(SubstitutedFactor));
     }
 
-    [Test, Order(5)]
-    public async Task ItemCheck_ForceDozOn_LeavesARealFactorUntouched() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(dozenRealItem, null)).Single();
+    [Test, Order(3)]
+    public async Task ForceDozOn_DividesThePackSoTheBoxHoldsTheSamePieces() {
+        var item = await Read(convertibleItem, true);
 
-        Assert.That(item.NumInBuy, Is.EqualTo(RealFactor), "a factor SAP actually has must never be overridden");
+        Assert.Multiple(() => {
+            Assert.That(item.PurPackUn, Is.EqualTo(6m), "72 pieces expressed in dozens is 6");
+            Assert.That(PackPieces(item), Is.EqualTo(ConvertiblePack), "the box must still hold 72 pieces");
+        });
     }
+
+    [Test, Order(4)]
+    public async Task ForceDozOn_PackPiecesAreIdenticalWithTheToggleOnAndOff() {
+        // The invariant that was violated: a 72-piece box became 864 when only NumInBuy moved.
+        var off = await Read(convertibleItem, false);
+        var on = await Read(convertibleItem, true);
+
+        Assert.That(PackPieces(on), Is.EqualTo(PackPieces(off)));
+    }
+
+    [Test, Order(5)]
+    public async Task ForceDozOn_RelabelsTheConvertedRung() {
+        var item = await Read(convertibleItem, true);
+
+        Assert.That(item.BuyUnitMsr, Is.EqualTo("Doz"), "a rung that counts twelve must not read 'PZA'");
+    }
+
+    // --- What must not move ---
 
     [Test, Order(6)]
-    public async Task ItemCheck_ByBarcode_ForceDozOn_AppliesTheSameRule() {
-        // Different query (OBCD join, OITM-qualified columns) than the item-code lookup above.
-        var dozen = (await RepositoryWith(true).ItemCheckAsync(null, dozenBrokenItem)).Single();
-        var piece = (await RepositoryWith(true).ItemCheckAsync(null, pieceItem)).Single();
+    public async Task ForceDozOn_LeavesAFractionalPackAlone() {
+        // A 4-piece pack is not a third of a dozen; dividing would drift (12 x 0.333333 = 3.999996) and make
+        // the rung larger than the pack containing it.
+        var item = await Read(fractionalPackItem, true);
 
-        Assert.That(dozen.NumInBuy, Is.EqualTo(SubstitutedFactor));
-        Assert.That(piece.NumInBuy, Is.EqualTo(BrokenFactor));
+        Assert.Multiple(() => {
+            Assert.That(item.NumInBuy, Is.EqualTo(1m));
+            Assert.That(item.PurPackUn, Is.EqualTo(4m));
+            Assert.That(item.BuyUnitMsr, Is.EqualTo("PZA"));
+            Assert.That(PackPieces(item), Is.EqualTo(4m));
+        });
     }
-
-    // --- The other item reads, each a differently-shaped query ---
 
     [Test, Order(7)]
-    public async Task GetItemValidationInfo_ForceDozOn_AppliesTheSameRule() {
-        // T1-qualified query; the read behind picking/counting/transfer stock and open-quantity checks.
-        var dozen = await RepositoryWith(true).GetItemValidationInfo(dozenBrokenItem, null, TestConstants.Warehouse, null, false);
-        var piece = await RepositoryWith(true).GetItemValidationInfo(pieceItem, null, TestConstants.Warehouse, null, false);
-        var real = await RepositoryWith(true).GetItemValidationInfo(dozenRealItem, null, TestConstants.Warehouse, null, false);
+    public async Task ForceDozOn_LeavesACorrectlyConfiguredItemAlone() {
+        var item = await Read(realFactorItem, true);
 
-        Assert.That(dozen.NumInBuy, Is.EqualTo(SubstitutedFactor));
-        Assert.That(piece.NumInBuy, Is.EqualTo(BrokenFactor));
-        Assert.That(real.NumInBuy, Is.EqualTo(RealFactor));
+        Assert.Multiple(() => {
+            Assert.That(item.NumInBuy, Is.EqualTo(12m));
+            Assert.That(item.PurPackUn, Is.EqualTo(4m));
+            Assert.That(item.BuyUnitMsr, Is.EqualTo("Doz"));
+            Assert.That(PackPieces(item), Is.EqualTo(48m), "the BOX1 shape: a 48-piece box of 4 dozens");
+        });
     }
 
-    [Test, Order(8)]
-    public async Task GetItemPurchaseUnits_ForceDozOn_AppliesTheSameRule() {
-        // Unqualified query.
-        var dozen = await RepositoryWith(true).GetItemPurchaseUnits(dozenBrokenItem);
-        var piece = await RepositoryWith(true).GetItemPurchaseUnits(pieceItem);
+    // --- The same rule through every other item read ---
 
-        Assert.That(dozen.QuantityInUnit, Is.EqualTo(SubstitutedFactor));
-        Assert.That(piece.QuantityInUnit, Is.EqualTo(BrokenFactor));
+    [Test, Order(8)]
+    public async Task ByBarcode_AppliesTheSameRule() {
+        var item = (await RepositoryWith(true).ItemCheckAsync(null, convertibleItem)).Single();
+
+        Assert.Multiple(() => {
+            Assert.That(item.NumInBuy, Is.EqualTo(SubstitutedFactor));
+            Assert.That(item.PurPackUn, Is.EqualTo(6m));
+            Assert.That(item.BuyUnitMsr, Is.EqualTo("Doz"));
+        });
     }
 
     [Test, Order(9)]
-    public async Task BulkItemCheck_ForceDozOn_AppliesTheSameRule() {
-        var results = await RepositoryWith(true).BulkItemCheckAsync([dozenBrokenItem, pieceItem, dozenRealItem]);
+    public async Task GetItemValidationInfo_AppliesTheSameRule() {
+        // T1-qualified query; the read behind picking/counting/transfer stock and open-quantity checks.
+        var converted = await RepositoryWith(true).GetItemValidationInfo(convertibleItem, null, TestConstants.Warehouse, null, false);
+        var fractional = await RepositoryWith(true).GetItemValidationInfo(fractionalPackItem, null, TestConstants.Warehouse, null, false);
 
-        Assert.That(results[dozenBrokenItem].NumInBuy, Is.EqualTo(SubstitutedFactor));
-        Assert.That(results[pieceItem].NumInBuy, Is.EqualTo(BrokenFactor));
-        Assert.That(results[dozenRealItem].NumInBuy, Is.EqualTo(RealFactor));
+        Assert.Multiple(() => {
+            Assert.That(converted.NumInBuy, Is.EqualTo(SubstitutedFactor));
+            Assert.That(converted.NumInBuy * converted.PurPackUn, Is.EqualTo(ConvertiblePack));
+            Assert.That(fractional.NumInBuy, Is.EqualTo(1m));
+            Assert.That(fractional.PurPackUn, Is.EqualTo(4m));
+        });
     }
 
-    // NOTE: ItemsWarehouseStockAsync (the OITM x OITW query) is not value-asserted here — it inner-joins
-    // OITW, so a freshly created item with no warehouse row returns nothing, and this environment cannot
-    // post the documents that would create one. Its CASE expression is identical to the reads above and
-    // ForceDozAllFlowsTest proves it executes; that is the honest limit of the coverage.
+    [Test, Order(10)]
+    public async Task GetItemPurchaseUnits_AppliesTheSameRule() {
+        var result = await RepositoryWith(true).GetItemPurchaseUnits(convertibleItem);
 
-    // --- What the operator actually sees: the scan-to-base conversion ---
+        Assert.Multiple(() => {
+            Assert.That(result.QuantityInUnit, Is.EqualTo(SubstitutedFactor));
+            Assert.That(result.QuantityInPack, Is.EqualTo(6m));
+            Assert.That(result.QuantityInUnit * result.QuantityInPack, Is.EqualTo(ConvertiblePack));
+            Assert.That(result.UnitMeasure, Is.EqualTo("Doz"));
+        });
+    }
 
     [Test, Order(11)]
-    public async Task ScanningTwoDozen_ForceDozOff_CountsTwoUnits() {
-        var item = (await RepositoryWith(false).ItemCheckAsync(dozenBrokenItem, null)).Single();
+    public async Task BulkItemCheck_AppliesTheSameRule() {
+        var results = await RepositoryWith(true).BulkItemCheckAsync([convertibleItem, fractionalPackItem, realFactorItem]);
 
-        // applyFactor: false isolates the dozen conversion from the unrelated PurFactor1..4 multipliers.
-        decimal baseQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(2m, UnitType.Dozen, item, applyFactor: false);
-
-        Assert.That(baseQuantity, Is.EqualTo(2m), "the bug being fixed: a dozen scan counts as a single unit");
+        Assert.Multiple(() => {
+            Assert.That(PackPieces(results[convertibleItem]), Is.EqualTo(ConvertiblePack));
+            Assert.That(results[convertibleItem].NumInBuy, Is.EqualTo(SubstitutedFactor));
+            Assert.That(results[fractionalPackItem].NumInBuy, Is.EqualTo(1m));
+            Assert.That(results[realFactorItem].NumInBuy, Is.EqualTo(12m));
+        });
     }
 
+    // --- What the operator actually sees ---
+
     [Test, Order(12)]
-    public async Task ScanningTwoDozen_ForceDozOn_CountsTwentyFourUnits() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(dozenBrokenItem, null)).Single();
+    public async Task ScanningTwoDozen_ForceDozOff_CountsTwoPieces() {
+        var item = await Read(convertibleItem, false);
 
-        decimal baseQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(2m, UnitType.Dozen, item, applyFactor: false);
+        // applyFactor: false isolates the ladder from the unrelated PurFactor1..4 multipliers.
+        decimal quantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(2m, UnitType.Dozen, item, applyFactor: false);
 
-        Assert.That(baseQuantity, Is.EqualTo(24m));
+        Assert.That(quantity, Is.EqualTo(2m), "the bug being fixed: the middle rung is a single piece");
     }
 
     [Test, Order(13)]
-    public async Task ScanningAPack_ForceDozOn_MultipliesThroughTheSubstitutedFactor() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(dozenBrokenItem, null)).Single();
+    public async Task ScanningTwoDozen_ForceDozOn_CountsTwentyFourPieces() {
+        var item = await Read(convertibleItem, true);
 
-        decimal baseQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(9m, UnitType.Pack, item, applyFactor: false);
+        decimal quantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(2m, UnitType.Dozen, item, applyFactor: false);
 
-        // Pack = qty x NumInBuy x PurPackUn, so the substitution reaches box scans too. Intended for a real
-        // dozen item (a box holds PurPackUn dozens); catastrophic for a piece item, hence the label guard.
-        Assert.That(baseQuantity, Is.EqualTo(9m * SubstitutedFactor * item.PurPackUn));
+        Assert.That(quantity, Is.EqualTo(24m));
     }
 
     [Test, Order(14)]
-    public async Task ScanningTwoUnits_ForceDozOn_IsUnaffected() {
-        var item = (await RepositoryWith(true).ItemCheckAsync(dozenBrokenItem, null)).Single();
+    public async Task ScanningOneBox_CountsTheSamePiecesWhicheverWayTheToggleIsSet() {
+        var off = await Read(convertibleItem, false);
+        var on = await Read(convertibleItem, true);
 
-        decimal baseQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(2m, UnitType.Unit, item, applyFactor: false);
+        decimal boxOff = GoodsReceiptQuantityCalculator.ToBaseQuantity(1m, UnitType.Pack, off, applyFactor: false);
+        decimal boxOn = GoodsReceiptQuantityCalculator.ToBaseQuantity(1m, UnitType.Pack, on, applyFactor: false);
 
-        Assert.That(baseQuantity, Is.EqualTo(2m), "a base-unit scan never applies the dozen factor");
+        Assert.Multiple(() => {
+            Assert.That(boxOff, Is.EqualTo(ConvertiblePack));
+            Assert.That(boxOn, Is.EqualTo(ConvertiblePack), "scanning a box must not change because dozens were enabled");
+        });
+    }
+
+    [Test, Order(15)]
+    public async Task ScanningABaseUnit_IsNeverAffected() {
+        var item = await Read(convertibleItem, true);
+
+        decimal quantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(5m, UnitType.Unit, item, applyFactor: false);
+
+        Assert.That(quantity, Is.EqualTo(5m));
+    }
+
+    // The screen that started this: SO 503 wants 96 pieces of a 72-piece-Caja item, and must read
+    // "1 Caja, 2 Doz" — not "1 Caja, 24 PZA".
+    [Test, Order(16)]
+    public async Task NinetySixPieces_BreakDownAsOneBoxAndTwoDozen() {
+        var item = await Read(convertibleItem, true);
+
+        decimal packPieces = PackPieces(item);
+        decimal boxes = Math.Floor(96m / packPieces);
+        decimal remainder = 96m - boxes * packPieces;
+        decimal dozens = Math.Floor(remainder / item.NumInBuy);
+        decimal singles = remainder - dozens * item.NumInBuy;
+
+        Assert.Multiple(() => {
+            Assert.That(boxes, Is.EqualTo(1m));
+            Assert.That(dozens, Is.EqualTo(2m));
+            Assert.That(singles, Is.EqualTo(0m));
+            Assert.That(item.BuyUnitMsr, Is.EqualTo("Doz"));
+        });
     }
 }

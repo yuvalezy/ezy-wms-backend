@@ -155,8 +155,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
             var queryBuilder = new StringBuilder();
             queryBuilder.Append($"""
                                select T1."BinAbs" as "BinAbs", T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand",
-                               {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy", OITM."BuyUnitMsr" as "BuyUnitMsr",
-                               COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
+                               {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy", {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                               {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
                                OITM."PurFactor1", OITM."PurFactor2", OITM."PurFactor3", OITM."PurFactor4"
                                """);
             CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
@@ -238,8 +238,8 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         var queryBuilder = new StringBuilder();
         queryBuilder.Append($"""
                            select T1."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName", T1."OnHandQty" as "OnHand",
-                           {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy", OITM."BuyUnitMsr" as "BuyUnitMsr",
-                           COALESCE(OITM."PurPackUn", 1) as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
+                           {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy", {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                           {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn", OITM."PurPackMsr" as "PurPackMsr", T3."BinCode" as "BinCode",
                            OITM."PurFactor1", OITM."PurFactor2", OITM."PurFactor3", OITM."PurFactor4"
                            """);
 

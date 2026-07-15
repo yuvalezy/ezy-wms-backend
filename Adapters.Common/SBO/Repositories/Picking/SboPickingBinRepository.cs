@@ -56,7 +56,7 @@ public class SboPickingBinRepository(SboDatabaseService dbService, ISettings set
                T3."BinAbs",
                Sum(T3."PickQtty") "Quantity",
                 {UomQueryHelper.NumInBuy(settings, "T4")} as "NumInBuy",
-                T4.PurPackUn,
+                {UomQueryHelper.PurPackUn(settings, "T4")} as "PurPackUn",
                 T4."CodeBars",
                 T4."PurFactor1",
                 T4."PurFactor2",

@@ -86,7 +86,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, CustomField[] customFields) BuildItemQuery(string fromClause) {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append($"""select "ItemCode", "ItemName", "BuyUnitMsr", {UomQueryHelper.NumInBuy(settings)} as "NumInBuy", "PurPackMsr", COALESCE("PurPackUn", 1) as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4" """);
+        queryBuilder.Append($"""select "ItemCode", "ItemName", {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr", {UomQueryHelper.NumInBuy(settings)} as "NumInBuy", "PurPackMsr", {UomQueryHelper.PurPackUn(settings)} as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4" """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
@@ -101,10 +101,10 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         queryBuilder.Append($"""
                             select OBCD."ItemCode" as "ItemCode"
                                  , OITM."ItemName" as "ItemName"
-                                 , OITM."BuyUnitMsr" as "BuyUnitMsr"
+                                 , {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr"
                                  , {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy"
                                  , OITM."PurPackMsr" as "PurPackMsr"
-                                 , COALESCE(OITM."PurPackUn", 1) as "PurPackUn"
+                                 , {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn"
                                  , OITM."PurFactor1"
                                  , OITM."PurFactor2"
                                  , OITM."PurFactor3"
@@ -276,8 +276,8 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
                             select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",
                                    COALESCE(T1."OnHand", 0) as "OnHand",
                                    {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy",
-                                   OITM."BuyUnitMsr" as "BuyUnitMsr",
-                                   COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                   {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                                   {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn",
                                    OITM."PurPackMsr" as "PurPackMsr",
                                    OITM."PurFactor1",
                                    OITM."PurFactor2",
@@ -315,7 +315,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         $"""
             SELECT T1."ItemCode", T1."ItemName", T1."CodeBars", T1."InvntItem",
                    {UomQueryHelper.NumInBuy(settings, "T1")} as "NumInBuy",
-                   COALESCE(T1."PurPackUn", 1) as "PurPackUn",
+                   {UomQueryHelper.PurPackUn(settings, "T1")} as "PurPackUn",
                    T3."BcdCode",
                    T4."WhsCode",
                    T1."PurFactor1",
@@ -406,8 +406,8 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
              select
              "ItemName",
              {UomQueryHelper.NumInBuy(settings)} as "NumInBuy",
-             "BuyUnitMsr" as "BuyUnitMsr",
-             COALESCE("PurPackUn", 1) as "PurPackUn",
+             {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr",
+             {UomQueryHelper.PurPackUn(settings)} as "PurPackUn",
              "PurPackMsr" as "PurPackMsr",
              "PurFactor1",
              "PurFactor2",
