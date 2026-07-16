@@ -857,6 +857,22 @@
     },
     {
       "locale": "en",
+      "module": "transfer",
+      "slug": "summary-report",
+      "file": "en/transfer/summary-report.md",
+      "title": "Transfer Report",
+      "description": "Review what a transfer moved, item by item, with source and target bins.",
+      "section": "transfer",
+      "route": "/transferSummaryReport/:id",
+      "roles": [
+        "TransferSupervisor"
+      ],
+      "superUserOnly": false,
+      "feature": "EnableInventoryTransfer",
+      "order": 54
+    },
+    {
+      "locale": "en",
       "module": "overview",
       "slug": "user-guide",
       "file": "en/user-guide.md",
@@ -1723,6 +1739,22 @@
       "superUserOnly": false,
       "feature": "TransferRequest",
       "order": 53
+    },
+    {
+      "locale": "es",
+      "module": "transfer",
+      "slug": "summary-report",
+      "file": "es/transfer/summary-report.md",
+      "title": "Reporte Transferencia",
+      "description": "Revisar qué movió una transferencia, artículo por artículo, con ubicaciones origen y destino.",
+      "section": "transfer",
+      "route": "/transferSummaryReport/:id",
+      "roles": [
+        "TransferSupervisor"
+      ],
+      "superUserOnly": false,
+      "feature": "EnableInventoryTransfer",
+      "order": 54
     },
     {
       "locale": "es",

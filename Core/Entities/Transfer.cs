@@ -29,6 +29,15 @@ public sealed class Transfer : BaseEntity {
     [StringLength(8)]
     public string? TargetWhsCode { get; set; }
 
+    /// <summary>
+    /// SAP's key for the posted stock transfer. Null until the transfer reaches
+    /// <see cref="ObjectStatus.Finished"/>, and on transfers posted before this column existed.
+    /// </summary>
+    public int? SapDocEntry { get; set; }
+
+    /// <inheritdoc cref="SapDocEntry"/>
+    public int? SapDocNumber { get; set; }
+
     // Navigation properties
     public ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
 }

@@ -59,6 +59,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();
         services.AddScoped<ITransferQuantityRepairService, TransferQuantityRepairService>();
+        services.AddScoped<ITransferReportService, TransferReportService>();
         services.AddScoped<IDirectTransferService, DirectTransferService>();
         services.AddSingleton<IPickPathSequencer, PickPathSequencer>();
         services.AddScoped<IPickListService, PickListService>();

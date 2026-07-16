@@ -129,6 +129,8 @@ public class TransferProcessingService(
 
                 // Update transfer status to Finished
                 transfer.Status = ObjectStatus.Finished;
+                transfer.SapDocEntry = result.ExternalEntry;
+                transfer.SapDocNumber = result.ExternalNumber;
                 transfer.UpdatedAt = DateTime.UtcNow;
                 transfer.UpdatedByUserId = sessionInfo.Guid;
 

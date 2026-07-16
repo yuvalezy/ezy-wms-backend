@@ -20,6 +20,7 @@ The Transfer module is used to move merchandise from one bin location to another
 | [Transfer List](/docs/transfer/process) | `/transfer` | List of pending transfers |
 | [Transfer Process](/docs/transfer/process) | `/transfer/:scanCode/*` | Execute the transfer |
 | [Supervisor](/docs/transfer/supervisor) | `/transferSupervisor` | Create and monitor transfers |
+| [Transfer Report](/docs/transfer/summary-report) | `/transferSummaryReport/:id` | Review what a transfer moved |
 | [Approval](/docs/transfer/approval) | `/transfer/approve` | Approve cross-warehouse transfers |
 | [Transfer Request](/docs/transfer/transfer-request) | `/transferRequest` | Create transfer requests |
 
@@ -52,3 +53,4 @@ Transfers between different warehouses require supervisor approval:
 
 - [Transfer Process](/docs/transfer/process)
 - [Transfer Supervisor](/docs/transfer/supervisor)
+- [Transfer Report](/docs/transfer/summary-report)

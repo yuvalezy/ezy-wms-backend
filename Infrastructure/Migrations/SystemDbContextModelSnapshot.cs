@@ -1623,6 +1623,12 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Number"));
 
+                    b.Property<int?>("SapDocEntry")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SapDocNumber")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
