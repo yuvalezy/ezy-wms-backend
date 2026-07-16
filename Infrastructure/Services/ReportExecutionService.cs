@@ -249,19 +249,56 @@ public class ReportExecutionService(
                 ReportParameterBinder.CreateOffsetParameter(0),
                 ReportParameterBinder.CreateLimitParameter(1)
             };
-            await CompileAsync(scope, ReportSqlComposer.ComposePage(probe, sort), definition, pageParameters, cancellationToken);
+            try {
+                await CompileAsync(scope, ReportSqlComposer.ComposePage(probe, sort), definition, pageParameters, cancellationToken);
+            }
+            catch (SqlException ex) {
+                throw new ReportValidationException(DescribeSortFailure(sort.ColumnKey, ex));
+            }
         }
 
-        await CompileAsync(scope, ReportSqlComposer.ComposeCount(probe), definition,
-            ReportParameterBinder.BindAllNull(definition.Variables), cancellationToken);
+        try {
+            await CompileAsync(scope, ReportSqlComposer.ComposeCount(probe), definition,
+                ReportParameterBinder.BindAllNull(definition.Variables), cancellationToken);
+        }
+        catch (SqlException ex) {
+            throw new ReportValidationException($"The total-count form of this query fails: {ex.Message}");
+        }
 
         foreach (ReportVariable lookup in lookups) {
             string sql = ReportSqlLexer.StripTrailingSemicolon(lookup.LookupSql!);
-            await using SqlCommand command = CreateCommand(scope, sql, definition,
-                ReportParameterBinder.BindAllNull(definition.Variables));
-            await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
-            ThrowIfInvalid(ValidateLookupColumns(reader, lookup.Name));
+            try {
+                await using SqlCommand command = CreateCommand(scope, sql, definition,
+                    ReportParameterBinder.BindAllNull(definition.Variables));
+                await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
+                ThrowIfInvalid(ValidateLookupColumns(reader, lookup.Name));
+            }
+            catch (SqlException ex) {
+                throw new ReportValidationException($"The lookup query for variable '{lookup.Name}' fails: {ex.Message}");
+            }
         }
+    }
+
+    /// <summary>
+    /// Names the sort key whose shape failed, and — for the one error the placeholder design actually invites —
+    /// says what to do about it.
+    /// </summary>
+    /// <remarks>
+    /// Without the sort key, "a column has been specified more than once in the order by list" is unactionable:
+    /// the SQL is valid under every other sort, so the author cannot see which header click provokes it. The
+    /// collision is structural rather than a typo — the author's ORDER BY tail repeats a column
+    /// <c>{{orderBy}}</c> can expand to — so the message names both the culprit and the two ways out.
+    /// </remarks>
+    private static string DescribeSortFailure(string columnKey, SqlException ex) {
+        const int ColumnSpecifiedMoreThanOnce = 169;
+        string message = $"Sorting by '{columnKey}' fails: {ex.Message}";
+
+        if (ex.Number == ColumnSpecifiedMoreThanOnce)
+            message += $" The ORDER BY tail after {{{{orderBy}}}} must not repeat a column that {{{{orderBy}}}} can "
+                     + $"itself expand to. Either mark '{columnKey}' as not sortable, or remove it from the tail — "
+                     + "a tiebreaker only works if it is a column no one can sort by.";
+
+        return message;
     }
 
     /// <summary>
