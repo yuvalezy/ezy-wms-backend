@@ -234,13 +234,21 @@ public class ReportExecutionService(
         ReportDefinition probe,
         IReadOnlyList<ReportVariable> lookups,
         CancellationToken cancellationToken) {
-        ReportSqlComposer.ResolvedSort sort = ReportSqlComposer.ResolveSort(probe, null, null);
-
         var pageParameters = new List<SqlParameter>(ReportParameterBinder.BindAllNull(definition.Variables)) {
             ReportParameterBinder.CreateOffsetParameter(0),
             ReportParameterBinder.CreateLimitParameter(1)
         };
-        await CompileAsync(scope, ReportSqlComposer.ComposePage(probe, sort), definition, pageParameters, cancellationToken);
+
+        // Every sortable column, not just the default. The shape space is finite — one page shape per sortable
+        // column, plus the count — so save time can cover the whole of runtime, and that is the only reason the
+        // author is allowed to hand-write the ORDER BY tail at all. Compiling only the default sort is what let
+        // `ORDER BY {{orderBy}}, T0."ItemCode"` save clean and then fail with "A column has been specified more
+        // than once in the order by list" the first time someone clicked the ItemCode header: {{orderBy}} expands
+        // to that same column, and the collision exists only for that one sort key.
+        // Direction is not enumerated: ASC/DESC changes no binding, only the keyword.
+        foreach (ReportSqlComposer.ResolvedSort sort in EnumerateSortShapes(probe)) {
+            await CompileAsync(scope, ReportSqlComposer.ComposePage(probe, sort), definition, pageParameters, cancellationToken);
+        }
 
         await CompileAsync(scope, ReportSqlComposer.ComposeCount(probe), definition,
             ReportParameterBinder.BindAllNull(definition.Variables), cancellationToken);
@@ -251,6 +259,29 @@ public class ReportExecutionService(
                 ReportParameterBinder.BindAllNull(definition.Variables));
             await using SqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
             ThrowIfInvalid(ValidateLookupColumns(reader, lookup.Name));
+        }
+    }
+
+    /// <summary>
+    /// Every distinct page shape a caller could ever ask for: one per sortable column, plus the resolved
+    /// default. Returned as an ordered, de-duplicated set so the default is compiled first — its error message
+    /// is the one the author is most likely to be able to act on.
+    /// </summary>
+    /// <remarks>
+    /// Enumerating this is what makes save-time validation honest. An author's ORDER BY tail interacts with the
+    /// column {{orderBy}} expands to, so a report can be perfectly valid under its default sort and invalid
+    /// under another — the failure then surfaces to a warehouse user mid-shift rather than to the author.
+    /// </remarks>
+    private static IEnumerable<ReportSqlComposer.ResolvedSort> EnumerateSortShapes(ReportDefinition probe) {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        ReportSqlComposer.ResolvedSort defaultSort = ReportSqlComposer.ResolveSort(probe, null, null);
+        seen.Add(defaultSort.ColumnKey);
+        yield return defaultSort;
+
+        foreach (ReportColumn column in probe.Columns.Where(c => c.Sortable)) {
+            if (seen.Add(column.Key))
+                yield return new ReportSqlComposer.ResolvedSort(column.Key, probe.DefaultSortDirection);
         }
     }
 
