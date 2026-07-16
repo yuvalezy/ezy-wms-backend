@@ -41,6 +41,7 @@ public class ReportEndToEndTest : BaseExternalTest {
             T0."ItemCode", T1."ItemName", T0."WhsCode", T2."WhsName",
             T0."OnHand", T0."IsCommited" AS "Committed", T0."OnOrder",
             (T0."OnHand" - T0."IsCommited") AS "Available", T1."InvntryUom" AS "UoM",
+            CASE WHEN T2."BinActivat" = 'Y' THEN T0."ItemCode" END AS "BinLinkItem",
             T0."ItemCode" + '|' + T0."WhsCode" AS "RowKey"
         FROM OITW T0
         INNER JOIN OITM T1 ON T1."ItemCode" = T0."ItemCode"
@@ -98,15 +99,26 @@ public class ReportEndToEndTest : BaseExternalTest {
             // name with a space or an ampersand would break a naive template — hence the encoding.
             Link(Column("WhsName", "Nombre", ReportColumnFormat.Text, 3),
                 ReportColumnLinkType.External, "https://www.google.com/search?q={WhsName}"),
-            Column("OnHand",    "En Stock",     ReportColumnFormat.Number, 4),
+            // The drill-down: stock in a warehouse -> which bins hold it. Interpolates BinLinkItem
+            // rather than ItemCode so the link disappears where bins are off — see below.
+            Link(Column("OnHand", "En Stock", ReportColumnFormat.Number, 4),
+                ReportColumnLinkType.Internal, "/reports/bin-stock?ItemCode={BinLinkItem}&WhsCode={WhsCode}"),
             Column("Committed", "Comprometido", ReportColumnFormat.Number, 5),
             Column("OnOrder",   "En Pedido",    ReportColumnFormat.Number, 6),
             Column("Available", "Disponible",   ReportColumnFormat.Number, 7),
             Column("UoM",       "UdM",          ReportColumnFormat.Text,   8),
+            // NULL exactly when the warehouse has no bins. OIBQ only holds rows for bin-enabled
+            // warehouses, so drilling into one where BinActivat='N' would land on a permanently empty
+            // report. resolveReportLink renders plain text when any placeholder is NULL in that row,
+            // so keying the link off this column makes it appear only where it leads somewhere.
+            new ReportColumnRequest {
+                Key = "BinLinkItem", Label = "BinLinkItem", Format = ReportColumnFormat.Text,
+                Visible = false, Sortable = false, Order = 9
+            },
             // Plumbing, not data: hidden from the grid and never sortable.
             new ReportColumnRequest {
                 Key = "RowKey", Label = "RowKey", Format = ReportColumnFormat.Text,
-                Visible = false, Sortable = rowKeySortable, Order = 9
+                Visible = false, Sortable = rowKeySortable, Order = 10
             }
         ],
         Variables = [
@@ -172,7 +184,7 @@ public class ReportEndToEndTest : BaseExternalTest {
 
         Assert.Multiple(() => {
             Assert.That(created.Slug, Is.EqualTo(Slug));
-            Assert.That(created.Columns, Has.Count.EqualTo(10));
+            Assert.That(created.Columns, Has.Count.EqualTo(11));
             Assert.That(created.Variables, Has.Count.EqualTo(3));
         });
     }
@@ -272,18 +284,22 @@ public class ReportEndToEndTest : BaseExternalTest {
     public async Task Test_12_Links_SurviveTheRoundTripToTheDatabase() {
         ReportDefinitionDetail detail = (await reports.GetBySlugAsync(Slug, userId))!;
 
-        ReportColumnDescriptor itemCode = detail.Columns.Single(c => c.Key == "ItemCode");
-        ReportColumnDescriptor whsName  = detail.Columns.Single(c => c.Key == "WhsName");
-        ReportColumnDescriptor onHand   = detail.Columns.Single(c => c.Key == "OnHand");
+        ReportColumnDescriptor itemCode  = detail.Columns.Single(c => c.Key == "ItemCode");
+        ReportColumnDescriptor whsName   = detail.Columns.Single(c => c.Key == "WhsName");
+        ReportColumnDescriptor onHand    = detail.Columns.Single(c => c.Key == "OnHand");
+        ReportColumnDescriptor committed = detail.Columns.Single(c => c.Key == "Committed");
 
         Assert.Multiple(() => {
             Assert.That(itemCode.LinkType, Is.EqualTo(ReportColumnLinkType.Internal));
             Assert.That(itemCode.LinkTemplate, Is.EqualTo("/itemCheck/{ItemCode}"));
             Assert.That(whsName.LinkType, Is.EqualTo(ReportColumnLinkType.External));
             Assert.That(whsName.LinkTemplate, Is.EqualTo("https://www.google.com/search?q={WhsName}"));
+            // The drill-down: a link whose target is another report, carrying this row's filters.
+            Assert.That(onHand.LinkType, Is.EqualTo(ReportColumnLinkType.Internal));
+            Assert.That(onHand.LinkTemplate, Is.EqualTo("/reports/bin-stock?ItemCode={BinLinkItem}&WhsCode={WhsCode}"));
             // An unconfigured column must stay plain: a link is opt-in, never inferred from the data.
-            Assert.That(onHand.LinkType, Is.EqualTo(ReportColumnLinkType.None));
-            Assert.That(onHand.LinkTemplate, Is.Null);
+            Assert.That(committed.LinkType, Is.EqualTo(ReportColumnLinkType.None));
+            Assert.That(committed.LinkTemplate, Is.Null);
         });
     }
 
@@ -322,6 +338,64 @@ public class ReportEndToEndTest : BaseExternalTest {
         request.Columns.Single(c => c.Key == "ItemCode").LinkTemplate = "//evil.example/{ItemCode}";
 
         Assert.ThrowsAsync<ReportValidationException>(() => reports.CreateAsync(request, userId));
+    }
+
+    /// <summary>
+    /// The drill-down contract, end to end across two reports: the query parameters this report's link
+    /// writes must actually name variables the target report declares.
+    ///
+    /// Nothing else checks this. Link templates are validated against the *source* report's columns,
+    /// so a renamed variable on <c>bin-stock</c> — or a typo here — saves clean, and the runner then
+    /// refuses to auto-run with "not a filter on this report" at the worst possible moment.
+    /// </summary>
+    [Test, Order(16)]
+    public async Task Test_16_StockLink_NamesVariablesTheTargetReportDeclares() {
+        ReportDefinitionDetail source = (await reports.GetBySlugAsync(Slug, userId))!;
+        ReportColumnDescriptor onHand = source.Columns.Single(c => c.Key == "OnHand");
+
+        Assert.That(onHand.LinkType, Is.EqualTo(ReportColumnLinkType.Internal));
+        Assert.That(onHand.LinkTemplate, Is.Not.Null);
+
+        // Parse the template the way the browser will: "/reports/bin-stock?ItemCode={X}&WhsCode={Y}".
+        string[] parts = onHand.LinkTemplate!.Split('?');
+        Assert.That(parts, Has.Length.EqualTo(2), "the drill-down link must carry a query string");
+        Assert.That(parts[0], Is.EqualTo("/reports/bin-stock"));
+
+        ReportDefinitionDetail? target = await reports.GetBySlugAsync("bin-stock", userId);
+        Assert.That(target, Is.Not.Null, "bin-stock does not exist — run BinStockReportTest first");
+
+        var targetVariables = target!.Variables.Select(v => v.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var sourceColumns   = source.Columns.Select(c => c.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string pair in parts[1].Split('&')) {
+            string[] kv = pair.Split('=');
+            Assert.That(targetVariables, Does.Contain(kv[0]),
+                $"the link passes '{kv[0]}', which bin-stock does not declare as a variable");
+            // The value must be a {Placeholder} naming a column this report actually returns.
+            string placeholder = kv[1].Trim('{', '}');
+            Assert.That(sourceColumns, Does.Contain(placeholder),
+                $"the link interpolates '{placeholder}', which this report does not return");
+        }
+    }
+
+    /// <summary>
+    /// The link is keyed off <c>BinLinkItem</c>, which is NULL exactly where the warehouse has no bins —
+    /// and a NULL placeholder makes the client render plain text instead of a link. So this column is
+    /// what stops the drill-down offering a journey to a permanently empty report.
+    /// </summary>
+    [Test, Order(17)]
+    public async Task Test_17_BinLinkItem_IsNullExactlyWhereBinsAreOff() {
+        ReportDefinition definition = await LoadAsync();
+        ReportPageResult page = await executor.ExecutePageAsync(definition, new ReportExecutionRequest { Limit = 200 });
+
+        Assert.That(page.Rows, Is.Not.Empty);
+        foreach (Dictionary<string, object?> row in page.Rows) {
+            Assert.That(row.ContainsKey("BinLinkItem"), Is.True, "the link's placeholder column is missing");
+            // Non-null must equal ItemCode: the link interpolates it as the item, so any other value
+            // would drill into the wrong item entirely.
+            if (row["BinLinkItem"] is not null)
+                Assert.That(row["BinLinkItem"], Is.EqualTo(row["ItemCode"]));
+        }
     }
 
     private async Task<ReportDefinition> LoadAsync() {
