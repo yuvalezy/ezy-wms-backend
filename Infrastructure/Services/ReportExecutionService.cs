@@ -241,7 +241,11 @@ public class ReportExecutionService(
         // than once in the order by list" the first time someone clicked the ItemCode header: {{orderBy}} expands
         // to that same column, and the collision exists only for that one sort key.
         // Direction is not enumerated: ASC/DESC changes no binding, only the keyword.
-        foreach (ReportSqlComposer.ResolvedSort sort in EnumerateSortShapes(probe)) {
+        // Columns declared => the author owns the sortable flags => hold every one of them to a compile.
+        // Columns discovered => this is Test => only the default sort is the author's to answer for.
+        bool authorChoseSortability = definition.Columns.Count > 0;
+
+        foreach (ReportSqlComposer.ResolvedSort sort in EnumerateSortShapes(probe, authorChoseSortability)) {
             // Bound fresh per shape, never hoisted out of the loop: a SqlParameter may belong to exactly one
             // SqlParameterCollection, so reusing one list across commands throws "The SqlParameter is already
             // contained by another SqlParameterCollection" on the second iteration.
@@ -311,12 +315,22 @@ public class ReportExecutionService(
     /// column {{orderBy}} expands to, so a report can be perfectly valid under its default sort and invalid
     /// under another — the failure then surfaces to a warehouse user mid-shift rather than to the author.
     /// </remarks>
-    private static IEnumerable<ReportSqlComposer.ResolvedSort> EnumerateSortShapes(ReportDefinition probe) {
+    private static IEnumerable<ReportSqlComposer.ResolvedSort> EnumerateSortShapes(
+        ReportDefinition probe,
+        bool enumerateEverySortableColumn) {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         ReportSqlComposer.ResolvedSort defaultSort = ReportSqlComposer.ResolveSort(probe, null, null);
         seen.Add(defaultSort.ColumnKey);
         yield return defaultSort;
+
+        // Only judge sortability the author actually chose. On the Test path the columns were invented by
+        // discovery moments ago — every string column defaults to sortable — so enumerating them holds the
+        // author to a decision they have not made, and the only place to make it is the Columns editor, which
+        // Test is what populates. That is a deadlock: Test fails on an auto-assigned flag, so no columns come
+        // back, so the flag can never be cleared. Test answers "does this SQL work, and what does it return";
+        // Save answers "is this configuration valid" — and by then the flags are the author's own.
+        if (!enumerateEverySortableColumn) yield break;
 
         foreach (ReportColumn column in probe.Columns.Where(c => c.Sortable)) {
             if (seen.Add(column.Key))
