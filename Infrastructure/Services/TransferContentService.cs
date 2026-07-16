@@ -61,10 +61,13 @@ public class TransferContentService(
                 BuyUnitMsr = item?.BuyUnitMsr ?? "",
                 PurPackUn = item?.PurPackUn ?? 1,
                 PurPackMsr = item?.PurPackMsr ?? "",
+                // The factors are multiplied together, so an unknown one has to fall back to the identity. The
+                // ordinals here are a numbering, not a value: defaulting them to 2/3/4 scaled an item SAP
+                // could not resolve by 24x.
                 Factor1 = item?.Factor1 ?? 1,
-                Factor2 = item?.Factor2 ?? 2,
-                Factor3 = item?.Factor3 ?? 3,
-                Factor4 = item?.Factor4 ?? 4,
+                Factor2 = item?.Factor2 ?? 1,
+                Factor3 = item?.Factor3 ?? 1,
+                Factor4 = item?.Factor4 ?? 1,
                 CustomFields = item?.CustomFields,
                 Unit = firstLine.UnitType
             };
