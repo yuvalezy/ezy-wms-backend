@@ -14,6 +14,13 @@ public class UserInfoResponse
     public bool BinLocations { get; set; }
     public required Options Settings { get; set; }
     public bool SuperUser { get; set; }
+
+    /// <summary>
+    /// Whether this user can see at least one report. Resolved by a live EXISTS on every call, so a grant
+    /// shows up without a re-login — and it rides this response (already fetched on every refresh) so the
+    /// Reports menu entry can hide itself with no extra request.
+    /// </summary>
+    public bool HasReports { get; set; }
     public Dictionary<string, CustomField[]>? CustomFields { get; set; }
     public DeviceStatus? DeviceStatus { get; set; }
     public string? DeviceName { get; set; }

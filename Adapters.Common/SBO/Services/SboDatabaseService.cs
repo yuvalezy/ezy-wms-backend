@@ -5,6 +5,15 @@ using Microsoft.Extensions.Configuration;
 namespace Adapters.Common.SBO.Services;
 public class SboDatabaseService(IConfiguration configuration) {
     private string ConnectionString => configuration.GetConnectionString("ExternalAdapterConnection") ?? throw new Exception("External Adapter Connection string not found");
+
+    /// <summary>
+    /// Connection used to execute admin-authored report SQL. Falls back to
+    /// <c>ExternalAdapterConnection</c> when unset, so nothing breaks if a deployment never configures it —
+    /// but configuring it is what lets reports run as a read-only principal (<c>db_datareader</c> with
+    /// <c>DENY INSERT, UPDATE, DELETE, EXECUTE</c>). That login is the only report guard with real teeth;
+    /// the rollback scope, the leading-keyword check and the <c>;</c> rejection are defence in depth around it.
+    /// </summary>
+    private string ReportingConnectionString => configuration.GetConnectionString("ReportingConnection") ?? ConnectionString;
     public async Task<T?> QuerySingleAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
@@ -87,15 +96,43 @@ public class SboDatabaseService(IConfiguration configuration) {
     }
 
     /// <summary>
-    /// Opens the external SAP database connection and begins a transaction that is always rolled
-    /// back (never committed) when the returned scope is disposed. Intended for "mimic" validation
-    /// queries that must be fully parsed and bound by SQL Server without persisting anything.
+    /// Opens the external SAP database connection and begins a transaction that is always rolled back
+    /// (never committed) when the returned scope is disposed.
     /// </summary>
-    public async Task<SboValidationScope> BeginValidationAsync() {
-        var connection = new SqlConnection(ConnectionString);
-        await connection.OpenAsync();
-        var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
-        return new SboValidationScope(connection, transaction);
+    /// <remarks>
+    /// <para>
+    /// Originally this only served "mimic" validation queries, but it is now the <b>execution</b> path for
+    /// admin-authored SQL as well — hence the neutral name. For a pure <c>SELECT</c> under <c>READ COMMITTED</c>
+    /// the explicit transaction adds no blocking (shared locks release as rows are read) and no correctness
+    /// impact; what it buys is that a typo in operator-authored SQL cannot persist anything.
+    /// </para>
+    /// <para>
+    /// It does pin the log for its duration, so callers must keep the scope short — bounded by an explicit
+    /// <c>CommandTimeout</c>, and paged rather than streamed for large result sets.
+    /// </para>
+    /// </remarks>
+    public Task<SboRollbackScope> BeginRollbackScopeAsync() => BeginScopeAsync(ConnectionString);
+
+    /// <summary>
+    /// The same always-rollback scope as <see cref="BeginRollbackScopeAsync"/>, but on
+    /// <see cref="ReportingConnectionString"/> — i.e. the read-only principal when one is configured.
+    /// Every report path (page, count, discover, lookup, validate) goes through here.
+    /// </summary>
+    public Task<SboRollbackScope> BeginReportingScopeAsync() => BeginScopeAsync(ReportingConnectionString);
+
+    private static async Task<SboRollbackScope> BeginScopeAsync(string connectionString) {
+        var connection = new SqlConnection(connectionString);
+        try {
+            await connection.OpenAsync();
+            var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            return new SboRollbackScope(connection, transaction);
+        }
+        catch {
+            // Nothing has been handed to the caller yet, so a failure here would otherwise leak the connection
+            // back to the pool unusable — there is no scope for them to dispose.
+            await connection.DisposeAsync();
+            throw;
+        }
     }
 
     /// <summary>
@@ -164,10 +201,17 @@ public class SboDatabaseService(IConfiguration configuration) {
 
 /// <summary>
 /// A scoped open connection + transaction against the external SAP database that always rolls back
-/// (never commits) on disposal. Used for "mimic" validation queries — the work is fully parsed and
-/// bound by SQL Server but nothing is ever persisted.
+/// (never commits) on disposal. Used both for "mimic" validation queries and for executing
+/// admin-authored report SQL: the work is fully parsed, bound and run by SQL Server, but nothing it
+/// wrote — by mistake or otherwise — is ever persisted.
 /// </summary>
-public sealed class SboValidationScope(SqlConnection connection, SqlTransaction transaction) : IAsyncDisposable {
+/// <remarks>
+/// Commands must be built against <see cref="Connection"/> <b>and</b> <see cref="Transaction"/>
+/// (<c>new SqlCommand(sql, scope.Connection, scope.Transaction)</c>). Helpers that open their own
+/// connection — <c>GetDataTableAsync</c>, <c>QueryAsync</c>, <c>ExecuteScalarAsync</c> — run untransacted
+/// and so cannot be used inside a scope.
+/// </remarks>
+public sealed class SboRollbackScope(SqlConnection connection, SqlTransaction transaction) : IAsyncDisposable {
     public SqlConnection  Connection  { get; } = connection;
     public SqlTransaction Transaction { get; } = transaction;
 

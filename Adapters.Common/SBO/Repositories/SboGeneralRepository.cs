@@ -342,7 +342,7 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
     /// rows. Returns success, or the <see cref="SqlException"/> message on failure.
     /// </summary>
     private async Task<(bool valid, string message)> ValidateMimicQueryAsync(string query) {
-        await using var validation = await dbService.BeginValidationAsync();
+        await using var validation = await dbService.BeginRollbackScopeAsync();
         try {
             await using var command = new SqlCommand(query, validation.Connection, validation.Transaction);
             await using var reader  = await command.ExecuteReaderAsync();
@@ -352,6 +352,6 @@ public class SboGeneralRepository(SboDatabaseService dbService, ISettings settin
         catch (SqlException ex) {
             return (false, ex.Message);
         }
-        // The transaction is rolled back when `validation` is disposed (see SboValidationScope).
+        // The transaction is rolled back when `validation` is disposed (see SboRollbackScope).
     }
 }

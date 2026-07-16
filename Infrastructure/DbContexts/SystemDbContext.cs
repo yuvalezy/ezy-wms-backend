@@ -54,6 +54,13 @@ public class SystemDbContext : DbContext {
     public DbSet<SystemConfigurationAudit>          SystemConfigurationAudits   { get; set; }
     public DbSet<ConfigurationMigrationStateEntity> ConfigurationMigrationState { get; set; }
 
+    // Reporting (admin-authored, SQL-backed reports)
+    public DbSet<ReportDefinition>        ReportDefinitions        { get; set; }
+    public DbSet<ReportColumn>            ReportColumns            { get; set; }
+    public DbSet<ReportVariable>          ReportVariables          { get; set; }
+    public DbSet<AuthorizationGroupReport> AuthorizationGroupReports { get; set; }
+    public DbSet<ReportExecutionAudit>    ReportExecutionAudits    { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -94,6 +101,13 @@ public class SystemDbContext : DbContext {
         modelBuilder.ApplyConfiguration(new SystemConfigurationEntryConfiguration());
         modelBuilder.ApplyConfiguration(new SystemConfigurationAuditConfiguration());
         modelBuilder.ApplyConfiguration(new ConfigurationMigrationStateConfiguration());
+
+        // Reporting
+        modelBuilder.ApplyConfiguration(new ReportDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new ReportColumnConfiguration());
+        modelBuilder.ApplyConfiguration(new ReportVariableConfiguration());
+        modelBuilder.ApplyConfiguration(new AuthorizationGroupReportConfiguration());
+        modelBuilder.ApplyConfiguration(new ReportExecutionAuditConfiguration());
 
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {

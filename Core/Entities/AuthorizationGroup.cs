@@ -15,4 +15,11 @@ public class AuthorizationGroup : BaseEntity {
 
     [Required]
     public required ICollection<RoleType> Authorizations { get; set; }
+
+    /// <summary>
+    /// Per-report grants. Reports are created at runtime, so there is no <see cref="RoleType"/> to mint per
+    /// report and they cannot ride the <see cref="Authorizations"/> CSV — hence an explicit join table.
+    /// These rows are read live on every access check, so a grant takes effect without a re-login.
+    /// </summary>
+    public ICollection<AuthorizationGroupReport> Reports { get; set; } = new List<AuthorizationGroupReport>();
 }

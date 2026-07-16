@@ -80,6 +80,11 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
         services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
+
+        // Reporting: ReportService owns the definitions (EF) and the live access checks; ReportExecutionService
+        // is the only piece that touches SAP's database, via SboDatabaseService.
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IReportExecutionService, ReportExecutionService>();
         services.AddScoped<IWmsAlertService, WmsAlertService>();
         services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
 

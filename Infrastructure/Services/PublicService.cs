@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public class PublicService(IExternalSystemAdapter adapter, ISettings settings, IUserService userService, IDeviceService deviceService, SystemDbContext db) : IPublicService {
+public class PublicService(IExternalSystemAdapter adapter, ISettings settings, IUserService userService, IDeviceService deviceService, SystemDbContext db, IReportService reportService) : IPublicService {
     public async Task<IEnumerable<WarehouseResponse>> GetWarehousesAsync(string[]? filter) {
         var warehouses = await adapter.GetWarehousesAsync(filter);
         return warehouses;
@@ -73,6 +73,9 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Roles = info.Roles,
             Warehouses = await adapter.GetWarehousesAsync(info.SuperUser ? null : user!.Warehouses.ToArray()),
             SuperUser = info.SuperUser,
+            // Live EXISTS rather than anything cached on the session: a report granted (or created) after
+            // this user logged in must surface on their next refresh, not their next login.
+            HasReports = await reportService.HasAnyReportsAsync(info.Guid),
             Settings = settings.Options,
             ItemMetaData = settings.Item.MetadataDefinition,
             CustomFields = settings.CustomFields,
