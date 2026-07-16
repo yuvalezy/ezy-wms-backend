@@ -234,11 +234,6 @@ public class ReportExecutionService(
         ReportDefinition probe,
         IReadOnlyList<ReportVariable> lookups,
         CancellationToken cancellationToken) {
-        var pageParameters = new List<SqlParameter>(ReportParameterBinder.BindAllNull(definition.Variables)) {
-            ReportParameterBinder.CreateOffsetParameter(0),
-            ReportParameterBinder.CreateLimitParameter(1)
-        };
-
         // Every sortable column, not just the default. The shape space is finite — one page shape per sortable
         // column, plus the count — so save time can cover the whole of runtime, and that is the only reason the
         // author is allowed to hand-write the ORDER BY tail at all. Compiling only the default sort is what let
@@ -247,6 +242,13 @@ public class ReportExecutionService(
         // to that same column, and the collision exists only for that one sort key.
         // Direction is not enumerated: ASC/DESC changes no binding, only the keyword.
         foreach (ReportSqlComposer.ResolvedSort sort in EnumerateSortShapes(probe)) {
+            // Bound fresh per shape, never hoisted out of the loop: a SqlParameter may belong to exactly one
+            // SqlParameterCollection, so reusing one list across commands throws "The SqlParameter is already
+            // contained by another SqlParameterCollection" on the second iteration.
+            var pageParameters = new List<SqlParameter>(ReportParameterBinder.BindAllNull(definition.Variables)) {
+                ReportParameterBinder.CreateOffsetParameter(0),
+                ReportParameterBinder.CreateLimitParameter(1)
+            };
             await CompileAsync(scope, ReportSqlComposer.ComposePage(probe, sort), definition, pageParameters, cancellationToken);
         }
 
