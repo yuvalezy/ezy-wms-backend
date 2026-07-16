@@ -58,6 +58,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferProcessingService, TransferProcessingService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();
+        services.AddScoped<ITransferQuantityRepairService, TransferQuantityRepairService>();
         services.AddScoped<IDirectTransferService, DirectTransferService>();
         services.AddSingleton<IPickPathSequencer, PickPathSequencer>();
         services.AddScoped<IPickListService, PickListService>();
@@ -78,6 +79,7 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IInventoryCountingBatchService, InventoryCountingBatchService>();
         services.AddScoped<IInventoryCountingReportService, InventoryCountingReportService>();
         services.AddScoped<IInventoryCountingsLineService, InventoryCountingsLineService>();
+        services.AddScoped<IInventoryCountingQuantityRepairService, InventoryCountingQuantityRepairService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
         services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();

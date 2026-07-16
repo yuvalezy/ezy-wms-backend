@@ -1,6 +1,7 @@
 using Core.DTOs.Transfer;
 using Core.Entities;
 using Core.Enums;
+using Core.Interfaces;
 using Core.Models;
 using Core.Services;
 using Infrastructure.DbContexts;
@@ -9,7 +10,7 @@ using System.Linq;
 
 namespace Infrastructure.Services;
 
-public class TransferDocumentService(SystemDbContext db) : ITransferDocumentService {
+public class TransferDocumentService(SystemDbContext db, ITransferQuantityRepairService quantityRepairService) : ITransferDocumentService {
     public async Task<TransferResponse> CreateTransfer(CreateTransferRequest request, SessionInfo sessionInfo) {
         string targetWhsCode = request.TargetWhsCode ?? sessionInfo.Warehouse;
         if (sessionInfo.Warehouse == targetWhsCode && !sessionInfo.EnableBinLocations) {
@@ -37,6 +38,11 @@ public class TransferDocumentService(SystemDbContext db) : ITransferDocumentServ
         var query = db.Transfers.AsQueryable();
 
         if (progress) {
+            // Restate before the lines are loaded: this is one of only two reads that sees source and target
+            // together, which is the only way the repair can keep them in balance. It also runs before
+            // GetProcessInfo's database-side balance check, which is the order that check needs.
+            await quantityRepairService.RepairAsync(id);
+
             query = query.Include(t => t.Lines.Where(l => l.LineStatus != LineStatus.Closed));
         }
 

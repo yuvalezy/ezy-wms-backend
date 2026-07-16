@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Core.Enums;
+using Core.Interfaces;
 
 namespace Core.Entities;
 
@@ -31,7 +32,7 @@ public sealed class Transfer : BaseEntity {
     // Navigation properties
     public ICollection<TransferLine> Lines { get; set; } = new List<TransferLine>();
 }
-public sealed class TransferLine : BaseEntity {
+public sealed class TransferLine : BaseEntity, IScannedQuantityLine {
     [StringLength(254)]
     public string? BarCode { get; set; }
 
@@ -53,6 +54,14 @@ public sealed class TransferLine : BaseEntity {
     [Required]
     public decimal Quantity { get; set; }
 
+    /// <summary>
+    /// The count physically scanned, in <see cref="UnitType"/>. <see cref="Quantity"/> is derived from it and
+    /// the item's conversion factor, so a factor corrected in SAP can restate the pieces without touching the
+    /// count. Null on rows created before this column existed, and on lines whose base was typed directly into
+    /// the target-detail screen — those have no scan behind them and must not be restated.
+    /// </summary>
+    public decimal? ScannedQuantity { get; set; }
+
     public int? StatusReason { get; set; }
 
     [ForeignKey("CancellationReason")]
@@ -63,6 +72,10 @@ public sealed class TransferLine : BaseEntity {
 
     [Required]
     public UnitType UnitType { get; set; } = UnitType.Pack;
+
+    // This line's rung is called UnitType here but Unit on every other scanned line; map rather than rename a
+    // column that DTOs and the frontend already speak.
+    UnitType IScannedQuantityLine.Unit => UnitType;
 
     [ForeignKey("Transfer")]
     public Guid TransferId { get; set; }

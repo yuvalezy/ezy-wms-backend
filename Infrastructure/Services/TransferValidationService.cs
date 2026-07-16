@@ -76,12 +76,18 @@ public class TransferValidationService(SystemDbContext db, IExternalSystemAdapte
             }
         }
 
-        // Calculate total quantity including unit conversion
-        decimal totalQuantity = request.Quantity;
-        if (request.Unit != UnitType.Unit)
-        {
-            totalQuantity *= validationResult.NumInBuy * (request.Unit == UnitType.Pack ? validationResult.PurPackUn : 1);
-        }
+        // Convert exactly the way TransferLineService.AddItem will, PurFactor1..4 included. This check used to
+        // omit the factors the write applies, so on a factored item it validated a smaller quantity than the
+        // one it then stored — and passed scans that should have been rejected.
+        decimal totalQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(
+            request.Quantity,
+            request.Unit ?? UnitType.Unit,
+            validationResult.NumInBuy,
+            validationResult.PurPackUn,
+            validationResult.Factor1,
+            validationResult.Factor2,
+            validationResult.Factor3,
+            validationResult.Factor4);
 
         // Calculate existing quantities from database
         var existingQuantities = await db.TransferLines

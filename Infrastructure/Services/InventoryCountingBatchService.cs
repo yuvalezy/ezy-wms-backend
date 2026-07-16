@@ -19,6 +19,7 @@ public class InventoryCountingBatchService(
     ISettings settings,
     IExternalSystemAlertService alertService,
     IServiceScopeFactory serviceScopeFactory,
+    IInventoryCountingQuantityRepairService quantityRepairService,
     ILogger<InventoryCountingBatchService> logger) : IInventoryCountingBatchService {
 
     // Phase A: Create batches and return immediately, fire-and-forget background processing
@@ -449,6 +450,11 @@ public class InventoryCountingBatchService(
     };
 
     private async Task<Dictionary<string, InventoryCountingCreationDataResponse>> PrepareCountingData(Guid countingId, string warehouse, bool enableBinLocation) {
+        // Last chance to restate: what this method returns is frozen into the batch's PayloadJson, and
+        // RetryFailedBatches replays that stored payload arbitrarily later. A repair after this point can never
+        // reach an already-created batch, and the per-line unit is gone once the sums below collapse it.
+        await quantityRepairService.RepairAsync(countingId);
+
         var lines = await db.InventoryCountingLines
         .Where(icl => icl.InventoryCountingId == countingId && icl.LineStatus != LineStatus.Closed)
         .GroupBy(icl => icl.ItemCode)

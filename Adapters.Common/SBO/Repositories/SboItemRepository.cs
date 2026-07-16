@@ -357,6 +357,10 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         result.IsValidItem = true;
         result.NumInBuy = itemData.NumInBuy;
         result.PurPackUn = itemData.PurPackUn;
+        result.Factor1 = itemData.factor1;
+        result.Factor2 = itemData.factor2;
+        result.Factor3 = itemData.factor3;
+        result.Factor4 = itemData.factor4;
 
         // Validate barcode
         result.IsValidBarCode = string.IsNullOrWhiteSpace(barcode) || barcode == itemData.MainBarcode || itemData.Barcode != null;

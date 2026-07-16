@@ -26,5 +26,6 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer> {
 public class TransferLineConfiguration : IEntityTypeConfiguration<TransferLine> {
     public void Configure(EntityTypeBuilder<TransferLine> builder) {
         builder.Property(l => l.Quantity).HasPrecision(18, 2);
+        builder.Property(l => l.ScannedQuantity).HasPrecision(18, 2);
     }
 }

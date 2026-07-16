@@ -40,14 +40,13 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
             throw new ApiErrorException((int)AddItemReturnValueType.NotStockItem, new { request.ItemCode, request.BarCode });
         }
 
-        // Calculate total quantity including unit conversion
-        decimal totalQuantity = request.Quantity;
-        if (request.Unit != UnitType.Unit) {
-            totalQuantity *= validationResult.NumInBuy;
-            if (request.Unit == UnitType.Pack) {
-                totalQuantity *= validationResult.PurPackUn;
-            }
-        }
+        // Scanned count -> base pieces through the shared calculator, so this stays the single formula that
+        // IInventoryCountingQuantityRepairService re-derives with. No PurFactor1..4: counting has never applied
+        // them (ValidateAddItemResult carries none), and a divergence here would make reopening a counting
+        // silently restate quantities that never changed.
+        decimal scannedQuantity = request.Quantity;
+        decimal totalQuantity = GoodsReceiptQuantityCalculator.ToBaseQuantity(
+            scannedQuantity, request.Unit, validationResult.NumInBuy, validationResult.PurPackUn);
 
         var transaction = await db.Database.BeginTransactionAsync();
         try {
@@ -57,6 +56,7 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
                 ItemCode            = request.ItemCode,
                 BarCode             = request.BarCode,
                 Quantity            = totalQuantity,
+                ScannedQuantity     = scannedQuantity,
                 BinEntry            = request.BinEntry,
                 Unit                = request.Unit,
                 Date                = DateTime.UtcNow,
@@ -130,19 +130,17 @@ public class InventoryCountingsLineService(SystemDbContext db, IExternalSystemAd
                 line.Comments = request.Comment;
             }
 
-            // Update quantity if provided
+            // Update quantity if provided. The request carries a count in the line's own unit, so it is the
+            // scanned truth; store it and re-derive the base through the same calculator AddItem uses.
             if (request.Quantity.HasValue) {
-                decimal newQuantity = request.Quantity.Value;
-                var items       = await adapter.ItemCheckAsync(line.ItemCode, null);
-                var item        = items.FirstOrDefault();
-                if (line.Unit != UnitType.Unit && item != null) {
-                    newQuantity *= item.NumInBuy;
-                    if (line.Unit == UnitType.Pack) {
-                        newQuantity *= item.PurPackUn;
-                    }
-                }
+                decimal scannedQuantity = request.Quantity.Value;
+                var items = await adapter.ItemCheckAsync(line.ItemCode, null);
+                var item  = items.FirstOrDefault();
 
-                line.Quantity = newQuantity;
+                line.ScannedQuantity = scannedQuantity;
+                line.Quantity = item == null
+                    ? scannedQuantity
+                    : GoodsReceiptQuantityCalculator.ToBaseQuantity(scannedQuantity, line.Unit, item, applyFactor: false);
             }
 
             // Handle line closure

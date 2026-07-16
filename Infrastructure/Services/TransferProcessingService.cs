@@ -16,7 +16,8 @@ public class TransferProcessingService(
     IExternalSystemAlertService alertService,
     IWmsAlertService wmsAlertService,
     IUserService userService,
-    IApprovalWorkflowService approvalWorkflowService) : ITransferProcessingService {
+    IApprovalWorkflowService approvalWorkflowService,
+    ITransferQuantityRepairService quantityRepairService) : ITransferProcessingService {
     public async Task<bool> CancelTransfer(Guid id, SessionInfo sessionInfo) {
         var transfer = await db.Transfers.FindAsync(id);
         if (transfer == null) {
@@ -162,6 +163,10 @@ public class TransferProcessingService(
     }
 
     public async Task<Dictionary<string, TransferCreationDataResponse>> PrepareTransferData(Guid transferId) {
+        // Last chance to restate before the quantities below are collapsed per bin and posted to SAP. The other
+        // read that sees both sides is GetTransfer(progress: true), and nothing guarantees it ran first.
+        await quantityRepairService.RepairAsync(transferId);
+
         var lines = await db.TransferLines
         .Where(tl => tl.TransferId == transferId && tl.LineStatus != LineStatus.Closed)
         .GroupBy(tl => tl.ItemCode)

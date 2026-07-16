@@ -10,8 +10,14 @@ namespace Infrastructure.Services;
 
 public class TransferContentService(
     SystemDbContext db,
-    IExternalSystemAdapter adapter) : ITransferContentService {
+    IExternalSystemAdapter adapter,
+    ITransferQuantityRepairService quantityRepairService) : ITransferContentService {
     public async Task<IEnumerable<TransferContentResponse>> GetTransferContent(TransferContentRequest request) {
+        // This is the screen the operator actually scans against, and GET transfer/{id} defaults progress to
+        // false — so nothing else would have restated these lines first. Safe to call from a read filtered to
+        // one side: the repair loads both sides itself, which is what keeps source and target in balance.
+        await quantityRepairService.RepairAsync(request.ID);
+
         var transferLines = db.TransferLines
         .Include(tl => tl.Transfer)
         .Where(tl => tl.TransferId == request.ID && tl.LineStatus != LineStatus.Closed);
@@ -96,6 +102,10 @@ public class TransferContentService(
     }
 
     public async Task<IEnumerable<TransferContentTargetDetailResponse>> GetTransferContentTargetDetail(TransferContentTargetDetailRequest request) {
+        // The per-line quantities below are what the correction screen posts back, so they have to be restated
+        // before they are shown — otherwise an operator would save a stale number back as a hand-set base.
+        await quantityRepairService.RepairAsync(request.ID);
+
         var query = db.TransferLines
         .Include(tl => tl.CreatedByUser)
         .Where(tl => tl.TransferId == request.ID &&
@@ -131,16 +141,13 @@ public class TransferContentService(
                     // Validate line belongs to transfer and is not closed
                     if (line.TransferId != request.ID || line.LineStatus == LineStatus.Closed) continue;
 
-                    // Use existing UpdateLine validation logic
-                    var updateRequest = new TransferUpdateLineRequest {
-                        Id = request.ID,
-                        LineId = change.Key,
-                        Quantity = change.Value
-                    };
-
-                    // Note: This would ideally reuse the existing UpdateLine validation
-                    // For now, we'll do basic validation
+                    // TODO: this should reuse ITransferLineService.UpdateLineQuantity's validation.
+                    // The target-detail screen shows and posts base pieces directly, with no unit conversion
+                    // either side. Clearing the scanned count retires the line from factor repair: its base is
+                    // now hand-set, so there is no scan to re-derive it from, and restating would silently undo
+                    // this edit.
                     line.Quantity = change.Value;
+                    line.ScannedQuantity = null;
                     line.UpdatedAt = DateTime.UtcNow;
                     line.UpdatedByUserId = sessionInfo.Guid;
                 }

@@ -26,8 +26,9 @@ public class InventoryCountingReportServiceOwnLinesTests {
             .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options);
 
-    // Adapter is only touched for quantity changes; the remove-row cases below never reach it.
-    private static InventoryCountingReportService NewService(SystemDbContext db) => new(db, null!);
+    // Adapter is only touched for quantity changes, and the quantity repair only on the read paths; the
+    // remove-row cases below reach neither.
+    private static InventoryCountingReportService NewService(SystemDbContext db) => new(db, null!, null!);
 
     private static Guid SeedLine(SystemDbContext db, Guid createdBy) {
         var line = new InventoryCountingLine {
