@@ -73,9 +73,11 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
             Roles = info.Roles,
             Warehouses = await adapter.GetWarehousesAsync(info.SuperUser ? null : user!.Warehouses.ToArray()),
             SuperUser = info.SuperUser,
-            // Live EXISTS rather than anything cached on the session: a report granted (or created) after
-            // this user logged in must surface on their next refresh, not their next login.
-            HasReports = await reportService.HasAnyReportsAsync(info.Guid),
+            // Live query rather than anything cached on the session: a report granted (or created) after this
+            // user logged in must surface on their next refresh, not their next login.
+            Reports = (await reportService.GetAvailableAsync(info.Guid))
+                .Select(r => new UserReportLink { Slug = r.Slug, Name = r.Name })
+                .ToList(),
             Settings = settings.Options,
             ItemMetaData = settings.Item.MetadataDefinition,
             CustomFields = settings.CustomFields,

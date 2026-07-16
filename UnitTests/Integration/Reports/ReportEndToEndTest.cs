@@ -242,6 +242,18 @@ public class ReportEndToEndTest : BaseExternalTest {
         Assert.That(options.All(o => !string.IsNullOrWhiteSpace(o.Label)), Is.True, "every option needs a label");
     }
 
+    [Test, Order(11)]
+    public async Task Test_11_Available_ListsTheReportForItsOwner() {
+        // What the sidebar is built from: one entry per accessible report, name-ordered. A user with no
+        // grants gets an empty list and no Reports group at all.
+        IReadOnlyList<ReportDefinitionSummary> available = await reports.GetAvailableAsync(userId);
+
+        Assert.That(available.Select(r => r.Slug), Does.Contain(Slug));
+        Assert.That(available.Select(r => r.Name), Is.Ordered, "the menu shows these in order");
+        Assert.That(available.All(r => !string.IsNullOrWhiteSpace(r.Name)), Is.True,
+            "a blank name would render an unclickable-looking menu entry");
+    }
+
     private async Task<ReportDefinition> LoadAsync() {
         ReportDefinition? definition = await reports.GetForExecutionAsync(Slug, userId);
         Assert.That(definition, Is.Not.Null, $"report '{Slug}' not found — run Test_04 first");

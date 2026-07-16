@@ -81,12 +81,6 @@ public interface IReportService {
     Task<ReportDefinition?> GetForExecutionAsync(string slug, Guid userId);
 
     /// <summary>
-    /// Whether the user can see at least one report — a live <c>EXISTS</c> backing
-    /// <c>UserInfoResponse.HasReports</c>, so the menu entry hides itself with no extra fetch.
-    /// </summary>
-    Task<bool> HasAnyReportsAsync(Guid userId);
-
-    /// <summary>
     /// Appends an execution audit row. Written by the caller of the engine rather than the engine itself,
     /// which has no <c>SystemDbContext</c>. Must never fail the user's request.
     /// </summary>

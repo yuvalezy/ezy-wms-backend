@@ -157,8 +157,6 @@ public class ReportService(
     public async Task<ReportDefinition?> GetForExecutionAsync(string slug, Guid userId) =>
         await LoadAccessibleAsync(slug, await LoadAccessAsync(userId));
 
-    public async Task<bool> HasAnyReportsAsync(Guid userId) =>
-        await AccessibleReports(await LoadAccessAsync(userId)).AnyAsync();
 
     public async Task LogExecutionAsync(ReportExecutionAudit audit) {
         try {
