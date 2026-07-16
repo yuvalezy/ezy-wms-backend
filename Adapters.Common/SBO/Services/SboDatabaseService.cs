@@ -13,7 +13,23 @@ public class SboDatabaseService(IConfiguration configuration) {
     /// <c>DENY INSERT, UPDATE, DELETE, EXECUTE</c>). That login is the only report guard with real teeth;
     /// the rollback scope, the leading-keyword check and the <c>;</c> rejection are defence in depth around it.
     /// </summary>
-    private string ReportingConnectionString => configuration.GetConnectionString("ReportingConnection") ?? ConnectionString;
+    /// <remarks>
+    /// Blank counts as unset, not as a connection string. <c>GetConnectionString</c> returns <c>""</c>
+    /// (not null) for a key that is present but empty, so a <c>??</c> fallback would never fire and
+    /// reports would fail against an empty connection string — which is exactly the state a customer
+    /// lands in after copying the shipped template and not filling this in.
+    /// </remarks>
+    private string ReportingConnectionString =>
+        ResolveReportingConnectionString(configuration.GetConnectionString("ReportingConnection"), ConnectionString);
+
+    /// <summary>
+    /// Resolves the reporting connection string, treating blank as unset. Pure so the fallback is
+    /// covered by a unit test rather than only by a live deployment.
+    /// </summary>
+    /// <param name="reporting">The configured <c>ReportingConnection</c>, if any.</param>
+    /// <param name="fallback">The <c>ExternalAdapterConnection</c> to fall back to.</param>
+    public static string ResolveReportingConnectionString(string? reporting, string fallback) =>
+        string.IsNullOrWhiteSpace(reporting) ? fallback : reporting;
     public async Task<T?> QuerySingleAsync<T>(string query, SqlParameter[]? parameters, Func<SqlDataReader, T> mapper) {
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
