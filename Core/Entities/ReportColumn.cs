@@ -69,6 +69,27 @@ public class ReportColumn {
     public bool Nullable { get; set; } = true;
 
     /// <summary>
+    /// Whether this column's cells render as a hyperlink, and of which kind. Default
+    /// <see cref="ReportColumnLinkType.None"/> — plain text.
+    /// </summary>
+    public ReportColumnLinkType LinkType { get; set; } = ReportColumnLinkType.None;
+
+    /// <summary>
+    /// Where the cell links to, with <c>{ColumnKey}</c> placeholders resolved per row against that
+    /// row's own columns — e.g. <c>/itemCheck/{ItemCode}</c>, or
+    /// <c>https://www.google.com/search?q={WhsName}</c>. Null when <see cref="LinkType"/> is
+    /// <see cref="ReportColumnLinkType.None"/>.
+    /// <para>
+    /// Validated by <c>ReportLinkTemplate</c>: internal templates are root-relative, external ones are
+    /// absolute http/https, and every placeholder must name a declared column. The scheme is fixed
+    /// <b>here</b>, at save time, and row values are only ever percent-encoded into it — which is what
+    /// stops a SAP column containing <c>javascript:…</c> from deciding where a cell points.
+    /// </para>
+    /// </summary>
+    [MaxLength(500)]
+    public string? LinkTemplate { get; set; }
+
+    /// <summary>
     /// Display order, ascending.
     /// </summary>
     public int Order { get; set; }

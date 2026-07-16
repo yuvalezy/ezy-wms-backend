@@ -1,6 +1,7 @@
 using Core.DTOs.Reports;
 using Core.Entities;
 using Core.Enums;
+using Core.Exceptions;
 using Core.Interfaces;
 using Infrastructure.DbContexts;
 using Microsoft.Extensions.DependencyInjection;
@@ -87,10 +88,16 @@ public class ReportEndToEndTest : BaseExternalTest {
         DefaultPageSize      = 50,
         TimeoutSeconds       = 60,
         Columns = [
-            Column("ItemCode",  "Código",       ReportColumnFormat.Text,   0),
+            // Links to the item's own screen in this app — the canonical internal case: a code column
+            // whose value is the route parameter.
+            Link(Column("ItemCode", "Código", ReportColumnFormat.Text, 0),
+                ReportColumnLinkType.Internal, "/itemCheck/{ItemCode}"),
             Column("ItemName",  "Descripción",  ReportColumnFormat.Text,   1),
             Column("WhsCode",   "Almacén",      ReportColumnFormat.Text,   2),
-            Column("WhsName",   "Nombre",       ReportColumnFormat.Text,   3),
+            // The external case. The value lands in a query string, which is exactly where a warehouse
+            // name with a space or an ampersand would break a naive template — hence the encoding.
+            Link(Column("WhsName", "Nombre", ReportColumnFormat.Text, 3),
+                ReportColumnLinkType.External, "https://www.google.com/search?q={WhsName}"),
             Column("OnHand",    "En Stock",     ReportColumnFormat.Number, 4),
             Column("Committed", "Comprometido", ReportColumnFormat.Number, 5),
             Column("OnOrder",   "En Pedido",    ReportColumnFormat.Number, 6),
@@ -115,6 +122,13 @@ public class ReportEndToEndTest : BaseExternalTest {
 
     private static ReportColumnRequest Column(string key, string label, ReportColumnFormat format, int order) =>
         new() { Key = key, Label = label, Format = format, Order = order, Decimals = format == ReportColumnFormat.Number ? 2 : 0 };
+
+    /// <summary>Adds a link to a column, in place, and returns it so it can be used inline in the list.</summary>
+    private static ReportColumnRequest Link(ReportColumnRequest column, ReportColumnLinkType type, string template) {
+        column.LinkType     = type;
+        column.LinkTemplate = template;
+        return column;
+    }
 
     [Test, Order(1)]
     public async Task Test_01_Discover_ReturnsColumnsEvenWhenASortShapeFails() {
@@ -252,6 +266,62 @@ public class ReportEndToEndTest : BaseExternalTest {
         Assert.That(available.Select(r => r.Name), Is.Ordered, "the menu shows these in order");
         Assert.That(available.All(r => !string.IsNullOrWhiteSpace(r.Name)), Is.True,
             "a blank name would render an unclickable-looking menu entry");
+    }
+
+    [Test, Order(12)]
+    public async Task Test_12_Links_SurviveTheRoundTripToTheDatabase() {
+        ReportDefinitionDetail detail = (await reports.GetBySlugAsync(Slug, userId))!;
+
+        ReportColumnDescriptor itemCode = detail.Columns.Single(c => c.Key == "ItemCode");
+        ReportColumnDescriptor whsName  = detail.Columns.Single(c => c.Key == "WhsName");
+        ReportColumnDescriptor onHand   = detail.Columns.Single(c => c.Key == "OnHand");
+
+        Assert.Multiple(() => {
+            Assert.That(itemCode.LinkType, Is.EqualTo(ReportColumnLinkType.Internal));
+            Assert.That(itemCode.LinkTemplate, Is.EqualTo("/itemCheck/{ItemCode}"));
+            Assert.That(whsName.LinkType, Is.EqualTo(ReportColumnLinkType.External));
+            Assert.That(whsName.LinkTemplate, Is.EqualTo("https://www.google.com/search?q={WhsName}"));
+            // An unconfigured column must stay plain: a link is opt-in, never inferred from the data.
+            Assert.That(onHand.LinkType, Is.EqualTo(ReportColumnLinkType.None));
+            Assert.That(onHand.LinkTemplate, Is.Null);
+        });
+    }
+
+    [Test, Order(13)]
+    public async Task Test_13_Run_CarriesLinkConfigOnTheRunResponse() {
+        // The runner renders from the *run response*, not from the definition it loaded first. If the
+        // link config were dropped here, every cell would silently stop linking the moment data arrived.
+        ReportDefinition definition = await LoadAsync();
+        ReportPageResult page = await executor.ExecutePageAsync(definition, new ReportExecutionRequest { Limit = 5 });
+
+        ReportColumnDescriptor itemCode = page.Columns.Single(c => c.Key == "ItemCode");
+        Assert.That(itemCode.LinkType, Is.EqualTo(ReportColumnLinkType.Internal));
+        Assert.That(itemCode.LinkTemplate, Is.EqualTo("/itemCheck/{ItemCode}"));
+
+        // The link's target column must actually be in the row, or every href resolves to nothing.
+        Assert.That(page.Rows, Is.Not.Empty);
+        Assert.That(page.Rows[0].ContainsKey("ItemCode"), Is.True);
+        Assert.That(page.Rows[0]["ItemCode"], Is.Not.Null);
+    }
+
+    [Test, Order(14)]
+    public async Task Test_14_Save_RejectsALinkToAColumnTheQueryDoesNotReturn() {
+        var request = BuildRequest();
+        request.Slug = $"{Slug}-badlink";
+        request.Columns.Single(c => c.Key == "ItemCode").LinkTemplate = "/itemCheck/{NoSuchColumn}";
+
+        var ex = Assert.ThrowsAsync<ReportValidationException>(() => reports.CreateAsync(request, userId));
+        Assert.That(ex!.Message, Does.Contain("NoSuchColumn"),
+            "the error must name the offending placeholder — the author cannot fix what is not named");
+    }
+
+    [Test, Order(15)]
+    public async Task Test_15_Save_RejectsAnInternalLinkThatLeavesTheApp() {
+        var request = BuildRequest();
+        request.Slug = $"{Slug}-badscheme";
+        request.Columns.Single(c => c.Key == "ItemCode").LinkTemplate = "//evil.example/{ItemCode}";
+
+        Assert.ThrowsAsync<ReportValidationException>(() => reports.CreateAsync(request, userId));
     }
 
     private async Task<ReportDefinition> LoadAsync() {

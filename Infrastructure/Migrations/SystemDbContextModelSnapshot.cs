@@ -1552,6 +1552,13 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("LinkTemplate")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("LinkType")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Nullable")
                         .HasColumnType("bit");
 

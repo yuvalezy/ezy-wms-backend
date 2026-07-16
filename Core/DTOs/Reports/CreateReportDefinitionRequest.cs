@@ -94,6 +94,20 @@ public class ReportColumnRequest {
 
     public bool Nullable { get; set; } = true;
 
+    /// <summary>
+    /// Whether cells link. <see cref="ReportColumnLinkType.Internal"/> navigates a route in this app;
+    /// <see cref="ReportColumnLinkType.External"/> opens an absolute http/https URL in a new tab.
+    /// </summary>
+    public ReportColumnLinkType LinkType { get; set; } = ReportColumnLinkType.None;
+
+    /// <summary>
+    /// Required when <see cref="LinkType"/> is not <see cref="ReportColumnLinkType.None"/>; ignored and
+    /// cleared otherwise. Placeholders are <c>{ColumnKey}</c> and must name a declared column — see
+    /// <c>ReportLinkTemplate</c> for the rules.
+    /// </summary>
+    [MaxLength(500)]
+    public string? LinkTemplate { get; set; }
+
     public int Order { get; set; }
 }
 

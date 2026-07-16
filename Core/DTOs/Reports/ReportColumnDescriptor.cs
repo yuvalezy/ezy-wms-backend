@@ -44,6 +44,19 @@ public class ReportColumnDescriptor {
     /// </summary>
     public bool Nullable { get; set; } = true;
 
+    /// <summary>
+    /// Whether cells render as a hyperlink. Always <see cref="ReportColumnLinkType.None"/> on the
+    /// <b>discovery</b> path — SQL Server's column schema cannot know an author's intent to link.
+    /// </summary>
+    public ReportColumnLinkType LinkType { get; set; } = ReportColumnLinkType.None;
+
+    /// <summary>
+    /// The link target with <c>{ColumnKey}</c> placeholders, or null. The client re-validates the
+    /// composed URL rather than trusting this: a definition row can be edited straight in the database
+    /// without ever passing through save-time validation.
+    /// </summary>
+    public string? LinkTemplate { get; set; }
+
     public int Order { get; set; }
 
     /// <summary>

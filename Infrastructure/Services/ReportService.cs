@@ -283,6 +283,15 @@ public class ReportService(
     private static void ValidateColumns(CreateReportDefinitionRequest request, List<string> errors) {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        // Collected up front: a link template may reference any column of the report, including ones
+        // declared after it and ones marked hidden (selecting a key purely to link by is the intended
+        // pattern), so per-column validation cannot resolve placeholders on its own.
+        var declaredKeys = request.Columns
+            .Select(c => c.Key?.Trim())
+            .Where(k => !string.IsNullOrEmpty(k))
+            .Select(k => k!)
+            .ToList();
+
         foreach (var column in request.Columns) {
             var key = column.Key?.Trim();
             if (string.IsNullOrEmpty(key)) {
@@ -299,6 +308,8 @@ public class ReportService(
             if (!string.IsNullOrWhiteSpace(column.Align) && NormalizeAlign(column.Align) == null) {
                 errors.Add($"Column '{key}' has an invalid alignment '{column.Align}': use left, center or right.");
             }
+
+            ReportLinkTemplate.Validate(column.LinkType, column.LinkTemplate, key, declaredKeys, errors);
         }
     }
 
@@ -438,7 +449,10 @@ public class ReportService(
                 Visible  = column.Visible,
                 Sortable = column.Sortable,
                 Nullable = column.Nullable,
-                Order    = column.Order
+                LinkType = column.LinkType,
+                // Normalized, not stored raw: a None column must not keep a template it does not use.
+                LinkTemplate = ReportLinkTemplate.Normalize(column.LinkType, column.LinkTemplate),
+                Order        = column.Order
             });
         }
 
@@ -511,7 +525,9 @@ public class ReportService(
             Visible  = column.Visible,
             Sortable = column.Sortable,
             Nullable = column.Nullable,
-            Order    = column.Order
+            LinkType = column.LinkType,
+            LinkTemplate = column.LinkTemplate,
+            Order        = column.Order
             // SqlTypeName stays null: it is discovery-only output, not stored runtime metadata.
         };
 

@@ -559,6 +559,10 @@ public class ReportExecutionService(
             Visible = c.Visible,
             Sortable = c.Sortable,
             Nullable = c.Nullable,
+            // The runner renders its table from this response, not from the definition it loaded, so the
+            // link config has to travel here too or cells silently stop linking after a run.
+            LinkType = c.LinkType,
+            LinkTemplate = c.LinkTemplate,
             Order = c.Order
         })];
 
