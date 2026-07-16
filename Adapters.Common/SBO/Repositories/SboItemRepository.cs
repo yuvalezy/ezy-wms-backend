@@ -86,7 +86,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, CustomField[] customFields) BuildItemQuery(string fromClause) {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append("""select "ItemCode", "ItemName", "BuyUnitMsr", COALESCE("NumInBuy", 1) as "NumInBuy", "PurPackMsr", COALESCE("PurPackUn", 1) as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4" """);
+        queryBuilder.Append($"""select "ItemCode", "ItemName", {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr", {UomQueryHelper.NumInBuy(settings)} as "NumInBuy", "PurPackMsr", {UomQueryHelper.PurPackUn(settings)} as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4" """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
@@ -98,13 +98,13 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, CustomField[] customFields) BuildItemQueryWithBarcode() {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append("""
+        queryBuilder.Append($"""
                             select OBCD."ItemCode" as "ItemCode"
                                  , OITM."ItemName" as "ItemName"
-                                 , OITM."BuyUnitMsr" as "BuyUnitMsr"
-                                 , COALESCE(OITM."NumInBuy", 1) as "NumInBuy"
+                                 , {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr"
+                                 , {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy"
                                  , OITM."PurPackMsr" as "PurPackMsr"
-                                 , COALESCE(OITM."PurPackUn", 1) as "PurPackUn"
+                                 , {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn"
                                  , OITM."PurFactor1"
                                  , OITM."PurFactor2"
                                  , OITM."PurFactor3"
@@ -272,12 +272,12 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, CustomField[] customFields) BuildItemsWarehouseStockQuery(int itemCount) {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append("""
+        queryBuilder.Append($"""
                             select OITM."ItemCode" as "ItemCode", OITM."ItemName" as "ItemName",
                                    COALESCE(T1."OnHand", 0) as "OnHand",
-                                   COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
-                                   OITM."BuyUnitMsr" as "BuyUnitMsr",
-                                   COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                   {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy",
+                                   {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                                   {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn",
                                    OITM."PurPackMsr" as "PurPackMsr",
                                    OITM."PurFactor1",
                                    OITM."PurFactor2",
@@ -311,11 +311,11 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         var result = new ValidateAddItemResult();
 
         // Validate item and get basic item info
-        const string itemQuery =
-        """
-            SELECT T1."ItemCode", T1."ItemName", T1."CodeBars", T1."InvntItem", 
-                   COALESCE(T1."NumInBuy", 1) as "NumInBuy", 
-                   COALESCE(T1."PurPackUn", 1) as "PurPackUn",
+        string itemQuery =
+        $"""
+            SELECT T1."ItemCode", T1."ItemName", T1."CodeBars", T1."InvntItem",
+                   {UomQueryHelper.NumInBuy(settings, "T1")} as "NumInBuy",
+                   {UomQueryHelper.PurPackUn(settings, "T1")} as "PurPackUn",
                    T3."BcdCode",
                    T4."WhsCode",
                    T1."PurFactor1",
@@ -357,6 +357,10 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         result.IsValidItem = true;
         result.NumInBuy = itemData.NumInBuy;
         result.PurPackUn = itemData.PurPackUn;
+        result.Factor1 = itemData.factor1;
+        result.Factor2 = itemData.factor2;
+        result.Factor3 = itemData.factor3;
+        result.Factor4 = itemData.factor4;
 
         // Validate barcode
         result.IsValidBarCode = string.IsNullOrWhiteSpace(barcode) || barcode == itemData.MainBarcode || itemData.Barcode != null;
@@ -401,13 +405,13 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
     }
 
     public async Task<ItemUnitResponse> GetItemPurchaseUnits(string itemCode) {
-        const string query =
-        """
+        string query =
+        $"""
              select
              "ItemName",
-             COALESCE("NumInBuy", 1) as "NumInBuy",
-             "BuyUnitMsr" as "BuyUnitMsr",
-             COALESCE("PurPackUn", 1) as "PurPackUn",
+             {UomQueryHelper.NumInBuy(settings)} as "NumInBuy",
+             {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr",
+             {UomQueryHelper.PurPackUn(settings)} as "PurPackUn",
              "PurPackMsr" as "PurPackMsr",
              "PurFactor1",
              "PurFactor2",

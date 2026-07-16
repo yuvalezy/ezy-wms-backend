@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(SystemDbContext))]
-    [Migration("20260716150037_AddReportDefinitions")]
-    partial class AddReportDefinitions
+    [Migration("20260716133838_AddTransferSapDocumentNumber")]
+    partial class AddTransferSapDocumentNumber
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -247,22 +247,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UpdatedByUserId");
 
                     b.ToTable("AuthorizationGroups");
-                });
-
-            modelBuilder.Entity("Core.Entities.AuthorizationGroupReport", b =>
-                {
-                    b.Property<Guid>("AuthorizationGroupId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ReportDefinitionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("AuthorizationGroupId", "ReportDefinitionId");
-
-                    b.HasIndex("ReportDefinitionId")
-                        .HasDatabaseName("IX_AuthorizationGroupReports_ReportDefinitionId");
-
-                    b.ToTable("AuthorizationGroupReports");
                 });
 
             modelBuilder.Entity("Core.Entities.CancellationReason", b =>
@@ -1081,6 +1065,10 @@ namespace Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("ScannedQuantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int?>("StatusReason")
                         .HasColumnType("int");
 
@@ -1525,234 +1513,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("PickingRepackSessions");
                 });
 
-            modelBuilder.Entity("Core.Entities.ReportColumn", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Align")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<int>("Decimals")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Format")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("Nullable")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ReportDefinitionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Sortable")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Visible")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportDefinitionId", "Key")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ReportColumns_ReportDefinitionId_Key");
-
-                    b.ToTable("ReportColumns");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CountSql")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("DefaultPageSize")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DefaultSortColumnKey")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<int>("DefaultSortDirection")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("Recompile")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Sql")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TimeoutSeconds")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalCountMode")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("Slug")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ReportDefinitions_Slug")
-                        .HasFilter("[Deleted] = 0");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("ReportDefinitions");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportExecutionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("DurationMs")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ParametersJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ReportDefinitionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("RowCount")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("SortColumnKey")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<int>("SortDirection")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("StartedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StartedAtUtc")
-                        .HasDatabaseName("IX_ReportExecutionAudits_StartedAt");
-
-                    b.HasIndex("ReportDefinitionId", "StartedAtUtc")
-                        .HasDatabaseName("IX_ReportExecutionAudits_ReportDefinition_StartedAt");
-
-                    b.ToTable("ReportExecutionAudits");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportVariable", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("AllowMultiple")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Decimals")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DefaultValue")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("LookupSql")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ReportDefinitionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("StaticOptions")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportDefinitionId", "Name")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ReportVariables_ReportDefinitionId_Name");
-
-                    b.ToTable("ReportVariables");
-                });
-
             modelBuilder.Entity("Core.Entities.SystemConfigurationAudit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1866,6 +1626,12 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Number"));
 
+                    b.Property<int?>("SapDocEntry")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SapDocNumber")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -1939,6 +1705,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ScannedQuantity")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -2210,25 +1980,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Core.Entities.AuthorizationGroupReport", b =>
-                {
-                    b.HasOne("Core.Entities.AuthorizationGroup", "AuthorizationGroup")
-                        .WithMany("Reports")
-                        .HasForeignKey("AuthorizationGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Core.Entities.ReportDefinition", "ReportDefinition")
-                        .WithMany()
-                        .HasForeignKey("ReportDefinitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AuthorizationGroup");
-
-                    b.Navigation("ReportDefinition");
                 });
 
             modelBuilder.Entity("Core.Entities.CancellationReason", b =>
@@ -2636,45 +2387,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("Core.Entities.ReportColumn", b =>
-                {
-                    b.HasOne("Core.Entities.ReportDefinition", "ReportDefinition")
-                        .WithMany("Columns")
-                        .HasForeignKey("ReportDefinitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReportDefinition");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportDefinition", b =>
-                {
-                    b.HasOne("Core.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Core.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportVariable", b =>
-                {
-                    b.HasOne("Core.Entities.ReportDefinition", "ReportDefinition")
-                        .WithMany("Variables")
-                        .HasForeignKey("ReportDefinitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReportDefinition");
-                });
-
             modelBuilder.Entity("Core.Entities.Transfer", b =>
                 {
                     b.HasOne("Core.Entities.User", "CreatedByUser")
@@ -2758,11 +2470,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Core.Entities.AuthorizationGroup", b =>
-                {
-                    b.Navigation("Reports");
-                });
-
             modelBuilder.Entity("Core.Entities.GoodsReceipt", b =>
                 {
                     b.Navigation("Documents");
@@ -2792,13 +2499,6 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Core.Entities.PickingPackageLabel", b =>
                 {
                     b.Navigation("PickLists");
-                });
-
-            modelBuilder.Entity("Core.Entities.ReportDefinition", b =>
-                {
-                    b.Navigation("Columns");
-
-                    b.Navigation("Variables");
                 });
 
             modelBuilder.Entity("Core.Entities.Transfer", b =>

@@ -39,9 +39,11 @@ Click the three-dots menu to access:
 
 | Action | Description |
 |--------|-------------|
-| Finish | Close the transfer and update inventory |
+| Transfer Report | Review what the transfer moved, item by item |
+| Finish | Close the transfer and update inventory — only once the transfer is 100% complete |
 | Cancel | Delete the transfer and all scanned data |
-| Details | View transfer details |
+
+To open a transfer for scanning, click its **Number**.
 
 ## Finishing a Transfer
 
@@ -59,9 +61,12 @@ Click the three-dots menu to access:
 
 ## Filtering
 
-Filter transfers by status, date range, or document type.
+The list shows **Open**, **In Progress**, and **Waiting for Approval** transfers by default.
+
+Click the funnel icon in the page header to filter by status. Tick **Finished**, **Rejected**, or **Cancelled** to bring closed transfers into the list — this is how you reach the [Transfer Report](/docs/transfer/summary-report) for a transfer that has already been finished. **Clear** returns the list to its default statuses.
 
 ## Related Pages
 
+- [Transfer Report](/docs/transfer/summary-report)
 - [Transfer Process](/docs/transfer/process)
 - [Transfer Approval](/docs/transfer/approval)

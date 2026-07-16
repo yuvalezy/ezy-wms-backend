@@ -39,9 +39,11 @@ Haga clic en el menú de tres puntos para acceder a:
 
 | Acción | Descripción |
 |--------|-------------|
-| Finalizar | Cerrar la transferencia y actualizar inventario |
+| Reporte Transferencia | Revisar qué movió la transferencia, artículo por artículo |
+| Finalizar | Cerrar la transferencia y actualizar inventario — solo cuando la transferencia está 100% completa |
 | Cancelar | Eliminar la transferencia y todos los datos escaneados |
-| Detalles | Ver detalles de la transferencia |
+
+Para abrir una transferencia y escanear, haga clic en su **Número**.
 
 ## Finalizar una Transferencia
 
@@ -59,9 +61,12 @@ Haga clic en el menú de tres puntos para acceder a:
 
 ## Filtrado
 
-Filtre transferencias por estado, rango de fechas o tipo de documento.
+La lista muestra por defecto las transferencias **Abiertas**, **En Proceso** y **Esperando Aprobación**.
+
+Haga clic en el icono de embudo en el encabezado de la página para filtrar por estado. Marque **Finalizado**, **Rechazado** o **Cancelado** para incluir transferencias cerradas en la lista — así es como se accede al [Reporte Transferencia](/docs/transfer/summary-report) de una transferencia ya finalizada. **Borrar** devuelve la lista a sus estados predeterminados.
 
 ## Páginas Relacionadas
 
+- [Reporte Transferencia](/docs/transfer/summary-report)
 - [Proceso de Transferencia](/docs/transfer/process)
 - [Aprobación de Transferencia](/docs/transfer/approval)

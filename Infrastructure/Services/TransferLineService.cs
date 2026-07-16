@@ -30,20 +30,19 @@ public class TransferLineService(
                 throw new KeyNotFoundException($"Transfer with ID {request.ID} not found.");
             }
 
-            decimal quantity = request.Quantity;
+            decimal scannedQuantity = request.Quantity;
             var items = await adapter.ItemCheckAsync(request.ItemCode, request.BarCode);
             var item  = items.FirstOrDefault();
-            if (request.Unit != UnitType.Unit) {
-                if (item == null) {
-                    throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, request.BarCode });
-                }
-
-                quantity *= item.NumInBuy * (request.Unit == UnitType.Pack ? item.PurPackUn : 1);
+            if (item == null && request.Unit != UnitType.Unit) {
+                throw new ApiErrorException((int)AddItemReturnValueType.ItemCodeNotFound, new { request.ItemCode, request.BarCode });
             }
 
-            if (item != null) {
-                quantity *= item.Factor1 * item.Factor2 * item.Factor3 * item.Factor4;
-            }
+            // Scanned count -> base pieces through the shared calculator, so this stays the single formula that
+            // ITransferQuantityRepairService re-derives with. A divergence here would make reopening a transfer
+            // silently restate quantities that never changed.
+            decimal quantity = item == null
+                ? scannedQuantity
+                : GoodsReceiptQuantityCalculator.ToBaseQuantity(scannedQuantity, request.Unit!.Value, item);
 
             var line = new TransferLine {
                 ItemCode        = request.ItemCode,
@@ -51,6 +50,7 @@ public class TransferLineService(
                 BinEntry        = request.BinEntry,
                 Date            = DateTime.UtcNow,
                 Quantity        = quantity,
+                ScannedQuantity = scannedQuantity,
                 Type            = request.Type,
                 UnitType        = request.Unit!.Value,
                 TransferId      = request.ID,
@@ -189,18 +189,17 @@ public class TransferLineService(
                 return response;
             }
 
-            // Calculate the new quantity based on unit type
-            decimal newQuantity = request.Quantity;
-            if (line.UnitType != UnitType.Unit) {
-                var items = await adapter.ItemCheckAsync(line.ItemCode, null);
-                var item  = items.FirstOrDefault();
-                if (item != null) {
-                    newQuantity *= item.NumInBuy;
-                    if (line.UnitType == UnitType.Pack) {
-                        newQuantity *= item.PurPackUn;
-                    }
-                }
-            }
+            // The request carries a count in the line's own unit, so it is the scanned truth. Convert it the
+            // same way AddItem does — PurFactor1..4 included. This path used to omit them, so editing a line
+            // on a factored item silently changed its base by the factor product, and would have left the
+            // repair restating the edit away on every subsequent read.
+            decimal scannedQuantity = request.Quantity;
+            var editedItems = await adapter.ItemCheckAsync(line.ItemCode, null);
+            var editedItem  = editedItems.FirstOrDefault();
+
+            decimal newQuantity = editedItem == null
+                ? scannedQuantity
+                : GoodsReceiptQuantityCalculator.ToBaseQuantity(scannedQuantity, line.UnitType, editedItem);
 
             // Validate quantity availability for source lines
             if (line is { Type: SourceTarget.Source, BinEntry: not null }) {
@@ -252,7 +251,8 @@ public class TransferLineService(
             }
 
             // Update the quantity
-            line.Quantity = newQuantity;
+            line.Quantity        = newQuantity;
+            line.ScannedQuantity = scannedQuantity;
 
             // Update modification tracking
             line.UpdatedAt       = DateTime.UtcNow;

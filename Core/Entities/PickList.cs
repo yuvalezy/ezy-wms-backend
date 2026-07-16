@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using Core.Enums;
+using Core.Interfaces;
 
 namespace Core.Entities;
 
-public class PickList : BaseEntity {
+public class PickList : BaseEntity, IScannedQuantityLine {
     [Required]
     public int AbsEntry { get; set; }
 

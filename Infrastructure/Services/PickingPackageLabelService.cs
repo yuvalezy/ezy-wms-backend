@@ -74,8 +74,14 @@ public class PickingPackageLabelService(SystemDbContext db, ISettings settings) 
             : settings.Options.PickingPackageLabelPrefix.Trim();
 
     private static PickingPackageLabelResponse ToResponse(PickingPackageLabel label) {
+        // Closed rows still count: they are picked stock physically sitting in the package. Post-pick repack
+        // runs entirely on closed rows, so excluding them reported every label on a finished pick list as
+        // empty. This mirrors PickingRepackService's own row filter — only an externally cancelled line is
+        // no longer in the box.
         var activeRows = label.PickLists
-            .Where(p => (p.Status == Core.Enums.ObjectStatus.Open || p.Status == Core.Enums.ObjectStatus.Processing) &&
+            .Where(p => (p.Status == Core.Enums.ObjectStatus.Open ||
+                         p.Status == Core.Enums.ObjectStatus.Processing ||
+                         p.Status == Core.Enums.ObjectStatus.Closed) &&
                         p.SyncStatus != Core.Enums.SyncStatus.ExternalCancel)
             .ToArray();
 
@@ -87,7 +93,6 @@ public class PickingPackageLabelService(SystemDbContext db, ISettings settings) 
             Sequence = label.Sequence,
             CreatedAt = label.CreatedAt,
             LineCount = activeRows.Length,
-            TotalQuantity = activeRows.Sum(p => p.ScannedQuantity ?? p.Quantity),
             Items = activeRows
                 .GroupBy(p => new { p.ItemCode, p.Unit, p.BinEntry })
                 .OrderBy(g => g.Key.ItemCode)

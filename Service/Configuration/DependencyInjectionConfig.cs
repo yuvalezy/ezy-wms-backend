@@ -58,12 +58,15 @@ public static class DependencyInjectionConfig {
         services.AddScoped<ITransferProcessingService, TransferProcessingService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
         services.AddScoped<ITransferValidationService, TransferValidationService>();
+        services.AddScoped<ITransferQuantityRepairService, TransferQuantityRepairService>();
+        services.AddScoped<ITransferReportService, TransferReportService>();
         services.AddScoped<IDirectTransferService, DirectTransferService>();
         services.AddSingleton<IPickPathSequencer, PickPathSequencer>();
         services.AddScoped<IPickListService, PickListService>();
         services.AddScoped<IPickListDetailService, PickListDetailService>();
         services.AddScoped<IPickListValidationService, PickListValidationService>();
         services.AddScoped<IPickListLineService, PickListLineService>();
+        services.AddScoped<IPickListQuantityRepairService, PickListQuantityRepairService>();
         services.AddScoped<IPickingPackageLabelService, PickingPackageLabelService>();
         services.AddScoped<IPickingRepackService, PickingRepackService>();
         services.AddScoped<IPickListProcessService, PickListProcessService>();
@@ -77,14 +80,16 @@ public static class DependencyInjectionConfig {
         services.AddScoped<IInventoryCountingBatchService, InventoryCountingBatchService>();
         services.AddScoped<IInventoryCountingReportService, InventoryCountingReportService>();
         services.AddScoped<IInventoryCountingsLineService, InventoryCountingsLineService>();
+        services.AddScoped<IInventoryCountingQuantityRepairService, InventoryCountingQuantityRepairService>();
         services.AddScoped<ICancellationReasonService, CancellationReasonService>();
         services.AddScoped<IAuthorizationGroupService, AuthorizationGroupService>();
-        services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
 
         // Reporting: ReportService owns the definitions (EF) and the live access checks; ReportExecutionService
         // is the only piece that touches SAP's database, via SboDatabaseService.
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IReportExecutionService, ReportExecutionService>();
+
+        services.AddScoped<IExternalSystemAlertService, ExternalSystemAlertService>();
         services.AddScoped<IWmsAlertService, WmsAlertService>();
         services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
 

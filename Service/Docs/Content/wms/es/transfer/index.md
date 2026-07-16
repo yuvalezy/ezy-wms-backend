@@ -20,6 +20,7 @@ El módulo de Transferencia se utiliza para mover mercancía de una ubicación a
 | [Lista de Transferencias](/docs/transfer/process) | `/transfer` | Lista de transferencias pendientes |
 | [Proceso de Transferencia](/docs/transfer/process) | `/transfer/:scanCode/*` | Ejecutar la transferencia |
 | [Supervisor](/docs/transfer/supervisor) | `/transferSupervisor` | Crear y monitorear transferencias |
+| [Reporte Transferencia](/docs/transfer/summary-report) | `/transferSummaryReport/:id` | Revisar qué movió una transferencia |
 | [Aprobación](/docs/transfer/approval) | `/transfer/approve` | Aprobar transferencias entre almacenes |
 | [Solicitud de Transferencia](/docs/transfer/transfer-request) | `/transferRequest` | Crear solicitudes de transferencia |
 
@@ -52,3 +53,4 @@ Las transferencias entre diferentes almacenes requieren aprobación del supervis
 
 - [Proceso de Transferencia](/docs/transfer/process)
 - [Supervisor de Transferencia](/docs/transfer/supervisor)
+- [Reporte Transferencia](/docs/transfer/summary-report)

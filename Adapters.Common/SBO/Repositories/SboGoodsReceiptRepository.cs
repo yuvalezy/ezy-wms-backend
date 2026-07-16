@@ -291,9 +291,9 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
                                     COALESCE(T1."LineNum", T2."LineNum", T3."LineNum", T4."LineNum") as "LineNum",
                                     COALESCE(T1."ItemCode", T2."ItemCode", T3."ItemCode", T4."ItemCode") as "ItemCode",
                                     OITM."ItemName" as "ItemName",
-                                    COALESCE(OITM."NumInBuy", 1) as "NumInBuy",
-                                    OITM."BuyUnitMsr" as "BuyUnitMsr",
-                                    COALESCE(OITM."PurPackUn", 1) as "PurPackUn",
+                                    {UomQueryHelper.NumInBuy(settings, "OITM")} as "NumInBuy",
+                                    {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                                    {UomQueryHelper.PurPackUn(settings, "OITM")} as "PurPackUn",
                                     OITM."PurPackMsr" as "PurPackMsr",
                                     COALESCE(T1."OpenInvQty", Case When T5."isIns" = 'Y' Then T2."OpenInvQty" Else T2."InvQty" End, T3."InvQty", T4."OpenInvQty", 0) as "OpenInvQty",
                                     COALESCE(T1."VisOrder", T2."VisOrder", T3."VisOrder", T4."VisOrder")+1 as "VisOrder",
@@ -328,8 +328,8 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
         var sb = new StringBuilder(
             $"""
              select "ItemCode",
-                    COALESCE("NumInBuy", 1) as "NumInBuy",
-                    COALESCE("PurPackUn", 1) as "PurPackUn",
+                    {UomQueryHelper.NumInBuy(settings)} as "NumInBuy",
+                    {UomQueryHelper.PurPackUn(settings)} as "PurPackUn",
                     COALESCE("PurFactor1", 1) as "PurFactor1",
                     COALESCE("PurFactor2", 1) as "PurFactor2",
                     COALESCE("PurFactor3", 1) as "PurFactor3",

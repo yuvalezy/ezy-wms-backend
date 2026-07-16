@@ -9,7 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Services;
 
 public class InventoryCountingsService(
-    SystemDbContext db) : IInventoryCountingsService {
+    SystemDbContext db,
+    IInventoryCountingQuantityRepairService quantityRepairService) : IInventoryCountingsService {
 
     public async Task<InventoryCountingResponse> CreateCounting(CreateInventoryCountingRequest request, SessionInfo sessionInfo) {
         var counting = new InventoryCounting {
@@ -53,6 +54,10 @@ public class InventoryCountingsService(
     }
 
     public async Task<InventoryCountingResponse> GetCounting(Guid id) {
+        // The line quantities below go straight to the client; restate them first so they agree with the
+        // variance and summary screens.
+        await quantityRepairService.RepairAsync(id);
+
         var counting = await db.InventoryCountings
         .Include(ic => ic.Lines)
         .Include(ic => ic.CreatedByUser)

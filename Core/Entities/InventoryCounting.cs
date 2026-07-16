@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Core.Enums;
+using Core.Interfaces;
 
 namespace Core.Entities;
 
@@ -29,7 +30,7 @@ public sealed class InventoryCounting : BaseEntity {
     public ICollection<InventoryCountingBatch> Batches { get; set; } = new List<InventoryCountingBatch>();
 }
 
-public sealed class InventoryCountingLine : BaseEntity {
+public sealed class InventoryCountingLine : BaseEntity, IScannedQuantityLine {
     [StringLength(254)]
     public  string? BarCode { get; set; }
 
@@ -51,8 +52,15 @@ public sealed class InventoryCountingLine : BaseEntity {
     [Required]
     public decimal Quantity { get; set; }
 
+    /// <summary>
+    /// The count physically entered, in <see cref="Unit"/>. <see cref="Quantity"/> is derived from it and the
+    /// item's conversion factor, so a factor corrected in SAP can restate the pieces without touching the count.
+    /// Null on rows created before this column existed.
+    /// </summary>
+    public decimal? ScannedQuantity { get; set; }
+
     public int? StatusReason { get; set; }
-    
+
     [ForeignKey("CancellationReason")]
     public Guid? CancellationReasonId { get; set; }
 

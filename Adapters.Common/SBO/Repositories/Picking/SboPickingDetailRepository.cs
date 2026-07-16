@@ -106,16 +106,16 @@ public class SboPickingDetailRepository(SboDatabaseService dbService, ISettings 
 
     private (string query, CustomField[] customFields) BuildPickingDetailItemsQuery() {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append("""
+        queryBuilder.Append($"""
                             SELECT
                                 COALESCE(T3."ItemCode", T4."ItemCode", T5."ItemCode") as "ItemCode",
                                 OITM."ItemName" as "ItemName",
                                 SUM(PKL1."RelQtty" + PKL1."PickQtty") AS "Quantity",
                                 SUM(PKL1."PickQtty") AS "Picked",
                                 SUM(PKL1."RelQtty") AS "OpenQuantity",
-                                COALESCE(OITM."NumInBuy", 1) AS "NumInBuy",
-                                OITM."BuyUnitMsr" as "BuyUnitMsr",
-                                COALESCE(OITM."PurPackUn", 1) AS "PurPackUn",
+                                {UomQueryHelper.NumInBuy(settings, "OITM")} AS "NumInBuy",
+                                {UomQueryHelper.BuyUnitMsr(settings, "OITM")} as "BuyUnitMsr",
+                                {UomQueryHelper.PurPackUn(settings, "OITM")} AS "PurPackUn",
                                 OITM."PurPackMsr" as "PurPackMsr",
                                 OITM."PurFactor1",
                                 OITM."PurFactor2",

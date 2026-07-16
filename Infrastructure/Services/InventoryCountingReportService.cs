@@ -2,6 +2,7 @@ using Core.DTOs.InventoryCounting;
 using Core.Enums;
 using Core.Interfaces;
 using Core.Models;
+using Core.Services;
 using Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,8 @@ namespace Infrastructure.Services;
 
 public class InventoryCountingReportService(
     SystemDbContext db,
-    IExternalSystemAdapter adapter) : IInventoryCountingReportService {
+    IExternalSystemAdapter adapter,
+    IInventoryCountingQuantityRepairService quantityRepairService) : IInventoryCountingReportService {
 
     // Whether the caller is restricted to their own scanned lines. Supervisors and superusers see all
     // lines; a user who reached the correction endpoints solely via CountingCorrection is restricted.
@@ -17,6 +19,10 @@ public class InventoryCountingReportService(
         !sessionInfo.SuperUser && !sessionInfo.Roles.Contains(RoleType.CountingSupervisor);
 
     public async Task<IEnumerable<InventoryCountingContentResponse>> GetCountingContent(InventoryCountingContentRequest request) {
+        // Restate any line whose conversion factor changed since it was counted, before the quantities below
+        // are summed into the variance the operator acts on.
+        await quantityRepairService.RepairAsync(request.ID);
+
         var query = db.InventoryCountingLines
         .Include(icl => icl.InventoryCounting)
         .Where(icl => icl.InventoryCountingId == request.ID);
@@ -117,6 +123,10 @@ public class InventoryCountingReportService(
     }
 
     public async Task<InventoryCountingSummaryResponse> GetCountingSummaryReport(Guid id) {
+        // Restate before the lines are loaded and summed, so this report cannot disagree with the variance
+        // screen depending on which one was opened first.
+        await quantityRepairService.RepairAsync(id);
+
         var counting = await db.InventoryCountings
         .Include(ic => ic.Lines)
         .FirstOrDefaultAsync(ic => ic.Id == id);
@@ -230,6 +240,11 @@ public class InventoryCountingReportService(
     }
 
     public async Task<IEnumerable<InventoryCountingReportAllDetailsResponse>> GetCountingReportAllDetails(Guid id, string itemCode, int? binEntry, SessionInfo sessionInfo) {
+        // These per-line quantities feed the correction screen, which divides them by the ladder to display a
+        // count and posts that count straight back to UpdateCountingAll. A stale base here would be saved back
+        // as a stale scanned count, baking the error in.
+        await quantityRepairService.RepairAsync(id);
+
         // Correction-only operators (not supervisors/superusers) may see only their own scanned lines.
         bool ownLinesOnly = OwnLinesOnly(sessionInfo);
 
@@ -311,18 +326,16 @@ public class InventoryCountingReportService(
                 if (line == null)
                     continue;
 
-                // Convert display quantity back to base quantity
-                decimal newQuantity = newDisplayQuantity;
+                // The correction screen divides the stored base by the ladder to display it and posts that back,
+                // so this value is a count in the line's own unit — the same truth AddItem records. Store it and
+                // re-derive the base through the shared calculator.
                 var items = await adapter.ItemCheckAsync(line.ItemCode, null);
                 var item = items.FirstOrDefault();
-                if (line.Unit != UnitType.Unit && item != null) {
-                    newQuantity *= item.NumInBuy;
-                    if (line.Unit == UnitType.Pack) {
-                        newQuantity *= item.PurPackUn;
-                    }
-                }
 
-                line.Quantity = newQuantity;
+                line.ScannedQuantity = newDisplayQuantity;
+                line.Quantity = item == null
+                    ? newDisplayQuantity
+                    : GoodsReceiptQuantityCalculator.ToBaseQuantity(newDisplayQuantity, line.Unit, item, applyFactor: false);
                 line.UpdatedAt = DateTime.UtcNow;
                 line.UpdatedByUserId = sessionInfo.Guid;
 
