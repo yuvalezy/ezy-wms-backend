@@ -7,9 +7,21 @@ using Microsoft.Extensions.Logging;
 namespace Adapters.CrossPlatform.SBO.Services;
 
 public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
+    // SAP B1 Service Layer login language (BoSuppLangs enum). Determines the language of
+    // Service-Layer-generated error messages. Defaults to Spanish (Latin America);
+    // override with the SBO_SERVICE_LAYER_LANGUAGE env var (e.g. 3 = English, 23 = Spanish/Spain).
+    private const int DefaultServiceLayerLanguage = 25; // ln_Spanish_La
+
     private readonly SemaphoreSlim connectionSemaphore = new(1, 1);
     private HttpClient? httpClient;
     private DateTime    sessionExpiry = DateTime.MinValue;
+
+    private static int ServiceLayerLanguage {
+        get {
+            string? raw = Environment.GetEnvironmentVariable("SBO_SERVICE_LAYER_LANGUAGE");
+            return int.TryParse(raw, out int lang) ? lang : DefaultServiceLayerLanguage;
+        }
+    }
 
     public string? SessionId { get; private set; }
 
@@ -60,8 +72,11 @@ public class SboCompany(ISettings settings, ILogger<SboCompany> logger) {
             var loginData = new {
                 CompanyDB = cfg.Database,
                 UserName  = user,
-                Password  = password
+                Password  = password,
+                Language  = ServiceLayerLanguage
             };
+
+            logger.LogInformation("Using Service Layer login language {Language}", ServiceLayerLanguage);
 
             string json    = JsonSerializer.Serialize(loginData);
             var    content = new StringContent(json, Encoding.UTF8, "application/json");
