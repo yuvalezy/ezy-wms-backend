@@ -61,12 +61,19 @@ Esta guía proporciona instrucciones detalladas sobre cómo usar EZY WMS para su
 
 - [Transferencia Directa](/docs/overview/direct-transfer) — Transferencias rápidas de un solo artículo.
 
+### Informes
+
+- [Resumen de Informes](/docs/reports) — Ejecute informes SQL en vivo y de solo lectura sobre sus datos de SAP.
+- [Ejecutar un Informe](/docs/reports/running-a-report) — Filtrar, ordenar, paginar y exportar un informe.
+
 ## Administración
 
 - [Resumen de Configuración](/docs/settings/index)
 - [Razones de Cancelación](/docs/settings/cancellation-reasons)
 - [Usuarios](/docs/settings/users)
 - [Grupos de Autorización](/docs/settings/authorization-groups)
+- [Definiciones de Informes](/docs/reports/authoring-a-report-definition) — Crear y gestionar definiciones de informe (Super Usuario)
+- [Exportar e Importar Informes](/docs/reports/exporting-and-importing) — Mover definiciones de informe entre instalaciones (Super Usuario)
 - [Dispositivos](/docs/settings/devices)
 - [Licencia](/docs/settings/license)
 - [Alertas Externas](/docs/settings/external-alerts)

@@ -18,6 +18,7 @@ Todas las páginas de configuración requieren acceso de **Super Usuario**.
 | [Razones de Cancelación](/docs/settings/cancellation-reasons) | `/settings/cancelReasons` | Gestionar códigos de razones de cancelación |
 | [Usuarios](/docs/settings/users) | `/settings/users` | Gestionar usuarios del sistema |
 | [Grupos de Autorización](/docs/settings/authorization-groups) | `/settings/authorizationGroups` | Gestionar permisos basados en roles |
+| [Definiciones de Informes](/docs/reports/authoring-a-report-definition) | `/settings/reports` | Crear y gestionar definiciones de informes SQL |
 | [Dispositivos](/docs/settings/devices) | `/settings/devices` | Gestionar dispositivos registrados |
 | [Licencia](/docs/settings/license) | `/settings/license` | Ver estado de licencia y cola |
 | [Alertas Externas](/docs/settings/external-alerts) | `/settings/externalAlerts` | Configurar alertas de sistemas externos |

@@ -84,6 +84,20 @@ Haga clic en **Editar** en cualquier fila para abrir el formulario de Edición d
 
 Todos los campos son editables. Las casillas de roles reflejan las asignaciones actuales — marque o desmarque roles individuales o use **Seleccionar Todo** por categoría. Haga clic en **Guardar** para aplicar los cambios.
 
+## Conceder Acceso a Informes
+
+Los informes usan una concesión separada por informe en lugar de un rol. Cuando existe al menos una definición de informe, aparece una tarjeta **Informes** en el formulario del grupo con una casilla por cada informe.
+
+| Campo | Notas |
+|-------|-------|
+| **Informes** | Seleccione los informes que este grupo puede ejecutar. Cada informe muestra su nombre y descripción, con un badge **Deshabilitado** cuando la definición está deshabilitada. |
+
+Marcar o desmarcar un informe surte efecto de inmediato para todos los usuarios del grupo — no es necesario iniciar sesión de nuevo. Un informe solo aparece en el menú de un usuario cuando se concede a uno de sus grupos, de modo que un informe recién creado es invisible hasta que lo comparte aquí.
+
+La lista de grupos muestra un badge de conteo por grupo ("N informe(s)" / "Sin informes") para ver de un vistazo qué grupos pueden ejecutar informes.
+
+Vea [Informes](/docs/reports) para cómo ejecutan los usuarios un informe compartido, y [Crear una Definición de Informe](/docs/reports/authoring-a-report-definition) para cómo crea uno un Super Usuario.
+
 ## Eliminar un Grupo de Autorización
 
 Haga clic en **Eliminar** en cualquier fila que lo permita. Se abre un diálogo de confirmación antes de que el grupo sea eliminado permanentemente.
@@ -105,5 +119,6 @@ Los grupos de autorización del sistema no pueden eliminarse. El botón **Elimin
 
 ## Páginas Relacionadas
 
+- [Informes](/docs/reports)
 - [Usuarios](/docs/settings/users)
 - [Resumen de Configuración](/docs/settings/index)

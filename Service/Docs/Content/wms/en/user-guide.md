@@ -61,12 +61,19 @@ This guide provides detailed instructions on how to use EZY WMS for your daily w
 
 - [Direct Transfer](/docs/overview/direct-transfer) — Quick single-item transfers.
 
+### Reports
+
+- [Reports Overview](/docs/reports) — Run live, read-only SQL reports against your SAP data.
+- [Running a Report](/docs/reports/running-a-report) — Filter, sort, page, and export a report.
+
 ## Administration
 
 - [Settings Overview](/docs/settings/index)
 - [Cancellation Reasons](/docs/settings/cancellation-reasons)
 - [Users](/docs/settings/users)
 - [Authorization Groups](/docs/settings/authorization-groups)
+- [Report Definitions](/docs/reports/authoring-a-report-definition) — Author and manage report definitions (Super User)
+- [Exporting and Importing Reports](/docs/reports/exporting-and-importing) — Move report definitions between installs (Super User)
 - [Devices](/docs/settings/devices)
 - [License](/docs/settings/license)
 - [External Alerts](/docs/settings/external-alerts)

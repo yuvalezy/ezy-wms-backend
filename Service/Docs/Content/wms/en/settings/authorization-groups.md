@@ -84,6 +84,20 @@ Click **Edit** on any row to open the Edit Authorization Group form.
 
 All fields are editable. Role checkboxes reflect the current assignments — check or uncheck individual roles or use **Select All** per category. Click **Save** to apply the changes.
 
+## Granting Report Access
+
+Reports use a separate, per-report grant instead of a role. When at least one report definition exists, a **Reports** card appears in the group form with a checkbox for every report.
+
+| Field | Notes |
+|-------|-------|
+| **Reports** | Select the reports this group can run. Each report shows its name and description, with a **Disabled** badge when the definition is disabled. |
+
+Selecting or clearing a report takes effect immediately for every user in the group — there is no need to log in again. A report only appears in a user's menu once it is granted to one of their groups, so a newly created report is invisible until you share it here.
+
+The group list shows a per-group count badge ("N report(s)" / "No reports") so you can see at a glance which groups can run reports.
+
+See [Reports](/docs/reports) for how users run a shared report, and [Authoring a Report Definition](/docs/reports/authoring-a-report-definition) for how a Super User creates one.
+
 ## Deleting an Authorization Group
 
 Click **Delete** on any deletable row. A confirmation dialog opens before the group is permanently removed.
@@ -105,5 +119,6 @@ System authorization groups cannot be deleted. The **Delete** button is disabled
 
 ## Related Pages
 
+- [Reports](/docs/reports)
 - [Users](/docs/settings/users)
 - [Settings Overview](/docs/settings/index)

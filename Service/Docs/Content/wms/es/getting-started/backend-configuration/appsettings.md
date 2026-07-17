@@ -83,6 +83,7 @@ Cadenas de conexión de base de datos para el servicio y adaptadores externos.
 |-------|------|--------|-------------|
 | `DefaultConnection` | String | Cadena de conexión SQL Server | Base de datos WMS principal. Incluye servidor, nombre de base de datos, usuario, contraseña y configuración de confianza de certificado. |
 | `ExternalAdapterConnection` | String | Cadena de conexión SQL Server | Base de datos opcional para adaptadores de sistemas externos. Puede apuntar al mismo o diferente SQL Server. |
+| `ReportingConnection` | String | (en blanco) | Conexión SQL Server de solo lectura opcional usada **solo** para ejecutar el SQL de los informes creados por administradores. Si se deja en blanco, los informes usan `ExternalAdapterConnection`. Como el SQL de los informes lo escriben los Super Usuarios en tiempo de ejecución, configure esto con un inicio de sesión dedicado de solo lectura (`db_datareader` con `DENY INSERT, UPDATE, DELETE, EXECUTE`) como la única protección fiable contra un error destructivo en una base de datos de SAP en vivo. |
 
 **Nota:** Ambas utilizan formato de cadena de conexión SQL Server. Para SQL en la nube (Azure, etc.), ajusta `Server`, `User Id` y `Password`. `TrustServerCertificate=true` es para desarrollo; para producción, usa certificados adecuados.
 
@@ -259,7 +260,8 @@ A continuación se muestra un archivo `appsettings.json` completamente anotado a
   },
   "ConnectionStrings": {
     "DefaultConnection": "Server=your-db-server;Database=EZY_WMS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;",
-    "ExternalAdapterConnection": "Server=your-db-server;Database=EZY_ADAPTERS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;"
+    "ExternalAdapterConnection": "Server=your-db-server;Database=EZY_ADAPTERS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;",
+    "ReportingConnection": ""
   },
   "Jwt": {
     "Key": "REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_BYTES_LONG_AND_CRYPTOGRAPHICALLY_SECURE",

@@ -18,6 +18,7 @@ All settings pages require **Super User** access.
 | [Cancellation Reasons](/docs/settings/cancellation-reasons) | `/settings/cancelReasons` | Manage cancellation reason codes |
 | [Users](/docs/settings/users) | `/settings/users` | Manage system users |
 | [Authorization Groups](/docs/settings/authorization-groups) | `/settings/authorizationGroups` | Manage role-based permissions |
+| [Report Definitions](/docs/reports/authoring-a-report-definition) | `/settings/reports` | Author and manage SQL report definitions |
 | [Devices](/docs/settings/devices) | `/settings/devices` | Manage registered devices |
 | [License](/docs/settings/license) | `/settings/license` | View license and queue status |
 | [External Alerts](/docs/settings/external-alerts) | `/settings/externalAlerts` | Configure external system alerts |

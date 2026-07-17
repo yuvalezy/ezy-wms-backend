@@ -83,6 +83,7 @@ Database connection strings for the service and external adapters.
 |-------|------|---------|-------------|
 | `DefaultConnection` | String | SQL Server connection string | Primary WMS database. Includes server, database name, user, password, and certificate trust settings. |
 | `ExternalAdapterConnection` | String | SQL Server connection string | Optional database for external system adapters. Can point to the same or different SQL Server. |
+| `ReportingConnection` | String | (blank) | Optional read-only SQL Server connection used **only** to run admin-authored report SQL. Left blank, reports fall back to `ExternalAdapterConnection`. Because report SQL is written at runtime by Super Users, set this to a dedicated read-only login (`db_datareader` with `DENY INSERT, UPDATE, DELETE, EXECUTE`) as the only reliable protection against a destructive typo on a live SAP database. |
 
 **Note:** Both use SQL Server connection string format. For cloud SQL (Azure, etc.), adjust `Server`, `User Id`, and `Password`. `TrustServerCertificate=true` is for development; for production, use proper certificates.
 
@@ -259,7 +260,8 @@ Below is a fully annotated example `appsettings.json` file suitable for a produc
   },
   "ConnectionStrings": {
     "DefaultConnection": "Server=your-db-server;Database=EZY_WMS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;",
-    "ExternalAdapterConnection": "Server=your-db-server;Database=EZY_ADAPTERS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;"
+    "ExternalAdapterConnection": "Server=your-db-server;Database=EZY_ADAPTERS;User Id=sa;Password=YOUR_DB_PASSWORD;TrustServerCertificate=false;Encrypt=true;",
+    "ReportingConnection": ""
   },
   "Jwt": {
     "Key": "REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_BYTES_LONG_AND_CRYPTOGRAPHICALLY_SECURE",
