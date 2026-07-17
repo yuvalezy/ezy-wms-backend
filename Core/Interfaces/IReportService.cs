@@ -46,6 +46,31 @@ public interface IReportService {
     Task<ReportDefinitionDetail> UpdateAsync(UpdateReportDefinitionRequest request, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// A portable bundle of definitions — all of them, or just <paramref name="id"/>.
+    /// </summary>
+    /// <remarks>
+    /// Carries the authored fields only. Ids, timestamps, authorship and authorization-group grants are
+    /// install-specific and deliberately left out.
+    /// </remarks>
+    Task<ReportExportBundle> ExportAsync(Guid? id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates a bundle against <b>this</b> install — compiling every report's SQL against this SAP —
+    /// and, unless <paramref name="dryRun"/>, applies it.
+    /// </summary>
+    /// <remarks>
+    /// All-or-nothing: one transaction, and nothing is written unless every report is valid, so a bundle
+    /// can never land half-imported. A report whose slug already exists is replaced in place, keeping its
+    /// id so its grants survive.
+    /// <para>
+    /// Never throws for a bad report — the per-report verdicts are the return value, because the caller's
+    /// whole purpose is to show them. Only a genuinely unusable file (wrong format version) sets
+    /// <see cref="ReportImportResult.Errors"/>.
+    /// </para>
+    /// </remarks>
+    Task<ReportImportResult> ImportAsync(ReportImportRequest request, bool dryRun, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Deletes a definition and cascades its columns, variables and grants. False when not found.
     /// </summary>
     Task<bool> DeleteAsync(Guid id);

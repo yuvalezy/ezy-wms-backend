@@ -180,6 +180,88 @@ public class ReportDefinitionController(IReportService reportService) : Controll
     }
 
     /// <summary>
+    /// Exports every report definition as a portable bundle (super user only)
+    /// </summary>
+    /// <remarks>
+    /// Carries the authored fields only — ids, timestamps, authorship and authorization-group grants are
+    /// install-specific and are left out. The client saves the JSON as a file; there is no file handling here.
+    /// </remarks>
+    /// <returns>A bundle of every report definition</returns>
+    /// <response code="200">Returns the bundle</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="403">If the user lacks super user permissions</response>
+    [HttpGet("export")]
+    [ProducesResponseType(typeof(ReportExportBundle), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ReportExportBundle>> ExportAll(CancellationToken cancellationToken) =>
+        Ok(await reportService.ExportAsync(null, cancellationToken));
+
+    /// <summary>
+    /// Exports a single report definition as a portable bundle (super user only)
+    /// </summary>
+    /// <param name="id">The unique identifier of the report definition to export</param>
+    /// <returns>A bundle containing just that report</returns>
+    /// <response code="200">Returns the bundle</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="403">If the user lacks super user permissions</response>
+    /// <response code="404">If the report definition is not found</response>
+    [HttpGet("export/{id:guid}")]
+    [ProducesResponseType(typeof(ReportExportBundle), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ReportExportBundle>> ExportOne(Guid id, CancellationToken cancellationToken) {
+        var bundle = await reportService.ExportAsync(id, cancellationToken);
+        if (bundle.Reports.Count == 0) {
+            return NotFound($"Report definition with ID {id} not found.");
+        }
+        return Ok(bundle);
+    }
+
+    /// <summary>
+    /// Validates a bundle against this install and, unless <paramref name="dryRun"/>, applies it (super user only)
+    /// </summary>
+    /// <remarks>
+    /// All-or-nothing: nothing is written unless every report is valid, so a bundle can never land
+    /// half-imported. A report whose slug already exists is replaced in place, keeping its id — which is what
+    /// makes its authorization-group grants survive a re-import.
+    /// <para>
+    /// A dry run compiles every report's SQL against <b>this</b> install's SAP, so a report needing a table or
+    /// column the target does not have says so before anything is written. Call it first: it is what the
+    /// preview shows.
+    /// </para>
+    /// <para>
+    /// Returns 200 with per-report verdicts even when reports are invalid — the verdicts are the answer, not
+    /// an error. Only an unusable file (wrong format version, no reports) populates the top-level errors.
+    /// </para>
+    /// </remarks>
+    /// <param name="request">The bundle to import</param>
+    /// <param name="dryRun">True to validate and preview without writing anything</param>
+    /// <param name="cancellationToken">Cancels the validation SQL server-side if the client disconnects</param>
+    /// <returns>The per-report verdicts</returns>
+    /// <response code="200">Returns the import result, valid or not</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="403">If the user lacks super user permissions</response>
+    /// <response code="500">If a server error occurs</response>
+    [HttpPost("import")]
+    [ProducesResponseType(typeof(ReportImportResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ReportImportResult>> Import(
+        [FromBody] ReportImportRequest request,
+        [FromQuery] bool dryRun,
+        CancellationToken cancellationToken) {
+        var userId = GetCurrentUserId();
+        if (!userId.HasValue) {
+            return Unauthorized("Unable to identify the current user.");
+        }
+
+        return Ok(await reportService.ImportAsync(request, dryRun, userId.Value, cancellationToken));
+    }
+
+    /// <summary>
     /// Deletes a report definition and cascades its columns, variables and grants (super user only)
     /// </summary>
     /// <param name="id">The unique identifier of the report definition to delete</param>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -120,6 +121,223 @@ public class ReportService(
         logger.LogInformation("Updated report definition {Slug} ({Id})", definition.Slug, definition.Id);
         return ToDetail(definition, includeSql: true);
     }
+
+    // ---------------------------------------------------------------- portability (export / import)
+
+    public async Task<ReportExportBundle> ExportAsync(Guid? id, CancellationToken cancellationToken = default) {
+        var query = DetailQuery();
+        if (id.HasValue) {
+            query = query.Where(r => r.Id == id.Value);
+        }
+
+        List<ReportDefinition> definitions = await query.OrderBy(r => r.Name).ToListAsync(cancellationToken);
+
+        return new ReportExportBundle {
+            ExportedAtUtc = DateTime.UtcNow,
+            Reports       = [.. definitions.Select(ToExport)]
+        };
+    }
+
+    public async Task<ReportImportResult> ImportAsync(
+        ReportImportRequest request, bool dryRun, Guid userId, CancellationToken cancellationToken = default) {
+        var result = new ReportImportResult { DryRun = dryRun };
+
+        if (request.FormatVersion > ReportPortability.FormatVersion) {
+            // Refuse rather than read it optimistically: a newer file may carry fields this build would
+            // silently drop, and a report that imports minus a field it needed is worse than one that
+            // does not import.
+            result.Errors.Add($"This file is format version {request.FormatVersion}, but this version of EzyWMS "
+                            + $"only understands version {ReportPortability.FormatVersion}. Upgrade to import it.");
+            return result;
+        }
+
+        if (request.Reports.Count == 0) {
+            result.Errors.Add("The file contains no reports.");
+            return result;
+        }
+
+        // Two reports in one bundle claiming the same slug cannot both win, and applying them in order
+        // would silently keep whichever came last.
+        HashSet<string> duplicateSlugs = [.. request.Reports
+            .Select(r => r.Slug?.Trim().ToLowerInvariant() ?? "")
+            .GroupBy(slug => slug)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)];
+
+        var planned = new List<(CreateReportDefinitionRequest Request, ReportDefinition? Existing)>();
+
+        foreach (CreateReportDefinitionRequest report in request.Reports) {
+            string slug = report.Slug?.Trim() ?? "";
+
+            ReportDefinition? existing = string.IsNullOrEmpty(slug)
+                ? null
+                : await db.ReportDefinitions
+                    .Include(r => r.Columns)
+                    .Include(r => r.Variables)
+                    .FirstOrDefaultAsync(r => !r.Deleted && r.Slug.ToLower() == slug.ToLower(), cancellationToken);
+
+            var item = new ReportImportItemResult {
+                Slug   = slug,
+                Name   = report.Name?.Trim() ?? "",
+                Action = existing == null ? ReportImportAction.Create : ReportImportAction.Overwrite
+            };
+
+            item.Errors.AddRange(await ValidateImportItemAsync(report, existing, duplicateSlugs, cancellationToken));
+            item.Valid = item.Errors.Count == 0;
+
+            result.Reports.Add(item);
+            planned.Add((report, existing));
+        }
+
+        result.Success = result.Reports.All(r => r.Valid);
+        if (dryRun || !result.Success) {
+            return result;
+        }
+
+        // One transaction over the whole bundle: either every report lands or none does. A half-imported
+        // bundle would leave an operator guessing which reports are the new ones.
+        await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        foreach ((CreateReportDefinitionRequest report, ReportDefinition? existing) in planned) {
+            if (existing == null) {
+                var definition = NewEntity(report);
+                definition.CreatedAt       = DateTime.UtcNow;
+                definition.CreatedByUserId = userId;
+                db.ReportDefinitions.Add(definition);
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            else {
+                await OverwriteAsync(existing, report, userId, cancellationToken);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        foreach (ReportImportItemResult item in result.Reports) {
+            item.Applied = true;
+        }
+
+        logger.LogInformation("Imported {Count} report definitions ({Created} created, {Overwritten} overwritten)",
+            result.Reports.Count,
+            result.Reports.Count(r => r.Action == ReportImportAction.Create),
+            result.Reports.Count(r => r.Action == ReportImportAction.Overwrite));
+
+        return result;
+    }
+
+    /// <summary>
+    /// Everything <see cref="ValidateForSaveAsync"/> checks, but collected rather than thrown — the caller
+    /// needs every report's verdict, not the first failure. <paramref name="existing"/> is excluded from the
+    /// slug-uniqueness check: colliding with the very report being replaced is the whole point of Overwrite.
+    /// </summary>
+    private async Task<List<string>> ValidateImportItemAsync(
+        CreateReportDefinitionRequest report,
+        ReportDefinition? existing,
+        HashSet<string> duplicateSlugs,
+        CancellationToken cancellationToken) {
+        var errors = new List<string>();
+
+        if (duplicateSlugs.Contains(report.Slug?.Trim().ToLowerInvariant() ?? "")) {
+            errors.Add($"The file contains more than one report with the slug '{report.Slug?.Trim()}'.");
+        }
+
+        errors.AddRange(ValidateShape(report));
+
+        if (report.Columns.Count == 0) {
+            errors.Add("A report must declare at least one column.");
+        }
+
+        if (await SlugTakenAsync(report.Slug ?? "", existing?.Id)) {
+            errors.Add($"Slug '{report.Slug?.Trim()}' is already used by another report.");
+        }
+
+        if (errors.Count > 0) {
+            return errors;
+        }
+
+        // The reason a dry run is worth having: this compiles the report's SQL against *this* install's
+        // SAP, so a report needing a column or table the target does not have says so — in SQL Server's
+        // own words — before anything is written.
+        ReportValidationResult validation =
+            await executionService.ValidateAndDiscoverAsync(NewEntity(report), cancellationToken);
+        if (!validation.Valid) {
+            errors.AddRange(validation.Errors);
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Replaces a definition in place, keeping its id so its authorization-group grants survive.
+    /// Mirrors <see cref="UpdateAsync"/>'s child handling, but never opens its own transaction — the
+    /// caller already holds one, and EF rejects a nested <c>BeginTransaction</c>.
+    /// </summary>
+    private async Task OverwriteAsync(
+        ReportDefinition definition,
+        CreateReportDefinitionRequest report,
+        Guid userId,
+        CancellationToken cancellationToken) {
+        ApplyScalars(definition, report);
+        definition.UpdatedAt       = DateTime.UtcNow;
+        definition.UpdatedByUserId = userId;
+
+        // Copy first: RemoveRange enumerates what it is handed, and EF's fixup mutates the navigation
+        // collections as the children change state. Two saves, because a single one could insert a re-used
+        // (ReportDefinitionId, Key) before deleting the old row and trip the unique index.
+        db.ReportColumns.RemoveRange(definition.Columns.ToList());
+        db.ReportVariables.RemoveRange(definition.Variables.ToList());
+        await db.SaveChangesAsync(cancellationToken);
+
+        ApplyChildren(definition, report);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Entity → the authored shape. Deliberately the same type the import consumes, so a bundle this build
+    /// writes is a bundle this build can read.
+    /// </summary>
+    private CreateReportDefinitionRequest ToExport(ReportDefinition definition) => new() {
+        Name                 = definition.Name,
+        Slug                 = definition.Slug,
+        Description          = definition.Description,
+        Sql                  = definition.Sql,
+        CountSql             = definition.CountSql,
+        Enabled              = definition.Enabled,
+        Recompile            = definition.Recompile,
+        TotalCountMode       = definition.TotalCountMode,
+        DefaultPageSize      = definition.DefaultPageSize,
+        DefaultSortColumnKey = definition.DefaultSortColumnKey,
+        DefaultSortDirection = definition.DefaultSortDirection,
+        TimeoutSeconds       = definition.TimeoutSeconds,
+        Columns = [.. definition.Columns.OrderBy(c => c.Order).ThenBy(c => c.Key).Select(c => new ReportColumnRequest {
+            Key          = c.Key,
+            Label        = c.Label,
+            Format       = c.Format,
+            Align        = c.Align,
+            Decimals     = c.Decimals,
+            Visible      = c.Visible,
+            Sortable     = c.Sortable,
+            Nullable     = c.Nullable,
+            LinkType     = c.LinkType,
+            LinkTemplate = c.LinkTemplate,
+            Order        = c.Order
+        })],
+        Variables = [.. definition.Variables.OrderBy(v => v.Order).ThenBy(v => v.Name).Select(v => new ReportVariableRequest {
+            Name          = v.Name,
+            Label         = v.Label,
+            Type          = v.Type,
+            Decimals      = v.Decimals,
+            Required      = v.Required,
+            AllowMultiple = v.AllowMultiple,
+            DefaultValue  = v.DefaultValue,
+            // Parsed back into structured options rather than shipped as the stored JSON string: the
+            // import consumes ReportVariableRequest, which re-serializes it. Round-tripping the raw
+            // string would double-encode it.
+            Options   = ParseOptions(v),
+            LookupSql = v.LookupSql,
+            Order     = v.Order
+        })]
+    };
 
     public async Task<bool> DeleteAsync(Guid id) {
         var definition = await db.ReportDefinitions.FirstOrDefaultAsync(r => r.Id == id);
