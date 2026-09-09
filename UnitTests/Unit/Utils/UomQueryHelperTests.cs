@@ -109,4 +109,49 @@ public class UomQueryHelperTests {
             Assert.That(UomQueryHelper.BuyUnitMsr(settings, "T4"), Does.Contain("T4.\"BuyUnitMsr\""));
         });
     }
+    // --- UnitMatchesLine: which SAP document lines a scanned unit may land on ---
+
+    private const string UnitMatches =
+        """(@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and (T0."UseBaseUn" = 'Y' or COALESCE(OITM."NumInBuy", 1) = 1))""";
+
+    [Test]
+    public void UnitMatchesLine_EmitsTheFullPredicateWithBothAliases() {
+        Assert.That(UomQueryHelper.UnitMatchesLine("T0", "OITM"), Is.EqualTo(UnitMatches));
+    }
+
+    // The relaxation is only for a base-unit scan: a Dozen/Pack scan still requires a purchase-unit line.
+    [Test]
+    public void UnitMatchesLine_RelaxesOnlyTheUnitBranch() {
+        string sql = UomQueryHelper.UnitMatchesLine("T0", "OITM");
+
+        Assert.Multiple(() => {
+            Assert.That(sql, Does.Contain("""@Unit != 0 and T0."UseBaseUn" = 'N' or"""));
+            Assert.That(sql, Does.Contain("""@Unit = 0 and (T0."UseBaseUn" = 'Y' or COALESCE(OITM."NumInBuy", 1) = 1)"""));
+        });
+    }
+
+    // The SAP document's own factor decides equivalence, so ForceDoz must never leak in (it would raise
+    // exactly this item shape to 12 and defeat the relaxation for ForceDoz tenants).
+    [Test]
+    public void UnitMatchesLine_ReadsTheRawNumInBuyAndIgnoresForceDoz() {
+        string sql = UomQueryHelper.UnitMatchesLine("T0", "OITM");
+
+        Assert.Multiple(() => {
+            Assert.That(sql, Does.Not.Contain("CASE"));
+            Assert.That(sql, Does.Not.Contain("12"));
+            Assert.That(sql, Does.Not.Contain("PurPackUn"));
+        });
+    }
+
+    [Test]
+    public void UnitMatchesLine_HonoursCustomAliasesAndParameter() {
+        string sql = UomQueryHelper.UnitMatchesLine("X1", "X6", "@Scanned");
+
+        Assert.Multiple(() => {
+            Assert.That(sql, Does.Contain("X1.\"UseBaseUn\""));
+            Assert.That(sql, Does.Contain("""COALESCE(X6."NumInBuy", 1) = 1"""));
+            Assert.That(sql, Does.Contain("@Scanned"));
+            Assert.That(sql, Does.Not.Contain("@Unit"));
+        });
+    }
 }

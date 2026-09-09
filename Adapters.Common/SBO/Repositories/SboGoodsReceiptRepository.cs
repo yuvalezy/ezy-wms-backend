@@ -79,11 +79,16 @@ public class SboGoodsReceiptRepository(SboDatabaseService dbService, ILoggerFact
             parameters.Add(new SqlParameter($"@DocEntry{i}", SqlDbType.Int) { Value = specificDocuments[i].Entry });
         }
 
-        sb.Append("""
+        // A base-unit scan may also land on a purchase-unit line when the item's raw SAP NumInBuy is 1
+        // (the purchase unit is the piece). Same rule as UomQueryHelper.UnitMatchesLine, keyed by @UseBaseUn.
+        const string unitMatches = """(@UseBaseUn = 'Y' and COALESCE(X6."NumInBuy", 1) = 1)""";
+
+        sb.Append($"""
                   ) X0
-                       left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode and X1."UseBaseUn" = @UseBaseUn
+                       left outer join OITM X6 on X6."ItemCode" = @ItemCode
+                       left outer join POR1 X1 on X1."DocEntry" = X0."DocEntry" and X1."ObjType" = X0."ObjType" and X1."ItemCode" = @ItemCode and X1."WhsCode" = @WhsCode and (X1."UseBaseUn" = @UseBaseUn or {unitMatches})
                        left outer join OPCH X5 on X5."DocEntry" = X0."DocEntry" and X5."ObjType" = X0."ObjType" 
-                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode and (X5."isIns" = 'N' or X5."isIns" = 'Y' and X2."UseBaseUn" = @UseBaseUn)
+                       left outer join PCH1 X2 on X2."DocEntry" = X0."DocEntry" and X2."ObjType" = X0."ObjType" and X2."ItemCode" = @ItemCode and X2."WhsCode" = @WhsCode and (X5."isIns" = 'N' or X5."isIns" = 'Y' and (X2."UseBaseUn" = @UseBaseUn or {unitMatches}))
                        left outer join PDN1 X3 on X3."DocEntry" = X0."DocEntry" and X3."ObjType" = X0."ObjType" and X3."ItemCode" = @ItemCode and X3."WhsCode" = @WhsCode
                        left outer join WTR1 X4 on X4."DocEntry" = X0."DocEntry" and X4."ObjType" = X0."ObjType" and X4."ItemCode" = @ItemCode and X4."WhsCode" = @WhsCode
                   where X1."LineNum" is not null

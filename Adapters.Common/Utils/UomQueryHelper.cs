@@ -78,6 +78,24 @@ public static class UomQueryHelper {
     }
 
     /// <summary>
+    /// SQL predicate: does a source-document line's unit kind match the scanned unit?
+    /// A Dozen/Pack scan (<c>@Unit != 0</c>) matches purchase-unit lines (<c>UseBaseUn = 'N'</c>).
+    /// A Unit scan (<c>@Unit = 0</c>) matches base-unit lines (<c>'Y'</c>), and also purchase-unit lines whose
+    /// item has a raw SAP NumInBuy of 1 — there the purchase unit <i>is</i> the piece, so the quantities are
+    /// identical and rejecting the scan would be wrong.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately reads the raw <c>OITM."NumInBuy"</c>, never <see cref="NumInBuy"/>: ForceDoz raises the WMS
+    /// ladder to 12 for exactly this item shape, but the SAP document line's own factor is still 1, and that
+    /// factor is what decides whether a base-unit scan may land on a purchase-unit line.
+    /// </remarks>
+    /// <param name="lineAlias">Alias of the document line table (POR1/PDN1/PCH1…).</param>
+    /// <param name="itemAlias">Alias of the joined OITM row for that line's item.</param>
+    /// <param name="unitParam">SQL parameter holding the scanned <c>UnitType</c> (0 = Unit).</param>
+    public static string UnitMatchesLine(string lineAlias, string itemAlias, string unitParam = "@Unit") =>
+        $"({unitParam} != 0 and {lineAlias}.\"UseBaseUn\" = 'N' or {unitParam} = 0 and ({lineAlias}.\"UseBaseUn\" = 'Y' or {NumInBuyColumn(Prefix(itemAlias))} = 1))";
+
+    /// <summary>
     /// The middle unit's label — SAP's OITM."BuyUnitMsr", relabelled wherever the rung was converted, so the
     /// picker and reports do not offer a rung that reads "PZA" but counts twelve.
     /// </summary>

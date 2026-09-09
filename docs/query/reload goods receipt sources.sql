@@ -10,5 +10,6 @@ delete GoodsReceiptSources where GoodsReceiptLineId in (select Id from #Lines)
 insert into GoodsReceiptSources
 select NEWID(), T1.Quantity, T0.DocEntry, T0.DocEntry, T0.LineNum, T0.ObjType, T1.Id, T1.CreatedAt, T1.CreatedByUserId, T1.UpdatedAt, T1.UpdatedByUserId, 0, null
 from GoodsReceiptLines T1
+-- NOTE: runtime also accepts UseBaseUn = N for Unit lines (T1.Unit = 0) when OITM.NumInBuy = 1 (purchase unit == piece); this manual query keeps the strict mapping.
 inner join [MODNOV_SBO]..PDN1 T0 on T0.DocEntry = 517 and T0.ItemCode = T1.ItemCode collate database_default and T0.UseBaseUn = Case T1.Unit When 0 Then 'Y' Else 'N' End
 where T1.Id in (select id from #lines)

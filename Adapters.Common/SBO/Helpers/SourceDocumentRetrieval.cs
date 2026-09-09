@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text;
 using Adapters.Common.SBO.Services;
+using Adapters.Common.Utils;
 using Core.DTOs.GoodsReceipt;
 using Core.Enums;
 using Core.Models;
@@ -32,6 +33,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   select T0."ObjType", T0."DocEntry", T0."LineNum", T0."OpenInvQty", T1."DocNum"
                   from POR1 T0
                   inner join OPOR T1 on T1."DocEntry" = T0."DocEntry" and T1."DocStatus" = 'O'
+                  inner join OITM T2 on T2."ItemCode" = T0."ItemCode"
                   """);
 
         if (type == GoodsReceiptType.All && !string.IsNullOrWhiteSpace(cardCode)) {
@@ -51,12 +53,12 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             sb.Append(") ");
         }
 
-        sb.Append("""
+        sb.Append($"""
                   where T0."ItemCode" = @ItemCode
                   and T0."LineStatus" = 'O'
                   and T0."WhsCode" = @WhsCode
                   and T0."OpenInvQty" > 0
-                  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
+                  and {UomQueryHelper.UnitMatchesLine("T0", "T2")}
                   order by T1."CreateDate", T1.CreateTS;
                   """);
 
@@ -88,6 +90,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   select T0."ObjType", T0."DocEntry", T0."LineNum", T0."InvQty", T1."DocNum"
                   from PDN1 T0
                   inner join OPDN T1 on T1."DocEntry" = T0."DocEntry" and T1."CANCELED" not in ('C', 'Y')
+                  inner join OITM T2 on T2."ItemCode" = T0."ItemCode"
                   """);
 
         sb.Append(" and T0.\"DocEntry\" in (");
@@ -101,12 +104,12 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         sb.Append(") ");
 
-        sb.Append("""
+        sb.Append($"""
                   where T0."ItemCode" = @ItemCode
                   /* and T0."LineStatus" = 'O' -- form confirmation this is not necessary */
                   and T0."WhsCode" = @WhsCode
                   /* and T0."InvQty" > 0 -- form confirmation this is not necessary */
-                  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
+                  and {UomQueryHelper.UnitMatchesLine("T0", "T2")}
                   order by T1."CreateDate", T1.CreateTS;
                   """);
 
@@ -145,6 +148,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                   select T0."ObjType", T0."DocEntry", T0."LineNum", 
                          Case When @Type <> 2 Then T0."OpenInvQty" Else T0."InvQty" end, T1."DocNum"
                   from PCH1 T0
+                  inner join OITM T2 on T2."ItemCode" = T0."ItemCode"
                   inner join OPCH T1 on T1."DocEntry" = T0."DocEntry" and (
                            @Type <> 2 and T1."DocStatus" = 'O' and T1."isIns" = 'Y' and T0."LineStatus" = 'O'
                            or @Type = 2 and T1."CANCELED" not in ('C', 'Y') and T1."isIns" = 'N'
@@ -168,7 +172,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
             sb.Append(") ");
         }
 
-        sb.Append("""
+        sb.Append($"""
                   where T0."ItemCode" = @ItemCode
                   and T0."WhsCode" = @WhsCode
                   and (
@@ -177,7 +181,7 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
                     @Type <> 2 and T0."LineStatus" = 'O'
                   )
                   and Case When @Type <> 2 Then T0."OpenInvQty" Else T0."InvQty" end > 0
-                  and (@Unit != 0 and T0."UseBaseUn" = 'N' or @Unit = 0 and T0."UseBaseUn" = 'Y')
+                  and {UomQueryHelper.UnitMatchesLine("T0", "T2")}
                   order by T1."CreateDate", T1.CreateTS;
                   """);
 
@@ -263,4 +267,4 @@ public class SourceDocumentRetrieval(SboDatabaseService dbService) {
 
         return response;
     }
-}
+}
