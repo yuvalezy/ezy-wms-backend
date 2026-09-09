@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Core.Utils;
 
 namespace Core.Models.Settings;
 
@@ -10,6 +11,13 @@ public class MetaDataDefinitions {
     /// External system (SAP) will validate field names and read-only restrictions
     /// </summary>
     public MetadataDefinition[] MetadataDefinition { get; set; } = [];
+
+    /// <summary>
+    /// Definitions the frontend may see. <c>Hidden</c> fields (e.g. a fixed volume unit code) are
+    /// backend-only: they take part in the SAP write but are never rendered or editable.
+    /// </summary>
+    public MetadataDefinition[] VisibleDefinitions() =>
+        MetadataDefinition.Where(d => !d.Hidden).ToArray();
 
     /// <summary>
     /// Validates the metadata definitions for basic consistency
@@ -54,9 +62,53 @@ public class MetaDataDefinitions {
         foreach (var invalid in invalidRequiredReadOnly) {
             errors.Add($"Field '{invalid.Id}' cannot be both ReadOnly and Required");
         }
-        
+
+        var knownIds = new HashSet<string>(
+            MetadataDefinition.Select(x => x.Id ?? string.Empty),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var field in MetadataDefinition) {
+            if (field.Hidden && field.Required) {
+                errors.Add($"Field '{field.Id}' cannot be both Hidden and Required");
+            }
+
+            if (field.SyncToSap && string.IsNullOrWhiteSpace(field.StoreIn)) {
+                errors.Add($"Field '{field.Id}' has SyncToSap but no StoreIn");
+            }
+
+            if (field.ClearSapField && (string.IsNullOrWhiteSpace(field.StoreIn) || field.SyncToSap)) {
+                errors.Add($"Field '{field.Id}' has ClearSapField but it requires StoreIn and excludes SyncToSap");
+            }
+
+            if (!string.IsNullOrWhiteSpace(field.StoreIn) && !IsValidIdentifier(field.StoreIn)) {
+                errors.Add($"Field '{field.Id}' has invalid StoreIn '{field.StoreIn}': must be a SAP property name");
+            }
+
+            if (field.FixedValue != null && !FixedValueMatchesType(field.FixedValue, field.Type)) {
+                errors.Add($"Field '{field.Id}' FixedValue '{field.FixedValue}' is not a valid {field.Type}");
+            }
+
+            if (field.Calculated == null) continue;
+
+            foreach (var dep in field.Calculated.Dependencies.Where(d => !knownIds.Contains(d))) {
+                errors.Add($"Field '{field.Id}' depends on unknown field '{dep}'");
+            }
+
+            foreach (var reference in MetadataFormulaEvaluator.GetReferencedFields(field.Calculated.Formula)
+                         .Where(r => !knownIds.Contains(r))) {
+                errors.Add($"Field '{field.Id}' formula references unknown field '{reference}'");
+            }
+        }
+
         return errors;
     }
+
+    private static bool FixedValueMatchesType(string value, MetadataFieldType type) => type switch {
+        MetadataFieldType.Decimal => decimal.TryParse(value, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out _),
+        MetadataFieldType.Integer => int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out _),
+        MetadataFieldType.Date => DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _),
+        _ => true
+    };
 
     private static bool IsValidIdentifier(string id) {
         if (string.IsNullOrEmpty(id)) return false;

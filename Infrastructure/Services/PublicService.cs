@@ -79,7 +79,7 @@ public class PublicService(IExternalSystemAdapter adapter, ISettings settings, I
                 .Select(r => new UserReportLink { Slug = r.Slug, Name = r.Name })
                 .ToList(),
             Settings = settings.Options,
-            ItemMetaData = settings.Item.MetadataDefinition,
+            ItemMetaData = settings.Item.VisibleDefinitions(),
             CustomFields = settings.CustomFields,
             DeviceStatus = device?.Status,
             DeviceName   = device?.DeviceName

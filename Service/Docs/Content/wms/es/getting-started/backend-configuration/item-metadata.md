@@ -29,6 +29,12 @@ Cada definición de campo de metadatos contiene las siguientes propiedades:
 | `Required` | Boolean | No | Indica si el campo debe tener un valor durante actualizaciones. Predeterminado: `false`. No puede ser true si `ReadOnly` es true. |
 | `Step` | Integer | No | Incremento de paso para campos decimales en la interfaz de usuario. Solo se aplica cuando `Type` es `Decimal`. |
 | `MirrorTo` | String | No | Copia el valor del campo a otro campo automáticamente. Ejemplo: `PurchaseUnitLength` → `SalesUnitLength`. |
+| `ScaleByField` | String | No | Campo SAP usado como factor de escala en la frontera con SAP (ej. `PurchaseQtyPerPackUnit`). Al cargar: valor SAP × factor. Al guardar: valor ÷ factor. No se aplica a valores guardados en un UDF JSON. |
+| `StoreIn` | String | No | Nombre de un UDF de texto del artículo SAP (ej. `U_EZY_WMS_DATA`) que contiene un objeto JSON. El valor se guarda con la clave `Id` dentro de ese JSON en lugar del campo SAP. Ver [Almacenamiento JSON](#almacenamiento-json-storein). |
+| `SyncToSap` | Boolean | No | Solo con `StoreIn`. Escribe además el valor en el campo SAP llamado `Id` (escalado y reflejado). Predeterminado: `false`. |
+| `ClearSapField` | Boolean | No | Solo con `StoreIn` (no con `SyncToSap`). En cada guardado escribe `0` en el campo SAP llamado `Id` y en su campo `MirrorTo`. Necesario para dimensiones — ver abajo. Predeterminado: `false`. |
+| `Hidden` | Boolean | No | Nunca se envía al frontend (no se muestra ni se edita) pero participa en la escritura a SAP. Predeterminado: `false`. |
+| `FixedValue` | String | No | Constante (interpretada según `Type`) que se escribe en SAP en cada guardado. Los campos con valor fijo nunca son editables. |
 | `Query` | String | No | Fragmento SQL opcional para recuperar datos adicionales. |
 | `GroupBy` | String | No | Expresión SQL opcional para agrupar resultados de consultas. |
 | `Calculated` | Object | No | Configuración para campos calculados con fórmulas. Ver sección [Campos calculados](#campos-calculados). |
@@ -40,6 +46,66 @@ Cada definición de campo de metadatos contiene las siguientes propiedades:
 - **Propiedad Step**: La propiedad `Step` solo se aplica a campos con `Type: Decimal`.
 - **Campos calculados**: Cuando un campo tiene una definición `Calculated`, su valor se calcula automáticamente según las dependencias.
 - **Campos integrados de solo lectura**: `ItemCode` e `ItemName` siempre son de solo lectura independientemente de la configuración.
+
+## Almacenamiento JSON (`StoreIn`)
+
+Algunos campos SAP no pueden contener los valores que WMS necesita. Las dimensiones del artículo son el
+caso típico: WMS trabaja con dimensiones por bulto, SAP guarda dimensiones por unidad con 6 decimales y
+deriva el volumen a partir de ellas — al dividir cada dimensión por la cantidad por bulto el volumen
+derivado se redondea a `0`.
+
+Con `StoreIn`, el campo vive dentro de un objeto JSON contenido en un UDF de texto (memo) del artículo:
+
+- **Carga**: gana la entrada del JSON; si el JSON no tiene entrada se lee el campo SAP llamado `Id` como
+  respaldo (escalado por `ScaleByField`), así los artículos existentes conservan sus valores hasta el
+  primer guardado.
+- **Guardado**: el valor va al JSON (sin escalar, tal como se ingresó). El campo SAP llamado `Id` **no**
+  se escribe salvo que `SyncToSap` sea `true`.
+- Las claves desconocidas ya presentes en el JSON se conservan.
+- El UDF debe existir en `OITM`; la verificación de estado del sistema lo reporta si falta.
+- **SAP deriva el volumen de largo × ancho × alto e ignora un volumen enviado mientras alguna dimensión
+  sea distinta de cero.** Por eso los campos de dimensión guardados en JSON necesitan `ClearSapField: true`,
+  para que sus copias en SAP (compra y venta) se pongan en cero en el mismo PATCH que escribe el volumen.
+
+Configuración típica de dimensiones — dimensiones solo en JSON, volumen calculado en el backend,
+guardado en JSON **y** escrito en SAP (÷ cantidad por bulto), más un código de unidad de volumen fijo y
+oculto:
+
+```yaml
+    - Id: PurchaseUnitLength
+      Description: Largo unidad
+      Type: Decimal
+      Step: 6
+      StoreIn: U_EZY_WMS_DATA
+      ScaleByField: PurchaseQtyPerPackUnit   # solo para la lectura de respaldo desde SAP
+      ClearSapField: true                    # pone en cero PurchaseUnitLength + SalesUnitLength en SAP
+      MirrorTo: SalesUnitLength
+    # PurchaseUnitWidth / PurchaseUnitHeight idénticos
+    - Id: PurchaseUnitVolume
+      Description: Volumen unidad (m³)
+      Type: Decimal
+      Step: 6
+      ReadOnly: true
+      StoreIn: U_EZY_WMS_DATA
+      SyncToSap: true
+      ScaleByField: PurchaseQtyPerPackUnit
+      MirrorTo: SalesUnitVolume
+      Calculated:
+        Formula: "{PurchaseUnitLength} * {PurchaseUnitWidth} * {PurchaseUnitHeight}"
+        Dependencies: [PurchaseUnitLength, PurchaseUnitWidth, PurchaseUnitHeight]
+        Precision: 6
+        ClearDependenciesOnManualEdit: true
+    - Id: PurchaseVolumeUnit          # OITM.BVolUnit — 4 = m³, 6 = ft³
+      Description: Unidad de volumen
+      Type: Integer
+      ReadOnly: true
+      Hidden: true
+      FixedValue: "4"
+      MirrorTo: SalesVolumeUnit
+```
+
+Los campos calculados se evalúan en el backend cada vez que se guarda una de sus dependencias; el valor
+enviado por el cliente no se considera confiable.
 
 ## Campos reflejados
 

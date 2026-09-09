@@ -169,7 +169,7 @@ public class GeneralController(IPublicService publicService, ISettings settings)
     [ProducesResponseType(typeof(MetadataDefinition[]), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<MetadataDefinition[]> GetItemMetadataDefinitions() {
-        return Ok(settings.Item.MetadataDefinition);
+        return Ok(settings.Item.VisibleDefinitions());
     }
 
 }

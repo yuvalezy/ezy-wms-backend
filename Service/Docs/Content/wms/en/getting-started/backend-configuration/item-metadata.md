@@ -29,6 +29,12 @@ Each metadata field definition contains the following properties:
 | `Required` | Boolean | No | Whether the field must have a value during updates. Default: `false`. Cannot be true if `ReadOnly` is true. |
 | `Step` | Integer | No | Step increment for decimal fields in the UI. Only applies when `Type` is `Decimal`. |
 | `MirrorTo` | String | No | Copies the field value to another field automatically. Example: `PurchaseUnitLength` → `SalesUnitLength`. |
+| `ScaleByField` | String | No | SAP field used as a scale factor at the SAP boundary (e.g. `PurchaseQtyPerPackUnit`). On load: SAP value × factor. On save: value ÷ factor. Not applied to values stored in a JSON UDF. |
+| `StoreIn` | String | No | Name of a text UDF on the SAP item (e.g. `U_EZY_WMS_DATA`) holding a JSON object. The value is saved as key `Id` inside that JSON instead of the SAP field. See [JSON storage](#json-storage-storein). |
+| `SyncToSap` | Boolean | No | Only with `StoreIn`. Also write the value to the SAP field named `Id` (scaled and mirrored). Default: `false`. |
+| `ClearSapField` | Boolean | No | Only with `StoreIn` (not with `SyncToSap`). On every save writes `0` to the SAP field named `Id` and its `MirrorTo` twin. Needed for dimensions — see below. Default: `false`. |
+| `Hidden` | Boolean | No | Never sent to the frontend (not rendered, not editable) but still part of the SAP write. Default: `false`. |
+| `FixedValue` | String | No | Constant (parsed as `Type`) written to SAP on every save. Fields with a fixed value are never editable. |
 | `Query` | String | No | Optional SQL fragment for retrieving additional data. |
 | `GroupBy` | String | No | Optional SQL expression for grouping query results. |
 | `Calculated` | Object | No | Configuration for computed fields with formulas. See [Calculated Fields](#calculated-fields) section. |
@@ -40,6 +46,63 @@ Each metadata field definition contains the following properties:
 - **Step Property**: The `Step` property only applies to fields with `Type: Decimal`.
 - **Calculated Fields**: When a field has a `Calculated` definition, its value is computed automatically based on dependencies.
 - **Built-In Read-Only Fields**: `ItemCode` and `ItemName` are always read-only regardless of configuration.
+
+## JSON storage (`StoreIn`)
+
+Some SAP fields cannot hold the values WMS needs. Item dimensions are the typical case: WMS works with
+per-pack dimensions, SAP stores per-unit dimensions with 6 decimals, and SAP derives the volume from
+them — once each dimension is divided by the pack quantity the derived volume rounds to `0`.
+
+With `StoreIn`, the field lives inside a JSON object held by a text (memo) UDF on the item:
+
+- **Load**: the JSON entry wins; when the JSON has no entry the SAP field named `Id` is read as a fallback
+  (scaled by `ScaleByField`), so existing items keep their values until the first save.
+- **Save**: the value goes into the JSON (unscaled, exactly as entered). The SAP field named `Id` is
+  **not** written unless `SyncToSap` is `true`.
+- Unknown keys already present in the JSON are preserved.
+- The UDF must exist on `OITM`; the system status check reports it when missing.
+- **SAP derives volume from length × width × height and ignores a patched volume while any dimension is
+  non-zero.** Dimension fields stored in JSON therefore need `ClearSapField: true` so their SAP copies
+  (Purchase and Sales) are zeroed in the same PATCH that writes the volume.
+
+Typical dimension setup — dimensions in JSON only, volume calculated on the backend, stored in JSON
+**and** written to SAP (÷ pack quantity), plus a fixed, hidden volume unit code:
+
+```yaml
+    - Id: PurchaseUnitLength
+      Description: Unit Length
+      Type: Decimal
+      Step: 6
+      StoreIn: U_EZY_WMS_DATA
+      ScaleByField: PurchaseQtyPerPackUnit   # only used for the SAP fallback read
+      ClearSapField: true                    # zero SAP's PurchaseUnitLength + SalesUnitLength
+      MirrorTo: SalesUnitLength
+    # PurchaseUnitWidth / PurchaseUnitHeight identical
+    - Id: PurchaseUnitVolume
+      Description: Unit Volume (m³)
+      Type: Decimal
+      Step: 6
+      ReadOnly: true
+      StoreIn: U_EZY_WMS_DATA
+      SyncToSap: true
+      ScaleByField: PurchaseQtyPerPackUnit
+      MirrorTo: SalesUnitVolume
+      Calculated:
+        Formula: "{PurchaseUnitLength} * {PurchaseUnitWidth} * {PurchaseUnitHeight}"
+        Dependencies: [PurchaseUnitLength, PurchaseUnitWidth, PurchaseUnitHeight]
+        Precision: 6
+        ClearDependenciesOnManualEdit: true
+    - Id: PurchaseVolumeUnit          # OITM.BVolUnit — 4 = m³, 6 = ft³
+      Description: Volume Unit
+      Type: Integer
+      ReadOnly: true
+      Hidden: true
+      FixedValue: "4"
+      MirrorTo: SalesVolumeUnit
+```
+
+Calculated fields are evaluated on the backend whenever one of their dependencies is saved; the value
+sent by the client is not trusted.
 
 ## Mirrored Fields
 

@@ -101,7 +101,7 @@ public class ItemService(
         var itemConfig = settings.Item.MetadataDefinition;
         var errors = new List<string>();
         
-        foreach (var fieldDef in itemConfig.Where(f => f.Required && !f.ReadOnly)) {
+        foreach (var fieldDef in itemConfig.Where(f => f.Required && !f.ReadOnly && !f.Hidden && f.FixedValue == null)) {
             if (!request.Metadata.ContainsKey(fieldDef.Id) || 
                 request.Metadata[fieldDef.Id] == null) {
                 errors.Add($"Required field '{fieldDef.Description}' is missing or null");

@@ -48,6 +48,19 @@ public sealed class SystemStatusService(IServiceScopeFactory scopeFactory, ILogg
                     "Connected to SAP, but the required user-defined field 'U_WMS_READY' is missing on table 'OPKL'. " +
                     "Create the UDF in SAP Business One (Tools → Customization Tools → User-Defined Fields - Management) and re-check.");
             }
+            // Text UDFs that hold item-metadata JSON blobs (MetadataDefinition.StoreIn) must exist,
+            // otherwise every metadata save fails with a Service Layer 400 instead of a clear message.
+            foreach (var storeIn in settings.Item.MetadataDefinition
+                         .Select(d => d.StoreIn)
+                         .Where(s => !string.IsNullOrWhiteSpace(s))
+                         .Distinct(StringComparer.OrdinalIgnoreCase)) {
+                var fieldName = storeIn!.StartsWith("U_", StringComparison.OrdinalIgnoreCase) ? storeIn[2..] : storeIn;
+                if (!await adapter.ValidateUserDefinedFieldAsync("OITM", fieldName)) {
+                    return Set(ready: false, configured: true,
+                        $"Connected to SAP, but the user-defined field '{storeIn}' referenced by Item metadata (StoreIn) is missing on table 'OITM'. " +
+                        "Create the text (memo) UDF in SAP Business One and re-check.");
+                }
+            }
             return Set(ready: true, configured: true, "System ready.");
         }
         catch (Exception ex) {

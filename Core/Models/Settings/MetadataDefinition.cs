@@ -68,6 +68,44 @@ public class MetadataDefinition {
     /// Optional calculation configuration for computed metadata fields
     /// </summary>
     public Calculated? Calculated { get; set; }
+
+    /// <summary>
+    /// Name of a text UDF on the SAP item (e.g. "U_EZY_WMS_DATA") that holds a JSON object.
+    /// When set, this field's value is persisted as key <see cref="Id"/> inside that JSON blob
+    /// instead of being written to the SAP property named <see cref="Id"/>.
+    /// On load the blob wins; if the blob has no entry the SAP property is read as a fallback
+    /// (with <see cref="ScaleByField"/> applied). Blob values are never scaled — they are stored
+    /// exactly as WMS sees them.
+    /// </summary>
+    public string? StoreIn { get; set; }
+
+    /// <summary>
+    /// Only meaningful together with <see cref="StoreIn"/>. When true the value is ALSO written to the
+    /// SAP property named <see cref="Id"/> (scaled by <see cref="ScaleByField"/>, mirrored via
+    /// <see cref="MirrorTo"/>) in addition to the JSON blob.
+    /// </summary>
+    public bool SyncToSap { get; set; }
+
+    /// <summary>
+    /// Only meaningful together with <see cref="StoreIn"/> (and not <see cref="SyncToSap"/>). When true,
+    /// every time this field is saved the SAP property named <see cref="Id"/> — and its
+    /// <see cref="MirrorTo"/> twin — is written as 0 (numeric) / null (other types).
+    /// Needed because SAP derives some fields from others (e.g. volume from length × width × height):
+    /// as long as SAP still holds non-zero dimensions it ignores any volume we send and recomputes it.
+    /// </summary>
+    public bool ClearSapField { get; set; }
+
+    /// <summary>
+    /// When true the field is never sent to the frontend (not rendered, not editable) but still takes
+    /// part in the SAP write. Used for constants such as a volume unit code.
+    /// </summary>
+    public bool Hidden { get; set; }
+
+    /// <summary>
+    /// Constant value (parsed according to <see cref="Type"/>) written to SAP on every metadata save.
+    /// Fields with a fixed value are never user-editable.
+    /// </summary>
+    public string? FixedValue { get; set; }
 }
 
 /// <summary>

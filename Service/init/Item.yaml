@@ -61,6 +61,22 @@ Item:
 #        Precision: 4
 #        ClearDependenciesOnManualEdit: true
 #
+#    # JSON-UDF storage: dimensions kept per pack in a text UDF, only the calculated volume
+#    # (÷ pack qty) and a fixed volume unit code reach SAP. See docs: item-metadata.md → StoreIn.
+#    #   Add to each PurchaseUnit* dimension:  StoreIn: U_EZY_WMS_DATA
+#    #                                         ScaleByField: PurchaseQtyPerPackUnit
+#    #                                         ClearSapField: true   (keep MirrorTo: Sales*)
+#    #   Add to PurchaseUnitVolume:            StoreIn: U_EZY_WMS_DATA
+#    #                                         SyncToSap: true
+#    #                                         ScaleByField: PurchaseQtyPerPackUnit
+#    - Id: PurchaseVolumeUnit
+#      Description: Volume Unit
+#      Type: Integer
+#      ReadOnly: true
+#      Hidden: true
+#      FixedValue: "4"          # OITM.BVolUnit: 4 = m³, 6 = ft³
+#      MirrorTo: SalesVolumeUnit
+#
 #    - Id: PurchaseUnitWeight
 #      Description: Peso KG
 #      Type: Decimal
