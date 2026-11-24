@@ -5,6 +5,12 @@ namespace Core.Interfaces;
 public interface IPickListValidationService {
     Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? ValidationResult)> ValidateItemForPicking(PickListAddItemRequest request);
     Task<(decimal ItemStock, decimal OpenQuantity)> CalculateBinOnHandQuantity(string itemCode, int? binEntry, decimal validationResult, decimal openQuantity);
+
+    /// <summary>
+    /// Base-unit quantity of the item held in WMS per bin (picked-not-yet-synced pick-list rows and
+    /// open transfer lines) that is still included in SAP's bin on-hand. Bins with nothing reserved are omitted.
+    /// </summary>
+    Task<Dictionary<int, decimal>> GetReservedByBinAsync(string itemCode, IReadOnlyCollection<int> binEntries);
     Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(int absEntry, string itemCode, decimal quantity, IEnumerable<PickingValidationResult> validationResults);
     Task<Dictionary<string, decimal>> CalculateOpenQuantitiesForPickList(int absEntry, IEnumerable<PickingDetailItemResponse> pickingDetails);
 

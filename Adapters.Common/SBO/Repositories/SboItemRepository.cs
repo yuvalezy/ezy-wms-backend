@@ -86,7 +86,7 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
 
     private (string query, CustomField[] customFields) BuildItemQuery(string fromClause) {
         var queryBuilder = new StringBuilder();
-        queryBuilder.Append($"""select "ItemCode", "ItemName", {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr", {UomQueryHelper.NumInBuy(settings)} as "NumInBuy", "PurPackMsr", {UomQueryHelper.PurPackUn(settings)} as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4" """);
+        queryBuilder.Append($"""select "ItemCode", "ItemName", {UomQueryHelper.BuyUnitMsr(settings)} as "BuyUnitMsr", {UomQueryHelper.NumInBuy(settings)} as "NumInBuy", "PurPackMsr", {UomQueryHelper.PurPackUn(settings)} as "PurPackUn", "PurFactor1", "PurFactor2", "PurFactor3", "PurFactor4", "ManBtchNum", "ManSerNum" """);
 
         var customFields = GetCustomFields();
         CustomFieldsHelper.AppendCustomFieldsToQuery(queryBuilder, customFields);
@@ -109,6 +109,8 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
                                  , OITM."PurFactor2"
                                  , OITM."PurFactor3"
                                  , OITM."PurFactor4"
+                                 , OITM."ManBtchNum"
+                                 , OITM."ManSerNum"
                             """);
 
         var customFields = GetCustomFields();
@@ -131,6 +133,8 @@ public class SboItemRepository(SboDatabaseService dbService, ISettings settings)
         };
 
         ItemResponseHelper.PopulateItemResponse(reader, item);
+        item.IsBatchManaged  = reader["ManBtchNum"] as string == "Y";
+        item.IsSerialManaged = reader["ManSerNum"] as string == "Y";
         CustomFieldsHelper.ReadCustomFields(reader, customFields, item);
         return item;
     }

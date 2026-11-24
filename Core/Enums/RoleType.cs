@@ -18,4 +18,5 @@ public enum RoleType {
     TransferConfirmationSupervisor = 17,
     DirectTransfer = 18,
     CountingCorrection = 19,
+    ReAllocate = 20,
 }

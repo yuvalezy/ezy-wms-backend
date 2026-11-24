@@ -24,21 +24,48 @@ public class PickListValidationService(SystemDbContext db, IExternalSystemAdapte
     }
 
     public async Task<(decimal ItemStock, decimal OpenQuantity)> CalculateBinOnHandQuantity(string itemCode, int? binEntry, decimal itemStock, decimal openQuantity) {
-        decimal result = db.PickLists
+        decimal result = ReservedQuantities(itemCode)
+        .Where(r => r.BinEntry == null && binEntry == null || r.BinEntry == binEntry)
+        .Select(r => r.Quantity)
+        .Sum();
+
+        return (itemStock - result, openQuantity - result);
+    }
+
+    public async Task<Dictionary<int, decimal>> GetReservedByBinAsync(string itemCode, IReadOnlyCollection<int> binEntries) {
+        if (binEntries.Count == 0) {
+            return new Dictionary<int, decimal>();
+        }
+
+        var rows = await ReservedQuantities(itemCode)
+        .Where(r => r.BinEntry != null && binEntries.Contains(r.BinEntry.Value))
+        .ToArrayAsync();
+
+        return rows
+        .GroupBy(r => r.BinEntry!.Value)
+        .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+    }
+
+    /// <summary>
+    /// Quantities held in WMS that are still physically counted in SAP bin stock (OIBQ): picked
+    /// pick-list rows not yet synced/closed, and open transfer lines. Single source of truth for
+    /// "reserved" stock so every caller subtracts the same thing.
+    /// </summary>
+    private IQueryable<ReservedQuantity> ReservedQuantities(string itemCode) =>
+        db.PickLists
         .Where(p => p.ItemCode == itemCode &&
-                    (p.BinEntry == null && binEntry == null || p.BinEntry == binEntry) &&
                     (p.Status == ObjectStatus.Open || p.Status == ObjectStatus.Processing) && p.SyncStatus != SyncStatus.ExternalCancel)
-        .Select(p => p.Quantity)
+        .Select(p => new ReservedQuantity { BinEntry = p.BinEntry, Quantity = p.Quantity })
         .Concat(
             db.TransferLines
             .Where(t => t.ItemCode == itemCode &&
-                        (t.BinEntry == null && binEntry == null || t.BinEntry == binEntry) &&
                         (t.LineStatus == LineStatus.Open || t.LineStatus == LineStatus.Processing))
-            .Select(t => t.Quantity)
-        )
-        .Sum();
+            .Select(t => new ReservedQuantity { BinEntry = t.BinEntry, Quantity = t.Quantity })
+        );
 
-        return (itemStock - result, openQuantity - result);;
+    private class ReservedQuantity {
+        public int?    BinEntry { get; init; }
+        public decimal Quantity { get; init; }
     }
 
     public async Task<(bool IsValid, string? ErrorMessage, PickingValidationResult? SelectedValidation)> ValidateQuantityAgainstPickList(int absEntry, string itemCode, decimal quantity,
