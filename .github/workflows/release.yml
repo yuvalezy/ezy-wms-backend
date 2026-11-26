@@ -1,16 +1,13 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # auto-trigger: off (run ./run_ci.sh --github, or --local)
   workflow_dispatch:
     inputs:
       frontend_ref:
         description: 'Frontend git ref to build (branch, tag, or SHA)'
         required: false
         default: 'master'
-
 env:
   DOTNET_VERSION: '10.0.x'
   NODE_VERSION: '24'
